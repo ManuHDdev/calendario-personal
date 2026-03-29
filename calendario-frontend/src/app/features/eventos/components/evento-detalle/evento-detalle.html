@@ -1,0 +1,66 @@
+<div class="detalle-wrapper">
+  <button class="btn-volver" type="button" (click)="volverAlCalendario()">
+    <mat-icon>arrow_back_ios</mat-icon>
+    Volver al calendario
+  </button>
+
+  @if (cargando()) {
+    <div class="estado-centro">
+      <mat-spinner diameter="40" />
+    </div>
+  }
+
+  @if (error()) {
+    <div class="estado-centro estado-error">{{ error() }}</div>
+  }
+
+  @if (evento(); as ev) {
+    <div class="panel">
+      <div class="barra-color" [style.background]="ev.color"></div>
+
+      <div class="panel-contenido">
+        <h1 class="titulo-evento">{{ ev.titulo }}</h1>
+
+        <!-- Fechas -->
+        <div class="chips-fechas">
+          <span class="chip-fecha">
+            📅 {{ ev.fechaInicio }}
+            @if (ev.fechaFin) { → {{ ev.fechaFin }} }
+          </span>
+        </div>
+
+        <!-- Horas -->
+        @if (ev.horaInicio) {
+          <div class="seccion-horas">
+            <mat-icon>schedule</mat-icon>
+            <span>{{ ev.horaInicio }}{{ ev.horaFin ? ' – ' + ev.horaFin : '' }}</span>
+          </div>
+        }
+
+        <!-- Descripción -->
+        @if (ev.descripcion) {
+          <p class="descripcion">{{ ev.descripcion }}</p>
+        }
+
+        <!-- Imágenes -->
+        @if (ev.imagenes.length > 0) {
+          <div class="galeria">
+            @for (img of ev.imagenes; track img.id) {
+              <div class="galeria-item">
+                <img [src]="img.url" [alt]="img.nombreFichero" />
+                <button class="btn-eliminar-img" type="button" (click)="eliminarImagen(img.id)"
+                        aria-label="Eliminar imagen">×</button>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Acciones -->
+        <div class="footer-acciones">
+          <button class="btn-editar" type="button" (click)="editarEvento()">Editar</button>
+          <button class="btn-eliminar" type="button" (click)="eliminarEvento()">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
