@@ -13,6 +13,36 @@
     <button class="btn-nuevo" type="button" (click)="nuevoEvento()">+ Nuevo evento</button>
   </header>
 
+  <!-- Barra de filtros -->
+  <div class="filtros-barra">
+    <div class="filtros-busqueda">
+      <span class="filtros-icon">🔍</span>
+      <input
+        class="filtros-input"
+        type="text"
+        placeholder="Buscar eventos..."
+        [(ngModel)]="busqueda"
+        (ngModelChange)="onBusquedaChange()"
+      />
+      @if (hayFiltrosActivos()) {
+        <button class="filtros-limpiar" type="button" (click)="limpiarFiltros()" title="Limpiar filtros">×</button>
+      }
+    </div>
+
+    <div class="filtros-colores">
+      @for (c of COLORES; track c) {
+        <button
+          class="filtros-color"
+          type="button"
+          [style.background]="c"
+          [class.filtros-color--activo]="colorFiltro === c"
+          (click)="seleccionarColor(c)"
+          [attr.aria-label]="'Filtrar por color ' + c"
+        ></button>
+      }
+    </div>
+  </div>
+
   @if (cargando()) {
     <div class="estado-cargando">
       <span class="spinner"></span>
