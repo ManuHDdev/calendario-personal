@@ -112,6 +112,64 @@
     border-radius: var(--radius-sm);
     display: block;
   }
+
+  &--pdf {
+    grid-column: 1 / -1; // PDF ocupa todo el ancho
+  }
+}
+
+/* ── Visor PDF ───────────────────────────────────────────────────────────── */
+.pdf-visor {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.pdf-visor__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pdf-visor__icono {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: white;
+  background: #e74c3c;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.pdf-visor__nombre {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-visor__abrir {
+  font-size: 12px;
+  color: var(--color-accent);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: opacity var(--transition);
+
+  &:hover { opacity: 0.7; }
+}
+
+.pdf-visor__frame {
+  width: 100%;
+  height: 600px;
+  border: none;
+  display: block;
 }
 
 .footer-acciones {

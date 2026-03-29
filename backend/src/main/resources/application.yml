@@ -10,7 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate.format_sql: true
@@ -23,6 +23,12 @@ spring:
 
 server:
   port: ${SERVER_PORT:8081}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
 
 springdoc:
   api-docs:

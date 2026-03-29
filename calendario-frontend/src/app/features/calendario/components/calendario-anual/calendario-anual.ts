@@ -39,6 +39,7 @@ export class CalendarioAnual implements OnInit {
   tooltipFecha: Date | null = null;
   tooltipTop = '0px';
   tooltipLeft = '0px';
+  private tooltipRaton = false; // true cuando el ratón está sobre el tooltip
 
   // Modo creación con selección de rango
   modoCreacion = signal(false);
@@ -195,7 +196,15 @@ export class CalendarioAnual implements OnInit {
     }
   }
 
+  onTooltipMouseEnter(): void { this.tooltipRaton = true; }
+
+  onTooltipMouseLeave(): void {
+    this.tooltipRaton = false;
+    this.cerrarTooltip();
+  }
+
   cerrarTooltip(): void {
+    if (this.tooltipRaton) return;
     this.tooltipEventos = null;
     this.tooltipFecha = null;
   }

@@ -42,14 +42,30 @@
           <p class="descripcion">{{ ev.descripcion }}</p>
         }
 
-        <!-- Imágenes -->
+        <!-- Adjuntos (imágenes y PDFs) -->
         @if (ev.imagenes.length > 0) {
           <div class="galeria">
             @for (img of ev.imagenes; track img.id) {
-              <div class="galeria-item">
-                <img [src]="img.url" [alt]="img.nombreFichero" />
+              <div class="galeria-item" [class.galeria-item--pdf]="img.tipo === 'pdf'">
+                @if (img.tipo === 'pdf') {
+                  <div class="pdf-visor">
+                    <div class="pdf-visor__cabecera">
+                      <span class="pdf-visor__icono">PDF</span>
+                      <span class="pdf-visor__nombre">{{ img.nombreFichero }}</span>
+                      <a class="pdf-visor__abrir" [href]="img.url" target="_blank">Abrir en pestaña</a>
+                    </div>
+                    <iframe
+                      class="pdf-visor__frame"
+                      [src]="img.url + '#toolbar=0&navpanes=0&view=FitH' | safeUrl"
+                      type="application/pdf"
+                      loading="lazy"
+                    ></iframe>
+                  </div>
+                } @else {
+                  <img [src]="img.url" [alt]="img.nombreFichero" />
+                }
                 <button class="btn-eliminar-img" type="button" (click)="eliminarImagen(img.id)"
-                        aria-label="Eliminar imagen">×</button>
+                        aria-label="Eliminar archivo">×</button>
               </div>
             }
           </div>
