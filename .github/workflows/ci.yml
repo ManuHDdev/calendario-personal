@@ -72,7 +72,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: calendario-frontend
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build production
         working-directory: calendario-frontend
