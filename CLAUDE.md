@@ -68,5 +68,14 @@ src/app/
 - Una rama por HU: feature/CAL-XX-descripcion-corta
 - Commits con prefijo: feat:, fix:, test:, infra:, docs:
 
+## Infraestructura de producción
+- **VPS**: `ssh -p 2269 87.216.88.165`
+- **Dominio**: `elbunkerdelingeniero.duckdns.org`
+- El VPS tiene otras aplicaciones desplegadas — usar Nginx como reverse proxy con virtualhost propio para Calendario, sin tocar la configuración existente.
+- Certificados SSL con Let's Encrypt (Certbot), uno por subdominio/dominio, aislados del resto.
+
+## Repositorio GitHub
+- `https://github.com/ManuHDdev/calendario-personal`
+
 ## Antes de generar cualquier fichero
 Lee siempre los ficheros existentes de la misma capa para seguir el mismo patrón.

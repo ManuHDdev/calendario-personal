@@ -1,0 +1,102 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Producción — Calendario Personal
+# Dominio: https://elbunkerdelingeniero.duckdns.org
+# El Nginx externo (atg-app) gestiona SSL y hace proxy a esta red.
+# ─────────────────────────────────────────────────────────────────────────────
+
+networks:
+  calendario-net:
+    name: calendario-net
+    driver: bridge
+
+volumes:
+  postgres_prod_data:
+  uploads_prod_data:
+
+services:
+
+  # ─── Base de datos ──────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15
+    container_name: calendario-postgres
+    restart: unless-stopped
+    networks:
+      - calendario-net
+    environment:
+      POSTGRES_DB: calendario
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d calendario"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─── Keycloak ───────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: calendario-keycloak
+    restart: unless-stopped
+    networks:
+      - calendario-net
+    command: start --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/calendario
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /keycloak
+      KC_HOSTNAME: https://elbunkerdelingeniero.duckdns.org
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      # Sólo accesible desde localhost del VPS — Nginx hace el proxy
+      KC_HTTP_HOST: 127.0.0.1
+      KC_HTTP_PORT: "8180"
+    volumes:
+      - ./keycloak/realm-export.prod.json:/opt/keycloak/data/import/realm-export.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Backend Spring Boot ────────────────────────────────────────────────────
+  backend:
+    image: ghcr.io/manuhddev/calendario-backend:latest
+    container_name: calendario-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+    environment:
+      SERVER_PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/calendario
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # El issuer coincide con la claim "iss" del JWT (URL pública)
+      KEYCLOAK_ISSUER_URI: https://elbunkerdelingeniero.duckdns.org/keycloak/realms/calendario
+      # JWK Set via red interna para no depender de resolución DNS externa al arrancar
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8180/keycloak/realms/calendario/protocol/openid-connect/certs
+      UPLOADS_DIR: /app/uploads
+      UPLOADS_BASE_URL: https://elbunkerdelingeniero.duckdns.org/uploads
+    volumes:
+      - uploads_prod_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  # ─── Frontend Angular ───────────────────────────────────────────────────────
+  frontend:
+    image: ghcr.io/manuhddev/calendario-frontend:latest
+    container_name: calendario-frontend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+    depends_on:
+      - backend

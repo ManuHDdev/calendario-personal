@@ -9,6 +9,10 @@ on:
       - main
       - develop
 
+permissions:
+  contents: read
+  packages: write   # necesario para publicar en GHCR
+
 jobs:
   # ─── Backend ────────────────────────────────────────────────────────────────
   backend:
@@ -82,37 +86,84 @@ jobs:
         working-directory: calendario-frontend
         run: npx ng test --watch=false --browsers=ChromeHeadless
 
-  # ─── Docker Build ───────────────────────────────────────────────────────────
-  docker-build:
-    name: Docker · Build Images
+  # ─── Docker Build & Push (sólo en main) ─────────────────────────────────────
+  docker-publish:
+    name: Docker · Build & Push to GHCR
     runs-on: ubuntu-latest
     needs: [backend, frontend]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build backend image
-        run: docker build -t calendario-backend ./backend
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build frontend image
-        run: docker build -t calendario-frontend ./calendario-frontend
+      - name: Build & push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/manuhddev/calendario-backend:latest
+            ghcr.io/manuhddev/calendario-backend:${{ github.sha }}
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./calendario-frontend
+          push: true
+          tags: |
+            ghcr.io/manuhddev/calendario-frontend:latest
+            ghcr.io/manuhddev/calendario-frontend:${{ github.sha }}
+
+  # ─── Deploy al VPS (sólo en main, tras publicar imágenes) ───────────────────
+  deploy:
+    name: Deploy · VPS
+    runs-on: ubuntu-latest
+    needs: [docker-publish]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/manu/calendario
+
+            # Actualizar el repo en el VPS
+            git pull origin main
+
+            # Descargar las últimas imágenes
+            docker compose -f infra/docker-compose.prod.yml pull
+
+            # Reiniciar los servicios con cero downtime (recrear sólo los que cambiaron)
+            docker compose -f infra/docker-compose.prod.yml up -d --remove-orphans
+
+            # Limpiar imágenes antiguas
+            docker image prune -f
 
   # ─── Jira · Cerrar ticket al merge en main ──────────────────────────────────
   jira-transition:
     name: Jira · Cerrar ticket
     runs-on: ubuntu-latest
     needs: [backend, frontend]
-    # Solo en push a main (merge de PR o commit directo)
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
       - name: Extraer clave Jira del nombre de rama
         id: jira
         run: |
-          # El nombre de la rama que se mergeó viene en el mensaje del merge commit
-          # o bien en la ref del head del PR. Buscamos patrón CAL-\d+ en el mensaje.
           COMMIT_MSG="${{ github.event.head_commit.message }}"
           ISSUE_KEY=$(echo "$COMMIT_MSG" | grep -oP "CAL-\d+" | head -1)
           echo "issue_key=$ISSUE_KEY" >> $GITHUB_OUTPUT

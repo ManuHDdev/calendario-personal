@@ -3,6 +3,7 @@
 
 # Backend
 target/
+backend/uploads/
 
 # Frontend
 node_modules/

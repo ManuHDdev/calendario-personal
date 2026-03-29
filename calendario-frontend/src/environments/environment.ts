@@ -1,8 +1,8 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:8081/api',
+  apiUrl: 'https://elbunkerdelingeniero.duckdns.org/api',
   keycloak: {
-    url: 'http://localhost:8080',
+    url: 'https://elbunkerdelingeniero.duckdns.org/keycloak',
     realm: 'calendario',
     clientId: 'calendario-frontend'
   }
