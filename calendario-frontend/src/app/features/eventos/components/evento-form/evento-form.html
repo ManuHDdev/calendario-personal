@@ -1,0 +1,118 @@
+<div class="form-wrapper">
+  <div class="form-card">
+    <button class="btn-volver" type="button" (click)="volver()">← Volver</button>
+    <h1 class="form-titulo">{{ modoEdicion() ? 'Editar evento' : 'Nuevo evento' }}</h1>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+      <!-- Título -->
+      <div class="campo-grupo">
+        <label class="campo-label">Título *</label>
+        <input class="campo-input" formControlName="titulo" type="text" placeholder="Nombre del evento" />
+        @if (form.get('titulo')?.invalid && form.get('titulo')?.touched) {
+          <span class="campo-error">El título es obligatorio (máx. 150 caracteres)</span>
+        }
+      </div>
+
+      <!-- Fechas -->
+      <div class="campo-fila">
+        <div class="campo-grupo">
+          <label class="campo-label">Fecha inicio *</label>
+          <input class="campo-input" formControlName="fechaInicio" type="date" />
+          @if (form.get('fechaInicio')?.invalid && form.get('fechaInicio')?.touched) {
+            <span class="campo-error">La fecha de inicio es obligatoria</span>
+          }
+        </div>
+        <div class="campo-grupo">
+          <label class="campo-label">Fecha fin</label>
+          <input class="campo-input" formControlName="fechaFin" type="date" />
+        </div>
+      </div>
+      @if (form.hasError('fechaFinInvalida')) {
+        <span class="campo-error">La fecha fin no puede ser anterior a la fecha de inicio</span>
+      }
+
+      <!-- Horas -->
+      <div class="campo-fila">
+        <div class="campo-grupo">
+          <label class="campo-label">Hora inicio</label>
+          <input class="campo-input" formControlName="horaInicio" type="time" />
+        </div>
+        <div class="campo-grupo">
+          <label class="campo-label">Hora fin</label>
+          <input class="campo-input" formControlName="horaFin" type="time" />
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="campo-grupo">
+        <label class="campo-label">Descripción</label>
+        <textarea class="campo-input campo-textarea" formControlName="descripcion" rows="4"
+                  placeholder="Descripción del evento (opcional)"></textarea>
+      </div>
+
+      <!-- Color -->
+      <div class="campo-grupo">
+        <label class="campo-label">Color</label>
+        <div class="paleta-colores">
+          @for (c of COLORES; track c) {
+            <button
+              type="button"
+              class="circulo-color"
+              [style.background]="c"
+              [style.box-shadow]="form.get('color')?.value === c ? 'inset 0 0 0 2px white, 0 0 0 2px ' + c : 'none'"
+              (click)="seleccionarColor(c)"
+              [attr.aria-label]="'Color ' + c"
+            ></button>
+          }
+        </div>
+        <input class="campo-input campo-input--hex" formControlName="color" type="text"
+               placeholder="#0071e3" maxlength="7" />
+      </div>
+
+      <!-- Imágenes (solo en modo edición) -->
+      @if (modoEdicion()) {
+        <div class="campo-grupo">
+          <label class="campo-label">Imágenes</label>
+
+          @if (imagenes().length > 0) {
+            <div class="imagenes-grid">
+              @for (img of imagenes(); track img.id) {
+                <div class="imagen-thumb-wrapper">
+                  <img class="imagen-thumb" [src]="img.url" [alt]="img.nombreFichero" />
+                  <button class="btn-eliminar-imagen" type="button" (click)="eliminarImagen(img.id)"
+                          aria-label="Eliminar imagen">×</button>
+                </div>
+              }
+            </div>
+          }
+
+          @if (imagenes().length < 10) {
+            <div class="zona-subida" (click)="triggerFileInput()" [class.zona-subida--cargando]="subiendoImagen()">
+              @if (subiendoImagen()) {
+                <span class="spinner-inline spinner-inline--dark"></span>
+                <span>Subiendo...</span>
+              } @else {
+                <mat-icon>add_photo_alternate</mat-icon>
+                <span>Haz clic para añadir imágenes</span>
+                <span class="zona-subida-hint">JPEG, PNG o WebP · máx. 5 MB · {{ 10 - imagenes().length }} restantes</span>
+              }
+            </div>
+            <input #fileInput type="file" accept="image/jpeg,image/png,image/webp"
+                   style="display:none" (change)="onFileSelected($event)" />
+          }
+        </div>
+      }
+
+      <!-- Acciones -->
+      <button class="btn-guardar" type="submit" [disabled]="form.invalid || cargando()">
+        @if (cargando()) {
+          <span class="spinner-inline"></span>
+        }
+        {{ cargando() ? 'Guardando...' : 'Guardar' }}
+      </button>
+
+      <button class="btn-cancelar" type="button" (click)="volver()">Cancelar</button>
+    </form>
+  </div>
+</div>
