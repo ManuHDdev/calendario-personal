@@ -1,0 +1,8 @@
+<nav class="navbar">
+  <a class="navbar__brand" routerLink="/calendario">Calendario</a>
+
+  <div class="navbar__actions">
+    <span class="navbar__username">{{ authService.getUserName() }}</span>
+    <button class="navbar__logout" type="button" (click)="logout()">Cerrar sesión</button>
+  </div>
+</nav>
