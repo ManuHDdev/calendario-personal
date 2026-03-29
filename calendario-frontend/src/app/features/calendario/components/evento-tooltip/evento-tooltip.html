@@ -1,0 +1,14 @@
+<div
+  class="tooltip"
+  (mouseenter)="onMouseEnter()"
+  (mouseleave)="onMouseLeave()"
+  (click)="$event.stopPropagation()"
+>
+  <div class="tooltip-fecha">{{ getFechaFormateada() }}</div>
+  @for (ev of eventos; track ev.id) {
+    <div class="tooltip-evento" (click)="onVerDetalle(ev.id, $event)">
+      <span class="barra-color" [style.background]="ev.color"></span>
+      <span class="evento-titulo">{{ ev.titulo }}</span>
+    </div>
+  }
+</div>

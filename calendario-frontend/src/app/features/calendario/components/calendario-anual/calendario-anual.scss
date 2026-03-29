@@ -1,0 +1,169 @@
+.calendario-wrapper {
+  padding: 32px 24px;
+  position: relative;
+}
+
+.nav-anio {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.anio-label {
+  font-size: 32px;
+  font-weight: 300;
+  color: var(--color-text-primary);
+  min-width: 80px;
+  text-align: center;
+}
+
+.nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  color: var(--color-text-primary);
+
+  &:hover {
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.sin-eventos {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin-top: 48px;
+}
+
+.grid-meses {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tarjeta-mes {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.mes-nombre {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-secondary);
+  margin-bottom: 10px;
+}
+
+.cabecera-dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+
+  span {
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: 2px 0;
+  }
+}
+
+.grid-dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.celda-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 1px;
+  border-radius: 6px;
+  cursor: default;
+  min-height: 30px;
+
+  &.dia-vacio {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &.dia-hover {
+    background: rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+  }
+}
+
+.dia-numero {
+  font-size: 12px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+
+  .dia-hoy & {
+    background: var(--color-accent);
+    color: white;
+  }
+}
+
+.puntos-evento {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+  align-items: center;
+}
+
+.punto {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mas-eventos {
+  font-size: 8px;
+  color: var(--color-text-secondary);
+  line-height: 1;
+}
+
+.tooltip-container {
+  position: absolute;
+  z-index: 1000;
+}
