@@ -13,7 +13,7 @@ services:
     networks:
       - calendario-network
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_DB: calendario
       POSTGRES_USER: ${POSTGRES_USER:-calendariodb}
