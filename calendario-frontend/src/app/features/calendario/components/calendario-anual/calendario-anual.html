@@ -1,0 +1,68 @@
+<div class="calendario-wrapper">
+  <!-- Navegación de año -->
+  <header class="nav-anio">
+    <button class="nav-btn" (click)="anioAnterior()" aria-label="Año anterior">‹</button>
+    <span class="anio-label">{{ anio() }}</span>
+    <button class="nav-btn" (click)="anioSiguiente()" aria-label="Año siguiente">›</button>
+    @if (cargando()) {
+      <span class="spinner" aria-label="Cargando"></span>
+    }
+  </header>
+
+  <!-- Mensaje vacío -->
+  @if (!cargando() && eventosPorDia().size === 0) {
+    <p class="sin-eventos">No hay eventos este año</p>
+  }
+
+  <!-- Grid de meses -->
+  <div class="grid-meses">
+    @for (mes of meses(); track mes.mes) {
+      <div class="tarjeta-mes">
+        <div class="mes-nombre">{{ mes.nombre }}</div>
+        <div class="cabecera-dias">
+          @for (cab of CABECERAS_DIAS; track cab) {
+            <span>{{ cab }}</span>
+          }
+        </div>
+        <div class="grid-dias">
+          @for (celda of mes.celdas; track trackByIndex($index)) {
+            <div
+              class="celda-dia"
+              [class.dia-vacio]="celda.dia === null"
+              [class.dia-hoy]="celda.fecha !== null && esHoy(celda.fecha)"
+              [class.dia-hover]="celda.fecha !== null && tieneEventos(celda.fecha)"
+              (click)="celda.fecha && onDiaClick(celda.fecha)"
+              (mouseenter)="celda.fecha && onDiaMouseEnter($event, celda.fecha)"
+            >
+              @if (celda.dia !== null) {
+                <span class="dia-numero">{{ celda.dia }}</span>
+                @if (tieneEventos(celda.fecha!)) {
+                  <div class="puntos-evento">
+                    @for (ev of getTresPuntos(celda.fecha!); track ev.id) {
+                      <span class="punto" [style.background]="ev.color"></span>
+                    }
+                    @if (getMasEventos(celda.fecha!) > 0) {
+                      <span class="mas-eventos">+{{ getMasEventos(celda.fecha!) }}</span>
+                    }
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Tooltip -->
+  @if (tooltipEventos && tooltipFecha) {
+    <div class="tooltip-container" [style.top]="tooltipTop" [style.left]="tooltipLeft">
+      <app-evento-tooltip
+        [eventos]="tooltipEventos"
+        [fecha]="tooltipFecha"
+        (cerrar)="cerrarTooltip()"
+        (verDetalle)="verDetalle($event)"
+      />
+    </div>
+  }
+</div>
