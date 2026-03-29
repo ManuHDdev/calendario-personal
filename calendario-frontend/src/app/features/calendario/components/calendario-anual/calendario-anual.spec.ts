@@ -10,8 +10,9 @@ describe('CalendarioAnual', () => {
   let fixture: ComponentFixture<CalendarioAnual>;
   let eventoServiceSpy: jasmine.SpyObj<EventoService>;
 
+  const anioActual = new Date().getFullYear();
   const mockEventos: EventoResumen[] = [
-    { id: 1, titulo: 'Evento A', fechaInicio: '2025-03-15', fechaFin: null, color: '#ff0000' }
+    { id: 1, titulo: 'Evento A', fechaInicio: `${anioActual}-03-15`, fechaFin: null, color: '#ff0000' }
   ];
 
   beforeEach(async () => {
@@ -37,7 +38,6 @@ describe('CalendarioAnual', () => {
 
   it('ngOnInit llama a getEventosByAnio con el año actual', fakeAsync(() => {
     tick();
-    const anioActual = new Date().getFullYear();
     expect(eventoServiceSpy.getEventosByAnio).toHaveBeenCalledWith(anioActual);
   }));
 

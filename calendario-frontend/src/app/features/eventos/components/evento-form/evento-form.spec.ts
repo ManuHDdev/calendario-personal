@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { provideRouter, ActivatedRoute } from '@angular/router';
+import { provideRouter, ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { EventoForm } from './evento-form';
@@ -14,7 +14,6 @@ describe('EventoForm', () => {
   let eventoServiceSpy: jasmine.SpyObj<EventoService>;
   let imagenServiceSpy: jasmine.SpyObj<ImagenEventoService>;
   let snackBarSpy: jasmine.SpyObj<MatSnackBar>;
-  let routerSpy: jasmine.SpyObj<import('@angular/router').Router>;
 
   const mockEvento: Evento = {
     id: 1, titulo: 'Test', descripcion: null, fechaInicio: '2025-06-01',
@@ -26,7 +25,6 @@ describe('EventoForm', () => {
     eventoServiceSpy = jasmine.createSpyObj('EventoService', ['createEvento', 'updateEvento', 'getEventoById']);
     imagenServiceSpy = jasmine.createSpyObj('ImagenEventoService', ['addImagen', 'deleteImagen']);
     snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
-    routerSpy = jasmine.createSpyObj('Router', ['navigate']);
     eventoServiceSpy.createEvento.and.returnValue(of(mockEvento));
 
     await TestBed.configureTestingModule({
@@ -75,7 +73,7 @@ describe('EventoForm', () => {
   });
 
   it('submit válido en modo creación llama a createEvento y navega a /calendario', fakeAsync(() => {
-    const router = TestBed.inject(import('@angular/router').Router as any);
+    const router = TestBed.inject(Router);
     spyOn(router, 'navigate');
     component.form.patchValue({
       titulo: 'Nuevo Evento',

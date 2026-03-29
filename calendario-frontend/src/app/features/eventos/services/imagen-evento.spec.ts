@@ -1,13 +1,16 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { ImagenEventoService } from './imagen-evento';
 
-import { ImagenEvento } from './imagen-evento';
-
-describe('ImagenEvento', () => {
-  let service: ImagenEvento;
+describe('ImagenEventoService', () => {
+  let service: ImagenEventoService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(ImagenEvento);
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()]
+    });
+    service = TestBed.inject(ImagenEventoService);
   });
 
   it('should be created', () => {
