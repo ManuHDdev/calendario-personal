@@ -3,11 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn, AbstractControl, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { EventoService } from '../../services/evento';
 import { ImagenEventoService } from '../../services/imagen-evento';
@@ -30,11 +25,6 @@ const fechaFinValidator: ValidatorFn = (group: AbstractControl) => {
     CommonModule,
     ReactiveFormsModule,
     MatSnackBarModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
     MatIconModule
   ],
   templateUrl: './evento-form.html',
@@ -63,8 +53,8 @@ export class EventoForm implements OnInit {
 
   form = this.fb.group({
     titulo: ['', [Validators.required, Validators.maxLength(150)]],
-    fechaInicio: [null as Date | null, Validators.required],
-    fechaFin: [null as Date | null],
+    fechaInicio: [null as Date | string | null, Validators.required],
+    fechaFin: [null as Date | string | null],
     horaInicio: [''],
     horaFin: [''],
     descripcion: ['', Validators.maxLength(1000)],
@@ -72,6 +62,14 @@ export class EventoForm implements OnInit {
   }, { validators: fechaFinValidator });
 
   ngOnInit(): void {
+    // Pre-rellenar fechas desde query params (cuando se viene del calendario con rango seleccionado)
+    const qp = this.route.snapshot.queryParamMap;
+    const qFechaInicio = qp.get('fechaInicio');
+    const qFechaFin = qp.get('fechaFin');
+    if (qFechaInicio) {
+      this.form.patchValue({ fechaInicio: qFechaInicio, fechaFin: qFechaFin ?? null });
+    }
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.modoEdicion.set(true);
@@ -103,8 +101,9 @@ export class EventoForm implements OnInit {
     this.form.get('color')!.setValue(color);
   }
 
-  private toIsoDate(d: Date | null | undefined): string | null {
+  private toIsoDate(d: Date | string | null | undefined): string | null {
     if (!d) return null;
+    if (typeof d === 'string') return d || null;
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -139,9 +138,9 @@ export class EventoForm implements OnInit {
       });
     } else {
       this.eventoService.createEvento(payload).subscribe({
-        next: () => {
-          this.snackBar.open('Evento creado', 'OK', { duration: 3000 });
-          this.router.navigate(['/calendario']);
+        next: (ev) => {
+          this.snackBar.open('Evento creado. Puedes añadir imágenes ahora.', 'OK', { duration: 3000 });
+          this.router.navigate(['/eventos', ev.id, 'editar']);
         },
         error: (err) => {
           this.snackBar.open(err?.error?.message ?? 'Error al crear', 'Cerrar', { duration: 4000 });

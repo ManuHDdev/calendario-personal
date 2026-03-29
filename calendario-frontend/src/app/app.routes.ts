@@ -53,5 +53,12 @@ export const routes: Routes = [
       import('./core/components/auth-callback/auth-callback').then(
         (m) => m.AuthCallback
       )
+  },
+  {
+    path: '**',
+    loadComponent: () =>
+      import('./shared/components/not-found/not-found').then(
+        (m) => m.NotFound
+      )
   }
 ];
