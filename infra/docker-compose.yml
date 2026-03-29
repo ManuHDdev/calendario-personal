@@ -16,12 +16,12 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: calendario
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-calendariodb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-calendariodb123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d calendario"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-calendariodb} -d calendario"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -36,12 +36,12 @@ services:
       - "8080:8080"
     command: start-dev --import-realm
     environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin123}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/calendario
-      KC_DB_USERNAME: ${POSTGRES_USER}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_DB_USERNAME: ${POSTGRES_USER:-calendariodb}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-calendariodb123}
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
