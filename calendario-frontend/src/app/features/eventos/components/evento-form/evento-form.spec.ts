@@ -36,7 +36,12 @@ describe('EventoForm', () => {
         { provide: MatSnackBar, useValue: snackBarSpy },
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: { get: () => null } } }
+          useValue: {
+            snapshot: {
+              paramMap: { get: () => null },
+              queryParamMap: { get: () => null }
+            }
+          }
         }
       ]
     }).compileComponents();
@@ -84,6 +89,6 @@ describe('EventoForm', () => {
     component.onSubmit();
     tick();
     expect(eventoServiceSpy.createEvento).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith(['/calendario']);
+    expect(router.navigate).toHaveBeenCalledWith(['/eventos', mockEvento.id, 'editar']);
   }));
 });

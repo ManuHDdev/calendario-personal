@@ -49,8 +49,8 @@ describe('CalendarioAnual', () => {
   it('días con eventos tienen al menos un punto de color', fakeAsync(() => {
     tick();
     fixture.detectChanges();
-    const puntos = fixture.nativeElement.querySelectorAll('.punto');
-    expect(puntos.length).toBeGreaterThan(0);
+    const barras = fixture.nativeElement.querySelectorAll('.barra-evento');
+    expect(barras.length).toBeGreaterThan(0);
   }));
 
   it('click en año siguiente incrementa el año y recarga', fakeAsync(() => {
