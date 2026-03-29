@@ -87,6 +87,41 @@
   letter-spacing: 0.1em;
   color: var(--color-text-secondary);
   margin-bottom: 10px;
+
+  &--link {
+    cursor: pointer;
+    transition: color var(--transition);
+
+    &:hover {
+      color: var(--color-accent);
+    }
+  }
+}
+
+.fab-nuevo {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), box-shadow var(--transition);
+  z-index: 50;
+
+  &:hover {
+    background: var(--color-accent-hover);
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 .cabecera-dias {

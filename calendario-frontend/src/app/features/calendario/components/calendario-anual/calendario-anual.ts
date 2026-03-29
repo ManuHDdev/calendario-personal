@@ -123,6 +123,14 @@ export class CalendarioAnual implements OnInit {
     this.cargarEventos();
   }
 
+  nuevoEvento(): void {
+    this.router.navigate(['/eventos/nuevo']);
+  }
+
+  verMes(mes: number): void {
+    this.router.navigate(['/calendario', this.anio(), mes + 1]);
+  }
+
   onDiaClick(fecha: Date): void {
     const eventos = this.getEventosDia(fecha);
     if (eventos.length > 0) {

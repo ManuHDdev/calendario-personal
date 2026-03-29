@@ -40,6 +40,14 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    path: 'calendario/:anio/:mes',
+    loadComponent: () =>
+      import('./features/calendario/components/calendario-mensual/calendario-mensual').then(
+        (m) => m.CalendarioMensual
+      ),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'auth/callback',
     loadComponent: () =>
       import('./core/components/auth-callback/auth-callback').then(

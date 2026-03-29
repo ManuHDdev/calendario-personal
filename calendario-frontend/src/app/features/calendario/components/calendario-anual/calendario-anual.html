@@ -9,6 +9,9 @@
     }
   </header>
 
+  <!-- FAB: Nuevo evento -->
+  <button class="fab-nuevo" type="button" (click)="nuevoEvento()" aria-label="Nuevo evento">+</button>
+
   <!-- Mensaje vacío -->
   @if (!cargando() && eventosPorDia().size === 0) {
     <p class="sin-eventos">No hay eventos este año</p>
@@ -18,7 +21,7 @@
   <div class="grid-meses">
     @for (mes of meses(); track mes.mes) {
       <div class="tarjeta-mes">
-        <div class="mes-nombre">{{ mes.nombre }}</div>
+        <div class="mes-nombre mes-nombre--link" (click)="verMes(mes.mes)">{{ mes.nombre }}</div>
         <div class="cabecera-dias">
           @for (cab of CABECERAS_DIAS; track cab) {
             <span>{{ cab }}</span>

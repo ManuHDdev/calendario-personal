@@ -1,0 +1,57 @@
+<div class="mensual-wrapper">
+
+  <!-- Barra superior -->
+  <header class="mensual-header">
+    <a class="btn-anual" routerLink="/calendario">← Año {{ anio() }}</a>
+
+    <div class="nav-mes">
+      <button class="nav-btn" (click)="mesAnterior()" aria-label="Mes anterior">‹</button>
+      <h1 class="mes-titulo">{{ NOMBRES_MESES[mes() - 1] }} {{ anio() }}</h1>
+      <button class="nav-btn" (click)="mesSiguiente()" aria-label="Mes siguiente">›</button>
+    </div>
+
+    <button class="btn-nuevo" type="button" (click)="nuevoEvento()">+ Nuevo evento</button>
+  </header>
+
+  @if (cargando()) {
+    <div class="estado-cargando">
+      <span class="spinner"></span>
+    </div>
+  }
+
+  <!-- Grid del mes -->
+  <div class="grid-mes">
+    <!-- Cabeceras -->
+    @for (cab of CABECERAS_DIAS; track cab) {
+      <div class="cab-dia">{{ cab }}</div>
+    }
+
+    <!-- Celdas -->
+    @for (celda of celdas(); track trackByIndex($index)) {
+      <div
+        class="celda"
+        [class.celda--vacia]="celda.dia === null"
+        [class.celda--hoy]="celda.fecha !== null && esHoy(celda.fecha)"
+      >
+        @if (celda.dia !== null) {
+          <span class="celda__numero">{{ celda.dia }}</span>
+
+          <div class="celda__eventos">
+            @for (ev of getEventosDia(celda.fecha!); track ev.id) {
+              <div
+                class="evento-pill"
+                [style.background]="ev.color + '22'"
+                [style.border-left]="'3px solid ' + ev.color"
+                (click)="verDetalle(ev.id)"
+                [title]="ev.titulo"
+              >
+                {{ ev.titulo }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+</div>

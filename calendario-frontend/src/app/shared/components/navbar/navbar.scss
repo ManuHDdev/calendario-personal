@@ -41,6 +41,16 @@
     color: var(--color-text-secondary);
   }
 
+  &__new-event {
+    font-size: 0.875rem;
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity var(--transition);
+
+    &:hover { opacity: 0.7; }
+  }
+
   &__logout {
     all: unset;
     cursor: pointer;
