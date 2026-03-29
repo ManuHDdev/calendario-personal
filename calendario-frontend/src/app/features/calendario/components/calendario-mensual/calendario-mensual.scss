@@ -73,6 +73,88 @@
   &:hover { background: var(--color-accent-hover); }
 }
 
+/* ── Filtros ─────────────────────────────────────────────────────────────── */
+.filtros-barra {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filtros-busqueda {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition);
+
+  &:focus-within {
+    border-color: var(--color-accent);
+  }
+}
+
+.filtros-icon {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.filtros-input {
+  border: none;
+  outline: none;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+
+  &::placeholder { color: var(--color-text-secondary); }
+}
+
+.filtros-limpiar {
+  all: unset;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 1.125rem;
+  line-height: 1;
+  transition: color var(--transition);
+  flex-shrink: 0;
+
+  &:hover { color: var(--color-danger); }
+}
+
+.filtros-colores {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filtros-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+
+  &:hover { transform: scale(1.15); }
+
+  &--activo {
+    border-color: var(--color-text-primary);
+    box-shadow: 0 0 0 2px white, 0 0 0 4px currentColor;
+    transform: scale(1.2);
+  }
+}
+
 /* ── Loading ─────────────────────────────────────────────────────────────── */
 .estado-cargando {
   display: flex;
