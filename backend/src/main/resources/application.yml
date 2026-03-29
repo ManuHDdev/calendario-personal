@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: calendario
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/calendario}
+    username: ${SPRING_DATASOURCE_USERNAME:calendariodb}
+    password: ${SPRING_DATASOURCE_PASSWORD:calendariodb123}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate.format_sql: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/calendario}
+
+server:
+  port: ${SERVER_PORT:8081}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  uploads:
+    dir: ${UPLOADS_DIR:./uploads}
+    base-url: ${UPLOADS_BASE_URL:http://localhost:8081/uploads}
