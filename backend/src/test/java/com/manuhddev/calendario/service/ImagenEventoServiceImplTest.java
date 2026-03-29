@@ -83,9 +83,9 @@ class ImagenEventoServiceImplTest {
     @Test
     void addImagen_tipoInvalido() {
         when(eventoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(eventoActivo()));
-        MockMultipartFile pdf = new MockMultipartFile("file", "doc.pdf", "application/pdf", new byte[]{1});
+        MockMultipartFile txt = new MockMultipartFile("file", "doc.txt", "text/plain", new byte[]{1});
 
-        assertThatThrownBy(() -> service.addImagen(1L, pdf))
+        assertThatThrownBy(() -> service.addImagen(1L, txt))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Tipo de fichero");
     }
@@ -93,12 +93,12 @@ class ImagenEventoServiceImplTest {
     @Test
     void addImagen_tamanoExcedido() {
         when(eventoRepository.findByIdAndActivoTrue(1L)).thenReturn(Optional.of(eventoActivo()));
-        byte[] bigFile = new byte[6 * 1024 * 1024];
+        byte[] bigFile = new byte[11 * 1024 * 1024]; // 11 MB > límite de 10 MB
         MockMultipartFile file = new MockMultipartFile("file", "big.jpg", "image/jpeg", bigFile);
 
         assertThatThrownBy(() -> service.addImagen(1L, file))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("tamaño máximo");
+                .hasMessageContaining("10MB");
     }
 
     @Test

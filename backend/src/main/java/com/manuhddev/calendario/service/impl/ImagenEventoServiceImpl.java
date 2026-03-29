@@ -53,7 +53,7 @@ public class ImagenEventoServiceImpl implements ImagenEventoService {
         }
 
         if (file.getSize() > MAX_BYTES) {
-            throw new IllegalArgumentException("El fichero supera el tamaño máximo de 5MB");
+            throw new IllegalArgumentException("El fichero supera el tamaño máximo de 10MB");
         }
 
         if (imagenEventoRepository.countByEventoIdAndActivoTrue(eventoId) >= MAX_IMAGENES) {
