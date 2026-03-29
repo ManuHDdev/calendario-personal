@@ -163,10 +163,18 @@ jobs:
 
             cd /home/manu/calendario/infra
 
+            # Asegurar que la red existe (idempotente)
+            docker network create calendario-net 2>/dev/null || true
+
+            # Parar y eliminar contenedores existentes con estos nombres
+            # (maneja el caso de que existan con un label de proyecto diferente)
+            docker stop calendario-postgres calendario-keycloak calendario-backend calendario-frontend 2>/dev/null || true
+            docker rm   calendario-postgres calendario-keycloak calendario-backend calendario-frontend 2>/dev/null || true
+
             # Descargar las últimas imágenes
             docker compose -p calendario -f docker-compose.prod.yml pull
 
-            # Reiniciar los servicios (recrear sólo los que cambiaron)
+            # Iniciar los servicios con las nuevas imágenes
             docker compose -p calendario -f docker-compose.prod.yml up -d
 
             # Recargar nginx con los conf actualizados

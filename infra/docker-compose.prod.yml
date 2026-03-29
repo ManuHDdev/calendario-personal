@@ -6,8 +6,8 @@
 
 networks:
   calendario-net:
+    external: true
     name: calendario-net
-    driver: bridge
 
 volumes:
   postgres_prod_data:
