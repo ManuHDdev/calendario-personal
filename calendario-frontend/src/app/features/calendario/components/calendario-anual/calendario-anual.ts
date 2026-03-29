@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EventoService } from '../../../eventos/services/evento';
 import { EventoResumen } from '../../models/evento-resumen.model';
@@ -20,7 +21,7 @@ interface MesData {
 @Component({
   selector: 'app-calendario-anual',
   standalone: true,
-  imports: [CommonModule, EventoTooltip],
+  imports: [CommonModule, FormsModule, EventoTooltip],
   templateUrl: './calendario-anual.html',
   styleUrl: './calendario-anual.scss'
 })
@@ -33,10 +34,16 @@ export class CalendarioAnual implements OnInit {
   meses = signal<MesData[]>([]);
   eventosPorDia = signal(new Map<string, EventoResumen[]>());
 
+  // Tooltip
   tooltipEventos: EventoResumen[] | null = null;
   tooltipFecha: Date | null = null;
   tooltipTop = '0px';
   tooltipLeft = '0px';
+
+  // Modo creación con selección de rango
+  modoCreacion = signal(false);
+  seleccionInicio: Date | null = null;
+  hoveredDate: Date | null = null;
 
   readonly NOMBRES_MESES = [
     'Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -54,13 +61,9 @@ export class CalendarioAnual implements OnInit {
     for (let m = 0; m < 12; m++) {
       const celdas: DiaCelda[] = [];
       const primerDia = new Date(this.anio(), m, 1);
-      // getDay() returns 0=Sun..6=Sat; convert to 0=Mon..6=Sun
       let diaSemana = primerDia.getDay();
       diaSemana = diaSemana === 0 ? 6 : diaSemana - 1;
-      // padding
-      for (let i = 0; i < diaSemana; i++) {
-        celdas.push({ dia: null, fecha: null });
-      }
+      for (let i = 0; i < diaSemana; i++) celdas.push({ dia: null, fecha: null });
       const diasEnMes = new Date(this.anio(), m + 1, 0).getDate();
       for (let d = 1; d <= diasEnMes; d++) {
         celdas.push({ dia: d, fecha: new Date(this.anio(), m, d) });
@@ -111,6 +114,94 @@ export class CalendarioAnual implements OnInit {
            fecha.getDate() === hoy.getDate();
   }
 
+  // ── Modo creación ────────────────────────────────────────────────────────
+
+  toggleModoCreacion(): void {
+    this.seleccionInicio = null;
+    this.hoveredDate = null;
+    this.cerrarTooltip();
+  }
+
+  esSeleccionInicio(fecha: Date): boolean {
+    return !!this.seleccionInicio && this.toKey(fecha) === this.toKey(this.seleccionInicio);
+  }
+
+  esEnRango(fecha: Date): boolean {
+    if (!this.seleccionInicio || !this.hoveredDate) return false;
+    if (this.toKey(this.seleccionInicio) === this.toKey(this.hoveredDate)) return false;
+    const start = this.seleccionInicio < this.hoveredDate ? this.seleccionInicio : this.hoveredDate;
+    const end = this.seleccionInicio < this.hoveredDate ? this.hoveredDate : this.seleccionInicio;
+    return fecha > start && fecha < end;
+  }
+
+  esSeleccionFin(fecha: Date): boolean {
+    if (!this.seleccionInicio || !this.hoveredDate) return false;
+    if (this.toKey(this.seleccionInicio) === this.toKey(this.hoveredDate)) return false;
+    return this.toKey(fecha) === this.toKey(this.hoveredDate);
+  }
+
+  private navegarConRango(inicio: Date, fin: Date | null): void {
+    this.seleccionInicio = null;
+    this.hoveredDate = null;
+    this.modoCreacion.set(false);
+    const params: Record<string, string> = { fechaInicio: this.toKey(inicio) };
+    if (fin) params['fechaFin'] = this.toKey(fin);
+    this.router.navigate(['/eventos/nuevo'], { queryParams: params });
+  }
+
+  // ── Eventos de celda ─────────────────────────────────────────────────────
+
+  onDiaClick(fecha: Date): void {
+    if (this.modoCreacion()) {
+      if (!this.seleccionInicio) {
+        // Primer clic: marcar inicio
+        this.seleccionInicio = fecha;
+        this.hoveredDate = fecha;
+      } else if (this.toKey(fecha) === this.toKey(this.seleccionInicio)) {
+        // Mismo día: evento de un solo día
+        this.navegarConRango(this.seleccionInicio, null);
+      } else {
+        // Segundo clic en día distinto: rango
+        const inicio = this.seleccionInicio < fecha ? this.seleccionInicio : fecha;
+        const fin = this.seleccionInicio < fecha ? fecha : this.seleccionInicio;
+        this.navegarConRango(inicio, fin);
+      }
+      return;
+    }
+    // Comportamiento normal
+    const eventos = this.getEventosDia(fecha);
+    if (eventos.length > 0) {
+      this.router.navigate(['/eventos', eventos[0].id]);
+    }
+  }
+
+  onDiaMouseEnter(event: MouseEvent, fecha: Date): void {
+    if (this.modoCreacion()) {
+      this.hoveredDate = fecha;
+      return;
+    }
+    const eventos = this.getEventosDia(fecha);
+    if (eventos.length === 0) return;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.tooltipTop = `${rect.bottom + window.scrollY + 4}px`;
+    this.tooltipLeft = `${rect.left + window.scrollX}px`;
+    this.tooltipFecha = fecha;
+    this.tooltipEventos = eventos;
+  }
+
+  onDiaMouseLeave(): void {
+    if (this.modoCreacion() && !this.seleccionInicio) {
+      this.hoveredDate = null;
+    }
+  }
+
+  cerrarTooltip(): void {
+    this.tooltipEventos = null;
+    this.tooltipFecha = null;
+  }
+
+  // ── Navegación ──────────────────────────────────────────────────────────
+
   anioAnterior(): void {
     this.anio.set(this.anio() - 1);
     this.generarMeses();
@@ -123,34 +214,12 @@ export class CalendarioAnual implements OnInit {
     this.cargarEventos();
   }
 
-  nuevoEvento(): void {
-    this.router.navigate(['/eventos/nuevo']);
-  }
-
   verMes(mes: number): void {
     this.router.navigate(['/calendario', this.anio(), mes + 1]);
   }
 
-  onDiaClick(fecha: Date): void {
-    const eventos = this.getEventosDia(fecha);
-    if (eventos.length > 0) {
-      this.router.navigate(['/eventos', eventos[0].id]);
-    }
-  }
-
-  onDiaMouseEnter(event: MouseEvent, fecha: Date): void {
-    const eventos = this.getEventosDia(fecha);
-    if (eventos.length === 0) return;
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.tooltipTop = `${rect.bottom + window.scrollY + 4}px`;
-    this.tooltipLeft = `${rect.left + window.scrollX}px`;
-    this.tooltipFecha = fecha;
-    this.tooltipEventos = eventos;
-  }
-
-  cerrarTooltip(): void {
-    this.tooltipEventos = null;
-    this.tooltipFecha = null;
+  nuevoEvento(): void {
+    this.router.navigate(['/eventos/nuevo']);
   }
 
   verDetalle(id: number): void {
@@ -158,9 +227,9 @@ export class CalendarioAnual implements OnInit {
     this.router.navigate(['/eventos', id]);
   }
 
-  trackByIndex(index: number): number {
-    return index;
-  }
+  // ── Helpers ─────────────────────────────────────────────────────────────
+
+  trackByIndex(index: number): number { return index; }
 
   tieneEventos(fecha: Date | null): boolean {
     if (!fecha) return false;

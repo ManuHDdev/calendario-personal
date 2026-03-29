@@ -3,12 +3,13 @@
   position: relative;
 }
 
+/* ── Navegación año ──────────────────────────────────────────────────────── */
 .nav-anio {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .anio-label {
@@ -48,10 +49,76 @@
   animation: spin 0.6s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Barra checkbox creación ────────────────────────────────────────────── */
+.barra-creacion {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
 }
 
+.check-creacion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  transition: border-color var(--transition), background var(--transition);
+
+  input[type="checkbox"] { display: none; }
+
+  &--activo {
+    border-color: var(--color-accent);
+    background: #eff6ff;
+  }
+
+  &__box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--color-border);
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: var(--transition);
+
+    .check-creacion--activo & {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+
+      &::after {
+        content: '';
+        display: block;
+        width: 9px;
+        height: 5px;
+        border-left: 1.5px solid white;
+        border-bottom: 1.5px solid white;
+        transform: rotate(-45deg) translateY(-1px);
+      }
+    }
+  }
+
+  &__label {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    transition: color var(--transition);
+    min-width: 200px;
+    text-align: center;
+
+    .check-creacion--activo & {
+      color: var(--color-accent);
+    }
+  }
+}
+
+/* ── Estado vacío ────────────────────────────────────────────────────────── */
 .sin-eventos {
   text-align: center;
   color: var(--color-text-secondary);
@@ -59,18 +126,14 @@
   margin-top: 48px;
 }
 
+/* ── Grid de meses ───────────────────────────────────────────────────────── */
 .grid-meses {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 
-  @media (max-width: 900px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-  }
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
 }
 
 .tarjeta-mes {
@@ -91,13 +154,117 @@
   &--link {
     cursor: pointer;
     transition: color var(--transition);
+    &:hover { color: var(--color-accent); }
+  }
+}
 
-    &:hover {
-      color: var(--color-accent);
+.cabecera-dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+
+  span {
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: 2px 0;
+  }
+}
+
+.grid-dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+/* ── Celda día ───────────────────────────────────────────────────────────── */
+.celda-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 1px;
+  border-radius: 6px;
+  cursor: default;
+  min-height: 30px;
+  transition: background var(--transition);
+
+  &.dia-vacio {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &.dia-hover {
+    background: rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+  }
+
+  &.dia-seleccion-inicio {
+    background: var(--color-accent);
+    cursor: pointer;
+
+    .dia-numero { color: white; }
+  }
+
+  &.dia-rango {
+    background: rgba(0, 113, 227, 0.12);
+    border-radius: 0;
+    cursor: pointer;
+  }
+
+  &.dia-seleccion-fin {
+    background: rgba(0, 113, 227, 0.25);
+    cursor: pointer;
+
+    .dia-numero {
+      background: var(--color-accent);
+      color: white;
     }
   }
 }
 
+.dia-numero {
+  font-size: 12px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+
+  .dia-hoy & {
+    background: var(--color-accent);
+    color: white;
+  }
+}
+
+/* ── Barras de evento (reemplazan los puntos) ────────────────────────────── */
+.barras-evento {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+  align-items: center;
+}
+
+.barra-evento {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.mas-eventos {
+  font-size: 8px;
+  color: var(--color-text-secondary);
+  line-height: 1;
+}
+
+/* ── Tooltip ─────────────────────────────────────────────────────────────── */
+.tooltip-container {
+  position: absolute;
+  z-index: 1000;
+}
+
+/* ── FAB nuevo evento ────────────────────────────────────────────────────── */
 .fab-nuevo {
   position: fixed;
   bottom: 32px;
@@ -122,83 +289,4 @@
     background: var(--color-accent-hover);
     box-shadow: var(--shadow-lg);
   }
-}
-
-.cabecera-dias {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 4px;
-
-  span {
-    font-size: 10px;
-    color: var(--color-text-secondary);
-    text-align: center;
-    padding: 2px 0;
-  }
-}
-
-.grid-dias {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-}
-
-.celda-dia {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 3px 1px;
-  border-radius: 6px;
-  cursor: default;
-  min-height: 30px;
-
-  &.dia-vacio {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  &.dia-hover {
-    background: rgba(0, 0, 0, 0.04);
-    cursor: pointer;
-  }
-}
-
-.dia-numero {
-  font-size: 12px;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-
-  .dia-hoy & {
-    background: var(--color-accent);
-    color: white;
-  }
-}
-
-.puntos-evento {
-  display: flex;
-  gap: 2px;
-  margin-top: 2px;
-  align-items: center;
-}
-
-.punto {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.mas-eventos {
-  font-size: 8px;
-  color: var(--color-text-secondary);
-  line-height: 1;
-}
-
-.tooltip-container {
-  position: absolute;
-  z-index: 1000;
 }

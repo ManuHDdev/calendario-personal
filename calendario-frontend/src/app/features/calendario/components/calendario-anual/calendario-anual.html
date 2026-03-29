@@ -1,4 +1,5 @@
 <div class="calendario-wrapper">
+
   <!-- Navegación de año -->
   <header class="nav-anio">
     <button class="nav-btn" (click)="anioAnterior()" aria-label="Año anterior">‹</button>
@@ -9,11 +10,30 @@
     }
   </header>
 
-  <!-- FAB: Nuevo evento -->
-  <button class="fab-nuevo" type="button" (click)="nuevoEvento()" aria-label="Nuevo evento">+</button>
+  <!-- Checkbox modo creación -->
+  <div class="barra-creacion">
+    <label class="check-creacion" [class.check-creacion--activo]="modoCreacion()">
+      <input
+        type="checkbox"
+        [(ngModel)]="modoCreacion"
+        [ngModel]="modoCreacion()"
+        (ngModelChange)="modoCreacion.set($event); toggleModoCreacion()"
+      />
+      <span class="check-creacion__box"></span>
+      <span class="check-creacion__label">
+        @if (!modoCreacion()) {
+          Crear evento
+        } @else if (!seleccionInicio) {
+          Pulsa el día de inicio
+        } @else {
+          Pulsa el día fin (o el mismo día para evento de un día)
+        }
+      </span>
+    </label>
+  </div>
 
   <!-- Mensaje vacío -->
-  @if (!cargando() && eventosPorDia().size === 0) {
+  @if (!cargando() && eventosPorDia().size === 0 && !modoCreacion()) {
     <p class="sin-eventos">No hay eventos este año</p>
   }
 
@@ -33,16 +53,20 @@
               class="celda-dia"
               [class.dia-vacio]="celda.dia === null"
               [class.dia-hoy]="celda.fecha !== null && esHoy(celda.fecha)"
-              [class.dia-hover]="celda.fecha !== null && tieneEventos(celda.fecha)"
+              [class.dia-hover]="celda.fecha !== null && (tieneEventos(celda.fecha) || modoCreacion())"
+              [class.dia-seleccion-inicio]="celda.fecha !== null && esSeleccionInicio(celda.fecha)"
+              [class.dia-rango]="celda.fecha !== null && esEnRango(celda.fecha)"
+              [class.dia-seleccion-fin]="celda.fecha !== null && esSeleccionFin(celda.fecha)"
               (click)="celda.fecha && onDiaClick(celda.fecha)"
               (mouseenter)="celda.fecha && onDiaMouseEnter($event, celda.fecha)"
+              (mouseleave)="onDiaMouseLeave()"
             >
               @if (celda.dia !== null) {
                 <span class="dia-numero">{{ celda.dia }}</span>
                 @if (tieneEventos(celda.fecha!)) {
-                  <div class="puntos-evento">
+                  <div class="barras-evento">
                     @for (ev of getTresPuntos(celda.fecha!); track ev.id) {
-                      <span class="punto" [style.background]="ev.color"></span>
+                      <span class="barra-evento" [style.background]="ev.color"></span>
                     }
                     @if (getMasEventos(celda.fecha!) > 0) {
                       <span class="mas-eventos">+{{ getMasEventos(celda.fecha!) }}</span>
@@ -68,4 +92,5 @@
       />
     </div>
   }
+
 </div>
