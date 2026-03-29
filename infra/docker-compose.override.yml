@@ -1,0 +1,32 @@
+# Override para desarrollo local con hot-reload
+# Uso: docker compose up (se aplica automáticamente junto a docker-compose.yml)
+
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    volumes:
+      - ../backend/src:/workspace/src
+      - ../backend/pom.xml:/workspace/pom.xml
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+
+  frontend:
+    image: node:20-alpine
+    container_name: calendario-frontend-dev
+    working_dir: /app
+    networks:
+      - calendario-network
+    ports:
+      - "4200:4200"
+    volumes:
+      - ../calendario-frontend:/app
+      - /app/node_modules
+    command: sh -c "npm ci && npx ng serve --host 0.0.0.0 --poll 2000"
+    environment:
+      NODE_ENV: development
+    depends_on:
+      - backend
