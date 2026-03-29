@@ -37,6 +37,32 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    public List<EventoResumenDTO> getEventosByMes(int anio, int mes) {
+        LocalDate primerDia = LocalDate.of(anio, mes, 1);
+        LocalDate ultimoDia = primerDia.withDayOfMonth(primerDia.lengthOfMonth());
+        return eventoRepository.findByRango(primerDia, ultimoDia)
+                .stream()
+                .map(eventoMapper::toResumenDTO)
+                .toList();
+    }
+
+    @Override
+    public List<EventoResumenDTO> buscarEventos(int anio, Integer mes, String q, String color) {
+        LocalDate primerDia = mes != null
+                ? LocalDate.of(anio, mes, 1)
+                : LocalDate.of(anio, 1, 1);
+        LocalDate ultimoDia = mes != null
+                ? primerDia.withDayOfMonth(primerDia.lengthOfMonth())
+                : LocalDate.of(anio, 12, 31);
+        String qParam = (q != null && !q.isBlank()) ? q.trim() : null;
+        String colorParam = (color != null && !color.isBlank()) ? color.trim() : null;
+        return eventoRepository.buscar(primerDia, ultimoDia, qParam, colorParam)
+                .stream()
+                .map(eventoMapper::toResumenDTO)
+                .toList();
+    }
+
+    @Override
     public EventoResponseDTO getEventoById(Long id) {
         Evento evento = eventoRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new EventoNotFoundException(id));

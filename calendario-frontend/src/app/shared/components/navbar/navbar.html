@@ -2,6 +2,7 @@
   <a class="navbar__brand" routerLink="/calendario">Calendario</a>
 
   <div class="navbar__actions">
+    <a class="navbar__new-event" routerLink="/eventos/nuevo">+ Nuevo evento</a>
     <span class="navbar__username">{{ authService.getUserName() }}</span>
     <button class="navbar__logout" type="button" (click)="logout()">Cerrar sesión</button>
   </div>

@@ -29,12 +29,22 @@ public class EventoController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Obtener resumen de eventos de un año")
+    @Operation(summary = "Listar eventos: por año, mes opcional, búsqueda y filtro de color")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista de eventos"),
             @ApiResponse(responseCode = "401", description = "No autenticado")
     })
-    public ResponseEntity<List<EventoResumenDTO>> getEventosByAnio(@RequestParam int anio) {
+    public ResponseEntity<List<EventoResumenDTO>> getEventos(
+            @RequestParam int anio,
+            @RequestParam(required = false) Integer mes,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String color) {
+        if (q != null || color != null) {
+            return ResponseEntity.ok(eventoService.buscarEventos(anio, mes, q, color));
+        }
+        if (mes != null) {
+            return ResponseEntity.ok(eventoService.getEventosByMes(anio, mes));
+        }
         return ResponseEntity.ok(eventoService.getEventosByAnio(anio));
     }
 

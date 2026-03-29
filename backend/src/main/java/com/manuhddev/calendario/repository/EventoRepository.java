@@ -21,4 +21,19 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     List<Evento> findByAnio(@Param("anio") int anio,
                             @Param("primerDia") LocalDate primerDia,
                             @Param("ultimoDia") LocalDate ultimoDia);
+
+    @Query("SELECT e FROM Evento e WHERE e.activo = true AND " +
+           "e.fechaInicio <= :ultimoDia AND (e.fechaFin IS NULL OR e.fechaFin >= :primerDia)")
+    List<Evento> findByRango(@Param("primerDia") LocalDate primerDia,
+                              @Param("ultimoDia") LocalDate ultimoDia);
+
+    @Query("SELECT e FROM Evento e WHERE e.activo = true AND " +
+           "e.fechaInicio <= :ultimoDia AND (e.fechaFin IS NULL OR e.fechaFin >= :primerDia) AND " +
+           "(:q IS NULL OR LOWER(e.titulo) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+           "  LOWER(e.descripcion) LIKE LOWER(CONCAT('%', :q, '%'))) AND " +
+           "(:color IS NULL OR e.color = :color)")
+    List<Evento> buscar(@Param("primerDia") LocalDate primerDia,
+                        @Param("ultimoDia") LocalDate ultimoDia,
+                        @Param("q") String q,
+                        @Param("color") String color);
 }
