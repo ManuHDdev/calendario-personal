@@ -12,5 +12,6 @@ public class ImagenEventoResponseDTO {
     private Long id;
     private String url;
     private String nombreFichero;
+    private String tipo;
     private LocalDateTime createdAt;
 }

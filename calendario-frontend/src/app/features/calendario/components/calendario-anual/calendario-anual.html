@@ -59,7 +59,7 @@
               [class.dia-seleccion-fin]="celda.fecha !== null && esSeleccionFin(celda.fecha)"
               (click)="celda.fecha && onDiaClick(celda.fecha)"
               (mouseenter)="celda.fecha && onDiaMouseEnter($event, celda.fecha)"
-              (mouseleave)="onDiaMouseLeave()"
+              (mouseleave)="celda.fecha && cerrarTooltip(); onDiaMouseLeave()"
             >
               @if (celda.dia !== null) {
                 <span class="dia-numero">{{ celda.dia }}</span>
@@ -83,7 +83,13 @@
 
   <!-- Tooltip -->
   @if (tooltipEventos && tooltipFecha) {
-    <div class="tooltip-container" [style.top]="tooltipTop" [style.left]="tooltipLeft">
+    <div
+      class="tooltip-container"
+      [style.top]="tooltipTop"
+      [style.left]="tooltipLeft"
+      (mouseenter)="onTooltipMouseEnter()"
+      (mouseleave)="onTooltipMouseLeave()"
+    >
       <app-evento-tooltip
         [eventos]="tooltipEventos"
         [fecha]="tooltipFecha"

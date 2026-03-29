@@ -28,6 +28,11 @@ public class ImagenEvento {
     @Column(nullable = false)
     private String nombreFichero;
 
+    /** "imagen" o "pdf" */
+    @Column(nullable = false)
+    @Builder.Default
+    private String tipo = "imagen";
+
     @Column(nullable = false)
     @Builder.Default
     private boolean activo = true;

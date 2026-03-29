@@ -79,8 +79,8 @@ export class EventoForm implements OnInit {
         next: (ev) => {
           this.form.patchValue({
             titulo: ev.titulo,
-            fechaInicio: ev.fechaInicio ? new Date(ev.fechaInicio + 'T00:00:00') : null,
-            fechaFin: ev.fechaFin ? new Date(ev.fechaFin + 'T00:00:00') : null,
+            fechaInicio: ev.fechaInicio ?? null,
+            fechaFin: ev.fechaFin ?? null,
             horaInicio: ev.horaInicio ?? '',
             horaFin: ev.horaFin ?? '',
             descripcion: ev.descripcion ?? '',

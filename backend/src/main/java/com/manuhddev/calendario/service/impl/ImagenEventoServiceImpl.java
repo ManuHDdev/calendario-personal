@@ -25,8 +25,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ImagenEventoServiceImpl implements ImagenEventoService {
 
-    private static final Set<String> TIPOS_PERMITIDOS = Set.of("image/jpeg", "image/png", "image/webp");
-    private static final long MAX_BYTES = 5L * 1024 * 1024;
+    private static final Set<String> TIPOS_PERMITIDOS = Set.of(
+            "image/jpeg", "image/png", "image/webp", "application/pdf"
+    );
+    private static final long MAX_BYTES = 10L * 1024 * 1024; // 10 MB para PDF
     private static final int MAX_IMAGENES = 10;
 
     private final EventoRepository eventoRepository;
@@ -47,7 +49,7 @@ public class ImagenEventoServiceImpl implements ImagenEventoService {
 
         String contentType = file.getContentType();
         if (contentType == null || !TIPOS_PERMITIDOS.contains(contentType)) {
-            throw new IllegalArgumentException("Tipo de fichero no permitido. Se aceptan JPEG, PNG y WebP.");
+            throw new IllegalArgumentException("Tipo de fichero no permitido. Se aceptan JPEG, PNG, WebP y PDF.");
         }
 
         if (file.getSize() > MAX_BYTES) {
@@ -72,10 +74,13 @@ public class ImagenEventoServiceImpl implements ImagenEventoService {
             throw new RuntimeException("Error al guardar el fichero: " + e.getMessage(), e);
         }
 
+        String tipo = "application/pdf".equals(contentType) ? "pdf" : "imagen";
+
         ImagenEvento imagen = ImagenEvento.builder()
                 .evento(evento)
                 .url(baseUrl + "/" + nombreFichero)
                 .nombreFichero(nombreFichero)
+                .tipo(tipo)
                 .activo(true)
                 .build();
 
