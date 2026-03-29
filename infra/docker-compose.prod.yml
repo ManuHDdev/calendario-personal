@@ -56,8 +56,6 @@ services:
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
-      # Sólo accesible desde localhost del VPS — Nginx hace el proxy
-      KC_HTTP_HOST: 127.0.0.1
       KC_HTTP_PORT: "8180"
     volumes:
       - ./keycloak/realm-export.prod.json:/opt/keycloak/data/import/realm-export.json:ro

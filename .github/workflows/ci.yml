@@ -130,6 +130,20 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar ficheros de infra al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "infra/docker-compose.prod.yml,infra/keycloak/realm-export.prod.json,nginx/calendario.conf"
+          target: /home/manu/calendario
+          strip_components: 0
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -139,16 +153,24 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
-            cd /home/manu/calendario
 
-            # Actualizar el repo en el VPS
-            git pull origin main
+            # Mover keycloak realm a la ruta correcta
+            mkdir -p /home/manu/calendario/infra/keycloak
+            if [ -f /home/manu/calendario/infra/keycloak/realm-export.prod.json ]; then
+              cp /home/manu/calendario/infra/keycloak/realm-export.prod.json \
+                 /home/manu/calendario/infra/keycloak/realm-export.json
+            fi
+
+            cd /home/manu/calendario/infra
 
             # Descargar las últimas imágenes
-            docker compose -f infra/docker-compose.prod.yml pull
+            docker compose -p calendario -f docker-compose.prod.yml pull
 
-            # Reiniciar los servicios con cero downtime (recrear sólo los que cambiaron)
-            docker compose -f infra/docker-compose.prod.yml up -d --remove-orphans
+            # Reiniciar los servicios (recrear sólo los que cambiaron)
+            docker compose -p calendario -f docker-compose.prod.yml up -d
+
+            # Recargar nginx con los conf actualizados
+            docker exec atg-app-nginx-1 nginx -s reload || true
 
             # Limpiar imágenes antiguas
             docker image prune -f
