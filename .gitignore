@@ -1,0 +1,19 @@
+# Entorno
+.env
+
+# Backend
+target/
+
+# Frontend
+node_modules/
+dist/
+.angular/
+
+# IDE
+.idea/
+*.iml
+.vscode/settings.json
+
+# OS
+.DS_Store
+Thumbs.db
