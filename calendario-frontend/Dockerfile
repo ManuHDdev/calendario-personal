@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Instalar dependencias primero (mejor uso de la caché de capas)
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 # Copiar el resto del código y compilar
 COPY . .
