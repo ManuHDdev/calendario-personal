@@ -18,6 +18,12 @@ WORKDIR /app
 
 # Usuario no root por seguridad
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+# Crear directorio de uploads con permisos correctos ANTES de cambiar de usuario
+# (el volumen se monta sobre este directorio; si se crea después del USER el volumen
+#  es propiedad de root y appuser no puede escribir)
+RUN mkdir -p /app/uploads && chown appuser:appgroup /app/uploads
+
 USER appuser
 
 COPY --from=build /workspace/target/*.jar app.jar
