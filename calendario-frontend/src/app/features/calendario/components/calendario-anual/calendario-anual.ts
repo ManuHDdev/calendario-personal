@@ -40,6 +40,7 @@ export class CalendarioAnual implements OnInit {
   tooltipTop = '0px';
   tooltipLeft = '0px';
   private tooltipRaton = false; // true cuando el ratón está sobre el tooltip
+  tooltipPinned = false;        // true cuando se abrió por clic (no hover)
 
   // Modo creación con selección de rango
   modoCreacion = signal(false);
@@ -120,7 +121,7 @@ export class CalendarioAnual implements OnInit {
   toggleModoCreacion(): void {
     this.seleccionInicio = null;
     this.hoveredDate = null;
-    this.cerrarTooltip();
+    this.cerrarTooltipForzado();
   }
 
   esSeleccionInicio(fecha: Date): boolean {
@@ -152,7 +153,7 @@ export class CalendarioAnual implements OnInit {
 
   // ── Eventos de celda ─────────────────────────────────────────────────────
 
-  onDiaClick(fecha: Date): void {
+  onDiaClick(fecha: Date, event?: MouseEvent): void {
     if (this.modoCreacion()) {
       if (!this.seleccionInicio) {
         // Primer clic: marcar inicio
@@ -171,8 +172,19 @@ export class CalendarioAnual implements OnInit {
     }
     // Comportamiento normal
     const eventos = this.getEventosDia(fecha);
-    if (eventos.length > 0) {
+    if (eventos.length === 1) {
       this.router.navigate(['/eventos', eventos[0].id]);
+    } else if (eventos.length > 1) {
+      // Varios eventos: abrir panel pinned
+      const target = event?.currentTarget as HTMLElement | undefined;
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        this.tooltipTop = `${rect.bottom + window.scrollY + 4}px`;
+        this.tooltipLeft = `${rect.left + window.scrollX}px`;
+      }
+      this.tooltipFecha = fecha;
+      this.tooltipEventos = eventos;
+      this.tooltipPinned = true;
     }
   }
 
@@ -204,7 +216,14 @@ export class CalendarioAnual implements OnInit {
   }
 
   cerrarTooltip(): void {
-    if (this.tooltipRaton) return;
+    if (this.tooltipRaton || this.tooltipPinned) return;
+    this.tooltipEventos = null;
+    this.tooltipFecha = null;
+  }
+
+  cerrarTooltipForzado(): void {
+    this.tooltipPinned = false;
+    this.tooltipRaton = false;
     this.tooltipEventos = null;
     this.tooltipFecha = null;
   }
@@ -232,8 +251,24 @@ export class CalendarioAnual implements OnInit {
   }
 
   verDetalle(id: number): void {
-    this.cerrarTooltip();
+    this.cerrarTooltipForzado();
     this.router.navigate(['/eventos', id]);
+  }
+
+  editarEvento(id: number): void {
+    this.cerrarTooltipForzado();
+    this.router.navigate(['/eventos', id, 'editar']);
+  }
+
+  eliminarEvento(id: number): void {
+    if (!window.confirm('¿Eliminar este evento?')) return;
+    this.eventoService.deleteEvento(id).subscribe({
+      next: () => {
+        this.cerrarTooltipForzado();
+        this.cargarEventos();
+      },
+      error: () => { /* silent */ }
+    });
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────

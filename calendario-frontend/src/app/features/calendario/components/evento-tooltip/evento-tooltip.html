@@ -6,9 +6,13 @@
 >
   <div class="tooltip-fecha">{{ getFechaFormateada() }}</div>
   @for (ev of eventos; track ev.id) {
-    <div class="tooltip-evento" (click)="onVerDetalle(ev.id, $event)">
+    <div class="tooltip-evento">
       <span class="barra-color" [style.background]="ev.color"></span>
-      <span class="evento-titulo">{{ ev.titulo }}</span>
+      <span class="evento-titulo" (click)="onVerDetalle(ev.id, $event)">{{ ev.titulo }}</span>
+      <div class="evento-acciones">
+        <button class="accion-btn accion-btn--editar" title="Editar" (click)="onEditar(ev.id, $event)">✎</button>
+        <button class="accion-btn accion-btn--eliminar" title="Eliminar" (click)="onEliminar(ev.id, $event)">✕</button>
+      </div>
     </div>
   }
 </div>

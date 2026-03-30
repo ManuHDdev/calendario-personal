@@ -30,14 +30,15 @@
 
 .tooltip-evento {
   display: flex;
-  align-items: stretch;
-  padding: 8px 16px;
+  align-items: center;
+  padding: 6px 10px 6px 16px;
   gap: 10px;
-  cursor: pointer;
   transition: background var(--transition);
 
   &:hover {
     background: rgba(0, 0, 0, 0.03);
+
+    .evento-acciones { opacity: 1; }
   }
 }
 
@@ -56,4 +57,37 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  cursor: pointer;
+}
+
+.evento-acciones {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition);
+  flex-shrink: 0;
+}
+
+.accion-btn {
+  all: unset;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  transition: background var(--transition), color var(--transition);
+
+  &--editar {
+    color: var(--color-text-secondary);
+    &:hover { background: rgba(0,113,227,0.1); color: var(--color-accent); }
+  }
+
+  &--eliminar {
+    color: var(--color-text-secondary);
+    &:hover { background: rgba(255,59,48,0.1); color: var(--color-danger); }
+  }
 }

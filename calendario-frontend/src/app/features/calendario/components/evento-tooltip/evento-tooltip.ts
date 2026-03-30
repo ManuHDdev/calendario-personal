@@ -14,6 +14,8 @@ export class EventoTooltip {
   @Input() fecha: Date = new Date();
   @Output() cerrar = new EventEmitter<void>();
   @Output() verDetalle = new EventEmitter<number>();
+  @Output() editar = new EventEmitter<number>();
+  @Output() eliminar = new EventEmitter<number>();
 
   private dentro = false;
 
@@ -41,5 +43,15 @@ export class EventoTooltip {
   onVerDetalle(id: number, event: MouseEvent): void {
     event.stopPropagation();
     this.verDetalle.emit(id);
+  }
+
+  onEditar(id: number, event: MouseEvent): void {
+    event.stopPropagation();
+    this.editar.emit(id);
+  }
+
+  onEliminar(id: number, event: MouseEvent): void {
+    event.stopPropagation();
+    this.eliminar.emit(id);
   }
 }

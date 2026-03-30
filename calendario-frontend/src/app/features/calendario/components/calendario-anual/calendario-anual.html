@@ -57,7 +57,7 @@
               [class.dia-seleccion-inicio]="celda.fecha !== null && esSeleccionInicio(celda.fecha)"
               [class.dia-rango]="celda.fecha !== null && esEnRango(celda.fecha)"
               [class.dia-seleccion-fin]="celda.fecha !== null && esSeleccionFin(celda.fecha)"
-              (click)="celda.fecha && onDiaClick(celda.fecha)"
+              (click)="celda.fecha && onDiaClick(celda.fecha, $event)"
               (mouseenter)="celda.fecha && onDiaMouseEnter($event, celda.fecha)"
               (mouseleave)="celda.fecha && cerrarTooltip(); onDiaMouseLeave()"
             >
@@ -93,8 +93,10 @@
       <app-evento-tooltip
         [eventos]="tooltipEventos"
         [fecha]="tooltipFecha"
-        (cerrar)="cerrarTooltip()"
+        (cerrar)="cerrarTooltipForzado()"
         (verDetalle)="verDetalle($event)"
+        (editar)="editarEvento($event)"
+        (eliminar)="eliminarEvento($event)"
       />
     </div>
   }
