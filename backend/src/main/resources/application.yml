@@ -39,3 +39,5 @@ app:
   uploads:
     dir: ${UPLOADS_DIR:./uploads}
     base-url: ${UPLOADS_BASE_URL:http://localhost:8081/uploads}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}

@@ -3,14 +3,29 @@
     <button class="btn-volver" type="button" (click)="volver()">← Volver</button>
     <h1 class="form-titulo">{{ modoEdicion() ? 'Editar evento' : 'Nuevo evento' }}</h1>
 
+    <!-- Error de API -->
+    @if (errorApi()) {
+      <div class="error-banner" role="alert">
+        <span class="error-banner__icono">⚠</span>
+        <span class="error-banner__texto" style="white-space: pre-line">{{ errorApi() }}</span>
+        <button type="button" class="error-banner__cerrar" (click)="errorApi.set(null)" aria-label="Cerrar">×</button>
+      </div>
+    }
+
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
 
       <!-- Título -->
       <div class="campo-grupo">
         <label class="campo-label">Título *</label>
-        <input class="campo-input" formControlName="titulo" type="text" placeholder="Nombre del evento" />
-        @if (form.get('titulo')?.invalid && form.get('titulo')?.touched) {
-          <span class="campo-error">El título es obligatorio (máx. 150 caracteres)</span>
+        <input class="campo-input"
+               [class.campo-input--error]="form.get('titulo')?.invalid && form.get('titulo')?.touched"
+               formControlName="titulo" type="text" placeholder="Nombre del evento" />
+        @if (form.get('titulo')?.touched) {
+          @if (form.get('titulo')?.hasError('required')) {
+            <span class="campo-error">El título es obligatorio</span>
+          } @else if (form.get('titulo')?.hasError('maxlength')) {
+            <span class="campo-error">El título no puede superar los 150 caracteres</span>
+          }
         }
       </div>
 
@@ -18,18 +33,22 @@
       <div class="campo-fila">
         <div class="campo-grupo">
           <label class="campo-label">Fecha inicio *</label>
-          <input class="campo-input" formControlName="fechaInicio" type="date" />
+          <input class="campo-input"
+                 [class.campo-input--error]="form.get('fechaInicio')?.invalid && form.get('fechaInicio')?.touched"
+                 formControlName="fechaInicio" type="date" />
           @if (form.get('fechaInicio')?.invalid && form.get('fechaInicio')?.touched) {
             <span class="campo-error">La fecha de inicio es obligatoria</span>
           }
         </div>
         <div class="campo-grupo">
           <label class="campo-label">Fecha fin</label>
-          <input class="campo-input" formControlName="fechaFin" type="date" />
+          <input class="campo-input"
+                 [class.campo-input--error]="form.hasError('fechaFinInvalida') && form.get('fechaFin')?.touched"
+                 formControlName="fechaFin" type="date" />
         </div>
       </div>
-      @if (form.hasError('fechaFinInvalida')) {
-        <span class="campo-error">La fecha fin no puede ser anterior a la fecha de inicio</span>
+      @if (form.hasError('fechaFinInvalida') && form.get('fechaFin')?.touched) {
+        <span class="campo-error">La fecha de fin no puede ser anterior a la de inicio</span>
       }
 
       <!-- Horas -->
@@ -112,12 +131,16 @@
       }
 
       <!-- Acciones -->
-      <button class="btn-guardar" type="submit" [disabled]="form.invalid || cargando()">
+      <button class="btn-guardar" type="submit" [disabled]="cargando()"
+              [title]="form.invalid ? 'Completa los campos obligatorios para continuar' : ''">
         @if (cargando()) {
           <span class="spinner-inline"></span>
         }
         {{ cargando() ? 'Guardando...' : 'Guardar' }}
       </button>
+      @if (form.invalid && form.touched) {
+        <p class="form-hint-error">Revisa los campos marcados en rojo antes de guardar</p>
+      }
 
       <button class="btn-cancelar" type="button" (click)="volver()">Cancelar</button>
     </form>

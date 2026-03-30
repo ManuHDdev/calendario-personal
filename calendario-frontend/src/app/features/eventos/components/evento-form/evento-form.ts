@@ -43,8 +43,20 @@ export class EventoForm implements OnInit {
   modoEdicion = signal(false);
   cargando = signal(false);
   subiendoImagen = signal(false);
+  errorApi = signal<string | null>(null);
   eventoId: number | null = null;
   imagenes = signal<ImagenEvento[]>([]);
+
+  private apiError(err: any): string {
+    if (err?.status === 0) return 'Sin conexión con el servidor. Comprueba tu red e inténtalo de nuevo.';
+    if (err?.status === 403) return 'No tienes permiso para realizar esta acción. Vuelve a iniciar sesión.';
+    if (err?.status === 401) return 'Tu sesión ha expirado. Recarga la página para volver a entrar.';
+    if (err?.status === 400 && err?.error?.violations?.length) {
+      return err.error.violations.map((v: any) => `• ${v.message}`).join('\n');
+    }
+    if (err?.error?.message) return err.error.message;
+    return 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
+  }
 
   readonly COLORES = [
     '#0071e3','#34c759','#ff9500','#ff3b30','#af52de',
@@ -89,8 +101,8 @@ export class EventoForm implements OnInit {
           this.imagenes.set(ev.imagenes ?? []);
           this.cargando.set(false);
         },
-        error: () => {
-          this.snackBar.open('Error al cargar el evento', 'Cerrar', { duration: 3000 });
+        error: (err) => {
+          this.errorApi.set(this.apiError(err));
           this.cargando.set(false);
         }
       });
@@ -111,7 +123,9 @@ export class EventoForm implements OnInit {
   }
 
   onSubmit(): void {
+    this.form.markAllAsTouched();
     if (this.form.invalid) return;
+    this.errorApi.set(null);
     this.cargando.set(true);
 
     const v = this.form.value;
@@ -132,7 +146,7 @@ export class EventoForm implements OnInit {
           this.router.navigate(['/eventos', ev.id]);
         },
         error: (err) => {
-          this.snackBar.open(err?.error?.message ?? 'Error al actualizar', 'Cerrar', { duration: 4000 });
+          this.errorApi.set(this.apiError(err));
           this.cargando.set(false);
         }
       });
@@ -143,7 +157,7 @@ export class EventoForm implements OnInit {
           this.router.navigate(['/eventos', ev.id, 'editar']);
         },
         error: (err) => {
-          this.snackBar.open(err?.error?.message ?? 'Error al crear', 'Cerrar', { duration: 4000 });
+          this.errorApi.set(this.apiError(err));
           this.cargando.set(false);
         }
       });
