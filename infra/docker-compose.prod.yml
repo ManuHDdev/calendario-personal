@@ -37,7 +37,7 @@ services:
 
   # ─── Keycloak ───────────────────────────────────────────────────────────────
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0
+    image: quay.io/keycloak/keycloak:26.1
     container_name: calendario-keycloak
     restart: unless-stopped
     networks:
@@ -52,11 +52,9 @@ services:
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KC_HTTP_ENABLED: "true"
       KC_HTTP_RELATIVE_PATH: /keycloak
-      KC_HOSTNAME: https://elbunkerdelingeniero.duckdns.org
+      KC_HOSTNAME: elbunkerdelingeniero.duckdns.org
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME_STRICT: "false"
-      KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_HTTP_PORT: "8180"
     volumes:
       - ./keycloak/realm-export.prod.json:/opt/keycloak/data/import/realm-export.json:ro
     depends_on:
@@ -78,7 +76,7 @@ services:
       # El issuer coincide con la claim "iss" del JWT (URL pública)
       KEYCLOAK_ISSUER_URI: https://elbunkerdelingeniero.duckdns.org/keycloak/realms/calendario
       # JWK Set via red interna para no depender de resolución DNS externa al arrancar
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8180/keycloak/realms/calendario/protocol/openid-connect/certs
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/keycloak/realms/calendario/protocol/openid-connect/certs
       UPLOADS_DIR: /app/uploads
       UPLOADS_BASE_URL: https://elbunkerdelingeniero.duckdns.org/uploads
     volumes:
