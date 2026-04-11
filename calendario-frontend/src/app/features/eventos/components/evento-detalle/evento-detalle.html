@@ -46,23 +46,30 @@
         @if (ev.imagenes.length > 0) {
           <div class="galeria">
             @for (img of ev.imagenes; track img.id) {
-              <div class="galeria-item" [class.galeria-item--pdf]="img.tipo === 'pdf'">
+              <div class="galeria-item galeria-item--ancho">
                 @if (img.tipo === 'pdf') {
-                  <div class="pdf-visor">
-                    <div class="pdf-visor__cabecera">
-                      <span class="pdf-visor__icono">PDF</span>
-                      <span class="pdf-visor__nombre">{{ img.nombreFichero }}</span>
-                      <a class="pdf-visor__abrir" [href]="img.url" target="_blank">Abrir en pestaña</a>
+                  <div class="archivo-visor">
+                    <div class="archivo-visor__cabecera">
+                      <span class="archivo-visor__badge archivo-visor__badge--pdf">PDF</span>
+                      <span class="archivo-visor__nombre">{{ img.nombreFichero }}</span>
+                      <a class="archivo-visor__abrir" [href]="img.url" target="_blank">Abrir en pestaña</a>
                     </div>
                     <iframe
-                      class="pdf-visor__frame"
+                      class="archivo-visor__frame"
                       [src]="img.url + '#toolbar=0&navpanes=0&view=FitH' | safeUrl"
                       type="application/pdf"
                       loading="lazy"
                     ></iframe>
                   </div>
                 } @else {
-                  <img [src]="img.url" [alt]="img.nombreFichero" />
+                  <div class="archivo-visor">
+                    <div class="archivo-visor__cabecera">
+                      <span class="archivo-visor__badge archivo-visor__badge--img">IMG</span>
+                      <span class="archivo-visor__nombre">{{ img.nombreFichero }}</span>
+                      <a class="archivo-visor__abrir" [href]="img.url" target="_blank">Abrir en pestaña</a>
+                    </div>
+                    <img class="archivo-visor__imagen" [src]="img.url" [alt]="img.nombreFichero" loading="lazy" />
+                  </div>
                 }
                 <button class="btn-eliminar-img" type="button" (click)="eliminarImagen(img.id)"
                         aria-label="Eliminar archivo">×</button>
