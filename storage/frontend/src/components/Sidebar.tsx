@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createFolder, deleteFolder, renameFolder } from '../services/api';
+import keycloak from '../services/keycloak';
 import './Sidebar.css';
 
 interface Props {
@@ -39,6 +40,8 @@ function buildTree(paths: string[]): FolderNode[] {
 }
 
 export default function Sidebar({ folders, activeFolder, onSelectFolder, onFoldersChange, isOpen, onClose }: Props) {
+  const username = (keycloak.tokenParsed as { preferred_username?: string })?.preferred_username ?? '';
+  const isAdmin = ((keycloak.tokenParsed as { realm_access?: { roles?: string[] } })?.realm_access?.roles ?? []).includes('admin');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
@@ -324,6 +327,31 @@ export default function Sidebar({ folders, activeFolder, onSelectFolder, onFolde
             Nueva carpeta
           </button>
         )}
+
+        <div className="sidebar-user">
+          <div className="sidebar-user-info">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+            <span className="sidebar-username">{username}</span>
+          </div>
+          <div className="sidebar-user-actions">
+            {isAdmin && (
+              <a href="/panel/" className="sidebar-admin-btn" title="Panel de administración">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </a>
+            )}
+            <button className="sidebar-logout-btn" title="Cerrar sesión" onClick={() => keycloak.logout()}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </aside>
   );

@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fs from 'fs';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, hasAnyRole } from '../middleware/auth';
 import {
   getAllFiles,
   getFolders,
@@ -27,6 +27,13 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
   ensureBasePath();
 
   app.addHook('preHandler', authMiddleware);
+
+  // Verificar que el usuario tenga rol familia o admin
+  app.addHook('preHandler', async (request, reply) => {
+    if (!hasAnyRole(request.user, ['admin', 'familia'])) {
+      reply.code(403).send({ error: 'Forbidden', message: 'Insufficient role' });
+    }
+  });
 
   // ── GET /storage/api/files?folder= ────────────────────────────────────────
   app.get(
