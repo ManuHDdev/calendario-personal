@@ -122,11 +122,15 @@ jobs:
             mkdir -p /home/manu/storage
             cd /home/manu/storage
 
+            # Parar y eliminar contenedores existentes (gestión manual previa)
+            docker stop storage-frontend storage-backend 2>/dev/null || true
+            docker rm   storage-frontend storage-backend 2>/dev/null || true
+
             # Descargar las últimas imágenes
             docker compose -f docker-compose.prod.yml pull
 
             # Iniciar / recrear contenedores con las nuevas imágenes
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --force-recreate
 
             # Verificar estado
             docker compose -f docker-compose.prod.yml ps
