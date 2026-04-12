@@ -53,6 +53,10 @@ jobs:
         working-directory: storage/frontend
         run: npm ci && npm run build
 
+      - name: Set lowercase owner
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Log in to GHCR
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: docker/login-action@v3
@@ -68,8 +72,8 @@ jobs:
           context: ./storage/backend
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/storage-backend:latest
-            ghcr.io/${{ github.repository_owner }}/storage-backend:${{ github.sha }}
+            ghcr.io/${{ env.OWNER }}/storage-backend:latest
+            ghcr.io/${{ env.OWNER }}/storage-backend:${{ github.sha }}
 
       - name: Build & push storage-frontend
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -78,8 +82,8 @@ jobs:
           context: ./storage/frontend
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/storage-frontend:latest
-            ghcr.io/${{ github.repository_owner }}/storage-frontend:${{ github.sha }}
+            ghcr.io/${{ env.OWNER }}/storage-frontend:latest
+            ghcr.io/${{ env.OWNER }}/storage-frontend:${{ github.sha }}
 
   # ─── Deploy al VPS (sólo en main, tras publicar imágenes) ───────────────────
   deploy:
