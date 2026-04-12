@@ -7,6 +7,8 @@ interface Props {
   activeFolder: string | null;
   onSelectFolder: (folder: string | null) => void;
   onFoldersChange: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 interface FolderNode {
@@ -36,7 +38,7 @@ function buildTree(paths: string[]): FolderNode[] {
   return roots;
 }
 
-export default function Sidebar({ folders, activeFolder, onSelectFolder, onFoldersChange }: Props) {
+export default function Sidebar({ folders, activeFolder, onSelectFolder, onFoldersChange, isOpen, onClose }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
@@ -204,7 +206,7 @@ export default function Sidebar({ folders, activeFolder, onSelectFolder, onFolde
           ) : (
             <button
               className="folder-label"
-              onClick={() => { onSelectFolder(node.path); if (hasChildren) setExpanded((p) => new Set(p).add(node.path)); }}
+              onClick={() => { onSelectFolder(node.path); onClose?.(); if (hasChildren) setExpanded((p) => new Set(p).add(node.path)); }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24"
                 fill={isActive ? 'var(--accent)' : 'none'}
@@ -276,7 +278,7 @@ export default function Sidebar({ folders, activeFolder, onSelectFolder, onFolde
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${isOpen ? ' sidebar--open' : ''}`}>
       <div className="sidebar-header">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.8">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -287,7 +289,7 @@ export default function Sidebar({ folders, activeFolder, onSelectFolder, onFolde
       <nav className="sidebar-nav">
         <button
           className={`sidebar-all ${activeFolder === null ? 'active' : ''}`}
-          onClick={() => onSelectFolder(null)}
+          onClick={() => { onSelectFolder(null); onClose?.(); }}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
             stroke={activeFolder === null ? 'var(--accent)' : 'var(--text-secondary)'} strokeWidth="1.8">

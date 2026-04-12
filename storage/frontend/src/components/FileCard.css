@@ -106,6 +106,23 @@
   color: var(--danger);
 }
 
+/* En dispositivos táctiles los botones de acción siempre visibles */
+@media (hover: none) {
+  .card-overlay-actions {
+    opacity: 1;
+  }
+  .file-card:hover {
+    box-shadow: var(--shadow-sm);
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .card-thumb {
+    height: 110px;
+  }
+}
+
 /* Info inferior */
 .card-info {
   padding: 10px 12px;

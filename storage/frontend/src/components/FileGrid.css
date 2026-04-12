@@ -6,6 +6,14 @@
   align-content: start;
 }
 
+@media (max-width: 640px) {
+  .file-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+}
+
 .grid-empty {
   display: flex;
   flex-direction: column;

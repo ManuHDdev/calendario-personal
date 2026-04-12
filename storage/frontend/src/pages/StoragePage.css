@@ -87,3 +87,75 @@
   flex: 1;
   overflow-y: auto;
 }
+
+/* ── Hamburger (sólo móvil) ─────────────────────────────────────── */
+.storage-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: background 150ms ease, color 150ms ease;
+}
+.sidebar-toggle:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+/* Backdrop del sidebar en móvil */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 99;
+  backdrop-filter: blur(1px);
+  animation: fadeIn 200ms ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .sidebar-toggle {
+    display: flex;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+  }
+
+  .storage-header {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  .storage-section-title {
+    font-size: 17px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .storage-header-actions {
+    gap: 8px;
+  }
+
+  .search-input {
+    width: 120px;
+  }
+
+  .search-results-label {
+    padding: 8px 16px 0;
+  }
+}
