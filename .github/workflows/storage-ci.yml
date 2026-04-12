@@ -4,11 +4,13 @@ on:
   push:
     paths:
       - 'storage/**'
+      - '.github/workflows/storage-ci.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'storage/**'
+  workflow_dispatch:
 
 permissions:
   contents: read

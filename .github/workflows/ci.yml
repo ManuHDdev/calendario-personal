@@ -189,13 +189,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [backend, frontend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    continue-on-error: true
 
     steps:
       - name: Extraer clave Jira del nombre de rama
         id: jira
         run: |
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
-          ISSUE_KEY=$(echo "$COMMIT_MSG" | grep -oP "CAL-\d+" | head -1)
+          ISSUE_KEY=$(echo '${{ github.event.head_commit.message }}' | grep -oP 'CAL-\d+' | head -1)
           echo "issue_key=$ISSUE_KEY" >> $GITHUB_OUTPUT
           echo "Detectado: $ISSUE_KEY"
 
