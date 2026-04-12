@@ -1,0 +1,85 @@
+.upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease, transform 100ms ease;
+  white-space: nowrap;
+}
+
+.upload-btn:hover {
+  background: var(--accent-hover);
+}
+
+.upload-btn:active {
+  transform: scale(0.97);
+}
+
+.drop-zone-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 113, 227, 0.08);
+  border: 2px dashed var(--accent);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+  animation: fadeIn 150ms ease;
+}
+
+.drop-zone-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.upload-progress-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 16px 20px;
+  min-width: 280px;
+  max-width: 360px;
+  z-index: 150;
+  border: 1px solid var(--border);
+  animation: slideUp 200ms ease;
+}
+
+.upload-error {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #fff1f0;
+  color: var(--danger);
+  border: 1px solid rgba(255, 59, 48, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  z-index: 150;
+  max-width: 320px;
+  animation: slideUp 200ms ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0 }
+  to   { opacity: 1 }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px) }
+  to   { opacity: 1; transform: translateY(0) }
+}

@@ -1,0 +1,32 @@
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  storage-backend:
+    image: ghcr.io/manuhddev/storage-backend:latest
+    container_name: storage-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+    environment:
+      STORAGE_PATH: /mnt/storage-ssd
+      KEYCLOAK_CERTS_URL: http://calendario-keycloak:8080/keycloak/realms/calendario/protocol/openid-connect/certs
+      CORS_ORIGIN: https://elbunkerdelingeniero.duckdns.org
+    volumes:
+      - /mnt/storage-ssd:/mnt/storage-ssd
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/storage/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  storage-frontend:
+    image: ghcr.io/manuhddev/storage-frontend:latest
+    container_name: storage-frontend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+    depends_on:
+      - storage-backend

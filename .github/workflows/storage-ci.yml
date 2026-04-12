@@ -1,0 +1,129 @@
+name: CI/CD Storage
+
+on:
+  push:
+    paths:
+      - 'storage/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'storage/**'
+
+permissions:
+  contents: read
+  packages: write   # necesario para publicar en GHCR
+
+jobs:
+  # ─── Build & Push ────────────────────────────────────────────────────────────
+  build-and-push:
+    name: Storage · Build & Push to GHCR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache backend dependencies
+        uses: actions/cache@v4
+        with:
+          path: storage/backend/node_modules
+          key: ${{ runner.os }}-storage-backend-${{ hashFiles('storage/backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-storage-backend-
+
+      - name: Cache frontend dependencies
+        uses: actions/cache@v4
+        with:
+          path: storage/frontend/node_modules
+          key: ${{ runner.os }}-storage-frontend-${{ hashFiles('storage/frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-storage-frontend-
+
+      - name: Build backend
+        working-directory: storage/backend
+        run: npm ci && npm run build
+
+      - name: Build frontend
+        working-directory: storage/frontend
+        run: npm ci && npm run build
+
+      - name: Log in to GHCR
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push storage-backend
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./storage/backend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/storage-backend:latest
+            ghcr.io/${{ github.repository_owner }}/storage-backend:${{ github.sha }}
+
+      - name: Build & push storage-frontend
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./storage/frontend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/storage-frontend:latest
+            ghcr.io/${{ github.repository_owner }}/storage-frontend:${{ github.sha }}
+
+  # ─── Deploy al VPS (sólo en main, tras publicar imágenes) ───────────────────
+  deploy:
+    name: Deploy · Storage VPS
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar docker-compose al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "storage/infra/docker-compose.prod.yml"
+          target: /home/manu/storage
+          strip_components: 2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            mkdir -p /home/manu/storage
+            cd /home/manu/storage
+
+            # Descargar las últimas imágenes
+            docker compose -f docker-compose.prod.yml pull
+
+            # Iniciar / recrear contenedores con las nuevas imágenes
+            docker compose -f docker-compose.prod.yml up -d
+
+            # Verificar estado
+            docker compose -f docker-compose.prod.yml ps
+
+            # Limpiar imágenes antiguas
+            docker image prune -f
