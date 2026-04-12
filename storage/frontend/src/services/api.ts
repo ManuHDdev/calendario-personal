@@ -10,7 +10,10 @@ function authHeaders(): Record<string, string> {
 }
 
 export function encodePathParam(relativePath: string): string {
-  return btoa(relativePath).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  // Codificar a UTF-8 antes de base64url para soportar caracteres no-ASCII
+  const bytes = new TextEncoder().encode(relativePath);
+  const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join('');
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 export async function getFiles(folder?: string): Promise<FileItem[]> {
