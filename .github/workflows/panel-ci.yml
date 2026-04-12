@@ -122,8 +122,8 @@ jobs:
             mkdir -p /home/manu/panel
             cd /home/manu/panel
 
-            # Cargar variable de entorno con la contraseña de Keycloak admin
-            export KEYCLOAK_ADMIN_PASSWORD="${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}"
+            # Escribir .env con las variables de entorno necesarias
+            echo "KEYCLOAK_ADMIN_PASSWORD=${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}" > .env
 
             # Parar y eliminar contenedores existentes
             docker stop panel-frontend panel-backend 2>/dev/null || true
