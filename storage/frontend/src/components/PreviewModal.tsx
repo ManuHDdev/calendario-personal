@@ -25,15 +25,28 @@ export default function PreviewModal({ file, onClose }: Props) {
     downloadFile(file.relativePath, file.name).catch(console.error);
   };
 
+  const BROWSER_VIDEO = new Set(['video/mp4', 'video/webm', 'video/ogg']);
+
   const renderContent = () => {
     if (file.mimeType.startsWith('image/')) {
       return <img src={url} alt={file.name} className="preview-image" />;
     }
     if (file.mimeType.startsWith('video/')) {
+      if (!BROWSER_VIDEO.has(file.mimeType)) {
+        const ext = file.name.split('.').pop()?.toUpperCase() ?? 'vídeo';
+        return (
+          <div className="preview-unsupported">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+            <p>El formato <strong>.{ext.toLowerCase()}</strong> no es reproducible en el navegador.</p>
+            <p className="preview-unsupported-hint">Descarga el archivo para verlo con un reproductor local, o sube el vídeo en formato <strong>MP4</strong>.</p>
+          </div>
+        );
+      }
       return (
         <video controls className="preview-video" key={file.id}>
           <source src={url} type={file.mimeType} />
-          Tu navegador no soporta la reproducción de vídeo.
         </video>
       );
     }
@@ -42,7 +55,10 @@ export default function PreviewModal({ file, onClose }: Props) {
     }
     return (
       <div className="preview-unsupported">
-        <span>Vista previa no disponible</span>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <p>Vista previa no disponible para este formato.</p>
       </div>
     );
   };
