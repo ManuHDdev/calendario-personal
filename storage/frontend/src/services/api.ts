@@ -155,3 +155,9 @@ export function previewUrl(relativePath: string): string {
   const token = keycloak.token ?? '';
   return `${BASE}/files/${encoded}/preview?token=${encodeURIComponent(token)}`;
 }
+
+export function thumbnailUrl(relativePath: string): string {
+  const encoded = encodePathParam(relativePath);
+  const token = keycloak.token ?? '';
+  return `${BASE}/files/${encoded}/thumbnail?token=${encodeURIComponent(token)}`;
+}

@@ -1,5 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
 import { authMiddleware, hasAnyRole } from '../middleware/auth';
 import {
   getAllFiles,
@@ -144,6 +146,48 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
         reply.header('Content-Disposition', 'inline');
         reply.header('Cache-Control', 'private, max-age=3600');
         return reply.send(fs.createReadStream(absolute));
+      } catch (err) {
+        return reply.code(404).send({ error: err instanceof Error ? err.message : 'Not found' });
+      }
+    },
+  );
+
+  // ── GET /storage/api/files/:encodedPath/thumbnail ────────────────────────
+  app.get(
+    '/storage/api/files/:encodedPath/thumbnail',
+    async (
+      request: FastifyRequest<{ Params: { encodedPath: string } }>,
+      reply: FastifyReply,
+    ) => {
+      let relativePath: string;
+      try { relativePath = decodePathParam(request.params.encodedPath); }
+      catch { return reply.code(400).send({ error: 'Invalid path encoding' }); }
+
+      try {
+        const { absolute, entry } = resolveFile(relativePath);
+
+        if (!entry.mimeType.startsWith('image/')) {
+          // No es imagen: devolver el archivo original
+          reply.header('Content-Type', entry.mimeType);
+          reply.header('Content-Length', entry.size);
+          reply.header('Cache-Control', 'private, max-age=604800');
+          return reply.send(fs.createReadStream(absolute));
+        }
+
+        const ext = path.extname(entry.name).toLowerCase();
+        const isGif = ext === '.gif';
+
+        const transformer = isGif
+          ? sharp(absolute, { animated: false }).resize(400, 400, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80 })
+          : sharp(absolute).resize(400, 400, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80 });
+
+        const buffer = await transformer.toBuffer();
+
+        reply.header('Content-Type', 'image/jpeg');
+        reply.header('Content-Length', buffer.length);
+        reply.header('Cache-Control', 'private, max-age=604800');
+        reply.header('Content-Disposition', 'inline');
+        return reply.send(buffer);
       } catch (err) {
         return reply.code(404).send({ error: err instanceof Error ? err.message : 'Not found' });
       }

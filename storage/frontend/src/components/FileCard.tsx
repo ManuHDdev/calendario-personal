@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FileItem } from '../types';
-import { previewUrl, downloadFile } from '../services/api';
+import { thumbnailUrl, downloadFile } from '../services/api';
 import { formatSize, isImage, isVideo, isPdf } from '../hooks/useFileUtils';
 import './FileCard.css';
 
@@ -35,7 +35,7 @@ function IconPdf() {
 
 export default function FileCard({ file, onDelete, onMove, onClick }: Props) {
   const [imgError, setImgError] = useState(false);
-  const url = previewUrl(file.relativePath);
+  const url = thumbnailUrl(file.relativePath);
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -59,6 +59,8 @@ export default function FileCard({ file, onDelete, onMove, onClick }: Props) {
           src={url}
           alt={file.name}
           className="card-thumb-img"
+          loading="lazy"
+          decoding="async"
           onError={() => setImgError(true)}
         />
       );
