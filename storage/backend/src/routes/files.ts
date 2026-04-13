@@ -141,6 +141,21 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
           return reply.send(fs.createReadStream(absolute));
         }
 
+        // Convertir HEIC/HEIF a JPEG para compatibilidad con navegadores
+        const needsConversion = ['image/heic', 'image/heif'].includes(entry.mimeType);
+        if (needsConversion) {
+          try {
+            const buffer = await sharp(absolute).jpeg({ quality: 95 }).toBuffer();
+            reply.header('Content-Type', 'image/jpeg');
+            reply.header('Content-Length', buffer.length);
+            reply.header('Content-Disposition', 'inline');
+            reply.header('Cache-Control', 'private, max-age=3600');
+            return reply.send(buffer);
+          } catch {
+            // sharp no puede procesar el HEIC: servir original igualmente
+          }
+        }
+
         reply.header('Content-Type', entry.mimeType);
         reply.header('Content-Length', entry.size);
         reply.header('Content-Disposition', 'inline');
@@ -174,20 +189,26 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
           return reply.send(fs.createReadStream(absolute));
         }
 
-        const ext = path.extname(entry.name).toLowerCase();
-        const isGif = ext === '.gif';
+        try {
+          const ext = path.extname(entry.name).toLowerCase();
+          const transformer = ext === '.gif'
+            ? sharp(absolute, { animated: false }).resize(400, 400, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80 })
+            : sharp(absolute).resize(400, 400, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80 });
 
-        const transformer = isGif
-          ? sharp(absolute, { animated: false }).resize(400, 400, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80 })
-          : sharp(absolute).resize(400, 400, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 80 });
-
-        const buffer = await transformer.toBuffer();
-
-        reply.header('Content-Type', 'image/jpeg');
-        reply.header('Content-Length', buffer.length);
-        reply.header('Cache-Control', 'private, max-age=604800');
-        reply.header('Content-Disposition', 'inline');
-        return reply.send(buffer);
+          const buffer = await transformer.toBuffer();
+          reply.header('Content-Type', 'image/jpeg');
+          reply.header('Content-Length', buffer.length);
+          reply.header('Cache-Control', 'private, max-age=604800');
+          reply.header('Content-Disposition', 'inline');
+          return reply.send(buffer);
+        } catch {
+          // Fallback: servir imagen original si sharp no puede procesarla
+          reply.header('Content-Type', entry.mimeType);
+          reply.header('Content-Length', entry.size);
+          reply.header('Cache-Control', 'private, max-age=604800');
+          reply.header('Content-Disposition', 'inline');
+          return reply.send(fs.createReadStream(absolute));
+        }
       } catch (err) {
         return reply.code(404).send({ error: err instanceof Error ? err.message : 'Not found' });
       }
