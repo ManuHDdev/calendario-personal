@@ -255,8 +255,9 @@ export function AdminPanel({ onClose, onActivarModoPin, onZonaCreada }: AdminPan
       {zonaHorarios && (
         <HorarioPanel
           zona={zonaHorarios}
+          token={token ?? ''}
           onClose={() => setZonaHorarios(null)}
-          onCambio={handleCambioHorario}
+          onSuccess={handleCambioHorario}
         />
       )}
 
