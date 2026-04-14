@@ -79,3 +79,53 @@ src/app/
 
 ## Antes de generar cualquier fichero
 Lee siempre los ficheros existentes de la misma capa para seguir el mismo patrón.
+
+---
+
+## mapacyd — Mapa de Cargas y Descargas
+
+### Ubicación
+Calendario/mapacyd/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/ y storage/)
+- Frontend: React + Vite + TypeScript
+- Base de datos: PostgreSQL 15, tablas: zona_cyd y horario_zona
+- Autenticación: Keycloak 26.1, realm "calendario", JWT stateless
+- Mapa: Leaflet.js instalado vía npm (no CDN)
+- Validaciones: Zod (igual que panel y storage)
+- Sin ORM — queries directas con el cliente pg
+
+### Roles
+- admin → gestión completa (POST/PUT/DELETE zonas y horarios)
+- familia → solo consulta (GET /api/zonas)
+- invitado → sin acceso a mapacyd
+
+### Reglas obligatorias
+- Soft delete en todas las tablas: campo activo (boolean default true) + deleted_at (timestamp nullable)
+- Timestamps automáticos: created_at, updated_at
+- Los listados SIEMPRE filtran por activo = true
+- DELETE HTTP → soft delete (activo=false, deleted_at=now()), nunca borrado físico
+- Validaciones Zod en todos los endpoints que reciben body
+- CORS configurado vía variable CORS_ALLOWED_ORIGINS
+- El frontend NO accede a la BD directamente, todo por API
+
+### Variables de entorno del backend
+- MAPACYD_DB_HOST, MAPACYD_DB_NAME, MAPACYD_DB_USER, MAPACYD_DB_PASSWORD
+- KEYCLOAK_JWKS_URI (mismo que panel y storage)
+- CORS_ALLOWED_ORIGINS
+- PORT (default 3003)
+
+### Red Docker
+La red Docker se llama calendario-net (externa, ya existe). No crearla — unirse a ella.
+
+### Imágenes Docker
+ghcr.io/manuhddev/mapacyd-backend:latest
+ghcr.io/manuhddev/mapacyd-frontend:latest
+
+### Puerto en servidor
+El frontend Docker expone el puerto 3073 en localhost (127.0.0.1:3073:80).
+
+### Instrucción permanente
+Antes de generar cualquier fichero de mapacyd, lee los ficheros equivalentes
+en panel/backend/src/ para seguir el mismo patrón de código y estilo.
