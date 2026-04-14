@@ -1,0 +1,62 @@
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  mapacyd-db:
+    image: postgres:15
+    container_name: mapacyd-db
+    environment:
+      POSTGRES_DB:       ${MAPACYD_DB_NAME}
+      POSTGRES_USER:     ${MAPACYD_DB_USER}
+      POSTGRES_PASSWORD: ${MAPACYD_DB_PASSWORD}
+    volumes:
+      - mapacyd_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MAPACYD_DB_USER} -d ${MAPACYD_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calendario-net
+
+  mapacyd-backend:
+    image: ghcr.io/manuhddev/mapacyd-backend:latest
+    container_name: mapacyd-backend
+    environment:
+      PORT:                 3003
+      MAPACYD_DB_HOST:      mapacyd-db
+      MAPACYD_DB_NAME:      ${MAPACYD_DB_NAME}
+      MAPACYD_DB_USER:      ${MAPACYD_DB_USER}
+      MAPACYD_DB_PASSWORD:  ${MAPACYD_DB_PASSWORD}
+      KEYCLOAK_JWKS_URI:    ${KEYCLOAK_JWKS_URI}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      NODE_ENV:             production
+    depends_on:
+      mapacyd-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3003/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - calendario-net
+
+  mapacyd-frontend:
+    image: ghcr.io/manuhddev/mapacyd-frontend:latest
+    container_name: mapacyd-frontend
+    ports:
+      - "127.0.0.1:3073:80"
+    depends_on:
+      - mapacyd-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+volumes:
+  mapacyd_pgdata:
