@@ -117,8 +117,9 @@ export function AdminPanel({ onClose, onActivarModoPin, onZonaCreada }: AdminPan
     if (!zonaEliminar || !token) return;
     setEliminando(true);
     setErrorEliminar(null);
+    const API = import.meta.env.BASE_URL + 'api';
     try {
-      const res = await fetch(`/api/zonas/${zonaEliminar.id}`, {
+      const res = await fetch(`${API}/zonas/${zonaEliminar.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

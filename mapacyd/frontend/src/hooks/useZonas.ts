@@ -12,10 +12,11 @@ export function useZonas(ciudad?: string) {
     if (!token) return;
     setLoading(true);
     setError(null);
+    const API = import.meta.env.BASE_URL + 'api';
     try {
       const url = ciudad
-        ? `/api/zonas?ciudad=${encodeURIComponent(ciudad)}`
-        : '/api/zonas';
+        ? `${API}/zonas?ciudad=${encodeURIComponent(ciudad)}`
+        : `${API}/zonas`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });

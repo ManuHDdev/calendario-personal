@@ -59,6 +59,7 @@ export function ZonaModal({
     if (!token || !isValid || loading) return;
     setLoading(true);
     setError(null);
+    const API = import.meta.env.BASE_URL + 'api';
     try {
       const body = {
         nombre:      nombre.trim(),
@@ -67,7 +68,7 @@ export function ZonaModal({
         latitud,
         longitud,
       };
-      const url    = modo === 'editar' ? `/api/zonas/${zona!.id}` : '/api/zonas';
+      const url    = modo === 'editar' ? `${API}/zonas/${zona!.id}` : `${API}/zonas`;
       const method = modo === 'editar' ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,

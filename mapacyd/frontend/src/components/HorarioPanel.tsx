@@ -97,11 +97,12 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
     }
     setLoadingForm(true);
     setErrorForm(null);
+    const API = import.meta.env.BASE_URL + 'api';
     try {
       const body = { tipo_dia: tipoDia, hora_inicio: horaInicio, hora_fin: horaFin };
       const url    = editandoId
-        ? `/api/zonas/${zona.id}/horarios/${editandoId}`
-        : `/api/zonas/${zona.id}/horarios`;
+        ? `${API}/zonas/${zona.id}/horarios/${editandoId}`
+        : `${API}/zonas/${zona.id}/horarios`;
       const method = editandoId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -135,9 +136,10 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
     if (!horarioAEliminar) return;
     setEliminando(true);
     setErrorEliminar(null);
+    const API = import.meta.env.BASE_URL + 'api';
     try {
       const res = await fetch(
-        `/api/zonas/${zona.id}/horarios/${horarioAEliminar.id}`,
+        `${API}/zonas/${zona.id}/horarios/${horarioAEliminar.id}`,
         { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
       );
       if (!res.ok && res.status !== 204) {
