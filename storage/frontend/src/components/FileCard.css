@@ -7,6 +7,9 @@
   cursor: pointer;
   transition: box-shadow 200ms ease, transform 200ms ease;
   border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 4 / 5;
 }
 
 .file-card:hover {
@@ -18,10 +21,10 @@
   opacity: 1;
 }
 
-/* Thumbnail */
+/* Thumbnail — ocupa todo el espacio disponible sobre la info */
 .card-thumb {
-  width: 100%;
-  aspect-ratio: 1;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   background: var(--bg-tertiary);
   display: flex;
@@ -124,6 +127,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .card-name {
