@@ -1,0 +1,146 @@
+name: CI/CD Mapacyd
+
+on:
+  push:
+    paths:
+      - 'mapacyd/**'
+      - '.github/workflows/mapacyd-ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'mapacyd/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ─── Build & Push ────────────────────────────────────────────────────────────
+  build-and-push:
+    name: Mapacyd · Build & Push to GHCR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache backend dependencies
+        uses: actions/cache@v4
+        with:
+          path: mapacyd/backend/node_modules
+          key: ${{ runner.os }}-mapacyd-backend-${{ hashFiles('mapacyd/backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-mapacyd-backend-
+
+      - name: Cache frontend dependencies
+        uses: actions/cache@v4
+        with:
+          path: mapacyd/frontend/node_modules
+          key: ${{ runner.os }}-mapacyd-frontend-${{ hashFiles('mapacyd/frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-mapacyd-frontend-
+
+      - name: Build backend
+        working-directory: mapacyd/backend
+        run: npm ci && npm run build
+
+      - name: Build frontend
+        working-directory: mapacyd/frontend
+        run: npm ci && npm run build
+
+      - name: Set lowercase owner
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build & push mapacyd-backend
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mapacyd/backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/mapacyd-backend:latest
+            ghcr.io/${{ env.OWNER }}/mapacyd-backend:${{ github.sha }}
+
+      - name: Build & push mapacyd-frontend
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./mapacyd/frontend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/mapacyd-frontend:latest
+            ghcr.io/${{ env.OWNER }}/mapacyd-frontend:${{ github.sha }}
+
+  # ─── Deploy al VPS (sólo en main, tras publicar imágenes) ───────────────────
+  deploy:
+    name: Deploy · Mapacyd VPS
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar docker-compose al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "mapacyd/infra/docker-compose.prod.yml"
+          target: /home/manu/mapacyd
+          strip_components: 2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            mkdir -p /home/manu/mapacyd
+            cd /home/manu/mapacyd
+
+            # Escribir .env con las variables de entorno necesarias
+            echo "MAPACYD_DB_NAME=${{ secrets.MAPACYD_DB_NAME }}"             > .env
+            echo "MAPACYD_DB_USER=${{ secrets.MAPACYD_DB_USER }}"            >> .env
+            echo "MAPACYD_DB_PASSWORD=${{ secrets.MAPACYD_DB_PASSWORD }}"    >> .env
+            echo "KEYCLOAK_JWKS_URI=${{ secrets.KEYCLOAK_JWKS_URI }}"        >> .env
+            echo "CORS_ALLOWED_ORIGINS=${{ secrets.MAPACYD_CORS_ALLOWED_ORIGINS }}" >> .env
+
+            # Parar y eliminar contenedores existentes
+            docker stop mapacyd-frontend mapacyd-backend mapacyd-db 2>/dev/null || true
+            docker rm   mapacyd-frontend mapacyd-backend mapacyd-db 2>/dev/null || true
+
+            # Descargar las últimas imágenes
+            docker compose -f docker-compose.prod.yml pull
+
+            # Iniciar / recrear contenedores con las nuevas imágenes
+            docker compose -f docker-compose.prod.yml up -d --force-recreate
+
+            # Verificar estado
+            docker compose -f docker-compose.prod.yml ps
+
+            # Limpiar imágenes antiguas
+            docker image prune -f
