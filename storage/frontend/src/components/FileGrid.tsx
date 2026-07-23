@@ -8,9 +8,14 @@ interface Props {
   onDeleteFile: (file: FileItem) => void;
   onMoveFile: (file: FileItem) => void;
   onPreviewFile: (file: FileItem) => void;
+  onShareFile: (file: FileItem) => void;
+  currentUserId: string;
+  isAdmin: boolean;
 }
 
-export default function FileGrid({ files, loading, onDeleteFile, onMoveFile, onPreviewFile }: Props) {
+export default function FileGrid({
+  files, loading, onDeleteFile, onMoveFile, onPreviewFile, onShareFile, currentUserId, isAdmin,
+}: Props) {
   if (loading) {
     return (
       <div className="grid-empty">
@@ -40,6 +45,9 @@ export default function FileGrid({ files, loading, onDeleteFile, onMoveFile, onP
           onDelete={onDeleteFile}
           onMove={onMoveFile}
           onClick={onPreviewFile}
+          onShare={onShareFile}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
         />
       ))}
     </div>

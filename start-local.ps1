@@ -140,7 +140,9 @@ StartBackground "storage-backend   :3001" "storage-backend.log" `
   (Join-Path $SCRIPT_DIR "storage\backend") `
   "npm run dev" `
   @{ PORT="3001"; STORAGE_PATH=$STORAGE_DATA_DIR;
-     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" }
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     KEYCLOAK_BASE_URL="http://localhost:8080"; KEYCLOAK_ADMIN="admin";
+     KEYCLOAK_ADMIN_PASSWORD="admin123" }
 
 # Mapacyd backend
 EnsureDeps (Join-Path $SCRIPT_DIR "mapacyd\backend")

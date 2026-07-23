@@ -22,6 +22,7 @@ dist/
 # Logs y datos locales
 logs/
 storage/storage-data/
+storage/backend/.test-storage/
 
 # OS
 .DS_Store

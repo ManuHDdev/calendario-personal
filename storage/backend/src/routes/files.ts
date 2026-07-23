@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
-import { authMiddleware, hasAnyRole } from '../middleware/auth';
+import { authMiddleware, hasAnyRole, JwtPayload } from '../middleware/auth';
 import {
   getAllFiles,
   getFolders,
@@ -13,8 +13,12 @@ import {
   deleteFolder,
   moveFile,
   resolveFile,
+  canViewFile,
+  canMutateFile,
+  canMutateFolder,
   ensureBasePath,
   ALLOWED_MIME_TYPES,
+  Viewer,
 } from '../services/fileService';
 
 function encodePathParam(relativePath: string): string {
@@ -23,6 +27,14 @@ function encodePathParam(relativePath: string): string {
 
 function decodePathParam(encoded: string): string {
   return Buffer.from(encoded, 'base64url').toString('utf-8');
+}
+
+function toViewer(user: JwtPayload | undefined): Viewer {
+  return { sub: user?.sub ?? '', isAdmin: hasAnyRole(user, ['admin']) };
+}
+
+function toOwner(user: JwtPayload | undefined): { sub: string; username: string } {
+  return { sub: user?.sub ?? '', username: user?.preferred_username ?? user?.sub ?? 'unknown' };
 }
 
 export async function filesRoutes(app: FastifyInstance): Promise<void> {
@@ -45,12 +57,12 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       _reply: FastifyReply,
     ) => {
       const { folder } = request.query;
-      return getAllFiles(folder);
+      return getAllFiles(folder, toViewer(request.user));
     },
   );
 
   // ── GET /storage/api/folders ───────────────────────────────────────────────
-  app.get('/storage/api/folders', async () => getFolders());
+  app.get('/storage/api/folders', async (request) => getFolders(toViewer(request.user)));
 
   // ── POST /storage/api/upload?folder= ──────────────────────────────────────
   app.post(
@@ -70,7 +82,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       }
 
       try {
-        const entry = await saveFile(data.filename, mimeType, data.file, folder);
+        const entry = await saveFile(data.filename, mimeType, data.file, folder, toOwner(request.user));
         return reply.code(201).send(entry);
       } catch (err) {
         return reply.code(500).send({ error: err instanceof Error ? err.message : 'Upload failed' });
@@ -91,6 +103,9 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
 
       try {
         const { absolute, entry } = resolveFile(relativePath);
+        if (!canViewFile(relativePath, toViewer(request.user))) {
+          return reply.code(404).send({ error: 'File not found' });
+        }
         reply.header('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(entry.name)}`);
         reply.header('Content-Type', entry.mimeType);
         reply.header('Content-Length', entry.size);
@@ -114,6 +129,9 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
 
       try {
         const { absolute, entry } = resolveFile(relativePath);
+        if (!canViewFile(relativePath, toViewer(request.user))) {
+          return reply.code(404).send({ error: 'File not found' });
+        }
         const isVideo = entry.mimeType.startsWith('video/');
 
         if (isVideo) {
@@ -180,6 +198,9 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
 
       try {
         const { absolute, entry } = resolveFile(relativePath);
+        if (!canViewFile(relativePath, toViewer(request.user))) {
+          return reply.code(404).send({ error: 'File not found' });
+        }
 
         if (!entry.mimeType.startsWith('image/')) {
           // No es imagen: devolver el archivo original
@@ -230,6 +251,9 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       catch { return reply.code(400).send({ error: 'Invalid path encoding' }); }
 
       const targetFolder = request.body?.folder ?? undefined;
+      if (!canMutateFile(relativePath, toViewer(request.user))) {
+        return reply.code(403).send({ error: 'Forbidden', message: 'Only the owner or admin can move this file' });
+      }
       try {
         const entry = moveFile(relativePath, targetFolder || undefined);
         return reply.send(entry);
@@ -252,6 +276,9 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       try { relativePath = decodePathParam(request.params.encodedPath); }
       catch { return reply.code(400).send({ error: 'Invalid path encoding' }); }
 
+      if (!canMutateFile(relativePath, toViewer(request.user))) {
+        return reply.code(403).send({ error: 'Forbidden', message: 'Only the owner or admin can delete this file' });
+      }
       try {
         deleteFile(relativePath);
         return reply.code(204).send();
@@ -273,7 +300,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       if (!name) return reply.code(400).send({ error: 'Folder name is required' });
 
       try {
-        createFolder(name);
+        createFolder(name, toOwner(request.user));
         return reply.code(201).send({ name });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Create folder failed';
@@ -299,6 +326,9 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       const { newName } = request.body ?? {};
       if (!newName) return reply.code(400).send({ error: 'newName is required' });
 
+      if (!canMutateFolder(folderPath, toViewer(request.user))) {
+        return reply.code(403).send({ error: 'Forbidden', message: 'Only the owner or admin can rename this folder' });
+      }
       try {
         const newPath = renameFolder(folderPath, newName);
         return reply.send({ path: newPath });
@@ -322,6 +352,9 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       try { folderPath = decodePathParam(request.params.encodedPath); }
       catch { return reply.code(400).send({ error: 'Invalid path encoding' }); }
 
+      if (!canMutateFolder(folderPath, toViewer(request.user))) {
+        return reply.code(403).send({ error: 'Forbidden', message: 'Only the owner or admin can delete this folder' });
+      }
       try {
         deleteFolder(folderPath);
         return reply.code(204).send();

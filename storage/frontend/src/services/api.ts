@@ -1,5 +1,5 @@
 import keycloak from './keycloak';
-import type { FileItem } from '../types';
+import type { AppUser, FileItem, FolderEntry, PermissionsResourceType } from '../types';
 
 const BASE = '/storage/api';
 
@@ -24,10 +24,10 @@ export async function getFiles(folder?: string): Promise<FileItem[]> {
   return res.json() as Promise<FileItem[]>;
 }
 
-export async function getFolders(): Promise<string[]> {
+export async function getFolders(): Promise<FolderEntry[]> {
   const res = await fetch(`${BASE}/folders`, { headers: authHeaders() });
   if (!res.ok) throw new Error(`getFolders failed: ${res.status}`);
-  return res.json() as Promise<string[]>;
+  return res.json() as Promise<FolderEntry[]>;
 }
 
 export function uploadFile(
@@ -148,6 +148,49 @@ export async function deleteFolder(folderPath: string): Promise<void> {
     const body = (await res.json()) as { error?: string };
     throw new Error(body.error ?? `Delete folder failed: ${res.status}`);
   }
+}
+
+export async function listUsers(): Promise<AppUser[]> {
+  const res = await fetch(`${BASE}/users`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`listUsers failed: ${res.status}`);
+  return res.json() as Promise<AppUser[]>;
+}
+
+function permissionsUrl(type: PermissionsResourceType, relativePath: string): string {
+  const encoded = encodePathParam(relativePath);
+  const segment = type === 'file' ? 'files' : 'folders';
+  return `${BASE}/${segment}/${encoded}/permissions`;
+}
+
+export async function getPermissions(
+  type: PermissionsResourceType,
+  relativePath: string,
+): Promise<string[]> {
+  const res = await fetch(permissionsUrl(type, relativePath), { headers: authHeaders() });
+  if (!res.ok) {
+    const body = (await res.json()) as { error?: string };
+    throw new Error(body.error ?? `getPermissions failed: ${res.status}`);
+  }
+  const data = (await res.json()) as { userIds: string[] };
+  return data.userIds;
+}
+
+export async function setPermissions(
+  type: PermissionsResourceType,
+  relativePath: string,
+  userIds: string[],
+): Promise<string[]> {
+  const res = await fetch(permissionsUrl(type, relativePath), {
+    method: 'PATCH',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userIds }),
+  });
+  if (!res.ok) {
+    const body = (await res.json()) as { error?: string };
+    throw new Error(body.error ?? `setPermissions failed: ${res.status}`);
+  }
+  const data = (await res.json()) as { userIds: string[] };
+  return data.userIds;
 }
 
 export function previewUrl(relativePath: string): string {

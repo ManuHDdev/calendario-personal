@@ -3,12 +3,16 @@ import { createFolder, deleteFolder, renameFolder } from '../services/api';
 import keycloak from '../services/keycloak';
 import AppLauncher from './AppLauncher';
 import './Sidebar.css';
+import type { FolderEntry } from '../types';
 
 interface Props {
-  folders: string[];
+  folders: FolderEntry[];
   activeFolder: string | null;
   onSelectFolder: (folder: string | null) => void;
   onFoldersChange: () => void;
+  onShareFolder: (folder: FolderEntry) => void;
+  currentUserId: string;
+  isAdmin: boolean;
   isOpen?: boolean;
   onClose?: () => void;
 }
@@ -40,9 +44,11 @@ function buildTree(paths: string[]): FolderNode[] {
   return roots;
 }
 
-export default function Sidebar({ folders, activeFolder, onSelectFolder, onFoldersChange, isOpen, onClose }: Props) {
+export default function Sidebar({
+  folders, activeFolder, onSelectFolder, onFoldersChange, onShareFolder, currentUserId, isAdmin, isOpen, onClose,
+}: Props) {
   const username = (keycloak.tokenParsed as { preferred_username?: string })?.preferred_username ?? '';
-  const isAdmin = ((keycloak.tokenParsed as { realm_access?: { roles?: string[] } })?.realm_access?.roles ?? []).includes('admin');
+  const folderMap = new Map(folders.map((f) => [f.path, f]));
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
@@ -164,7 +170,14 @@ export default function Sidebar({ folders, activeFolder, onSelectFolder, onFolde
     }
   };
 
-  const tree = buildTree(folders);
+  const tree = buildTree(folders.map((f) => f.path));
+
+  const canShareFolder = (path: string): boolean => {
+    const entry = folderMap.get(path);
+    // Carpeta legado (sin propietario registrado) sigue visible para todos por
+    // diseño, así que compartirla no tendría ningún efecto.
+    return entry?.ownerId !== undefined && (isAdmin || entry.ownerId === currentUserId);
+  };
 
   const renderNode = (node: FolderNode, depth: number): React.ReactNode => {
     const isActive = activeFolder === node.path;
@@ -247,6 +260,15 @@ export default function Sidebar({ folders, activeFolder, onSelectFolder, onFolde
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                   </button>
+                  {canShareFolder(node.path) && (
+                    <button className="folder-action-btn" title="Compartir"
+                      onClick={(e) => { e.stopPropagation(); onShareFolder(folderMap.get(node.path)!); }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                        <line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/>
+                      </svg>
+                    </button>
+                  )}
                   <button className="folder-action-btn folder-action-delete" title="Eliminar"
                     onClick={(e) => handleDeleteClick(e, node.path)}>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
