@@ -1,16 +1,30 @@
+/* flexbox en vez de CSS grid: los navegadores calculan mal la altura de las
+   filas "auto" del grid cuando los items usan aspect-ratio (FileCard.css),
+   colapsando las filas a unos pocos px y solapando las tarjetas entre sí.
+   flexbox con wrap no tiene ese paso de auto-sizing y mide cada fila con el
+   alto real de su contenido. */
 .file-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   padding: 24px;
   align-content: start;
 }
 
+.file-grid > .file-card {
+  flex: 1 1 180px;
+  max-width: 260px;
+}
+
 @media (max-width: 640px) {
   .file-grid {
-    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     padding: 16px;
+  }
+
+  .file-grid > .file-card {
+    flex: 0 0 calc(50% - 6px);
+    max-width: calc(50% - 6px);
   }
 }
 
