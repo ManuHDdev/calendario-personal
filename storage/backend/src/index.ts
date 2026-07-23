@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import { filesRoutes } from './routes/files';
+import { permissionsRoutes } from './routes/permissions';
 
 const MB = 1024 * 1024;
 const BODY_LIMIT = 500 * MB;
@@ -30,6 +31,7 @@ async function bootstrap() {
 
   // Rutas
   await app.register(filesRoutes);
+  await app.register(permissionsRoutes);
 
   // Health check (sin auth)
   app.get('/storage/api/health', async () => ({ status: 'ok' }));

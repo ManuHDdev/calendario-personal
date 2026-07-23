@@ -1,0 +1,149 @@
+.perm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  animation: permFadeIn 150ms ease;
+}
+
+.perm-box {
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  width: 340px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.perm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 0;
+}
+
+.perm-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.perm-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  transition: background 150ms ease;
+}
+.perm-close:hover { background: var(--bg-tertiary); }
+
+.perm-name {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 6px 16px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.perm-error {
+  font-size: 12px;
+  color: var(--danger);
+  padding: 0 16px 10px;
+}
+
+.perm-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+}
+
+.perm-spinner {
+  width: 26px;
+  height: 26px;
+  border: 2.5px solid var(--bg-tertiary);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: permSpin 700ms linear infinite;
+}
+
+.perm-list {
+  flex: 1;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  min-height: 60px;
+}
+
+.perm-empty {
+  padding: 16px 14px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.perm-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.perm-option:hover { background: var(--bg-secondary); }
+
+.perm-option input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.perm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.perm-btn-cancel {
+  padding: 7px 14px;
+  font-size: 13px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: filter 150ms ease;
+}
+.perm-btn-cancel:hover { filter: brightness(0.95); }
+
+.perm-btn-confirm {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  transition: opacity 150ms ease;
+}
+.perm-btn-confirm:disabled { opacity: 0.4; cursor: default; }
+.perm-btn-confirm:not(:disabled):hover { background: var(--accent-hover); }
+
+@keyframes permFadeIn {
+  from { opacity: 0 } to { opacity: 1 }
+}
+
+@keyframes permSpin {
+  to { transform: rotate(360deg) }
+}

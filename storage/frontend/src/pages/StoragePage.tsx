@@ -5,12 +5,21 @@ import UploadButton from '../components/UploadButton';
 import PreviewModal from '../components/PreviewModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import MoveModal from '../components/MoveModal';
+import PermissionsModal from '../components/PermissionsModal';
 import { getFiles, getFolders, deleteFile, moveFile } from '../services/api';
-import type { FileItem } from '../types';
+import keycloak from '../services/keycloak';
+import type { FileItem, FolderEntry, PermissionsResourceType } from '../types';
 import './StoragePage.css';
 
+interface ShareTarget {
+  type: PermissionsResourceType;
+  path: string;
+  name: string;
+}
+
 export default function StoragePage() {
-  const [folders, setFolders] = useState<string[]>([]);
+  const currentUserId = (keycloak.tokenParsed as { sub?: string })?.sub ?? '';
+  const [folders, setFolders] = useState<FolderEntry[]>([]);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
@@ -18,6 +27,7 @@ export default function StoragePage() {
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<FileItem | null>(null);
   const [moveTarget, setMoveTarget] = useState<FileItem | null>(null);
+  const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const loadFolders = useCallback(async () => {
@@ -90,6 +100,8 @@ export default function StoragePage() {
     ? activeFolder.split('/').join(' / ')
     : 'Todos los archivos';
 
+  const isAdmin = ((keycloak.tokenParsed as { realm_access?: { roles?: string[] } })?.realm_access?.roles ?? []).includes('admin');
+
   return (
     <div className="storage-layout">
       {sidebarOpen && (
@@ -100,6 +112,9 @@ export default function StoragePage() {
         activeFolder={activeFolder}
         onSelectFolder={(folder) => { setActiveFolder(folder); setSearch(''); }}
         onFoldersChange={loadFolders}
+        onShareFolder={(folder) => setShareTarget({ type: 'folder', path: folder.path, name: folder.path.split('/').pop()! })}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -154,6 +169,9 @@ export default function StoragePage() {
           onDeleteFile={setDeleteTarget}
           onMoveFile={setMoveTarget}
           onPreviewFile={setPreviewFile}
+          onShareFile={(file) => setShareTarget({ type: 'file', path: file.relativePath, name: file.name })}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
         />
       </main>
 
@@ -172,9 +190,19 @@ export default function StoragePage() {
       {moveTarget && (
         <MoveModal
           file={moveTarget}
-          folders={folders}
+          folders={folders.map((f) => f.path)}
           onMove={handleMove}
           onCancel={() => setMoveTarget(null)}
+        />
+      )}
+
+      {shareTarget && (
+        <PermissionsModal
+          resourceType={shareTarget.type}
+          resourcePath={shareTarget.path}
+          resourceName={shareTarget.name}
+          currentUserId={currentUserId}
+          onClose={() => setShareTarget(null)}
         />
       )}
     </div>

@@ -4,8 +4,22 @@ import { v5 as uuidv5 } from 'uuid';
 import mime from 'mime-types';
 import { pipeline } from 'stream/promises';
 import { Readable } from 'stream';
+import {
+  getOwner,
+  setOwner,
+  deleteOwner,
+  updateResourcePath,
+  renamePathPrefix,
+  hasDirectGrant,
+  hasFolderGrantOnAny,
+  deleteGrants,
+} from '../db';
 
-const BASE_PATH = process.env.STORAGE_PATH || '/mnt/storage-ssd';
+// path.resolve normaliza los separadores al estilo de la plataforma — si
+// STORAGE_PATH llega con barras "/" en Windows, una comparación de prefijos
+// contra path.join (que usa "\") fallaría y safePath() lanzaría "Path
+// traversal detected" para archivos legítimos.
+const BASE_PATH = path.resolve(process.env.STORAGE_PATH || '/mnt/storage-ssd');
 
 const UUID_NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341';
 
@@ -24,7 +38,7 @@ export const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 // Carpetas del sistema que nunca deben mostrarse
-const HIDDEN_DIRS = new Set(['lost+found', '.Trash-1000', '$RECYCLE.BIN']);
+const HIDDEN_DIRS = new Set(['lost+found', '.Trash-1000', '$RECYCLE.BIN', '.meta']);
 
 export interface FileEntry {
   id: string;
@@ -35,6 +49,14 @@ export interface FileEntry {
   createdAt: string;
   /** Ruta relativa completa de la carpeta padre, ej. "Dron/Fotos" o null si está en raíz */
   folder: string | null;
+  /** Ausente si el archivo es anterior a la función de permisos (legado, visible para todos) */
+  ownerId?: string;
+  ownerUsername?: string;
+}
+
+export interface Viewer {
+  sub: string;
+  isAdmin: boolean;
 }
 
 export function ensureBasePath(): void {
@@ -56,6 +78,7 @@ function buildEntry(absolutePath: string): FileEntry {
   const segments = relativePath.split('/');
   // Guardar la ruta completa del directorio padre (soporte multinivel)
   const folder = segments.length > 1 ? segments.slice(0, -1).join('/') : null;
+  const owner = getOwner('file', relativePath);
 
   return {
     id: uuidv5(relativePath, UUID_NAMESPACE),
@@ -65,6 +88,8 @@ function buildEntry(absolutePath: string): FileEntry {
     mimeType: detected,
     createdAt: stat.birthtime.toISOString(),
     folder,
+    ownerId: owner?.owner_id,
+    ownerUsername: owner?.owner_username,
   };
 }
 
@@ -81,12 +106,66 @@ function safePath(relativePath: string): string {
   return absolute;
 }
 
-/**
- * Devuelve todos los archivos permitidos.
- * Si se especifica folder, sólo devuelve los archivos dentro de esa carpeta
- * (incluyendo subcarpetas). Sin folder devuelve TODOS los archivos del disco.
- */
-export function getAllFiles(folder?: string): FileEntry[] {
+/** ¿Existe esa carpeta en disco? */
+export function folderExists(relativePath: string): boolean {
+  try {
+    const absolute = safePath(relativePath);
+    return fs.existsSync(absolute) && fs.statSync(absolute).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/** Cadena de una ruta y todos sus ancestros, empezando por ella misma. */
+function pathChain(relativePath: string): string[] {
+  const parts = relativePath.split('/').filter(Boolean);
+  const chain: string[] = [];
+  for (let i = parts.length; i >= 1; i--) {
+    chain.push(parts.slice(0, i).join('/'));
+  }
+  return chain;
+}
+
+function folderChainOf(relativePath: string): string[] {
+  const segments = relativePath.split('/');
+  if (segments.length <= 1) return [];
+  return pathChain(segments.slice(0, -1).join('/'));
+}
+
+/** ¿Puede `viewer` ver este archivo concreto? */
+export function canViewFile(relativePath: string, viewer: Viewer): boolean {
+  if (viewer.isAdmin) return true;
+
+  const owner = getOwner('file', relativePath);
+  if (!owner) return true; // sin propietario registrado = legado, visible para todos
+
+  if (owner.owner_id === viewer.sub) return true;
+  if (hasDirectGrant('file', relativePath, viewer.sub)) return true;
+
+  const folderChain = folderChainOf(relativePath);
+  if (folderChain.some((f) => getOwner('folder', f)?.owner_id === viewer.sub)) return true;
+  if (hasFolderGrantOnAny(folderChain, viewer.sub)) return true;
+
+  return false;
+}
+
+/** ¿Puede `viewer` ver esta carpeta (aparece en el árbol de navegación)? */
+export function canViewFolder(folderPath: string, viewer: Viewer): boolean {
+  if (viewer.isAdmin) return true;
+
+  const chain = pathChain(folderPath);
+  if (chain.some((f) => getOwner('folder', f)?.owner_id === viewer.sub)) return true;
+  if (hasFolderGrantOnAny(chain, viewer.sub)) return true;
+
+  const owner = getOwner('folder', folderPath);
+  if (!owner) return true; // carpeta legado sin propietario registrado, visible para todos
+
+  // Carpeta nueva de otro propietario sin grant: solo se muestra si contiene
+  // algo que el viewer sí puede ver (para no ocultar rutas intermedias).
+  return walkFilesRaw(safePath(folderPath)).some((entry) => canViewFile(entry.relativePath, viewer));
+}
+
+function walkFilesRaw(startDir: string): FileEntry[] {
   const results: FileEntry[] = [];
 
   function walk(dir: string): void {
@@ -111,23 +190,51 @@ export function getAllFiles(folder?: string): FileEntry[] {
     }
   }
 
-  if (folder) {
-    const folderPath = safePath(folder);
-    if (!fs.existsSync(folderPath) || !fs.statSync(folderPath).isDirectory()) return [];
-    walk(folderPath);
-  } else {
-    // FIX: recorrer TODO el árbol, no solo la raíz
-    walk(BASE_PATH);
-  }
-
+  walk(startDir);
   return results;
 }
 
-/** Devuelve todas las carpetas del disco como rutas relativas planas, ordenadas.
- *  Ej: ["Dron", "Dron/Fotos", "Viajes", "Viajes/2024"]
+/** ¿Puede `viewer` mover/renombrar/borrar este archivo? (legado sin dueño = sin restricción, como antes) */
+export function canMutateFile(relativePath: string, viewer: Viewer): boolean {
+  if (viewer.isAdmin) return true;
+  const owner = getOwner('file', relativePath);
+  if (!owner) return true;
+  return owner.owner_id === viewer.sub;
+}
+
+/** ¿Puede `viewer` renombrar/borrar esta carpeta? (legado sin dueño = sin restricción, como antes) */
+export function canMutateFolder(folderPath: string, viewer: Viewer): boolean {
+  if (viewer.isAdmin) return true;
+  const owner = getOwner('folder', folderPath);
+  if (!owner) return true;
+  return owner.owner_id === viewer.sub;
+}
+
+/**
+ * Devuelve todos los archivos permitidos y visibles para `viewer`.
+ * Si se especifica folder, sólo devuelve los archivos dentro de esa carpeta
+ * (incluyendo subcarpetas). Sin folder devuelve TODOS los archivos del disco.
  */
-export function getFolders(): string[] {
-  const results: string[] = [];
+export function getAllFiles(folder: string | undefined, viewer: Viewer): FileEntry[] {
+  const startDir = folder ? safePath(folder) : BASE_PATH;
+  if (folder && (!fs.existsSync(startDir) || !fs.statSync(startDir).isDirectory())) return [];
+
+  const results = walkFilesRaw(startDir);
+  if (viewer.isAdmin) return results;
+  return results.filter((file) => canViewFile(file.relativePath, viewer));
+}
+
+export interface FolderEntry {
+  path: string;
+  ownerId?: string;
+  ownerUsername?: string;
+}
+
+/** Devuelve todas las carpetas del disco visibles para `viewer`.
+ *  Ej: [{ path: "Dron" }, { path: "Dron/Fotos" }, { path: "Viajes" }, { path: "Viajes/2024" }]
+ */
+export function getFolders(viewer: Viewer): FolderEntry[] {
+  const paths: string[] = [];
 
   function walkDirs(dir: string, prefix: string): void {
     let entries: fs.Dirent[];
@@ -140,13 +247,18 @@ export function getFolders(): string[] {
       if (!entry.isDirectory()) continue;
       if (HIDDEN_DIRS.has(entry.name)) continue;
       const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-      results.push(rel);
+      paths.push(rel);
       walkDirs(path.join(dir, entry.name), rel);
     }
   }
 
   walkDirs(BASE_PATH, '');
-  return results.sort();
+  paths.sort();
+  const visible = viewer.isAdmin ? paths : paths.filter((folderPath) => canViewFolder(folderPath, viewer));
+  return visible.map((folderPath) => {
+    const owner = getOwner('folder', folderPath);
+    return { path: folderPath, ownerId: owner?.owner_id, ownerUsername: owner?.owner_username };
+  });
 }
 
 /** Guarda un archivo. Devuelve el FileEntry resultante. */
@@ -154,7 +266,8 @@ export async function saveFile(
   filename: string,
   mimeType: string,
   stream: Readable,
-  folder?: string,
+  folder: string | undefined,
+  owner: { sub: string; username: string },
 ): Promise<FileEntry> {
   if (!ALLOWED_MIME_TYPES.has(mimeType)) {
     throw new Error(`MIME type not allowed: ${mimeType}`);
@@ -178,7 +291,9 @@ export async function saveFile(
   const writeStream = fs.createWriteStream(dest);
   await pipeline(stream, writeStream);
 
-  return buildEntry(dest);
+  const entry = buildEntry(dest);
+  setOwner('file', entry.relativePath, owner.sub, owner.username);
+  return { ...entry, ownerId: owner.sub, ownerUsername: owner.username };
 }
 
 /** Mueve un archivo a otra carpeta (o a la raíz si targetFolder es undefined). */
@@ -210,7 +325,9 @@ export function moveFile(relativePath: string, targetFolder?: string): FileEntry
 
   const destAbsolute = path.join(targetDir, finalName);
   fs.renameSync(srcAbsolute, destAbsolute);
-  return buildEntry(destAbsolute);
+  const entry = buildEntry(destAbsolute);
+  updateResourcePath('file', relativePath, entry.relativePath);
+  return entry;
 }
 
 /** Borra un archivo del disco. */
@@ -220,10 +337,12 @@ export function deleteFile(relativePath: string): void {
     throw new Error('File not found');
   }
   fs.unlinkSync(absolute);
+  deleteOwner('file', relativePath);
+  deleteGrants('file', relativePath);
 }
 
 /** Crea una carpeta. Permite rutas anidadas como "Viajes/2024". */
-export function createFolder(relativePath: string): void {
+export function createFolder(relativePath: string, owner: { sub: string; username: string }): void {
   // Permitir '/' para subcarpetas pero rechazar otros caracteres peligrosos
   if (!relativePath || /[\\<>:"|?*]/.test(relativePath)) {
     throw new Error('Invalid folder name');
@@ -233,6 +352,7 @@ export function createFolder(relativePath: string): void {
     throw new Error('Folder already exists');
   }
   fs.mkdirSync(target, { recursive: true });
+  setOwner('folder', relativePath, owner.sub, owner.username);
 }
 
 /** Renombra una carpeta (solo cambia el último segmento del nombre). */
@@ -250,8 +370,11 @@ export function renameFolder(folderPath: string, newName: string): string {
     throw new Error('A folder with that name already exists');
   }
   fs.renameSync(oldAbsolute, newAbsolute);
-  // Devolver la nueva ruta relativa
-  return toRelative(newAbsolute);
+  const newPath = toRelative(newAbsolute);
+  // El rename arrastra todo el subárbol en disco: reescribir el prefijo de
+  // propietarios y permisos de la carpeta y de todo lo que cuelgue de ella.
+  renamePathPrefix(folderPath, newPath);
+  return newPath;
 }
 
 /** Borra una carpeta sólo si está vacía. */
@@ -266,6 +389,8 @@ export function deleteFolder(folderPath: string): void {
     throw new Error('Folder is not empty');
   }
   fs.rmdirSync(target);
+  deleteOwner('folder', folderPath);
+  deleteGrants('folder', folderPath);
 }
 
 /** Devuelve la ruta absoluta y los stats de un archivo. */

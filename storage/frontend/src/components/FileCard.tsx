@@ -9,6 +9,9 @@ interface Props {
   onDelete: (file: FileItem) => void;
   onMove: (file: FileItem) => void;
   onClick: (file: FileItem) => void;
+  onShare: (file: FileItem) => void;
+  currentUserId: string;
+  isAdmin: boolean;
 }
 
 function IconPlay() {
@@ -33,9 +36,12 @@ function IconPdf() {
   );
 }
 
-export default function FileCard({ file, onDelete, onMove, onClick }: Props) {
+export default function FileCard({ file, onDelete, onMove, onClick, onShare, currentUserId, isAdmin }: Props) {
   const [imgError, setImgError] = useState(false);
   const url = thumbnailUrl(file.relativePath);
+  // Archivos legado (sin propietario registrado) siguen siendo visibles para
+  // todos por diseño, así que compartirlos no tendría ningún efecto.
+  const canShare = file.ownerId !== undefined && (isAdmin || file.ownerId === currentUserId);
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -50,6 +56,11 @@ export default function FileCard({ file, onDelete, onMove, onClick }: Props) {
   const handleMove = (e: React.MouseEvent) => {
     e.stopPropagation();
     onMove(file);
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onShare(file);
   };
 
   const renderThumbnail = () => {
@@ -108,6 +119,14 @@ export default function FileCard({ file, onDelete, onMove, onClick }: Props) {
             <polyline points="9 14 12 17 15 14"/>
           </svg>
         </button>
+        {canShare && (
+          <button className="card-action-btn" title="Compartir" onClick={handleShare}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.6" y1="10.6" x2="15.4" y2="6.4"/><line x1="8.6" y1="13.4" x2="15.4" y2="17.6"/>
+            </svg>
+          </button>
+        )}
         <button className="card-action-btn card-action-danger" title="Eliminar" onClick={handleDelete}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <polyline points="3 6 5 6 21 6"/>

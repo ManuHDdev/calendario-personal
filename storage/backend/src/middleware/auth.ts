@@ -29,7 +29,7 @@ interface JwtHeader {
   typ?: string;
 }
 
-interface JwtPayload {
+export interface JwtPayload {
   sub?: string;
   preferred_username?: string;
   email?: string;

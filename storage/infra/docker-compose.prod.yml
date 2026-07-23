@@ -13,6 +13,9 @@ services:
     environment:
       STORAGE_PATH: /mnt/storage-ssd
       KEYCLOAK_CERTS_URL: http://calendario-keycloak:8080/keycloak/realms/calendario/protocol/openid-connect/certs
+      KEYCLOAK_BASE_URL: http://calendario-keycloak:8080/keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       CORS_ORIGIN: https://elbunkerdelingeniero.duckdns.org
     volumes:
       - /mnt/storage-ssd:/mnt/storage-ssd
