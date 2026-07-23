@@ -1,0 +1,79 @@
+.launcher {
+  position: relative;
+
+  &__btn {
+    all: unset;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    transition: background var(--transition), color var(--transition);
+
+    &:hover, &--activo {
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+    }
+  }
+
+  &__panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    padding: 12px;
+    z-index: 200;
+    min-width: 210px;
+    animation: launcherIn 150ms ease;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  &__app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 6px;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: background var(--transition);
+
+    &:hover {
+      background: var(--color-surface);
+    }
+  }
+
+  &__icono {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__nombre {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+@keyframes launcherIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}

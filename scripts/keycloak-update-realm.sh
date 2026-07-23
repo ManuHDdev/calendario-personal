@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# keycloak-update-realm.sh
+#
+# Actualiza el realm "calendario" en Keycloak con los roles correctos
+# (admin / familia / invitado) y asigna el rol "admin" al usuario "propietario".
+#
+# Uso:
+#   bash scripts/keycloak-update-realm.sh [host] [admin_user] [admin_password]
+#
+# Ejemplos:
+#   bash scripts/keycloak-update-realm.sh
+#   bash scripts/keycloak-update-realm.sh http://localhost:8080 admin admin123
+#   bash scripts/keycloak-update-realm.sh https://elbunkerdelingeniero.duckdns.org/keycloak admin <password>
+# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+HOST="${1:-http://localhost:8080}"
+ADMIN_USER="${2:-admin}"
+ADMIN_PASSWORD="${3:-admin123}"
+REALM="calendario"
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+ok()   { echo -e "${GREEN}✓${NC}  $*"; }
+warn() { echo -e "${YELLOW}!${NC}  $*"; }
+err()  { echo -e "${RED}✗${NC}  $*" >&2; exit 1; }
+
+echo ""
+echo "Actualizando realm '$REALM' en $HOST..."
+echo ""
+
+# ── 1. Obtener token de administrador ─────────────────────────────────────────
+TOKEN_JSON=$(curl -sf -X POST \
+  "$HOST/realms/master/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=${ADMIN_USER}&password=${ADMIN_PASSWORD}&grant_type=password&client_id=admin-cli") \
+  || err "No se pudo conectar a Keycloak en $HOST. ¿Está arrancado?"
+
+TOKEN=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).access_token)" "$TOKEN_JSON") \
+  || err "Credenciales incorrectas o Keycloak no disponible."
+
+[ -z "$TOKEN" ] && err "Token vacío. Comprueba que Keycloak esté listo y las credenciales sean correctas."
+
+ok "Token de admin obtenido"
+
+# ── 2. Crear roles si no existen ──────────────────────────────────────────────
+for ROLE_NAME in admin familia invitado; do
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+    "$HOST/admin/realms/$REALM/roles" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"name\":\"$ROLE_NAME\"}")
+
+  if [ "$HTTP_STATUS" = "201" ]; then
+    ok "Rol '$ROLE_NAME' creado"
+  elif [ "$HTTP_STATUS" = "409" ]; then
+    warn "Rol '$ROLE_NAME' ya existe (OK)"
+  else
+    err "Error creando rol '$ROLE_NAME' (HTTP $HTTP_STATUS)"
+  fi
+done
+
+# ── 3. Obtener ID del usuario propietario ─────────────────────────────────────
+USERS_JSON=$(curl -sf \
+  "$HOST/admin/realms/$REALM/users?username=propietario&exact=true" \
+  -H "Authorization: Bearer $TOKEN")
+
+USER_ID=$(node -e "const a=JSON.parse(process.argv[1]); process.stdout.write(a.length ? a[0].id : '')" "$USERS_JSON")
+
+[ -z "$USER_ID" ] && err "Usuario 'propietario' no encontrado en el realm '$REALM'"
+ok "Usuario 'propietario' encontrado (ID: $USER_ID)"
+
+# ── 4. Asignar rol "admin" al usuario ────────────────────────────────────────
+ADMIN_ROLE_JSON=$(curl -sf \
+  "$HOST/admin/realms/$REALM/roles/admin" \
+  -H "Authorization: Bearer $TOKEN")
+
+ADMIN_ROLE_ID=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).id)" "$ADMIN_ROLE_JSON")
+
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+  "$HOST/admin/realms/$REALM/users/$USER_ID/role-mappings/realm" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "[{\"id\":\"$ADMIN_ROLE_ID\",\"name\":\"admin\"}]")
+
+if [ "$HTTP_STATUS" = "204" ]; then
+  ok "Rol 'admin' asignado a 'propietario'"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  warn "Rol 'admin' ya estaba asignado (OK)"
+else
+  warn "Respuesta $HTTP_STATUS al asignar rol (puede que ya lo tenga)"
+fi
+
+# ── 5. Actualizar redirect URIs del cliente calendario-frontend ───────────────
+CLIENTS_JSON=$(curl -sf \
+  "$HOST/admin/realms/$REALM/clients?clientId=calendario-frontend" \
+  -H "Authorization: Bearer $TOKEN")
+
+CLIENT_ID=$(node -e "const a=JSON.parse(process.argv[1]); process.stdout.write(a.length ? a[0].id : '')" "$CLIENTS_JSON")
+
+[ -z "$CLIENT_ID" ] && err "Cliente 'calendario-frontend' no encontrado en el realm '$REALM'"
+
+if [[ "$HOST" == *"localhost"* ]]; then
+  REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*"]'
+  WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175"]'
+else
+  REDIRECT_URIS='["https://elbunkerdelingeniero.duckdns.org/*"]'
+  WEB_ORIGINS='["https://elbunkerdelingeniero.duckdns.org"]'
+fi
+
+# Obtener la configuración actual del cliente y parchearla
+CLIENT_JSON=$(curl -sf \
+  "$HOST/admin/realms/$REALM/clients/$CLIENT_ID" \
+  -H "Authorization: Bearer $TOKEN")
+
+UPDATED_CLIENT=$(node -e "
+  const c = JSON.parse(process.argv[1]);
+  c.redirectUris = $REDIRECT_URIS;
+  c.webOrigins = $WEB_ORIGINS;
+  process.stdout.write(JSON.stringify(c));
+" "$CLIENT_JSON")
+
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
+  "$HOST/admin/realms/$REALM/clients/$CLIENT_ID" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "$UPDATED_CLIENT")
+
+if [ "$HTTP_STATUS" = "204" ]; then
+  ok "Redirect URIs actualizadas en 'calendario-frontend'"
+else
+  warn "Respuesta $HTTP_STATUS al actualizar redirect URIs"
+fi
+
+echo ""
+echo -e "${GREEN}════════════════════════════════════════${NC}"
+echo -e "${GREEN}  Realm actualizado correctamente ✓${NC}"
+echo -e "${GREEN}════════════════════════════════════════${NC}"
+echo ""
+echo "  Roles:   admin, familia, invitado"
+echo "  Usuario 'propietario' → rol admin"
+echo "  Redirect URIs actualizadas para todos los puertos locales"
+echo ""

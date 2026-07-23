@@ -39,6 +39,13 @@
   &__username {
     font-size: 0.875rem;
     color: var(--color-text-secondary);
+
+    &--admin {
+      text-decoration: none;
+      cursor: pointer;
+      transition: color var(--transition);
+      &:hover { color: var(--color-accent); }
+    }
   }
 
   &__new-event {

@@ -12,8 +12,22 @@
   "roles": {
     "realm": [
       {
-        "name": "PROPIETARIO",
-        "description": "Propietario del calendario personal",
+        "name": "admin",
+        "description": "Administrador — acceso completo a todas las aplicaciones",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
+      },
+      {
+        "name": "familia",
+        "description": "Familiar — acceso a Calendario, Storage y MapaCYD en modo consulta",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
+      },
+      {
+        "name": "invitado",
+        "description": "Invitado — solo acceso a Calendario",
         "composite": false,
         "clientRole": false,
         "containerId": "calendario"
@@ -105,7 +119,7 @@
         }
       ],
       "realmRoles": [
-        "PROPIETARIO",
+        "admin",
         "default-roles-calendario"
       ],
       "clientRoles": {}

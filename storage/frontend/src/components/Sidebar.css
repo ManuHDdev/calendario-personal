@@ -6,7 +6,6 @@
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 /* ── Móvil: sidebar como overlay deslizante ─────────────────────── */

@@ -3,7 +3,17 @@
 
   <div class="navbar__actions">
     <a class="navbar__new-event" routerLink="/eventos/nuevo">+ Nuevo evento</a>
-    <span class="navbar__username">{{ authService.getUserName() }}</span>
+
+    <app-app-launcher />
+
+    @if (authService.isAdmin()) {
+      <a class="navbar__username navbar__username--admin" [href]="panelUrl" title="Ir al Panel de administración">
+        {{ authService.getUserName() }}
+      </a>
+    } @else {
+      <span class="navbar__username">{{ authService.getUserName() }}</span>
+    }
+
     <button class="navbar__logout" type="button" (click)="logout()">Cerrar sesión</button>
   </div>
 </nav>

@@ -26,6 +26,18 @@ export class Auth {
     return (this.keycloak.tokenParsed?.['preferred_username'] as string) ?? '';
   }
 
+  getRoles(): string[] {
+    return (this.keycloak.tokenParsed?.['realm_access'] as { roles?: string[] })?.roles ?? [];
+  }
+
+  hasRole(role: string): boolean {
+    return this.getRoles().includes(role);
+  }
+
+  isAdmin(): boolean {
+    return this.hasRole('admin');
+  }
+
   isLoggedIn(): boolean {
     return this.keycloak.authenticated ?? false;
   }
