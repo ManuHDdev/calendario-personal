@@ -5,6 +5,7 @@ export interface ZonaCyd {
   latitud: number;
   longitud: number;
   ciudad: string;
+  tipo: 'carga_descarga' | 'aparcamiento';
   activo: boolean;
   deleted_at?: Date | null;
   created_at: Date;

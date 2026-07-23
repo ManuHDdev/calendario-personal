@@ -81,13 +81,13 @@ export async function zonasRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const { nombre, descripcion, latitud, longitud, ciudad } = parsed.data;
+      const { nombre, descripcion, latitud, longitud, ciudad, tipo } = parsed.data;
       try {
         const result = await pool.query(
-          `INSERT INTO zona_cyd (nombre, descripcion, latitud, longitud, ciudad)
-           VALUES ($1, $2, $3, $4, $5)
+          `INSERT INTO zona_cyd (nombre, descripcion, latitud, longitud, ciudad, tipo)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING *`,
-          [nombre, descripcion ?? null, latitud, longitud, ciudad],
+          [nombre, descripcion ?? null, latitud, longitud, ciudad, tipo],
         );
         return reply.code(201).send(result.rows[0]);
       } catch (err) {

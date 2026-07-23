@@ -3,10 +3,70 @@
   height: 100vh;
 }
 
+/* Ciudad preferida ─────────────────────────────────── */
+.mapa-preferencia {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+}
+
+.mapa-preferencia-btn {
+  background: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+  color: #1c1c1e;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+}
+
+.mapa-preferencia-form {
+  display: flex;
+  gap: 4px;
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mapa-preferencia-form input {
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+  border: 1px solid #d1d1d6;
+  border-radius: 5px;
+  padding: 4px 8px;
+  width: 130px;
+  outline: none;
+}
+
+.mapa-preferencia-form button {
+  border: none;
+  border-radius: 5px;
+  background: #f5f5f5;
+  width: 26px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mapa-preferencia-error {
+  margin-top: 6px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 12px;
+  font-family: system-ui, sans-serif;
+  padding: 6px 10px;
+  border-radius: 6px;
+  max-width: 220px;
+}
+
 /* Selector de ciudad ───────────────────────────────── */
 .mapa-ciudad-selector {
   position: absolute;
-  top: 70px;
+  top: 60px;
   right: 10px;
   z-index: 1000;
   background: #ffffff;

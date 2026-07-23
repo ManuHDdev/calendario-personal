@@ -6,6 +6,7 @@ export const createZonaSchema = z.object({
   latitud:     z.number().min(-90).max(90),
   longitud:    z.number().min(-180).max(180),
   ciudad:      z.string().min(1).default('Cáceres'),
+  tipo:        z.enum(['carga_descarga', 'aparcamiento']).default('carga_descarga'),
 });
 
 export const updateZonaSchema = createZonaSchema.partial();
