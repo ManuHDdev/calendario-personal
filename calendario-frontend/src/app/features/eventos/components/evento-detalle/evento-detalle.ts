@@ -9,11 +9,12 @@ import { ImagenEventoService } from '../../services/imagen-evento';
 import { Evento } from '../../models/evento.model';
 import { ConfirmDialog } from '../../../../shared/components/confirm-dialog/confirm-dialog';
 import { SafeUrlPipe } from '../../../../shared/pipes/safe-url.pipe';
+import { LinkifyPipe } from '../../../../shared/pipes/linkify.pipe';
 
 @Component({
   selector: 'app-evento-detalle',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, MatProgressSpinnerModule, SafeUrlPipe],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatProgressSpinnerModule, SafeUrlPipe, LinkifyPipe],
   templateUrl: './evento-detalle.html',
   styleUrl: './evento-detalle.scss'
 })

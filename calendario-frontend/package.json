@@ -33,6 +33,7 @@
     "@angular/router": "^20.3.0",
     "keycloak-angular": "^21.0.0",
     "keycloak-js": "^26.2.3",
+    "ngx-color-picker": "^20.1.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
