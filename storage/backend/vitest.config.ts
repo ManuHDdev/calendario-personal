@@ -4,6 +4,7 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'node',
+    include: ['src/**/*.test.ts'],
     env: {
       STORAGE_PATH: path.join(__dirname, '.test-storage'),
     },
