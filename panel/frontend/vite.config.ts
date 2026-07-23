@@ -11,6 +11,12 @@ export default defineConfig({
         target: 'http://localhost:3002',
         changeOrigin: true,
       },
+      // Proxy para Keycloak: strips /keycloak prefix (Keycloak en local está en raíz)
+      '/keycloak': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/keycloak/, ''),
+      },
     },
   },
   build: {

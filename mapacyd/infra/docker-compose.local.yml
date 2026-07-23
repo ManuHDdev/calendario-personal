@@ -1,0 +1,30 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# mapacyd — Base de datos PostgreSQL para desarrollo local
+# Puerto expuesto: 5434 en localhost (no colisiona con el postgres de calendario :5433)
+# El backend de mapacyd se conecta via localhost:5434, no necesita red compartida.
+# Uso: gestionado automáticamente por start-local.sh
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  mapacyd-db:
+    image: postgres:15
+    container_name: mapacyd-db-local
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: mapacyd
+      POSTGRES_USER: mapacyd
+      POSTGRES_PASSWORD: mapacyd123
+    volumes:
+      - mapacyd_local_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mapacyd -d mapacyd"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  mapacyd_local_data:

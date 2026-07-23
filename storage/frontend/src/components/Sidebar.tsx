@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createFolder, deleteFolder, renameFolder } from '../services/api';
 import keycloak from '../services/keycloak';
+import AppLauncher from './AppLauncher';
 import './Sidebar.css';
 
 interface Props {
@@ -336,6 +337,7 @@ export default function Sidebar({ folders, activeFolder, onSelectFolder, onFolde
             <span className="sidebar-username">{username}</span>
           </div>
           <div className="sidebar-user-actions">
+            <AppLauncher upward />
             {isAdmin && (
               <a href="/panel/" className="sidebar-admin-btn" title="Panel de administración">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

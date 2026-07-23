@@ -1,0 +1,92 @@
+.app-launcher {
+  position: relative;
+}
+
+.launcher-btn {
+  all: unset;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.launcher-btn:hover,
+.launcher-btn--active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.launcher-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  padding: 12px;
+  z-index: 200;
+  min-width: 210px;
+  animation: launcherIn 150ms ease;
+}
+
+/* Cuando el botón está al fondo de pantalla, abrir hacia arriba */
+.launcher-panel--up {
+  top: auto;
+  bottom: calc(100% + 8px);
+  animation: launcherInUp 150ms ease;
+}
+
+.launcher-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.launcher-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+
+.launcher-app:hover {
+  background: var(--bg-secondary);
+}
+
+.launcher-icono {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.launcher-nombre {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+}
+
+@keyframes launcherIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+
+@keyframes launcherInUp {
+  from { opacity: 0; transform: scale(0.95) translateY(4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
