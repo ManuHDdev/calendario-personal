@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { uploadFile } from '../services/api';
 import type { FileItem } from '../types';
 import ProgressBar from './ProgressBar';
@@ -69,34 +69,61 @@ export default function UploadButton({ folder, onUploaded }: Props) {
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(true);
-  };
+  // Arrastrar en cualquier parte de la ventana activa la zona de drop, no
+  // solo al pasar por encima del botón. dragCounterRef evita que el overlay
+  // parpadee: dragenter/dragleave se disparan también al pasar sobre
+  // elementos hijos, así que solo se oculta cuando el contador llega a 0.
+  const dragCounterRef = useRef(0);
 
-  const handleDragLeave = () => setDragging(false);
+  useEffect(() => {
+    const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    if (e.dataTransfer.files.length) {
-      processFiles(e.dataTransfer.files);
-    }
-  };
+    const onWindowDragEnter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragCounterRef.current += 1;
+      setDragging(true);
+    };
+    const onWindowDragOver = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+    };
+    const onWindowDragLeave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+      if (dragCounterRef.current === 0) setDragging(false);
+    };
+    const onWindowDrop = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragCounterRef.current = 0;
+      setDragging(false);
+      if (e.dataTransfer?.files.length) {
+        processFiles(e.dataTransfer.files);
+      }
+    };
+
+    window.addEventListener('dragenter', onWindowDragEnter);
+    window.addEventListener('dragover', onWindowDragOver);
+    window.addEventListener('dragleave', onWindowDragLeave);
+    window.addEventListener('drop', onWindowDrop);
+    return () => {
+      window.removeEventListener('dragenter', onWindowDragEnter);
+      window.removeEventListener('dragover', onWindowDragOver);
+      window.removeEventListener('dragleave', onWindowDragLeave);
+      window.removeEventListener('drop', onWindowDrop);
+    };
+  }, [processFiles]);
 
   const activeTasks = tasks.filter((t) => !t.done);
   const errorTasks = tasks.filter((t) => t.done && t.error);
 
   return (
     <>
-      {/* Zona de drop global (aparece al arrastrar sobre la ventana) */}
+      {/* Zona de drop global — visibilidad y drop reales gestionados por los
+          listeners de window del efecto de arriba; este div es solo visual. */}
       {dragging && (
-        <div
-          className="drop-zone-overlay"
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
+        <div className="drop-zone-overlay">
           <div className="drop-zone-inner">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -112,7 +139,6 @@ export default function UploadButton({ folder, onUploaded }: Props) {
       <button
         className="upload-btn"
         onClick={() => inputRef.current?.click()}
-        onDragOver={handleDragOver}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <line x1="12" y1="5" x2="12" y2="19"/>

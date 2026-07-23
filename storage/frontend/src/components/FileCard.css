@@ -20,6 +20,50 @@
   opacity: 1;
 }
 
+.file-card--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Checkbox de selección múltiple */
+.card-select-checkbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  z-index: 1;
+}
+
+.file-card:hover .card-select-checkbox,
+.card-select-checkbox--visible {
+  opacity: 1;
+}
+
+.card-select-checkbox input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* En dispositivos táctiles el checkbox siempre visible, igual que las acciones */
+@media (hover: none) {
+  .card-select-checkbox {
+    opacity: 1;
+  }
+}
+
 /* Thumbnail — ocupa todo el espacio disponible sobre la info */
 .card-thumb {
   flex: 1;

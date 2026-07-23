@@ -12,6 +12,9 @@ interface Props {
   onShare: (file: FileItem) => void;
   currentUserId: string;
   isAdmin: boolean;
+  selected: boolean;
+  anySelected: boolean;
+  onToggleSelect: (file: FileItem) => void;
 }
 
 function IconPlay() {
@@ -36,12 +39,21 @@ function IconPdf() {
   );
 }
 
-export default function FileCard({ file, onDelete, onMove, onClick, onShare, currentUserId, isAdmin }: Props) {
+export default function FileCard({
+  file, onDelete, onMove, onClick, onShare, currentUserId, isAdmin, selected, anySelected, onToggleSelect,
+}: Props) {
   const [imgError, setImgError] = useState(false);
   const url = thumbnailUrl(file.relativePath);
   // Archivos legado (sin propietario registrado) siguen siendo visibles para
   // todos por diseño, así que compartirlos no tendría ningún efecto.
   const canShare = file.ownerId !== undefined && (isAdmin || file.ownerId === currentUserId);
+
+  // stopPropagation en el <label> (para no abrir el preview) — el toggle real
+  // va en onChange del <input>, así el click nativo que un <label> reenvía a
+  // su checkbox asociado no dispara el toggle dos veces (una por el click del
+  // label y otra por el click sintético que reenvía al input).
+  const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+  const handleToggleSelect = () => onToggleSelect(file);
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -101,8 +113,15 @@ export default function FileCard({ file, onDelete, onMove, onClick, onShare, cur
   };
 
   return (
-    <div className="file-card" onClick={() => onClick(file)}>
+    <div className={`file-card${selected ? ' file-card--selected' : ''}`} onClick={() => onClick(file)}>
       <div className="card-thumb">{renderThumbnail()}</div>
+
+      <label
+        className={`card-select-checkbox${anySelected || selected ? ' card-select-checkbox--visible' : ''}`}
+        onClick={stopPropagation}
+      >
+        <input type="checkbox" checked={selected} onChange={handleToggleSelect} />
+      </label>
 
       <div className="card-overlay-actions">
         <button className="card-action-btn" title="Descargar" onClick={handleDownload}>
