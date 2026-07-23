@@ -17,6 +17,11 @@ dist/
 
 # Claude Code
 .claude/
+.codegraph/
+
+# Logs y datos locales
+logs/
+storage/storage-data/
 
 # OS
 .DS_Store
