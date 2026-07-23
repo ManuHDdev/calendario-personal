@@ -260,7 +260,7 @@
 
 /* ── Tooltip ─────────────────────────────────────────────────────────────── */
 .tooltip-container {
-  position: absolute;
+  position: fixed;
   z-index: 1000;
 }
 
