@@ -93,7 +93,7 @@ Calendario/mapacyd/ dentro del monorepo elbunkerdelingeniero.
 - Base de datos: PostgreSQL 15, tablas: zona_cyd y horario_zona
 - Autenticación: Keycloak 26.1, realm "calendario", JWT stateless
 - Mapa: Leaflet.js instalado vía npm (no CDN)
-- Validaciones: Zod (igual que panel y storage)
+- Validaciones: Zod en todos los endpoints. NOTA: panel y storage validan manualmente, sin Zod — no siguen este mismo patrón pese a lo que decía una versión anterior de este documento.
 - Sin ORM — queries directas con el cliente pg
 
 ### Roles
@@ -129,3 +129,123 @@ El frontend Docker expone el puerto 3073 en localhost (127.0.0.1:3073:80).
 ### Instrucción permanente
 Antes de generar cualquier fichero de mapacyd, lee los ficheros equivalentes
 en panel/backend/src/ para seguir el mismo patrón de código y estilo.
+
+---
+
+## Panel — Administración de usuarios
+
+### Ubicación
+Calendario/panel/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que storage/ y mapacyd/)
+- Frontend: React + Vite + TypeScript
+- Sin base de datos propia — todo el estado vive en Keycloak (Admin REST API)
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (RS256 vía JWKS)
+- Validaciones: manuales (sin Zod) — solo comprobación de campos obligatorios antes de llamar a Keycloak
+
+### Roles
+Único rol con acceso: `admin` (authAdminMiddleware lo exige en todas las rutas). `familia` e `invitado` no tienen acceso a Panel.
+
+### Rutas (`/panel/api/*`)
+- `GET/POST/PUT/DELETE /users` → CRUD de usuarios vía Keycloak Admin API
+- `GET /roles` → lista fija `['admin','familia','invitado']`
+- `GET /health`
+
+### Variables de entorno
+`KEYCLOAK_BASE_URL`, `KEYCLOAK_CERTS_URL`, `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `CORS_ORIGIN`, `PORT` (default 3002)
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/panel-backend:latest`, `ghcr.io/manuhddev/panel-frontend:latest`
+
+---
+
+## Storage — Almacenamiento de archivos
+
+### Ubicación
+Calendario/storage/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/ y mapacyd/)
+- Frontend: React + Vite + TypeScript
+- Sin base de datos — filesystem directo sobre `STORAGE_PATH` (en producción: `/mnt/storage-ssd`)
+- Procesado de imágenes: sharp (miniaturas 400x400, conversión HEIC/HEIF → JPEG)
+- Streaming de vídeo con soporte de Range requests (206 Partial Content)
+- Autenticación: Keycloak, JWT verificado a mano (mismo patrón que panel/mapacyd); acepta el token también como query param (`?token=`) para `<img>`/`<video>`/`<iframe>` que no pueden mandar headers
+- Validaciones: manuales (sin Zod)
+
+### Roles
+`admin` y `familia` → acceso completo (subir, mover, borrar, crear carpetas). `invitado` → sin acceso.
+
+### Rutas (`/storage/api/*`)
+`GET /files`, `GET /folders`, `POST /upload`, `GET /files/:path/download|preview|thumbnail`, `PATCH /files/:path` (mover), `DELETE /files/:path`, `POST /folders`, `PATCH /folders/:path` (renombrar), `DELETE /folders/:path`, `GET /health`
+
+### Variables de entorno
+`STORAGE_PATH` (prod: `/mnt/storage-ssd`), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3001)
+
+### Red Docker y volumen
+`calendario-net` (externa). `/mnt/storage-ssd` montado 1:1 en el contenedor.
+
+### Imágenes Docker
+`ghcr.io/manuhddev/storage-backend:latest`, `ghcr.io/manuhddev/storage-frontend:latest`
+
+---
+
+## Sistema de roles (OBLIGATORIO conocer)
+
+Los tres roles de realm en Keycloak son `admin`, `familia`, `invitado`.
+Cualquier código que filtre por rol DEBE usar exactamente estos nombres.
+
+| Rol       | Acceso                                               |
+|-----------|------------------------------------------------------|
+| admin     | Todas las apps + gestión completa                    |
+| familia   | Calendario, Storage (lectura), MapaCYD (lectura)     |
+| invitado  | Solo Calendario                                      |
+
+El usuario por defecto se llama `propietario` y tiene rol `admin`.
+
+## Keycloak — configuración y despliegue
+
+### Archivos de realm
+- `infra/keycloak/realm-export.json` → usado en local (ports 4200/5173/5174/5175)
+- `infra/keycloak/realm-export.prod.json` → usado en producción
+
+El realm se importa SOLO la primera vez que Keycloak arranca (flag `--import-realm`).
+Si Keycloak ya está corriendo y hay cambios en el realm, usar:
+
+```bash
+bash scripts/keycloak-update-realm.sh [host] [admin_user] [admin_password]
+```
+
+Ejemplos:
+```bash
+# Local
+bash scripts/keycloak-update-realm.sh
+
+# Producción (desde el VPS o con acceso directo)
+bash scripts/keycloak-update-realm.sh http://localhost:8080 admin <password_del_env>
+```
+
+### DEPLOY_NOTES.md
+El archivo `DEPLOY_NOTES.md` en la raíz del proyecto puede contener instrucciones
+específicas para el despliegue actual. Siempre leerlo antes de desplegar y borrar
+su contenido tras aplicar las instrucciones (dejar el archivo vacío).
+
+## Puertos locales
+| App                | Frontend | Backend |
+|--------------------|----------|---------|
+| Calendario         | :4200    | :8081   |
+| Panel              | :5174    | :3002   |
+| Storage            | :5173    | :3001   |
+| MapaCYD            | :5175    | :3003   |
+| Keycloak           | :8080    | —       |
+| PostgreSQL (cal)   | :5433    | —       |
+| PostgreSQL (mapacyd)| :5434   | —       |
+
+## Deuda técnica conocida
+
+- **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd SÍ debería incluir tests a partir de ahora.
+- **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend` y `mapacyd/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
