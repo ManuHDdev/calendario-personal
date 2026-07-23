@@ -39,7 +39,7 @@
 
         <!-- Descripción -->
         @if (ev.descripcion) {
-          <p class="descripcion">{{ ev.descripcion }}</p>
+          <p class="descripcion" [innerHTML]="ev.descripcion | linkify"></p>
         }
 
         <!-- Adjuntos (imágenes y PDFs) -->

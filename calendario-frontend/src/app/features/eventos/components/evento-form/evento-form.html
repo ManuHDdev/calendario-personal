@@ -86,7 +86,12 @@
           }
         </div>
         <input class="campo-input campo-input--hex" formControlName="color" type="text"
-               placeholder="#0071e3" maxlength="7" />
+               placeholder="#0071e3" maxlength="7"
+               [colorPicker]="form.get('color')?.value || '#0071e3'"
+               [cpOutputFormat]="'hex'"
+               [cpAlphaChannel]="'disabled'"
+               [cpPosition]="'bottom'"
+               (colorPickerChange)="seleccionarColor($event)" />
       </div>
 
       <!-- Imágenes (solo en modo edición) -->

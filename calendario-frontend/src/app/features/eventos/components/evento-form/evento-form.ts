@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, ValidatorFn, AbstractControl, Validat
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
+import { ColorPickerDirective } from 'ngx-color-picker';
 import { EventoService } from '../../services/evento';
 import { ImagenEventoService } from '../../services/imagen-evento';
 import { EventoRequest } from '../../models/evento.model';
@@ -25,7 +26,8 @@ const fechaFinValidator: ValidatorFn = (group: AbstractControl) => {
     CommonModule,
     ReactiveFormsModule,
     MatSnackBarModule,
-    MatIconModule
+    MatIconModule,
+    ColorPickerDirective
   ],
   templateUrl: './evento-form.html',
   styleUrl: './evento-form.scss'

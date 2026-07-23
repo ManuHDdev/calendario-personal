@@ -77,6 +77,17 @@ describe('EventoForm', () => {
     expect(component.form.hasError('fechaFinInvalida')).toBeTrue();
   });
 
+  it('seleccionarColor actualiza el control color del formulario (usado por la paleta y por el color picker personalizado)', () => {
+    component.seleccionarColor('#123abc');
+    expect(component.form.get('color')?.value).toBe('#123abc');
+  });
+
+  it('escribir un código hex directamente en el input actualiza el control color', () => {
+    component.form.get('color')?.setValue('#ff00aa');
+    expect(component.form.get('color')?.value).toBe('#ff00aa');
+    expect(component.form.get('color')?.valid).toBeTrue();
+  });
+
   it('submit válido en modo creación llama a createEvento y navega a /calendario', fakeAsync(() => {
     const router = TestBed.inject(Router);
     spyOn(router, 'navigate');
