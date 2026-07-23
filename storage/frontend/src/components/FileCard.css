@@ -5,7 +5,7 @@
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   cursor: pointer;
-  transition: box-shadow 200ms ease, transform 200ms ease;
+  transition: box-shadow 200ms ease;
   border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -14,7 +14,6 @@
 
 .file-card:hover {
   box-shadow: var(--shadow-md);
-  transform: scale(1.01);
 }
 
 .file-card:hover .card-overlay-actions {
@@ -114,12 +113,7 @@
   .card-overlay-actions {
     opacity: 1;
   }
-  .file-card:hover {
-    box-shadow: var(--shadow-sm);
-    transform: none;
-  }
 }
-
 
 /* Info inferior */
 .card-info {
