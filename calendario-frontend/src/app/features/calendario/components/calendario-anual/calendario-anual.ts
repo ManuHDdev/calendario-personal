@@ -37,10 +37,14 @@ export class CalendarioAnual implements OnInit {
   // Tooltip
   tooltipEventos: EventoResumen[] | null = null;
   tooltipFecha: Date | null = null;
-  tooltipTop = '0px';
-  tooltipLeft = '0px';
+  tooltipTop    = 'auto';
+  tooltipLeft   = '0px';
+  tooltipBottom = 'auto';
   private tooltipRaton = false; // true cuando el ratón está sobre el tooltip
   tooltipPinned = false;        // true cuando se abrió por clic (no hover)
+  private readonly TOOLTIP_W    = 268;
+  private readonly TOOLTIP_H    = 280; // altura estimada (se usa solo para decidir arriba/abajo)
+  private readonly TOOLTIP_MARGEN = 8;
 
   // Modo creación con selección de rango
   modoCreacion = signal(false);
@@ -178,9 +182,7 @@ export class CalendarioAnual implements OnInit {
       // Varios eventos: abrir panel pinned
       const target = event?.currentTarget as HTMLElement | undefined;
       if (target) {
-        const rect = target.getBoundingClientRect();
-        this.tooltipTop = `${rect.bottom + window.scrollY + 4}px`;
-        this.tooltipLeft = `${rect.left + window.scrollX}px`;
+        this.posicionarTooltip(target);
       }
       this.tooltipFecha = fecha;
       this.tooltipEventos = eventos;
@@ -195,9 +197,7 @@ export class CalendarioAnual implements OnInit {
     }
     const eventos = this.getEventosDia(fecha);
     if (eventos.length === 0) return;
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.tooltipTop = `${rect.bottom + window.scrollY + 4}px`;
-    this.tooltipLeft = `${rect.left + window.scrollX}px`;
+    this.posicionarTooltip(event.currentTarget as HTMLElement);
     this.tooltipFecha = fecha;
     this.tooltipEventos = eventos;
   }
@@ -269,6 +269,38 @@ export class CalendarioAnual implements OnInit {
       },
       error: () => { /* silent */ }
     });
+  }
+
+  // ── Posicionamiento inteligente del tooltip ───────────────────────────────
+  // Usa position:fixed → no necesita scroll offsets.
+  // Vertical: cuando no cabe debajo se ancla por "bottom" al borde superior de
+  // la celda, así el tooltip queda siempre pegado al día, sea cual sea su altura real.
+  private posicionarTooltip(target: HTMLElement): void {
+    const rect = target.getBoundingClientRect();
+    const m = this.TOOLTIP_MARGEN;
+
+    // ── Horizontal ──────────────────────────────────────────────────────────
+    let left = rect.left;
+    if (left + this.TOOLTIP_W + m > window.innerWidth) {
+      left = rect.right - this.TOOLTIP_W; // alinear al borde derecho de la celda
+    }
+    left = Math.max(m, Math.min(left, window.innerWidth - this.TOOLTIP_W - m));
+
+    // ── Vertical ────────────────────────────────────────────────────────────
+    // Anclar por "bottom" cuando va encima: bottom = distancia desde abajo de
+    // viewport hasta el borde superior de la celda + gap.
+    // Así el tooltip siempre toca la celda sin importar su altura real.
+    if (window.innerHeight - rect.bottom < this.TOOLTIP_H + m) {
+      // No cabe debajo → mostrar encima (anclar bottom al borde superior de la celda)
+      this.tooltipTop    = 'auto';
+      this.tooltipBottom = `${window.innerHeight - rect.top + 4}px`;
+    } else {
+      // Cabe debajo → mostrar debajo (anclar top al borde inferior de la celda)
+      this.tooltipTop    = `${rect.bottom + 4}px`;
+      this.tooltipBottom = 'auto';
+    }
+
+    this.tooltipLeft = `${left}px`;
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
