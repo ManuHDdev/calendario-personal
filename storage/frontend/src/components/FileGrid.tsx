@@ -11,10 +11,13 @@ interface Props {
   onShareFile: (file: FileItem) => void;
   currentUserId: string;
   isAdmin: boolean;
+  selected: Set<string>;
+  onToggleSelect: (file: FileItem) => void;
 }
 
 export default function FileGrid({
   files, loading, onDeleteFile, onMoveFile, onPreviewFile, onShareFile, currentUserId, isAdmin,
+  selected, onToggleSelect,
 }: Props) {
   if (loading) {
     return (
@@ -48,6 +51,9 @@ export default function FileGrid({
           onShare={onShareFile}
           currentUserId={currentUserId}
           isAdmin={isAdmin}
+          selected={selected.has(file.id)}
+          anySelected={selected.size > 0}
+          onToggleSelect={onToggleSelect}
         />
       ))}
     </div>

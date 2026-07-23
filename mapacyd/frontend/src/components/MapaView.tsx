@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { HorarioZona, ZonaCyd, EstadoZona } from '../types/zona';
-import { COLOR_ESTADO } from '../types/zona';
+import type { HorarioZona, ZonaCyd, EstadoZona, TipoZona } from '../types/zona';
+import { COLOR_ESTADO, COLOR_APARCAMIENTO } from '../types/zona';
 import { useAuth } from '../hooks/useAuth';
 import { useZonas } from '../hooks/useZonas';
+import { usePreferenciaCiudad } from '../hooks/usePreferenciaCiudad';
 import { AdminPanel } from './AdminPanel';
 import { ZonaModal } from './ZonaModal';
+import { PreferenciaCiudad } from './PreferenciaCiudad';
 import './MapaView.css';
 
 const CACERES: L.LatLngExpression = [39.4753, -6.3724];
@@ -75,6 +77,17 @@ function buildPopupHtml(zona: ZonaCyd, estado: EstadoZona): string {
   `;
 }
 
+function buildPopupHtmlAparcamiento(zona: ZonaCyd): string {
+  return `
+    <div style="font-family:system-ui,sans-serif;min-width:160px;line-height:1.5">
+      <div style="font-weight:600;font-size:14px;margin-bottom:4px">🅿️ ${zona.nombre}</div>
+      ${zona.descripcion
+        ? `<div style="font-size:12px;color:#9ca3af">${zona.descripcion}</div>`
+        : ''}
+    </div>
+  `;
+}
+
 // ─── Componente ──────────────────────────────────────────────────────────────
 
 export function MapaView() {
@@ -82,10 +95,12 @@ export function MapaView() {
   const [ciudadFiltro, setCiudadFiltro]   = useState<string | undefined>();
   const [tick, setTick]                   = useState(0);
   const [showAdmin, setShowAdmin]         = useState(false);
-  const [modoPinActivo, setModoPinActivo] = useState(false);
+  // Tipo de marca elegido para el próximo pin; null = modo pin inactivo
+  const [modoPinTipo, setModoPinTipo]     = useState<TipoZona | null>(null);
   const [pinLatLng, setPinLatLng]         = useState<{ lat: number; lng: number } | null>(null);
 
   const { zonas, loading, error, refetch } = useZonas(ciudadFiltro);
+  const { preferencia } = usePreferenciaCiudad();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef       = useRef<L.Map | null>(null);
@@ -106,6 +121,13 @@ export function MapaView() {
     };
   }, []);
 
+  // Recentrar en la ciudad preferida del usuario en cuanto se resuelve
+  // (el mapa arranca en Cáceres para no quedarse vacío mientras carga)
+  useEffect(() => {
+    if (!mapRef.current || !preferencia) return;
+    mapRef.current.setView([preferencia.latitud, preferencia.longitud], 15);
+  }, [preferencia]);
+
   // Actualizar marcadores cuando cambian zonas o tick
   useEffect(() => {
     if (!mapRef.current) return;
@@ -115,8 +137,9 @@ export function MapaView() {
 
     const now = new Date();
     zonas.forEach(zona => {
+      const isAparcamiento = zona.tipo === 'aparcamiento';
       const estado = calcularEstado(zona.horarios, now);
-      const color  = COLOR_ESTADO[estado];
+      const color  = isAparcamiento ? COLOR_APARCAMIENTO : COLOR_ESTADO[estado];
 
       const marker = L.circleMarker([zona.latitud, zona.longitud], {
         color,
@@ -126,7 +149,7 @@ export function MapaView() {
         weight:      2,
       });
 
-      marker.bindPopup(buildPopupHtml(zona, estado));
+      marker.bindPopup(isAparcamiento ? buildPopupHtmlAparcamiento(zona) : buildPopupHtml(zona, estado));
       marker.addTo(mapRef.current!);
       markersRef.current.push(marker);
     });
@@ -138,14 +161,13 @@ export function MapaView() {
     return () => clearInterval(id);
   }, []);
 
-  // Modo pin: captura el siguiente click en el mapa
+  // Modo pin: captura el siguiente click en el mapa mientras haya un tipo elegido
   useEffect(() => {
-    if (!mapRef.current || !modoPinActivo) return;
+    if (!mapRef.current || !modoPinTipo) return;
     const map = mapRef.current;
     map.getContainer().style.cursor = 'crosshair';
     const handler = (e: L.LeafletMouseEvent) => {
       setPinLatLng({ lat: e.latlng.lat, lng: e.latlng.lng });
-      setModoPinActivo(false);
       map.getContainer().style.cursor = '';
     };
     map.once('click', handler);
@@ -153,7 +175,9 @@ export function MapaView() {
       map.off('click', handler);
       map.getContainer().style.cursor = '';
     };
-  }, [modoPinActivo]);
+  }, [modoPinTipo]);
+
+  const esperandoClick = modoPinTipo !== null && !pinLatLng;
 
   const ciudadesUnicas = [
     'Todas las ciudades',
@@ -173,6 +197,8 @@ export function MapaView() {
       )}
 
       <div ref={containerRef} className="mapa-container" />
+
+      <PreferenciaCiudad />
 
       <div className="mapa-ciudad-selector">
         <select
@@ -198,7 +224,7 @@ export function MapaView() {
       {isAdmin && showAdmin && (
         <AdminPanel
           onClose={() => setShowAdmin(false)}
-          onActivarModoPin={() => setModoPinActivo(true)}
+          onActivarModoPin={(tipo) => setModoPinTipo(tipo)}
           onZonaCreada={() => void refetch()}
         />
       )}
@@ -206,21 +232,24 @@ export function MapaView() {
       {pinLatLng && (
         <ZonaModal
           modo="crear"
+          tipo={modoPinTipo ?? 'carga_descarga'}
           latitudInicial={pinLatLng.lat}
           longitudInicial={pinLatLng.lng}
-          onClose={() => setPinLatLng(null)}
-          onSuccess={() => { setPinLatLng(null); void refetch(); }}
+          onClose={() => { setPinLatLng(null); setModoPinTipo(null); }}
+          onSuccess={() => { setPinLatLng(null); setModoPinTipo(null); void refetch(); }}
         />
       )}
 
-      {modoPinActivo && (
+      {esperandoClick && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
           zIndex: 1000, background: '#1a1a1a', color: '#fff',
           padding: '10px 20px', borderRadius: 8, fontSize: 13,
           boxShadow: '0 4px 12px rgba(0,0,0,0.3)', pointerEvents: 'none',
         }}>
-          Haz clic en el mapa para colocar la nueva zona
+          {modoPinTipo === 'aparcamiento'
+            ? 'Haz clic en el mapa para colocar el spot de aparcamiento'
+            : 'Haz clic en el mapa para colocar la nueva zona'}
         </div>
       )}
     </>

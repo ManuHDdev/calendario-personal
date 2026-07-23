@@ -280,7 +280,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(403).send({ error: 'Forbidden', message: 'Only the owner or admin can delete this file' });
       }
       try {
-        deleteFile(relativePath);
+        await deleteFile(relativePath);
         return reply.code(204).send();
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Delete failed';

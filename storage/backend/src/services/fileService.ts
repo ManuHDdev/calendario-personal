@@ -331,12 +331,33 @@ export function moveFile(relativePath: string, targetFolder?: string): FileEntry
 }
 
 /** Borra un archivo del disco. */
-export function deleteFile(relativePath: string): void {
+/**
+ * En Windows, borrar un archivo justo después de servirlo (thumbnail/preview)
+ * puede fallar con EPERM/EBUSY por un bloqueo transitorio del SO mientras
+ * libera el handle — no ocurre en Linux (producción), pero reintentamos unas
+ * pocas veces con una espera corta para que el borrado no falle en local.
+ */
+async function unlinkWithRetry(absolute: string, retries = 4, delayMs = 75): Promise<void> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      fs.unlinkSync(absolute);
+      return;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (attempt >= retries || (code !== 'EPERM' && code !== 'EBUSY')) {
+        throw err;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
+export async function deleteFile(relativePath: string): Promise<void> {
   const absolute = safePath(relativePath);
   if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) {
     throw new Error('File not found');
   }
-  fs.unlinkSync(absolute);
+  await unlinkWithRetry(absolute);
   deleteOwner('file', relativePath);
   deleteGrants('file', relativePath);
 }

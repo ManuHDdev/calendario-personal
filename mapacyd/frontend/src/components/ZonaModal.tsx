@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import type { ZonaCyd } from '../types/zona';
+import type { TipoZona, ZonaCyd } from '../types/zona';
 
 interface ZonaModalProps {
   modo:             'crear' | 'editar';
   zona?:            ZonaCyd;
+  /** Tipo de marca a crear (elegido antes de abrir el modal, no editable aquí) */
+  tipo?:            TipoZona;
   latitudInicial?:  number;
   longitudInicial?: number;
   onClose:          () => void;
@@ -32,9 +34,10 @@ const fieldStyle: React.CSSProperties = { marginBottom: 14 };
 // ─── Componente ──────────────────────────────────────────────────────────────
 
 export function ZonaModal({
-  modo, zona, latitudInicial, longitudInicial, onClose, onSuccess,
+  modo, zona, tipo, latitudInicial, longitudInicial, onClose, onSuccess,
 }: ZonaModalProps) {
   const { token } = useAuth();
+  const tipoActual: TipoZona = zona?.tipo ?? tipo ?? 'carga_descarga';
 
   const [nombre,      setNombre]      = useState(zona?.nombre       ?? '');
   const [descripcion, setDescripcion] = useState(zona?.descripcion  ?? '');
@@ -67,6 +70,7 @@ export function ZonaModal({
         ciudad:      ciudad.trim(),
         latitud,
         longitud,
+        tipo:        tipoActual,
       };
       const url    = modo === 'editar' ? `${API}/zonas/${zona!.id}` : `${API}/zonas`;
       const method = modo === 'editar' ? 'PUT' : 'POST';
@@ -105,7 +109,9 @@ export function ZonaModal({
       }}>
         {/* Título */}
         <div style={{ fontSize: 15, fontWeight: 600, color: '#1c1c1e', marginBottom: 20 }}>
-          {modo === 'editar' ? `Editar: ${zona?.nombre}` : 'Nueva zona'}
+          {modo === 'editar'
+            ? `Editar: ${zona?.nombre}`
+            : tipoActual === 'aparcamiento' ? 'Nuevo spot de aparcamiento' : 'Nueva zona de carga/descarga'}
         </div>
 
         <form onSubmit={handleSubmit} noValidate>

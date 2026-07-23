@@ -6,6 +6,7 @@ import PreviewModal from '../components/PreviewModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import MoveModal from '../components/MoveModal';
 import PermissionsModal from '../components/PermissionsModal';
+import BulkActionBar from '../components/BulkActionBar';
 import { getFiles, getFolders, deleteFile, moveFile } from '../services/api';
 import keycloak from '../services/keycloak';
 import type { FileItem, FolderEntry, PermissionsResourceType } from '../types';
@@ -25,10 +26,11 @@ export default function StoragePage() {
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<FileItem | null>(null);
-  const [moveTarget, setMoveTarget] = useState<FileItem | null>(null);
-  const [shareTarget, setShareTarget] = useState<ShareTarget | null>(null);
+  const [deleteTargets, setDeleteTargets] = useState<FileItem[] | null>(null);
+  const [moveTargets, setMoveTargets] = useState<FileItem[] | null>(null);
+  const [shareTargets, setShareTargets] = useState<ShareTarget[] | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const loadFolders = useCallback(async () => {
     try {
@@ -59,36 +61,66 @@ export default function StoragePage() {
     loadFolders();
   };
 
+  const clearSelection = () => setSelected(new Set());
+
+  const toggleSelect = (file: FileItem) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(file.id)) next.delete(file.id);
+      else next.add(file.id);
+      return next;
+    });
+  };
+
   const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await deleteFile(deleteTarget.relativePath);
-      setFiles((prev) => prev.filter((f) => f.id !== deleteTarget.id));
-    } catch (err) {
-      console.error('Failed to delete file', err);
-    } finally {
-      setDeleteTarget(null);
+    if (!deleteTargets) return;
+    const results = await Promise.allSettled(
+      deleteTargets.map((f) => deleteFile(f.relativePath).then(() => f.id)),
+    );
+    const succeededIds = new Set(
+      results.filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled').map((r) => r.value),
+    );
+    const failedCount = results.length - succeededIds.size;
+    setFiles((prev) => prev.filter((f) => !succeededIds.has(f.id)));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      succeededIds.forEach((id) => next.delete(id));
+      return next;
+    });
+    setDeleteTargets(null);
+    if (failedCount > 0) {
+      alert(`No se han podido eliminar ${failedCount} de ${results.length} archivo(s) (sin permiso o error de red).`);
     }
   };
 
   const handleMove = async (targetFolder: string | null) => {
-    if (!moveTarget) return;
-    try {
-      const updated = await moveFile(moveTarget.relativePath, targetFolder ?? undefined);
-      // En "todos los archivos" actualizamos el item in-place;
-      // en vista de carpeta concreta lo quitamos si ya no pertenece
-      setFiles((prev) => {
-        if (activeFolder === null) {
-          // reemplazar con los datos actualizados
-          return prev.map((f) => f.id === moveTarget.id ? updated : f);
-        }
-        // si la vista es una carpeta específica, quitar el archivo movido
-        return prev.filter((f) => f.id !== moveTarget.id);
-      });
-    } catch (err) {
-      console.error('Failed to move file', err);
-    } finally {
-      setMoveTarget(null);
+    if (!moveTargets) return;
+    const results = await Promise.allSettled(
+      moveTargets.map((f) => moveFile(f.relativePath, targetFolder ?? undefined).then((updated) => ({ id: f.id, updated }))),
+    );
+    const succeeded = results
+      .filter((r): r is PromiseFulfilledResult<{ id: string; updated: FileItem }> => r.status === 'fulfilled')
+      .map((r) => r.value);
+    const succeededIds = new Set(succeeded.map((s) => s.id));
+    const updatedById = new Map(succeeded.map((s) => [s.id, s.updated]));
+    const failedCount = results.length - succeeded.length;
+
+    // En "todos los archivos" actualizamos cada item in-place;
+    // en vista de carpeta concreta se quitan si ya no pertenecen a ella.
+    setFiles((prev) => {
+      if (activeFolder === null) {
+        return prev.map((f) => updatedById.has(f.id) ? updatedById.get(f.id)! : f);
+      }
+      return prev.filter((f) => !succeededIds.has(f.id));
+    });
+    setSelected((prev) => {
+      const next = new Set(prev);
+      succeededIds.forEach((id) => next.delete(id));
+      return next;
+    });
+    setMoveTargets(null);
+    if (failedCount > 0) {
+      alert(`No se han podido mover ${failedCount} de ${results.length} archivo(s) (sin permiso o error de red).`);
     }
   };
 
@@ -102,6 +134,13 @@ export default function StoragePage() {
 
   const isAdmin = ((keycloak.tokenParsed as { realm_access?: { roles?: string[] } })?.realm_access?.roles ?? []).includes('admin');
 
+  // Legado (sin owner registrado) sigue siendo movible/borrable por
+  // cualquiera, como antes de la función de permisos — igual que en backend.
+  const canMutate = (f: FileItem) => isAdmin || f.ownerId === undefined || f.ownerId === currentUserId;
+  // Compartir un archivo legado no tendría ningún efecto (sigue visible para
+  // todos igualmente), así que se excluye del lote en vez de intentarlo.
+  const canShareFile = (f: FileItem) => f.ownerId !== undefined && (isAdmin || f.ownerId === currentUserId);
+
   return (
     <div className="storage-layout">
       {sidebarOpen && (
@@ -110,9 +149,9 @@ export default function StoragePage() {
       <Sidebar
         folders={folders}
         activeFolder={activeFolder}
-        onSelectFolder={(folder) => { setActiveFolder(folder); setSearch(''); }}
+        onSelectFolder={(folder) => { setActiveFolder(folder); setSearch(''); clearSelection(); }}
         onFoldersChange={loadFolders}
-        onShareFolder={(folder) => setShareTarget({ type: 'folder', path: folder.path, name: folder.path.split('/').pop()! })}
+        onShareFolder={(folder) => setShareTargets([{ type: 'folder', path: folder.path, name: folder.path.split('/').pop()! }])}
         currentUserId={currentUserId}
         isAdmin={isAdmin}
         isOpen={sidebarOpen}
@@ -166,43 +205,78 @@ export default function StoragePage() {
         <FileGrid
           files={filteredFiles}
           loading={loading}
-          onDeleteFile={setDeleteTarget}
-          onMoveFile={setMoveTarget}
+          onDeleteFile={(file) => setDeleteTargets([file])}
+          onMoveFile={(file) => setMoveTargets([file])}
           onPreviewFile={setPreviewFile}
-          onShareFile={(file) => setShareTarget({ type: 'file', path: file.relativePath, name: file.name })}
+          onShareFile={(file) => setShareTargets([{ type: 'file', path: file.relativePath, name: file.name }])}
           currentUserId={currentUserId}
           isAdmin={isAdmin}
+          selected={selected}
+          onToggleSelect={toggleSelect}
         />
       </main>
+
+      {selected.size > 0 && (
+        <BulkActionBar
+          count={selected.size}
+          onShare={() => {
+            const targets = filteredFiles.filter((f) => selected.has(f.id) && canShareFile(f));
+            if (targets.length === 0) {
+              alert('Ninguno de los archivos seleccionados se puede compartir (son de otra persona o archivos antiguos ya visibles para todos).');
+              return;
+            }
+            setShareTargets(targets.map((f) => ({ type: 'file' as const, path: f.relativePath, name: f.name })));
+          }}
+          onMove={() => {
+            const targets = filteredFiles.filter((f) => selected.has(f.id) && canMutate(f));
+            if (targets.length === 0) {
+              alert('No tienes permiso para mover ninguno de los archivos seleccionados.');
+              return;
+            }
+            setMoveTargets(targets);
+          }}
+          onDelete={() => {
+            const targets = filteredFiles.filter((f) => selected.has(f.id) && canMutate(f));
+            if (targets.length === 0) {
+              alert('No tienes permiso para eliminar ninguno de los archivos seleccionados.');
+              return;
+            }
+            setDeleteTargets(targets);
+          }}
+          onCancel={clearSelection}
+        />
+      )}
 
       {previewFile && (
         <PreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
       )}
 
-      {deleteTarget && (
+      {deleteTargets && (
         <ConfirmDialog
-          message={`¿Eliminar "${deleteTarget.name}"? Esta acción no se puede deshacer.`}
+          message={
+            deleteTargets.length === 1
+              ? `¿Eliminar "${deleteTargets[0].name}"? Esta acción no se puede deshacer.`
+              : `¿Eliminar ${deleteTargets.length} archivos? Esta acción no se puede deshacer.`
+          }
           onConfirm={handleConfirmDelete}
-          onCancel={() => setDeleteTarget(null)}
+          onCancel={() => setDeleteTargets(null)}
         />
       )}
 
-      {moveTarget && (
+      {moveTargets && (
         <MoveModal
-          file={moveTarget}
+          files={moveTargets}
           folders={folders.map((f) => f.path)}
           onMove={handleMove}
-          onCancel={() => setMoveTarget(null)}
+          onCancel={() => setMoveTargets(null)}
         />
       )}
 
-      {shareTarget && (
+      {shareTargets && (
         <PermissionsModal
-          resourceType={shareTarget.type}
-          resourcePath={shareTarget.path}
-          resourceName={shareTarget.name}
+          resources={shareTargets}
           currentUserId={currentUserId}
-          onClose={() => setShareTarget(null)}
+          onClose={() => { setShareTargets(null); clearSelection(); }}
         />
       )}
     </div>

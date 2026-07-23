@@ -1,4 +1,4 @@
--- Tabla de zonas de carga y descarga
+-- Tabla de zonas de carga y descarga (y, desde el campo tipo, spots de aparcamiento)
 CREATE TABLE IF NOT EXISTS zona_cyd (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre      VARCHAR(100)    NOT NULL,
@@ -6,10 +6,22 @@ CREATE TABLE IF NOT EXISTS zona_cyd (
     latitud     DECIMAL(10, 7)  NOT NULL,
     longitud    DECIMAL(10, 7)  NOT NULL,
     ciudad      VARCHAR(100)    NOT NULL DEFAULT 'Cáceres',
+    tipo        VARCHAR(20)     NOT NULL DEFAULT 'carga_descarga'
+                                CHECK (tipo IN ('carga_descarga', 'aparcamiento')),
     activo      BOOLEAN         NOT NULL DEFAULT TRUE,
     deleted_at  TIMESTAMP,
     created_at  TIMESTAMP       NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMP       NOT NULL DEFAULT NOW()
+);
+
+-- Ciudad preferida por usuario (id de Keycloak), con coordenadas ya
+-- geocodificadas para centrar el mapa sin depender de zonas existentes
+CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id          TEXT           PRIMARY KEY,
+    ciudad_preferida VARCHAR(100)   NOT NULL,
+    latitud          DECIMAL(10, 7) NOT NULL,
+    longitud         DECIMAL(10, 7) NOT NULL,
+    updated_at       TIMESTAMP      NOT NULL DEFAULT NOW()
 );
 
 -- Tabla de franjas horarias por zona

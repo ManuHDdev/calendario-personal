@@ -3,20 +3,21 @@ import type { FileItem } from '../types';
 import './MoveModal.css';
 
 interface Props {
-  file: FileItem;
+  files: FileItem[];
   folders: string[];
   onMove: (targetFolder: string | null) => void;
   onCancel: () => void;
 }
 
-export default function MoveModal({ file, folders, onMove, onCancel }: Props) {
-  const [selected, setSelected] = useState<string | null>(file.folder);
+export default function MoveModal({ files, folders, onMove, onCancel }: Props) {
+  const single = files.length === 1 ? files[0] : null;
+  const [selected, setSelected] = useState<string | null>(single?.folder ?? null);
 
   return (
     <div className="move-overlay" onClick={onCancel}>
       <div className="move-box" onClick={(e) => e.stopPropagation()}>
         <div className="move-header">
-          <span className="move-title">Mover archivo</span>
+          <span className="move-title">{single ? 'Mover archivo' : `Mover ${files.length} archivos`}</span>
           <button className="move-close" onClick={onCancel}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -24,7 +25,9 @@ export default function MoveModal({ file, folders, onMove, onCancel }: Props) {
           </button>
         </div>
 
-        <p className="move-filename">"{file.name}"</p>
+        <p className="move-filename">
+          {single ? `"${single.name}"` : files.map((f) => f.name).join(', ')}
+        </p>
 
         <div className="move-list">
           {/* Opción raíz */}
@@ -67,7 +70,7 @@ export default function MoveModal({ file, folders, onMove, onCancel }: Props) {
           <button
             className="move-btn-confirm"
             onClick={() => onMove(selected)}
-            disabled={selected === file.folder}
+            disabled={single !== null && selected === single.folder}
           >
             Mover aquí
           </button>

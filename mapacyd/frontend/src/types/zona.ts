@@ -7,6 +7,8 @@ export interface HorarioZona {
   activo: boolean;
 }
 
+export type TipoZona = 'carga_descarga' | 'aparcamiento';
+
 export interface ZonaCyd {
   id: string;
   nombre: string;
@@ -14,6 +16,7 @@ export interface ZonaCyd {
   latitud: number;
   longitud: number;
   ciudad: string;
+  tipo: TipoZona;
   activo: boolean;
   created_at: string;
   updated_at: string;
@@ -27,3 +30,5 @@ export const COLOR_ESTADO: Record<EstadoZona, string> = {
   libre:         '#22c55e',
   'sin-horario': '#6b7280',
 };
+
+export const COLOR_APARCAMIENTO = '#3b82f6';

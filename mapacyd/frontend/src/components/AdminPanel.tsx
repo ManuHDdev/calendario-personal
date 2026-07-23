@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useZonas } from '../hooks/useZonas';
-import type { ZonaCyd } from '../types/zona';
+import type { TipoZona, ZonaCyd } from '../types/zona';
 import { ZonaModal } from './ZonaModal';
 import { HorarioPanel } from './HorarioPanel';
 
 interface AdminPanelProps {
   onClose:           () => void;
-  onActivarModoPin:  () => void;
+  onActivarModoPin:  (tipo: TipoZona) => void;
   onZonaCreada:      () => void;
 }
 
@@ -163,12 +163,18 @@ export function AdminPanel({ onClose, onActivarModoPin, onZonaCreada }: AdminPan
         </div>
 
         {/* Toolbar */}
-        <div style={S.toolbar}>
+        <div style={{ ...S.toolbar, display: 'flex', gap: 8 }}>
           <button
             style={S.btnPrimary}
-            onClick={() => { onActivarModoPin(); onClose(); }}
+            onClick={() => { onActivarModoPin('carga_descarga'); onClose(); }}
           >
-            + Nueva zona
+            + Nueva zona C/D
+          </button>
+          <button
+            style={{ ...S.btnPrimary, background: '#3b82f6' }}
+            onClick={() => { onActivarModoPin('aparcamiento'); onClose(); }}
+          >
+            + Spot aparcamiento
           </button>
         </div>
 
@@ -203,20 +209,22 @@ export function AdminPanel({ onClose, onActivarModoPin, onZonaCreada }: AdminPan
                 return (
                   <tr key={zona.id} style={{ background: rowBg }}>
                     <td style={{ ...S.tdBase, fontWeight: 500, color: '#1c1c1e' }}>
-                      {zona.nombre}
+                      {zona.tipo === 'aparcamiento' ? '🅿️ ' : ''}{zona.nombre}
                     </td>
                     <td style={{ ...S.tdBase, color: '#636366' }}>{zona.ciudad}</td>
                     <td style={{ ...S.tdBase, color: '#636366', textAlign: 'center' }}>
-                      {nHorarios}
+                      {zona.tipo === 'aparcamiento' ? '—' : nHorarios}
                     </td>
                     <td style={S.tdBase}>
-                      <button
-                        style={S.btnAction}
-                        onClick={() => setZonaHorarios(zona)}
-                        title="Gestionar horarios"
-                      >
-                        Horarios
-                      </button>
+                      {zona.tipo !== 'aparcamiento' && (
+                        <button
+                          style={S.btnAction}
+                          onClick={() => setZonaHorarios(zona)}
+                          title="Gestionar horarios"
+                        >
+                          Horarios
+                        </button>
+                      )}
                       <button
                         style={S.btnAction}
                         onClick={() => setZonaEditar(zona)}
