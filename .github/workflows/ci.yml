@@ -177,8 +177,16 @@ jobs:
             # Iniciar los servicios con las nuevas imágenes
             docker compose -p calendario -f docker-compose.prod.yml up -d
 
-            # Recargar nginx con los conf actualizados
-            docker exec atg-app-nginx-1 nginx -s reload || true
+            # Publicar nuestra config de nginx en la carpeta compartida (un archivo
+            # por proyecto — nunca tocar los de otros dominios que viven ahí mismo)
+            mkdir -p /home/manu/nginx-shared/conf.d
+            cp /home/manu/calendario/nginx/calendario.conf \
+               /home/manu/nginx-shared/conf.d/elbunkerdelingeniero.conf
+
+            # Validar sintaxis antes de recargar; si falla, no tocar nginx
+            docker exec atg-app-nginx-1 nginx -t && \
+              docker exec atg-app-nginx-1 nginx -s reload || \
+              echo "AVISO: nginx -t falló, no se recargó — revisar /home/manu/nginx-shared/conf.d/elbunkerdelingeniero.conf"
 
             # Limpiar imágenes antiguas
             docker image prune -f
