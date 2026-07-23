@@ -1,9 +1,13 @@
+name: elbunkerdelingeniero
+
 networks:
   calendario-network:
     driver: bridge
 
 volumes:
   postgres_data:
+    external: true
+    name: infra_postgres_data
   sonarqube_data:
   uploads_data:
 
