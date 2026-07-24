@@ -18,14 +18,12 @@ async function bootstrap() {
   await app.register(cors, {
     origin: allowedOrigins,
     methods: ['GET', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type'],
     exposedHeaders: ['Content-Disposition'],
-    credentials: true,
   });
 
   await app.register(downloadRoutes);
 
-  // Health check (sin auth)
   app.get('/ytdl/api/health', async () => ({ status: 'ok' }));
 
   const port = Number(process.env.PORT) || 3004;

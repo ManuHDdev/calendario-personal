@@ -14,6 +14,7 @@ const APPS: AppDef[] = [
   { id: 'storage',    nombre: 'Storage',    color: '#5e5ce6', roles: ['admin', 'familia'] },
   { id: 'mapacyd',    nombre: 'MapaCYD',    color: '#30d158', roles: ['admin', 'familia'] },
   { id: 'panel',      nombre: 'Panel',      color: '#ff9f0a', roles: ['admin'] },
+  { id: 'ytdl',       nombre: 'Ytdl',       color: '#ff375f', roles: null },
 ];
 
 function getUrls(): Record<string, string> {
@@ -23,6 +24,7 @@ function getUrls(): Record<string, string> {
     storage:    local ? 'http://localhost:5173/storage/' : '/storage/',
     mapacyd:    local ? 'http://localhost:5175/mapacyd/' : '/mapacyd/',
     panel:      local ? 'http://localhost:5174/panel/'   : '/panel/',
+    ytdl:       local ? 'http://localhost:5176/ytdl/'    : '/ytdl/',
   };
 }
 
@@ -54,6 +56,14 @@ function AppIcon({ id }: { id: string }) {
       return (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      );
+    case 'ytdl':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <path d="M12 3v12"/>
+          <path d="M7 10l5 5 5-5"/>
+          <path d="M4 19h16"/>
         </svg>
       );
     default:

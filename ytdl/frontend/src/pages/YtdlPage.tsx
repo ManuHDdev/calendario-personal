@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { buildDownloadUrl, isAllowedYoutubeUrl, type DownloadFormat } from '../services/api';
+import keycloak from '../services/keycloak';
+import AppLauncher from '../components/AppLauncher';
 import './YtdlPage.css';
 
 // Cuánto tiempo esperamos leyendo el iframe oculto antes de asumir que la
@@ -90,6 +92,11 @@ export default function YtdlPage() {
 
   return (
     <div className="ytdl-page">
+      {keycloak.authenticated && (
+        <div className="ytdl-launcher">
+          <AppLauncher upward={false} />
+        </div>
+      )}
       <div className="ytdl-card">
         <h1>YouTube Downloader</h1>
         <p className="ytdl-subtitle">Pega un enlace, elige el formato y descarga.</p>

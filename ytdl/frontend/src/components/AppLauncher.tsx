@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import keycloak from '../services/keycloak';
 import './AppLauncher.css';
 
@@ -78,9 +78,7 @@ interface Props {
 
 export default function AppLauncher({ upward = false }: Props) {
   const [open, setOpen] = useState(false);
-  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const roles: string[] =
     (keycloak.tokenParsed as { realm_access?: { roles?: string[] } })
@@ -101,32 +99,6 @@ export default function AppLauncher({ upward = false }: Props) {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  // Si el panel se sale del viewport por la izquierda o la derecha (p. ej. el
-  // botón está cerca del borde de una sidebar estrecha), lo reancla con un
-  // `left` calculado en vez de depender del `right: 0` fijo de la CSS.
-  useLayoutEffect(() => {
-    if (!open) {
-      setPanelStyle({});
-      return;
-    }
-    const margin = 8;
-    const recompute = () => {
-      const panel = panelRef.current;
-      if (!panel) return;
-      const rect = panel.getBoundingClientRect();
-      if (rect.left < margin) {
-        setPanelStyle({ left: `${margin}px`, right: 'auto' });
-      } else if (rect.right > window.innerWidth - margin) {
-        setPanelStyle({ left: `${Math.max(margin, window.innerWidth - margin - rect.width)}px`, right: 'auto' });
-      } else {
-        setPanelStyle({});
-      }
-    };
-    recompute();
-    window.addEventListener('resize', recompute);
-    return () => window.removeEventListener('resize', recompute);
   }, [open]);
 
   return (
@@ -150,11 +122,7 @@ export default function AppLauncher({ upward = false }: Props) {
       </button>
 
       {open && (
-        <div
-          ref={panelRef}
-          className={`launcher-panel${upward ? ' launcher-panel--up' : ''}`}
-          style={panelStyle}
-        >
+        <div className={`launcher-panel${upward ? ' launcher-panel--up' : ''}`}>
           <div className="launcher-grid">
             {visibles.map((app) => (
               <a
