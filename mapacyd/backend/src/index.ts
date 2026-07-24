@@ -8,8 +8,11 @@ const isProd = process.env.NODE_ENV === 'production';
 const app = Fastify({ logger: isProd });
 
 async function bootstrap() {
+  // Puerto local documentado en CLAUDE.md para el frontend de mapacyd es
+  // 5175 (5174 es el de panel/) — sin CORS_ALLOWED_ORIGINS en el entorno,
+  // el fallback debe apuntar al propio frontend de esta app.
   const allowedOrigins =
-    process.env.CORS_ALLOWED_ORIGINS?.split(',') || ['http://localhost:5174'];
+    process.env.CORS_ALLOWED_ORIGINS?.split(',') || ['http://localhost:5175'];
 
   await app.register(cors, {
     origin: allowedOrigins,
