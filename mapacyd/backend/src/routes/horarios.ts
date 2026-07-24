@@ -62,12 +62,15 @@ export async function horariosRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const horarioCheck = await pool.query(
-        'SELECT id FROM horario_zona WHERE id = $1 AND zona_id = $2 AND activo = true',
+        `SELECT to_char(hora_inicio, 'HH24:MI') AS hora_inicio,
+                to_char(hora_fin,    'HH24:MI') AS hora_fin
+         FROM horario_zona WHERE id = $1 AND zona_id = $2 AND activo = true`,
         [horarioId, zonaId],
       );
       if (horarioCheck.rows.length === 0) {
         return reply.code(404).send({ error: 'Horario no encontrado', statusCode: 404 });
       }
+      const existing = horarioCheck.rows[0];
 
       const parsed = updateHorarioSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -82,15 +85,29 @@ export async function horariosRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(400).send({ error: 'No se han enviado campos a actualizar', statusCode: 400 });
       }
 
+      // El schema solo valida hora_fin > hora_inicio cuando AMBOS campos vienen
+      // en el mismo body. En una actualización parcial (solo uno de los dos)
+      // hay que comparar contra el valor que queda vigente tras el merge con
+      // el registro existente — si no, se podía guardar un horario invertido
+      // (p.ej. PUT { hora_fin: '05:00' } con un hora_inicio existente de '10:00').
+      const effectiveInicio = fields.hora_inicio ?? existing.hora_inicio;
+      const effectiveFin = fields.hora_fin ?? existing.hora_fin;
+      if (effectiveFin <= effectiveInicio) {
+        return reply.code(400).send({
+          error: 'hora_fin debe ser mayor que hora_inicio',
+          statusCode: 400,
+        });
+      }
+
       try {
         const setClauses = Object.keys(fields)
-          .map((key, i) => `${key} = $${i + 2}`)
+          .map((key, i) => `${key} = $${i + 3}`)
           .join(', ');
-        const values = [horarioId, ...Object.values(fields)];
+        const values = [horarioId, zonaId, ...Object.values(fields)];
         const result = await pool.query(
           `UPDATE horario_zona
            SET ${setClauses}
-           WHERE id = $1
+           WHERE id = $1 AND zona_id = $2
            RETURNING
              id, zona_id, tipo_dia, activo,
              to_char(hora_inicio, 'HH24:MI') AS hora_inicio,
