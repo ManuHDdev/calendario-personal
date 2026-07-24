@@ -15,6 +15,8 @@
 #   storage frontend    →  :5173
 #   mapacyd backend     →  :3003
 #   mapacyd frontend    →  :5175
+#   ytdl backend        →  :3004
+#   ytdl frontend       →  :5176
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -176,6 +178,13 @@ start_bg "mapacyd-backend   :3003" "mapacyd-backend.log" "$SCRIPT_DIR/mapacyd/ba
       CORS_ALLOWED_ORIGINS="http://localhost:5175" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/ytdl/backend"
+start_bg "ytdl-backend      :3004" "ytdl-backend.log" "$SCRIPT_DIR/ytdl/backend" \
+  env PORT=3004 \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5176" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -192,6 +201,10 @@ start_bg "storage-frontend   :5173" "storage-frontend.log" "$SCRIPT_DIR/storage/
 
 ensure_deps "$SCRIPT_DIR/mapacyd/frontend"
 start_bg "mapacyd-frontend   :5175" "mapacyd-frontend.log" "$SCRIPT_DIR/mapacyd/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/ytdl/frontend"
+start_bg "ytdl-frontend      :5176" "ytdl-frontend.log" "$SCRIPT_DIR/ytdl/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -225,6 +238,10 @@ echo ""
 echo -e "  ${CYAN}MapaCYD${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5175/mapacyd/${NC}"
 echo -e "    Backend health   →  http://localhost:3003/health"
+echo ""
+echo -e "  ${CYAN}YouTube Downloader${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5176/ytdl/${NC}"
+echo -e "    Backend health   →  http://localhost:3004/ytdl/api/health"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"
