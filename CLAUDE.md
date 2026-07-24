@@ -205,12 +205,17 @@ Calendario/ytdl/ dentro del monorepo elbunkerdelingeniero.
 - Sin base de datos, sin filesystem propio — cada petición es stateless: se resuelve
   la URL con `yt-dlp`, se transcodifica/extrae con `ffmpeg` cuando hace falta, y el
   resultado se stremea directo como respuesta HTTP (nunca se escribe a disco)
-- Autenticación: Keycloak, JWT verificado a mano (mismo patrón copiado que panel/storage/mapacyd)
+- Sin autenticación: herramienta pública, sin JWT ni chequeo de rol en el backend
 - Validaciones: manuales (sin Zod) — allowlist de host de YouTube y de formato antes de invocar cualquier proceso hijo
-- Único subapp del monorepo con tests de backend (vitest): allowlist de URL, validación de formato y guard de rol
+- Único subapp del monorepo con tests de backend (vitest): allowlist de URL y validación de formato (ya no hay guard de rol, se eliminó junto con la autenticación)
 
-### Roles
-`admin` y `familia` → acceso completo (descargar MP4/MP3). `invitado` → sin acceso.
+### Acceso
+Ytdl es una herramienta pública: cualquier visitante puede descargar MP4/MP3 sin
+iniciar sesión. El frontend inicializa Keycloak con `onLoad: 'check-sso'` (sin
+redirigir a login) solo para detectar si el visitante ya tiene una sesión SSO
+activa en otra app del monorepo (Calendario/Storage/etc en el mismo navegador);
+si es así, se muestra el menú de apps compartido, pero no es requisito para usar
+la herramienta.
 
 ### Rutas (`/ytdl/api/*`)
 `GET /download?url=<youtube-url>&format=mp4|mp3` (streaming, sin persistencia), `GET /health`
@@ -239,8 +244,11 @@ Cualquier código que filtre por rol DEBE usar exactamente estos nombres.
 | Rol       | Acceso                                                       |
 |-----------|----------------------------------------------------------------|
 | admin     | Todas las apps + gestión completa                               |
-| familia   | Calendario, Storage (lectura), MapaCYD (lectura), Ytdl          |
+| familia   | Calendario, Storage (lectura), MapaCYD (lectura)                |
 | invitado  | Solo Calendario                                                 |
+
+Ytdl no aparece en esta tabla porque es pública: no requiere ningún rol ni
+sesión iniciada, a diferencia del resto de subapps.
 
 El usuario por defecto se llama `propietario` y tiene rol `admin`.
 

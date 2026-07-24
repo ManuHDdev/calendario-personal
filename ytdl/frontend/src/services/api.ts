@@ -1,5 +1,3 @@
-import keycloak from './keycloak';
-
 const BASE = '/ytdl/api';
 
 export type DownloadFormat = 'mp4' | 'mp3';
@@ -27,13 +25,8 @@ export function isAllowedYoutubeUrl(rawUrl: string): boolean {
   return ALLOWED_HOSTS.has(parsed.hostname.toLowerCase());
 }
 
-/**
- * Construye la URL de descarga con el JWT como query param `?token=`
- * (mismo fallback que Storage usa para <img>/<video>/<iframe> — aquí se usa
- * porque disparamos la descarga navegando a un enlace, no vía fetch).
- */
+/** Construye la URL de descarga. Herramienta pública: sin token, sin auth. */
 export function buildDownloadUrl(url: string, format: DownloadFormat): string {
-  const token = keycloak.token ?? '';
-  const params = new URLSearchParams({ url, format, token });
+  const params = new URLSearchParams({ url, format });
   return `${BASE}/download?${params.toString()}`;
 }

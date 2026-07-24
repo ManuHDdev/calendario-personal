@@ -58,3 +58,18 @@ export function sanitizeFilename(title: string): string {
 export function buildFilename(title: string, format: DownloadFormat): string {
   return `${sanitizeFilename(title)}.${format}`;
 }
+
+/**
+ * Construye el valor completo del header Content-Disposition para `filename`.
+ * El parámetro `filename=` clásico solo admite ISO-8859-1 (RFC 6266): un
+ * título con tildes/ñ/emoji/CJK se corrompería o rompería la respuesta si se
+ * escribiera tal cual. Se añade además `filename*=UTF-8''...` (RFC 5987), que
+ * todos los navegadores modernos prefieren y que sí soporta Unicode completo;
+ * el `filename=` clásico queda como fallback ASCII para clientes antiguos.
+ */
+export function contentDispositionFor(filename: string): string {
+  // eslint-disable-next-line no-control-regex
+  const asciiFallback = filename.replace(/[^\x20-\x7e]/g, '_').replace(/"/g, "'");
+  const encoded = encodeURIComponent(filename);
+  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
+}

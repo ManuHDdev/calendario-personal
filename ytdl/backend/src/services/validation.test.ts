@@ -5,6 +5,7 @@ import {
   contentTypeFor,
   sanitizeFilename,
   buildFilename,
+  contentDispositionFor,
 } from './validation';
 
 describe('isAllowedYoutubeUrl', () => {
@@ -77,5 +78,27 @@ describe('buildFilename', () => {
   it('appends the extension for the given format', () => {
     expect(buildFilename('My Video', 'mp4')).toBe('My Video.mp4');
     expect(buildFilename('My Song', 'mp3')).toBe('My Song.mp3');
+  });
+});
+
+describe('contentDispositionFor', () => {
+  it('keeps a plain ASCII filename identical in both parameters', () => {
+    const header = contentDispositionFor('My Video.mp4');
+    expect(header).toBe(`attachment; filename="My Video.mp4"; filename*=UTF-8''My%20Video.mp4`);
+  });
+
+  it('replaces non-ASCII characters in the fallback but preserves them via filename*', () => {
+    const header = contentDispositionFor('Pelear es Mejor de lo que Parece (según la ciencia).mp4');
+    expect(header).toContain('filename="Pelear es Mejor de lo que Parece (seg_n la ciencia).mp4"');
+    expect(header).toContain(
+      `filename*=UTF-8''${encodeURIComponent(
+        'Pelear es Mejor de lo que Parece (según la ciencia).mp4',
+      )}`,
+    );
+  });
+
+  it('escapes double quotes in the ASCII fallback so the header stays well-formed', () => {
+    const header = contentDispositionFor('a "quoted" title.mp3');
+    expect(header).toContain(`filename="a 'quoted' title.mp3"`);
   });
 });

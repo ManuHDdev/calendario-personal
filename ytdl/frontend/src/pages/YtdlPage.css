@@ -1,10 +1,18 @@
 .ytdl-page {
+  position: relative;
   min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-secondary);
   padding: 24px;
+}
+
+.ytdl-launcher {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
 }
 
 .ytdl-card {
