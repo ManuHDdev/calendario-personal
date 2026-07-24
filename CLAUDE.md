@@ -194,16 +194,53 @@ Calendario/storage/ dentro del monorepo elbunkerdelingeniero.
 
 ---
 
+## Ytdl — Descargador de YouTube
+
+### Ubicación
+Calendario/ytdl/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/, storage/ y mapacyd/)
+- Frontend: React + Vite + TypeScript
+- Sin base de datos, sin filesystem propio — cada petición es stateless: se resuelve
+  la URL con `yt-dlp`, se transcodifica/extrae con `ffmpeg` cuando hace falta, y el
+  resultado se stremea directo como respuesta HTTP (nunca se escribe a disco)
+- Autenticación: Keycloak, JWT verificado a mano (mismo patrón copiado que panel/storage/mapacyd)
+- Validaciones: manuales (sin Zod) — allowlist de host de YouTube y de formato antes de invocar cualquier proceso hijo
+- Único subapp del monorepo con tests de backend (vitest): allowlist de URL, validación de formato y guard de rol
+
+### Roles
+`admin` y `familia` → acceso completo (descargar MP4/MP3). `invitado` → sin acceso.
+
+### Rutas (`/ytdl/api/*`)
+`GET /download?url=<youtube-url>&format=mp4|mp3` (streaming, sin persistencia), `GET /health`
+
+### Motor de descarga
+`yt-dlp` (binario CLI) + `ffmpeg`, invocados como child process con argv array
+(`execFile`/`spawn`, nunca un string de shell) — nunca vía librería npm. La URL se
+valida contra la allowlist de YouTube ANTES de invocar cualquier proceso hijo.
+
+### Variables de entorno
+`KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3004)
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/ytdl-backend:latest`, `ghcr.io/manuhddev/ytdl-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los tres roles de realm en Keycloak son `admin`, `familia`, `invitado`.
 Cualquier código que filtre por rol DEBE usar exactamente estos nombres.
 
-| Rol       | Acceso                                               |
-|-----------|------------------------------------------------------|
-| admin     | Todas las apps + gestión completa                    |
-| familia   | Calendario, Storage (lectura), MapaCYD (lectura)     |
-| invitado  | Solo Calendario                                      |
+| Rol       | Acceso                                                       |
+|-----------|----------------------------------------------------------------|
+| admin     | Todas las apps + gestión completa                               |
+| familia   | Calendario, Storage (lectura), MapaCYD (lectura), Ytdl          |
+| invitado  | Solo Calendario                                                 |
 
 El usuario por defecto se llama `propietario` y tiene rol `admin`.
 
@@ -241,11 +278,12 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Panel              | :5174    | :3002   |
 | Storage            | :5173    | :3001   |
 | MapaCYD            | :5175    | :3003   |
+| Ytdl               | :5176    | :3004   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
 
 ## Deuda técnica conocida
 
-- **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd SÍ debería incluir tests a partir de ahora.
-- **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend` y `mapacyd/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
+- **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
+- **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend` y `ytdl/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.

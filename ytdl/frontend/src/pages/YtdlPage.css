@@ -1,0 +1,130 @@
+.ytdl-page {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  padding: 24px;
+}
+
+.ytdl-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 32px;
+}
+
+.ytdl-card h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.ytdl-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.ytdl-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.ytdl-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.ytdl-input:focus {
+  border-color: var(--accent);
+}
+
+.ytdl-input-error {
+  border-color: var(--danger);
+}
+
+.ytdl-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.ytdl-server-error {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.ytdl-format-toggle {
+  display: flex;
+  gap: 8px;
+  margin: 20px 0;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+
+.ytdl-format-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background 0.2s, color 0.2s;
+}
+
+.ytdl-format-btn.active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.ytdl-download-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  transition: background 0.2s;
+}
+
+.ytdl-download-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.ytdl-download-btn:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+.ytdl-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ytdl-spin 0.7s linear infinite;
+}
+
+@keyframes ytdl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

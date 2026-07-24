@@ -14,6 +14,8 @@
 #   storage frontend    →  :5173
 #   mapacyd backend     →  :3003
 #   mapacyd frontend    →  :5175
+#   ytdl backend        →  :3004
+#   ytdl frontend       →  :5176
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -154,6 +156,14 @@ StartBackground "mapacyd-backend   :3003" "mapacyd-backend.log" `
      KEYCLOAK_JWKS_URI="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ALLOWED_ORIGINS="http://localhost:5175" }
 
+# ytdl backend
+EnsureDeps (Join-Path $SCRIPT_DIR "ytdl\backend")
+StartBackground "ytdl-backend      :3004" "ytdl-backend.log" `
+  (Join-Path $SCRIPT_DIR "ytdl\backend") `
+  "npm run dev" `
+  @{ PORT="3004"; KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5176" }
+
 # Calendario backend (Spring Boot)
 StartBackground "calendario-backend :8081" "calendario-backend.log" `
   (Join-Path $SCRIPT_DIR "backend") `
@@ -173,6 +183,10 @@ StartBackground "storage-frontend   :5173" "storage-frontend.log" `
 EnsureDeps (Join-Path $SCRIPT_DIR "mapacyd\frontend")
 StartBackground "mapacyd-frontend   :5175" "mapacyd-frontend.log" `
   (Join-Path $SCRIPT_DIR "mapacyd\frontend") "npm run dev"
+
+EnsureDeps (Join-Path $SCRIPT_DIR "ytdl\frontend")
+StartBackground "ytdl-frontend      :5176" "ytdl-frontend.log" `
+  (Join-Path $SCRIPT_DIR "ytdl\frontend") "npm run dev"
 
 EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
 StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
@@ -206,6 +220,10 @@ Write-Host ""
 Write-Host "  MapaCYD" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5175/mapacyd/"
 Write-Host "    Backend health   ->  http://localhost:3003/health"
+Write-Host ""
+Write-Host "  YouTube Downloader" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5176/ytdl/"
+Write-Host "    Backend health   ->  http://localhost:3004/ytdl/api/health"
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow
