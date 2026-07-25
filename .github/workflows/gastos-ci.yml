@@ -1,0 +1,125 @@
+name: CI/CD Gastos
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'gastos/**'
+      - '.github/workflows/gastos-ci.yml'
+
+jobs:
+  # ─── 1. Build backend ────────────────────────────────────────────────────────
+  lint-and-build-backend:
+    name: Gastos · Build backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: gastos/backend
+        run: npm ci && npm run build
+
+      - name: Run tests
+        working-directory: gastos/backend
+        run: npm test
+
+  # ─── 2. Build frontend ───────────────────────────────────────────────────────
+  lint-and-build-frontend:
+    name: Gastos · Build frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: gastos/frontend
+        run: npm ci && npm run build
+
+  # ─── 3. Docker build & push to GHCR ─────────────────────────────────────────
+  docker-build-and-push:
+    name: Gastos · Docker build & push
+    runs-on: ubuntu-latest
+    needs: [lint-and-build-backend, lint-and-build-frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build & push gastos-backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./gastos/backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/gastos-backend:latest
+            ghcr.io/${{ env.OWNER }}/gastos-backend:${{ github.sha }}
+
+      - name: Build & push gastos-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./gastos/frontend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/gastos-frontend:latest
+            ghcr.io/${{ env.OWNER }}/gastos-frontend:${{ github.sha }}
+
+  # ─── 4. Deploy al VPS ────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy · Gastos VPS
+    runs-on: ubuntu-latest
+    needs: docker-build-and-push
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar docker-compose e init.sql al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "gastos/infra/docker-compose.prod.yml,gastos/infra/init.sql"
+          target: /home/manu/gastos
+          strip_components: 2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /home/manu/gastos
+
+            docker compose -f docker-compose.prod.yml pull gastos-backend gastos-frontend
+            docker compose -f docker-compose.prod.yml up -d gastos-db gastos-backend gastos-frontend
+            docker compose -f docker-compose.prod.yml ps

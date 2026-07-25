@@ -236,6 +236,48 @@ valida contra la allowlist de YouTube ANTES de invocar cualquier proceso hijo.
 
 ---
 
+## Gastos — Tracker de gastos personales
+
+### Ubicación
+Calendario/gastos/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/, storage/, mapacyd/ y ytdl/)
+- Frontend: React + Vite + TypeScript
+- Base de datos: PostgreSQL 15, propia (`gastos`, misma instancia compartida que `mapacyd`), tabla `gasto`
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón que panel/storage/mapacyd/ytdl)
+- OCR: Tesseract (binario nativo, invocado como proceso hijo vía `execFile` — sin runtime Python/ML) + `sharp` para preprocesado de imagen (escala de grises, contraste, umbralización)
+- Bot de Telegram: Telegraf, long polling (sin webhook público), arrancado en el mismo proceso que el backend Fastify
+- Validaciones: Zod en todos los endpoints que reciben body
+- Sin ORM — queries directas con el cliente pg
+
+### Roles
+Único rol con acceso: `admin` (el propietario es el único usuario). `familia` e `invitado` no tienen acceso a Gastos, ni a la API ni al AppLauncher.
+
+### Rutas (`/gastos/api/*`)
+- `GET /gastos` — listado, filtros `mes`/`categoria`/`estado`, siempre `activo=true`
+- `POST /gastos` — alta manual, directamente `estado='confirmado'`, `origen='manual'`
+- `PATCH /gastos/:id` — edición de campos y/o confirmación de un borrador (`estado='confirmado'`)
+- `DELETE /gastos/:id` — borrado lógico (`activo=false`, `deleted_at=now()`)
+- `GET /totales?mes=YYYY-MM` — suma de gastos `confirmado` del mes, agrupada por categoría (los `pendiente_revision` NUNCA cuentan)
+- `GET /categorias` — categorías distintas usadas hasta ahora (autocompletado)
+- `POST /gastos/ocr` — interno (sigue exigiendo JWT + rol admin), recibe una imagen + `perfil: 'ticket'|'banco'`, ejecuta OCR + el parser correspondiente, guarda la imagen en `GASTOS_IMAGES_PATH` y crea un `gasto` en `estado='pendiente_revision'`
+- `GET /health`
+
+### Flujo del bot de Telegram
+El propietario envía una foto (ticket de papel o captura de app bancaria) al bot. El bot responde con un teclado inline ("🧾 Ticket" / "🏦 Banco"); al pulsar, descarga la foto vía la API de Telegram y llama al pipeline de OCR en el mismo proceso (sin segundo salto HTTP), y responde con el importe/fecha/comercio extraídos, indicando que queda pendiente de revisión en la app. Cualquier mensaje que no venga de `TELEGRAM_OWNER_CHAT_ID` se ignora sin respuesta. Ver `gastos/README.md` para el alta manual del bot vía `@BotFather`.
+
+### Variables de entorno del backend
+`GASTOS_DB_HOST`, `GASTOS_DB_NAME`, `GASTOS_DB_USER`, `GASTOS_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3005), `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_CHAT_ID`, `GASTOS_IMAGES_PATH`
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/gastos-backend:latest`, `ghcr.io/manuhddev/gastos-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los tres roles de realm en Keycloak son `admin`, `familia`, `invitado`.
@@ -248,7 +290,9 @@ Cualquier código que filtre por rol DEBE usar exactamente estos nombres.
 | invitado  | Solo Calendario                                                 |
 
 Ytdl no aparece en esta tabla porque es pública: no requiere ningún rol ni
-sesión iniciada, a diferencia del resto de subapps.
+sesión iniciada, a diferencia del resto de subapps. Gastos, igual que Panel,
+solo es accesible para `admin` (uso exclusivo del propietario) — `familia` e
+`invitado` no la ven en el AppLauncher ni pueden llamar a su API.
 
 El usuario por defecto se llama `propietario` y tiene rol `admin`.
 
@@ -287,9 +331,11 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Storage            | :5173    | :3001   |
 | MapaCYD            | :5175    | :3003   |
 | Ytdl               | :5176    | :3004   |
+| Gastos             | :5177    | :3005   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
+| PostgreSQL (gastos) | :5435  | —       |
 
 ## Deuda técnica conocida
 

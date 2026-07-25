@@ -18,6 +18,7 @@ function appUrls(): Record<string, string> {
     mapacyd:    local ? 'http://localhost:5175/mapacyd/'  : '/mapacyd/',
     panel:      local ? 'http://localhost:5174/panel/'    : '/panel/',
     ytdl:       local ? 'http://localhost:5176/ytdl/'     : '/ytdl/',
+    gastos:     local ? 'http://localhost:5177/gastos/'   : '/gastos/',
   };
 }
 
@@ -39,6 +40,7 @@ export class AppLauncher {
     { id: 'mapacyd',    nombre: 'MapaCYD',    color: '#30d158', roles: ['admin','familia'], url: '' },
     { id: 'panel',      nombre: 'Panel',      color: '#ff9f0a', roles: ['admin'],           url: '' },
     { id: 'ytdl',       nombre: 'Ytdl',       color: '#ff375f', roles: null,                url: '' },
+    { id: 'gastos',     nombre: 'Gastos',     color: '#ffd60a', roles: ['admin'],           url: '' },
   ];
 
   get apps(): App[] {

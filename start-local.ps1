@@ -16,6 +16,8 @@
 #   mapacyd frontend    →  :5175
 #   ytdl backend        →  :3004
 #   ytdl frontend       →  :5176
+#   gastos backend      →  :3005
+#   gastos frontend     →  :5177
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -37,6 +39,7 @@ function Cleanup {
   warn "La infraestructura Docker sigue corriendo. Para pararla:"
   warn "  cd infra; docker compose down"
   warn "  cd mapacyd\infra; docker compose -f docker-compose.local.yml down"
+  warn "  cd gastos\infra; docker compose -f docker-compose.local.yml down"
 }
 
 # Registrar cleanup al salir
@@ -83,6 +86,10 @@ info "PostgreSQL (mapacyd :5434)..."
 Set-Location (Join-Path $SCRIPT_DIR "mapacyd\infra")
 docker compose -f docker-compose.local.yml up -d
 
+info "PostgreSQL (gastos :5435)..."
+Set-Location (Join-Path $SCRIPT_DIR "gastos\infra")
+docker compose -f docker-compose.local.yml up -d
+
 Set-Location $SCRIPT_DIR
 
 # ── 4. Esperar a PostgreSQL (calendario) ─────────────────────────────────────
@@ -109,6 +116,18 @@ do {
   Write-Host -NoNewline "."; Start-Sleep -Seconds 2
 } while ($true)
 Write-Host ""; info "  ✓ PostgreSQL (mapacyd) listo."
+
+# ── 5b. Esperar a PostgreSQL (gastos) ────────────────────────────────────────
+info "PostgreSQL gastos..."
+$retries = 30
+do {
+  $r = docker compose -f "$SCRIPT_DIR\gastos\infra\docker-compose.local.yml" exec -T gastos-db pg_isready -U gastos -d gastos 2>$null
+  if ($LASTEXITCODE -eq 0) { break }
+  $retries--
+  if ($retries -le 0) { err "PostgreSQL (gastos) no arrancó." }
+  Write-Host -NoNewline "."; Start-Sleep -Seconds 2
+} while ($true)
+Write-Host ""; info "  ✓ PostgreSQL (gastos) listo."
 
 # ── 6. Esperar a Keycloak ────────────────────────────────────────────────────
 info "Keycloak (puede tardar ~30s la primera vez)..."
@@ -164,6 +183,18 @@ StartBackground "ytdl-backend      :3004" "ytdl-backend.log" `
   @{ PORT="3004"; KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ORIGIN="http://localhost:5176" }
 
+# Gastos backend
+EnsureDeps (Join-Path $SCRIPT_DIR "gastos\backend")
+StartBackground "gastos-backend    :3005" "gastos-backend.log" `
+  (Join-Path $SCRIPT_DIR "gastos\backend") `
+  "npm run dev" `
+  @{ PORT="3005"; GASTOS_DB_HOST="localhost"; GASTOS_DB_PORT="5435";
+     GASTOS_DB_NAME="gastos"; GASTOS_DB_USER="gastos"; GASTOS_DB_PASSWORD="gastos123";
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5177";
+     GASTOS_IMAGES_PATH=(Join-Path $SCRIPT_DIR "gastos\backend\data\images");
+     TELEGRAM_BOT_TOKEN=$env:TELEGRAM_BOT_TOKEN; TELEGRAM_OWNER_CHAT_ID=$env:TELEGRAM_OWNER_CHAT_ID }
+
 # Calendario backend (Spring Boot)
 StartBackground "calendario-backend :8081" "calendario-backend.log" `
   (Join-Path $SCRIPT_DIR "backend") `
@@ -187,6 +218,10 @@ StartBackground "mapacyd-frontend   :5175" "mapacyd-frontend.log" `
 EnsureDeps (Join-Path $SCRIPT_DIR "ytdl\frontend")
 StartBackground "ytdl-frontend      :5176" "ytdl-frontend.log" `
   (Join-Path $SCRIPT_DIR "ytdl\frontend") "npm run dev"
+
+EnsureDeps (Join-Path $SCRIPT_DIR "gastos\frontend")
+StartBackground "gastos-frontend    :5177" "gastos-frontend.log" `
+  (Join-Path $SCRIPT_DIR "gastos\frontend") "npm run dev"
 
 EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
 StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
@@ -224,6 +259,11 @@ Write-Host ""
 Write-Host "  YouTube Downloader" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5176/ytdl/"
 Write-Host "    Backend health   ->  http://localhost:3004/ytdl/api/health"
+Write-Host ""
+Write-Host "  Gastos" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5177/gastos/"
+Write-Host "    Backend health   ->  http://localhost:3005/gastos/api/health"
+Write-Host "    Bot de Telegram deshabilitado hasta configurar TELEGRAM_BOT_TOKEN/TELEGRAM_OWNER_CHAT_ID (ver gastos/README.md)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow

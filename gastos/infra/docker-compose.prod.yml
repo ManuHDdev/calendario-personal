@@ -1,0 +1,66 @@
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  gastos-db:
+    image: postgres:15
+    container_name: gastos-db
+    environment:
+      POSTGRES_DB:       ${GASTOS_DB_NAME}
+      POSTGRES_USER:     ${GASTOS_DB_USER}
+      POSTGRES_PASSWORD: ${GASTOS_DB_PASSWORD}
+    volumes:
+      - gastos_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GASTOS_DB_USER} -d ${GASTOS_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calendario-net
+
+  gastos-backend:
+    image: ghcr.io/manuhddev/gastos-backend:latest
+    container_name: gastos-backend
+    environment:
+      PORT:                     3005
+      GASTOS_DB_HOST:           gastos-db
+      GASTOS_DB_NAME:           ${GASTOS_DB_NAME}
+      GASTOS_DB_USER:           ${GASTOS_DB_USER}
+      GASTOS_DB_PASSWORD:       ${GASTOS_DB_PASSWORD}
+      KEYCLOAK_CERTS_URL:       ${KEYCLOAK_CERTS_URL}
+      CORS_ORIGIN:              ${CORS_ORIGIN}
+      GASTOS_IMAGES_PATH:       /app/data/images
+      TELEGRAM_BOT_TOKEN:       ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_OWNER_CHAT_ID:   ${TELEGRAM_OWNER_CHAT_ID}
+      NODE_ENV:                 production
+    volumes:
+      - gastos_images:/app/data/images
+    depends_on:
+      gastos-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3005/gastos/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - calendario-net
+
+  gastos-frontend:
+    image: ghcr.io/manuhddev/gastos-frontend:latest
+    container_name: gastos-frontend
+    depends_on:
+      - gastos-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+volumes:
+  gastos_pgdata:
+  gastos_images:

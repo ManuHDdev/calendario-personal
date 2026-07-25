@@ -17,6 +17,8 @@
 #   mapacyd frontend    →  :5175
 #   ytdl backend        →  :3004
 #   ytdl frontend       →  :5176
+#   gastos backend      →  :3005
+#   gastos frontend     →  :5177
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -53,6 +55,7 @@ cleanup() {
   warn "La infraestructura Docker sigue corriendo. Para pararla:"
   warn "  cd infra && docker compose down"
   warn "  cd mapacyd/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd gastos/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -114,6 +117,9 @@ info "PostgreSQL (calendario :5433) y Keycloak (:8080)..."
 info "PostgreSQL (mapacyd :5434)..."
 (cd "$SCRIPT_DIR/mapacyd/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (gastos :5435)..."
+(cd "$SCRIPT_DIR/gastos/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -128,6 +134,12 @@ wait_for_container \
   "PostgreSQL mapacyd" \
   "mapacyd-db-local" \
   "docker exec mapacyd-db-local pg_isready -U mapacyd -d mapacyd" \
+  30
+
+wait_for_container \
+  "PostgreSQL gastos" \
+  "gastos-db-local" \
+  "docker exec gastos-db-local pg_isready -U gastos -d gastos" \
   30
 
 wait_for_container \
@@ -185,6 +197,21 @@ start_bg "ytdl-backend      :3004" "ytdl-backend.log" "$SCRIPT_DIR/ytdl/backend"
       CORS_ORIGIN="http://localhost:5176" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/gastos/backend"
+start_bg "gastos-backend    :3005" "gastos-backend.log" "$SCRIPT_DIR/gastos/backend" \
+  env PORT=3005 \
+      GASTOS_DB_HOST="localhost" \
+      GASTOS_DB_PORT="5435" \
+      GASTOS_DB_NAME="gastos" \
+      GASTOS_DB_USER="gastos" \
+      GASTOS_DB_PASSWORD="gastos123" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5177" \
+      GASTOS_IMAGES_PATH="$SCRIPT_DIR/gastos/backend/data/images" \
+      TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}" \
+      TELEGRAM_OWNER_CHAT_ID="${TELEGRAM_OWNER_CHAT_ID:-}" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -205,6 +232,10 @@ start_bg "mapacyd-frontend   :5175" "mapacyd-frontend.log" "$SCRIPT_DIR/mapacyd/
 
 ensure_deps "$SCRIPT_DIR/ytdl/frontend"
 start_bg "ytdl-frontend      :5176" "ytdl-frontend.log" "$SCRIPT_DIR/ytdl/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/gastos/frontend"
+start_bg "gastos-frontend    :5177" "gastos-frontend.log" "$SCRIPT_DIR/gastos/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -242,6 +273,11 @@ echo ""
 echo -e "  ${CYAN}YouTube Downloader${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5176/ytdl/${NC}"
 echo -e "    Backend health   →  http://localhost:3004/ytdl/api/health"
+echo ""
+echo -e "  ${CYAN}Gastos${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5177/gastos/${NC}"
+echo -e "    Backend health   →  http://localhost:3005/gastos/api/health"
+echo -e "    ${YELLOW}ℹ  Bot de Telegram deshabilitado hasta configurar TELEGRAM_BOT_TOKEN/TELEGRAM_OWNER_CHAT_ID (ver gastos/README.md)${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"
