@@ -16,6 +16,20 @@ export function isFromOwner(chatId: number | string | undefined, ownerChatId: st
 
 let bot: Telegraf | null = null;
 
+interface TelegramPhotoSize { file_id: string }
+
+/** Telegram envía el mismo encuadre en varias resoluciones; la última es la de mayor calidad. */
+export function pickBestPhotoFileId(photos: TelegramPhotoSize[]): string | undefined {
+  return photos.length > 0 ? photos[photos.length - 1].file_id : undefined;
+}
+
+// La foto llega en un mensaje del propio owner; el teclado Ticket/Banco se
+// envía como un mensaje NUEVO del bot (ctx.reply no adjunta al original), así
+// que ctx.callbackQuery.message en el handler del botón es ese mensaje del
+// bot — nunca contiene la foto. Por eso el file_id se guarda aquí, por
+// chat.id, en cuanto llega la foto, y se recupera al pulsar el botón.
+const pendingPhotos = new Map<number, string>();
+
 /** Arranca el bot en long polling. Idempotente: una segunda llamada devuelve la instancia ya creada. */
 export function startBot(): Telegraf {
   if (!BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN no configurado');
@@ -32,6 +46,10 @@ export function startBot(): Telegraf {
   });
 
   instance.on('photo', async (ctx) => {
+    const fileId = pickBestPhotoFileId(ctx.message.photo);
+    if (!fileId) return;
+    pendingPhotos.set(ctx.chat.id, fileId);
+
     await ctx.reply(
       '¿Qué tipo de imagen es?',
       Markup.inlineKeyboard([
@@ -45,16 +63,15 @@ export function startBot(): Telegraf {
     const perfil = ctx.match[1] as Perfil;
     await ctx.answerCbQuery();
 
-    const message = ctx.callbackQuery.message;
-    const photos = message && 'photo' in message ? message.photo : undefined;
-    if (!photos || photos.length === 0) {
+    const chatId = ctx.chat?.id;
+    const fileId = chatId !== undefined ? pendingPhotos.get(chatId) : undefined;
+    if (!fileId) {
       await ctx.reply('No se encontró la imagen. Vuelve a enviarla.');
       return;
     }
+    if (chatId !== undefined) pendingPhotos.delete(chatId);
 
     try {
-      // Telegram envía el mismo tamaño en varias resoluciones; la última es la de mayor calidad.
-      const fileId = photos[photos.length - 1].file_id;
       const fileLink = await ctx.telegram.getFileLink(fileId);
       const response = await fetch(fileLink.toString());
       const buffer = Buffer.from(await response.arrayBuffer());
