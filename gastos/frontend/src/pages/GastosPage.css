@@ -1,0 +1,345 @@
+/* ── Layout ──────────────────────────────────────────────── */
+.gastos-layout {
+  min-height: 100vh;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.gastos-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.gastos-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gastos-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.gastos-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gastos-username {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+.gastos-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease, color 150ms ease;
+}
+.gastos-logout-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ── Main ────────────────────────────────────────────────── */
+.gastos-main {
+  flex: 1;
+  padding: 32px 24px 64px;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.gastos-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.gastos-error {
+  font-size: 13px;
+  color: var(--danger);
+  background: rgba(255, 59, 48, 0.08);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  padding: 16px 0;
+}
+
+/* ── Form ────────────────────────────────────────────────── */
+.expense-form {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expense-form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.expense-form-row input {
+  flex: 1;
+  min-width: 140px;
+  padding: 9px 12px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.expense-form-row input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.btn-primary {
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1d1f;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease;
+  white-space: nowrap;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:disabled { opacity: 0.6; cursor: default; }
+
+.expense-form-error {
+  font-size: 13px;
+  color: var(--danger);
+}
+
+/* ── Filters ─────────────────────────────────────────────── */
+.gastos-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.gastos-filters input {
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* ── Pending review cards ────────────────────────────────── */
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pending-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pending-origin-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.pending-fields {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pending-fields input {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 10px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.pending-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-confirm {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--success);
+  border-radius: var(--radius-sm);
+}
+
+.btn-discard {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--danger);
+  background: rgba(255, 59, 48, 0.08);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Totals ──────────────────────────────────────────────── */
+.totals-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.totals-headline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 10px;
+}
+
+.totals-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.totals-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.totals-breakdown {
+  list-style: none;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.totals-breakdown li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── Expense table ───────────────────────────────────────── */
+.expense-table-wrap {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.expense-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.expense-table thead tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.expense-table th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.expense-table td {
+  padding: 12px 16px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.expense-table tbody tr:last-child td { border-bottom: none; }
+.expense-table tbody tr:hover { background: var(--bg-secondary); }
+
+.expense-amount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.no-data { color: var(--text-tertiary); }
+
+.expense-actions-cell { text-align: right; }
+
+.tbl-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.tbl-btn--delete:hover {
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--danger);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .gastos-header { padding: 0 16px; }
+  .gastos-title { font-size: 15px; }
+  .gastos-username { display: none; }
+  .gastos-main { padding: 20px 16px 48px; }
+
+  .expense-table th:nth-child(4),
+  .expense-table td:nth-child(4) {
+    display: none;
+  }
+}
