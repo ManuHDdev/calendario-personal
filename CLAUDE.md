@@ -302,6 +302,9 @@ Calendario/ofertas/ dentro del monorepo elbunkerdelingeniero.
 - `PATCH /searches/:id` — edición de campos (admin, Keycloak)
 - `DELETE /searches/:id` — borrado lógico (`activo=false`, `deleted_at=now()`) (admin, Keycloak)
 - `GET /searches/active` — **bearer-token-gated (`SCRAPER_API_KEY`), no Keycloak** — devuelve solo las búsquedas `activo=true`, mapeadas a un DTO explícito (`name`, `keyword`, `max_price`, `min_price`, `latitude`, `longitude`, `distance_km`, `milanuncios_province_slug`, `sites: { wallapop, milanuncios, vinted }`) que imita el `SearchQuery`/`config.yaml` que ya usa `marketplace-watcher`, no un volcado de las columnas internas de `busqueda`
+- `GET /scraper/state` — devuelve `{ running, updated_at }` del on/off global del scraper (admin, Keycloak), usado por la UI al cargar
+- `PATCH /scraper/state` — actualiza `{ running: boolean }` (admin, Keycloak, Zod), devuelve el nuevo estado — es lo que llama el botón de pausar/reanudar de la UI
+- `GET /scraper/status` — **bearer-token-gated (`SCRAPER_API_KEY`), no Keycloak** — devuelve solo `{ running }`, pensado para que `marketplace-watcher` lo consulte antes de cada ejecución
 - `GET /health`
 
 ### Relación con marketplace-watcher (IMPORTANTE)

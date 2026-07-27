@@ -1,5 +1,5 @@
 import keycloak from './keycloak';
-import type { Busqueda, BusquedaFormData, BusquedaUpdateData } from '../types';
+import type { Busqueda, BusquedaFormData, BusquedaUpdateData, ScraperState } from '../types';
 
 const BASE = '/ofertas/api';
 
@@ -50,4 +50,20 @@ export async function deleteSearch(id: string): Promise<void> {
     headers: headers(),
   });
   if (!res.ok && res.status !== 204) await handleError(res);
+}
+
+export async function getScraperState(): Promise<ScraperState> {
+  const res = await fetch(`${BASE}/scraper/state`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<ScraperState>;
+}
+
+export async function updateScraperState(running: boolean): Promise<ScraperState> {
+  const res = await fetch(`${BASE}/scraper/state`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify({ running }),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<ScraperState>;
 }
