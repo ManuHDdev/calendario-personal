@@ -19,6 +19,7 @@ function appUrls(): Record<string, string> {
     panel:      local ? 'http://localhost:5174/panel/'    : '/panel/',
     ytdl:       local ? 'http://localhost:5176/ytdl/'     : '/ytdl/',
     gastos:     local ? 'http://localhost:5177/gastos/'   : '/gastos/',
+    ofertas:    local ? 'http://localhost:5178/ofertas/'  : '/ofertas/',
   };
 }
 
@@ -41,6 +42,7 @@ export class AppLauncher {
     { id: 'panel',      nombre: 'Panel',      color: '#ff9f0a', roles: ['admin'],           url: '' },
     { id: 'ytdl',       nombre: 'Ytdl',       color: '#ff375f', roles: null,                url: '' },
     { id: 'gastos',     nombre: 'Gastos',     color: '#ffd60a', roles: ['admin'],           url: '' },
+    { id: 'ofertas',    nombre: 'Ofertas',    color: '#bf5af2', roles: ['admin'],           url: '' },
   ];
 
   get apps(): App[] {

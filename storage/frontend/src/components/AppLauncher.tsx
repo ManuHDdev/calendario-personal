@@ -16,6 +16,7 @@ const APPS: AppDef[] = [
   { id: 'panel',      nombre: 'Panel',      color: '#ff9f0a', roles: ['admin'] },
   { id: 'ytdl',       nombre: 'Ytdl',       color: '#ff375f', roles: null },
   { id: 'gastos',     nombre: 'Gastos',     color: '#ffd60a', roles: ['admin'] },
+  { id: 'ofertas',    nombre: 'Ofertas',    color: '#bf5af2', roles: ['admin'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -27,6 +28,7 @@ function getUrls(): Record<string, string> {
     panel:      local ? 'http://localhost:5174/panel/'   : '/panel/',
     ytdl:       local ? 'http://localhost:5176/ytdl/'    : '/ytdl/',
     gastos:     local ? 'http://localhost:5177/gastos/'  : '/gastos/',
+    ofertas:    local ? 'http://localhost:5178/ofertas/' : '/ofertas/',
   };
 }
 
@@ -73,6 +75,13 @@ function AppIcon({ id }: { id: string }) {
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
           <path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
           <path d="M16 12h3a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-3a2 2 0 0 1 0-4z"/>
+        </svg>
+      );
+    case 'ofertas':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <path d="M20.59 13.41 12 22l-9-9V3h10l7.59 7.59a2 2 0 0 1 0 2.82z"/>
+          <circle cx="7.5" cy="7.5" r="1.5" fill="white" stroke="none"/>
         </svg>
       );
     default:

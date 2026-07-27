@@ -278,6 +278,44 @@ El propietario envía una foto (ticket de papel o captura de app bancaria) al bo
 
 ---
 
+## Ofertas — UI de gestión para marketplace-watcher
+
+### Ubicación
+Calendario/ofertas/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/, storage/, mapacyd/, ytdl/ y gastos/)
+- Frontend: React + Vite + TypeScript
+- Base de datos: PostgreSQL 15, propia (`ofertas`, misma instancia compartida que `mapacyd`/`gastos`), tabla `busqueda`
+- Autenticación: **dos mecanismos independientes, para dos audiencias distintas**:
+  - Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón que panel/storage/mapacyd/ytdl/gastos) para todas las rutas humanas `/ofertas/api/searches*`.
+  - Bearer token estático (`SCRAPER_API_KEY`, comparación en tiempo constante) exclusivamente para `GET /ofertas/api/searches/active` — pensado para un consumidor externo sin login interactivo (ver "Relación con marketplace-watcher" más abajo). Un JWT de Keycloak válido NO da acceso a esa ruta, y ese bearer token NO da acceso a las rutas CRUD.
+- Validaciones: Zod en todos los endpoints que reciben body
+- Sin ORM — queries directas con el cliente pg
+
+### Roles
+Único rol con acceso humano: `admin` (el propietario es el único usuario), misma postura que Gastos/Panel. `familia` e `invitado` no tienen acceso a Ofertas, ni a la API ni al AppLauncher. El endpoint `/searches/active` no usa roles de Keycloak en absoluto — usa el bearer token descrito arriba.
+
+### Rutas (`/ofertas/api/*`)
+- `GET /searches` — listado de búsquedas guardadas, siempre `activo=true` (admin, Keycloak)
+- `POST /searches` — alta de una búsqueda guardada (admin, Keycloak)
+- `PATCH /searches/:id` — edición de campos (admin, Keycloak)
+- `DELETE /searches/:id` — borrado lógico (`activo=false`, `deleted_at=now()`) (admin, Keycloak)
+- `GET /searches/active` — **bearer-token-gated (`SCRAPER_API_KEY`), no Keycloak** — devuelve solo las búsquedas `activo=true`, mapeadas a un DTO explícito (`name`, `keyword`, `max_price`, `min_price`, `latitude`, `longitude`, `distance_km`, `milanuncios_province_slug`, `sites: { wallapop, milanuncios, vinted }`) que imita el `SearchQuery`/`config.yaml` que ya usa `marketplace-watcher`, no un volcado de las columnas internas de `busqueda`
+- `GET /health`
+
+### Relación con marketplace-watcher (IMPORTANTE)
+`ofertas` es la UI de gestión para `marketplace-watcher`, un scraper Python **fuera de este monorepo** (`marketplace-watcher/`, desplegado vía systemd timer en el VPS) que vigila Wallapop/Milanuncios/Vinted. Este subapp expone y persiste las búsquedas guardadas y el contrato de lectura (`GET /searches/active`), pero **conectar el scraper para que realmente llame a esta API en vez de leer su `config.yaml` local es un follow-up explícito y separado**, no parte de esta feature. Hasta que ese follow-up se haga, `marketplace-watcher` sigue funcionando exactamente igual que hoy, sin ninguna dependencia dura de `ofertas`.
+
+### Variables de entorno del backend
+`OFERTAS_DB_HOST`, `OFERTAS_DB_NAME`, `OFERTAS_DB_USER`, `OFERTAS_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3006), `SCRAPER_API_KEY` (token estático generado una sola vez, p. ej. `openssl rand -hex 32` — nunca se loguea ni se devuelve en ninguna respuesta)
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/ofertas-backend:latest`, `ghcr.io/manuhddev/ofertas-frontend:latest`
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los tres roles de realm en Keycloak son `admin`, `familia`, `invitado`.
@@ -292,7 +330,8 @@ Cualquier código que filtre por rol DEBE usar exactamente estos nombres.
 Ytdl no aparece en esta tabla porque es pública: no requiere ningún rol ni
 sesión iniciada, a diferencia del resto de subapps. Gastos, igual que Panel,
 solo es accesible para `admin` (uso exclusivo del propietario) — `familia` e
-`invitado` no la ven en el AppLauncher ni pueden llamar a su API.
+`invitado` no la ven en el AppLauncher ni pueden llamar a su API. Ofertas
+sigue exactamente la misma postura que Gastos/Panel: solo `admin`.
 
 El usuario por defecto se llama `propietario` y tiene rol `admin`.
 
@@ -332,10 +371,12 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | MapaCYD            | :5175    | :3003   |
 | Ytdl               | :5176    | :3004   |
 | Gastos             | :5177    | :3005   |
+| Ofertas            | :5178    | :3006   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
 | PostgreSQL (gastos) | :5435  | —       |
+| PostgreSQL (ofertas)| :5436  | —       |
 
 ## Deuda técnica conocida
 
