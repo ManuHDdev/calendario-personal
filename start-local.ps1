@@ -18,6 +18,8 @@
 #   ytdl frontend       →  :5176
 #   gastos backend      →  :3005
 #   gastos frontend     →  :5177
+#   ofertas backend     →  :3006
+#   ofertas frontend    →  :5178
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -40,6 +42,7 @@ function Cleanup {
   warn "  cd infra; docker compose down"
   warn "  cd mapacyd\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd gastos\infra; docker compose -f docker-compose.local.yml down"
+  warn "  cd ofertas\infra; docker compose -f docker-compose.local.yml down"
 }
 
 # Registrar cleanup al salir
@@ -90,6 +93,10 @@ info "PostgreSQL (gastos :5435)..."
 Set-Location (Join-Path $SCRIPT_DIR "gastos\infra")
 docker compose -f docker-compose.local.yml up -d
 
+info "PostgreSQL (ofertas :5436)..."
+Set-Location (Join-Path $SCRIPT_DIR "ofertas\infra")
+docker compose -f docker-compose.local.yml up -d
+
 Set-Location $SCRIPT_DIR
 
 # ── 4. Esperar a PostgreSQL (calendario) ─────────────────────────────────────
@@ -128,6 +135,18 @@ do {
   Write-Host -NoNewline "."; Start-Sleep -Seconds 2
 } while ($true)
 Write-Host ""; info "  ✓ PostgreSQL (gastos) listo."
+
+# ── 5c. Esperar a PostgreSQL (ofertas) ───────────────────────────────────────
+info "PostgreSQL ofertas..."
+$retries = 30
+do {
+  $r = docker compose -f "$SCRIPT_DIR\ofertas\infra\docker-compose.local.yml" exec -T ofertas-db pg_isready -U ofertas -d ofertas 2>$null
+  if ($LASTEXITCODE -eq 0) { break }
+  $retries--
+  if ($retries -le 0) { err "PostgreSQL (ofertas) no arrancó." }
+  Write-Host -NoNewline "."; Start-Sleep -Seconds 2
+} while ($true)
+Write-Host ""; info "  ✓ PostgreSQL (ofertas) listo."
 
 # ── 6. Esperar a Keycloak ────────────────────────────────────────────────────
 info "Keycloak (puede tardar ~30s la primera vez)..."
@@ -195,6 +214,17 @@ StartBackground "gastos-backend    :3005" "gastos-backend.log" `
      GASTOS_IMAGES_PATH=(Join-Path $SCRIPT_DIR "gastos\backend\data\images");
      TELEGRAM_BOT_TOKEN=$env:TELEGRAM_BOT_TOKEN; TELEGRAM_OWNER_CHAT_ID=$env:TELEGRAM_OWNER_CHAT_ID }
 
+# Ofertas backend
+EnsureDeps (Join-Path $SCRIPT_DIR "ofertas\backend")
+StartBackground "ofertas-backend   :3006" "ofertas-backend.log" `
+  (Join-Path $SCRIPT_DIR "ofertas\backend") `
+  "npm run dev" `
+  @{ PORT="3006"; OFERTAS_DB_HOST="localhost"; OFERTAS_DB_PORT="5436";
+     OFERTAS_DB_NAME="ofertas"; OFERTAS_DB_USER="ofertas"; OFERTAS_DB_PASSWORD="ofertas123";
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5178";
+     SCRAPER_API_KEY=$(if ($env:SCRAPER_API_KEY) { $env:SCRAPER_API_KEY } else { "local-dev-scraper-key" }) }
+
 # Calendario backend (Spring Boot)
 StartBackground "calendario-backend :8081" "calendario-backend.log" `
   (Join-Path $SCRIPT_DIR "backend") `
@@ -222,6 +252,10 @@ StartBackground "ytdl-frontend      :5176" "ytdl-frontend.log" `
 EnsureDeps (Join-Path $SCRIPT_DIR "gastos\frontend")
 StartBackground "gastos-frontend    :5177" "gastos-frontend.log" `
   (Join-Path $SCRIPT_DIR "gastos\frontend") "npm run dev"
+
+EnsureDeps (Join-Path $SCRIPT_DIR "ofertas\frontend")
+StartBackground "ofertas-frontend   :5178" "ofertas-frontend.log" `
+  (Join-Path $SCRIPT_DIR "ofertas\frontend") "npm run dev"
 
 EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
 StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
@@ -264,6 +298,11 @@ Write-Host "  Gastos" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5177/gastos/"
 Write-Host "    Backend health   ->  http://localhost:3005/gastos/api/health"
 Write-Host "    Bot de Telegram deshabilitado hasta configurar TELEGRAM_BOT_TOKEN/TELEGRAM_OWNER_CHAT_ID (ver gastos/README.md)" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  Ofertas" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5178/ofertas/"
+Write-Host "    Backend health   ->  http://localhost:3006/ofertas/api/health"
+Write-Host "    SCRAPER_API_KEY de desarrollo por defecto: local-dev-scraper-key (sobrescribible con la env var)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow

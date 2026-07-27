@@ -19,6 +19,8 @@
 #   ytdl frontend       →  :5176
 #   gastos backend      →  :3005
 #   gastos frontend     →  :5177
+#   ofertas backend     →  :3006
+#   ofertas frontend    →  :5178
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -56,6 +58,7 @@ cleanup() {
   warn "  cd infra && docker compose down"
   warn "  cd mapacyd/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd gastos/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd ofertas/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -120,6 +123,9 @@ info "PostgreSQL (mapacyd :5434)..."
 info "PostgreSQL (gastos :5435)..."
 (cd "$SCRIPT_DIR/gastos/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (ofertas :5436)..."
+(cd "$SCRIPT_DIR/ofertas/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -140,6 +146,12 @@ wait_for_container \
   "PostgreSQL gastos" \
   "gastos-db-local" \
   "docker exec gastos-db-local pg_isready -U gastos -d gastos" \
+  30
+
+wait_for_container \
+  "PostgreSQL ofertas" \
+  "ofertas-db-local" \
+  "docker exec ofertas-db-local pg_isready -U ofertas -d ofertas" \
   30
 
 wait_for_container \
@@ -212,6 +224,19 @@ start_bg "gastos-backend    :3005" "gastos-backend.log" "$SCRIPT_DIR/gastos/back
       TELEGRAM_OWNER_CHAT_ID="${TELEGRAM_OWNER_CHAT_ID:-}" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/ofertas/backend"
+start_bg "ofertas-backend   :3006" "ofertas-backend.log" "$SCRIPT_DIR/ofertas/backend" \
+  env PORT=3006 \
+      OFERTAS_DB_HOST="localhost" \
+      OFERTAS_DB_PORT="5436" \
+      OFERTAS_DB_NAME="ofertas" \
+      OFERTAS_DB_USER="ofertas" \
+      OFERTAS_DB_PASSWORD="ofertas123" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5178" \
+      SCRAPER_API_KEY="${SCRAPER_API_KEY:-local-dev-scraper-key}" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -236,6 +261,10 @@ start_bg "ytdl-frontend      :5176" "ytdl-frontend.log" "$SCRIPT_DIR/ytdl/fronte
 
 ensure_deps "$SCRIPT_DIR/gastos/frontend"
 start_bg "gastos-frontend    :5177" "gastos-frontend.log" "$SCRIPT_DIR/gastos/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/ofertas/frontend"
+start_bg "ofertas-frontend   :5178" "ofertas-frontend.log" "$SCRIPT_DIR/ofertas/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -278,6 +307,11 @@ echo -e "  ${CYAN}Gastos${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5177/gastos/${NC}"
 echo -e "    Backend health   →  http://localhost:3005/gastos/api/health"
 echo -e "    ${YELLOW}ℹ  Bot de Telegram deshabilitado hasta configurar TELEGRAM_BOT_TOKEN/TELEGRAM_OWNER_CHAT_ID (ver gastos/README.md)${NC}"
+echo ""
+echo -e "  ${CYAN}Ofertas${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5178/ofertas/${NC}"
+echo -e "    Backend health   →  http://localhost:3006/ofertas/api/health"
+echo -e "    ${YELLOW}ℹ  SCRAPER_API_KEY de desarrollo por defecto: local-dev-scraper-key (sobrescribible con la env var)${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

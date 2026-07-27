@@ -1,0 +1,30 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ofertas — Base de datos PostgreSQL para desarrollo local
+# Puerto expuesto: 5436 en localhost (5433 calendario, 5434 mapacyd, 5435 gastos, libre 5436)
+# El backend de ofertas se conecta via localhost:5436, no necesita red compartida.
+# Uso: gestionado automáticamente por start-local.sh
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  ofertas-db:
+    image: postgres:15
+    container_name: ofertas-db-local
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: ofertas
+      POSTGRES_USER: ofertas
+      POSTGRES_PASSWORD: ofertas123
+    volumes:
+      - ofertas_local_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ofertas -d ofertas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  ofertas_local_data:
