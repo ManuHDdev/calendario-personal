@@ -21,6 +21,7 @@ const busquedaBaseSchema = z.object({
   longitude: z.number().min(-180).max(180),
   distance_km: z.number().positive(),
   milanuncios_province_slug: z.string().max(100).nullable().optional(),
+  language_filter: z.string().length(2).nullable().optional(),
   sitios: sitiosSchema,
 });
 
