@@ -45,18 +45,18 @@ export async function searchesRoutes(app: FastifyInstance): Promise<void> {
     }
     const {
       nombre, keyword, precio_min, precio_max,
-      latitude, longitude, distance_km, milanuncios_province_slug, sitios,
+      latitude, longitude, distance_km, milanuncios_province_slug, language_filter, sitios,
     } = parsed.data;
     try {
       const result = await pool.query(
         `INSERT INTO busqueda
-           (nombre, keyword, precio_min, precio_max, latitude, longitude, distance_km, milanuncios_province_slug, sitios)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           (nombre, keyword, precio_min, precio_max, latitude, longitude, distance_km, milanuncios_province_slug, language_filter, sitios)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
         [
           nombre, keyword, precio_min ?? null, precio_max ?? null,
           latitude, longitude, distance_km, milanuncios_province_slug ?? null,
-          JSON.stringify(sitios),
+          language_filter ?? null, JSON.stringify(sitios),
         ],
       );
       return reply.code(201).send(result.rows[0]);

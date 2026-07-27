@@ -12,6 +12,7 @@ const row: Busqueda = {
   longitude: -6.3724,
   distance_km: 30,
   milanuncios_province_slug: null,
+  language_filter: null,
   sitios: {
     wallapop: { enabled: true },
     milanuncios: { enabled: false },
@@ -34,12 +35,18 @@ describe('toActiveSearchDto', () => {
       longitude: -6.3724,
       distance_km: 30,
       milanuncios_province_slug: null,
+      language_filter: null,
       sites: {
         wallapop: { enabled: true },
         milanuncios: { enabled: false },
         vinted: { enabled: false },
       },
     });
+  });
+
+  it('maps a non-null language_filter through to the DTO', () => {
+    const dto = toActiveSearchDto({ ...row, language_filter: 'es' });
+    expect(dto.language_filter).toBe('es');
   });
 
   it('never leaks internal DB-only columns (id, activo, deleted_at, timestamps)', () => {

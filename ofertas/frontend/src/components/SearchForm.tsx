@@ -23,6 +23,7 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
   const [longitude, setLongitude] = useState(initial?.longitude?.toString() ?? '');
   const [distanceKm, setDistanceKm] = useState(initial?.distance_km?.toString() ?? '');
   const [provinceSlug, setProvinceSlug] = useState(initial?.milanuncios_province_slug ?? '');
+  const [languageFilter, setLanguageFilter] = useState(initial?.language_filter ?? '');
   const [sitios, setSitios] = useState<Sitios>(initial?.sitios ?? defaultSitios);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -58,6 +59,7 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
         longitude: lon,
         distance_km: dist,
         milanuncios_province_slug: provinceSlug.trim() || null,
+        language_filter: languageFilter.trim() || null,
         sitios,
       });
       if (!initial) {
@@ -69,6 +71,7 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
         setLongitude('');
         setDistanceKm('');
         setProvinceSlug('');
+        setLanguageFilter('');
         setSitios(defaultSitios);
       }
     } catch (err) {
@@ -118,6 +121,10 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
         <input
           type="text" placeholder="Slug de provincia Milanuncios (opcional)"
           value={provinceSlug} onChange={(e) => setProvinceSlug(e.target.value)}
+        />
+        <input
+          type="text" placeholder="Idioma (es, opcional)" maxLength={2}
+          value={languageFilter} onChange={(e) => setLanguageFilter(e.target.value)}
         />
       </div>
       <div className="search-form-sites">

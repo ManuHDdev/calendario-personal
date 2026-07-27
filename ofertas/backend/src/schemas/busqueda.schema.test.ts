@@ -32,6 +32,16 @@ describe('createBusquedaSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('accepts a valid language_filter code', () => {
+    const result = createBusquedaSchema.safeParse({ ...validBody, language_filter: 'es' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a null or omitted language_filter', () => {
+    expect(createBusquedaSchema.safeParse({ ...validBody, language_filter: null }).success).toBe(true);
+    expect(createBusquedaSchema.safeParse(validBody).success).toBe(true);
+  });
+
   it.each([
     { ...validBody, nombre: '' },
     { ...validBody, keyword: '' },
@@ -42,6 +52,9 @@ describe('createBusquedaSchema', () => {
     { ...validBody, precio_min: -1 },
     { ...validBody, sitios: { wallapop: { enabled: true } } },
     { ...validBody, sitios: { ...validSitios, extra: { enabled: true } } },
+    { ...validBody, language_filter: 'spanish' },
+    { ...validBody, language_filter: 'e' },
+    { ...validBody, language_filter: 123 },
   ])('rejects a malformed body: %j', (body) => {
     expect(createBusquedaSchema.safeParse(body).success).toBe(false);
   });
@@ -76,5 +89,14 @@ describe('updateBusquedaSchema', () => {
 
   it('rejects an invalid nested sitios shape', () => {
     expect(updateBusquedaSchema.safeParse({ sitios: { wallapop: { enabled: 'yes' } } }).success).toBe(false);
+  });
+
+  it('accepts a partial update of language_filter, including setting it back to null', () => {
+    expect(updateBusquedaSchema.safeParse({ language_filter: 'en' }).success).toBe(true);
+    expect(updateBusquedaSchema.safeParse({ language_filter: null }).success).toBe(true);
+  });
+
+  it('rejects a malformed language_filter on partial update', () => {
+    expect(updateBusquedaSchema.safeParse({ language_filter: 'english' }).success).toBe(false);
   });
 });

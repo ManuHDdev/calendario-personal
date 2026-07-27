@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS busqueda (
     longitude                   NUMERIC(10, 7)  NOT NULL,
     distance_km                 NUMERIC(6, 2)   NOT NULL,
     milanuncios_province_slug   TEXT,
+    language_filter             TEXT,
     sitios                      JSONB           NOT NULL,
     activo                      BOOLEAN         NOT NULL DEFAULT TRUE,
     deleted_at                  TIMESTAMP,
