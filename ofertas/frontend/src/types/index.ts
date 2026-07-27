@@ -37,3 +37,8 @@ export interface BusquedaFormData {
 }
 
 export type BusquedaUpdateData = Partial<BusquedaFormData>;
+
+export interface ScraperState {
+  running: boolean;
+  updated_at: string;
+}

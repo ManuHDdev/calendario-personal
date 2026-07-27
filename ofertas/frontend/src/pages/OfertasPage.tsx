@@ -3,7 +3,7 @@ import keycloak from '../services/keycloak';
 import AppLauncher from '../components/AppLauncher';
 import SearchForm from '../components/SearchForm';
 import SearchList from '../components/SearchList';
-import { getSearches, createSearch, updateSearch, deleteSearch } from '../services/api';
+import { getSearches, createSearch, updateSearch, deleteSearch, getScraperState, updateScraperState } from '../services/api';
 import type { Busqueda, BusquedaFormData } from '../types';
 import './OfertasPage.css';
 
@@ -11,6 +11,8 @@ export default function OfertasPage() {
   const [searches, setSearches] = useState<Busqueda[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [scraperRunning, setScraperRunning] = useState<boolean | null>(null);
+  const [scraperToggling, setScraperToggling] = useState(false);
 
   const username = (keycloak.tokenParsed as { preferred_username?: string })?.preferred_username ?? 'admin';
 
@@ -27,6 +29,30 @@ export default function OfertasPage() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  const loadScraperState = useCallback(async () => {
+    try {
+      const state = await getScraperState();
+      setScraperRunning(state.running);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar el estado del scraper');
+    }
+  }, []);
+
+  useEffect(() => { void loadScraperState(); }, [loadScraperState]);
+
+  const handleToggleScraper = async () => {
+    if (scraperRunning === null) return;
+    setScraperToggling(true);
+    try {
+      const state = await updateScraperState(!scraperRunning);
+      setScraperRunning(state.running);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cambiar el estado del scraper');
+    } finally {
+      setScraperToggling(false);
+    }
+  };
 
   const handleCreate = async (data: BusquedaFormData) => {
     await createSearch(data);
@@ -62,6 +88,21 @@ export default function OfertasPage() {
 
       <main className="ofertas-main">
         {error && <div className="ofertas-error">{error}</div>}
+
+        <section className="ofertas-section scraper-toggle-section">
+          <div className="scraper-toggle">
+            <span className={`scraper-status ${scraperRunning ? 'scraper-status--on' : 'scraper-status--off'}`}>
+              Scraper: {scraperRunning === null ? '…' : scraperRunning ? 'Activo' : 'Pausado'}
+            </span>
+            <button
+              className="btn-secondary"
+              onClick={() => void handleToggleScraper()}
+              disabled={scraperRunning === null || scraperToggling}
+            >
+              {scraperToggling ? 'Guardando…' : scraperRunning ? 'Pausar' : 'Reanudar'}
+            </button>
+          </div>
+        </section>
 
         <section className="ofertas-section">
           <h2 className="ofertas-section-title">Añadir búsqueda</h2>

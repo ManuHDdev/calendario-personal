@@ -46,3 +46,23 @@ VALUES
      NULL, '{"wallapop": {"enabled": true}, "milanuncios": {"enabled": false}, "vinted": {"enabled": false}}'::jsonb),
     ('Philips Hue baratos', 'philips hue', NULL, 25, 39.4753, -6.3724, 30,
      NULL, '{"wallapop": {"enabled": true}, "milanuncios": {"enabled": false}, "vinted": {"enabled": false}}'::jsonb);
+
+-- Tabla de estado global del scraper externo (marketplace-watcher). Fila
+-- única (id=1, forzado por el CHECK) para que el propietario pueda
+-- pausar/reanudar el scraper desde la UI (p. ej. en ciertas horas), sin
+-- tocar nada de `busqueda`.
+CREATE TABLE IF NOT EXISTS scraper_state (
+    id          INT         PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    running     BOOLEAN     NOT NULL DEFAULT TRUE,
+    updated_at  TIMESTAMP   NOT NULL DEFAULT NOW()
+);
+
+-- Trigger para updated_at automático (misma función que la tabla busqueda).
+CREATE TRIGGER update_scraper_state_updated_at
+    BEFORE UPDATE ON scraper_state
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Seed: la tabla nunca debe estar vacía — arranca en marcha.
+INSERT INTO scraper_state (id, running)
+VALUES (1, true)
+ON CONFLICT (id) DO NOTHING;
