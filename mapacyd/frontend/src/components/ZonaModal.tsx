@@ -10,7 +10,8 @@ interface ZonaModalProps {
   latitudInicial?:  number;
   longitudInicial?: number;
   onClose:          () => void;
-  onSuccess:        () => void;
+  /** Recibe la zona guardada (creada o editada) devuelta por la API */
+  onSuccess:        (zonaGuardada: ZonaCyd) => void;
 }
 
 // ─── Helpers de estilos ──────────────────────────────────────────────────────
@@ -85,7 +86,8 @@ export function ZonaModal({
         catch { /* ignore */ }
         throw new Error(msg);
       }
-      onSuccess();
+      const saved = (await res.json()) as ZonaCyd;
+      onSuccess(saved);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar la zona');

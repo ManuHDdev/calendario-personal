@@ -60,14 +60,16 @@ const S = {
   },
   tdBase: { padding: '10px 16px', verticalAlign: 'middle' as const },
   btnAction: {
-    background: 'none', border: '1px solid #e5e5ea',
-    borderRadius: 5, padding: '4px 10px', fontSize: 12,
+    background: '#f5f5f7', border: 'none',
+    borderRadius: 6, padding: '4px 11px', fontSize: 12, fontWeight: 500,
     cursor: 'pointer', color: '#1c1c1e', marginRight: 4,
+    transition: 'background 150ms ease',
   },
   btnDanger: {
-    background: 'none', border: '1px solid #fecaca',
-    borderRadius: 5, padding: '4px 10px', fontSize: 12,
+    background: '#fef2f2', border: 'none',
+    borderRadius: 6, padding: '4px 11px', fontSize: 12, fontWeight: 500,
     cursor: 'pointer', color: '#dc2626', marginRight: 4,
+    transition: 'background 150ms ease',
   },
   // Modal de confirmación
   overlay: {
