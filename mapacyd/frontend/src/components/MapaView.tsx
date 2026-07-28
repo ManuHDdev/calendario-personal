@@ -8,7 +8,9 @@ import { useZonas } from '../hooks/useZonas';
 import { usePreferenciaCiudad } from '../hooks/usePreferenciaCiudad';
 import { AdminPanel } from './AdminPanel';
 import { ZonaModal } from './ZonaModal';
+import { HorarioPanel } from './HorarioPanel';
 import { PreferenciaCiudad } from './PreferenciaCiudad';
+import AppLauncher from './AppLauncher';
 import './MapaView.css';
 
 const CACERES: L.LatLngExpression = [39.4753, -6.3724];
@@ -49,7 +51,15 @@ const LABEL_DIA: Record<typeof TIPOS_DIA[number], string> = {
   DOMINGO: 'Domingo',
 };
 
-function buildPopupHtml(zona: ZonaCyd, estado: EstadoZona): string {
+const popupDeleteBtnHtml = `
+  <button class="mapa-popup-delete" style="
+    margin-top:10px;width:100%;background:none;border:1px solid #fecaca;
+    border-radius:6px;padding:5px 10px;font-size:12px;font-family:system-ui,sans-serif;
+    color:#dc2626;cursor:pointer;
+  ">Eliminar zona</button>
+`;
+
+function buildPopupHtml(zona: ZonaCyd, estado: EstadoZona, isAdmin: boolean): string {
   const horarioLines = TIPOS_DIA.map(tipo => {
     const franjas = zona.horarios.filter(h => h.tipo_dia === tipo && h.activo);
     if (franjas.length === 0) {
@@ -73,17 +83,19 @@ function buildPopupHtml(zona: ZonaCyd, estado: EstadoZona): string {
         : ''}
       <div style="margin-bottom:8px">${horarioLines}</div>
       <div style="font-size:13px;font-weight:500;color:${estadoColor}">${estadoIcon} ${estadoLabel}</div>
+      ${isAdmin ? popupDeleteBtnHtml : ''}
     </div>
   `;
 }
 
-function buildPopupHtmlAparcamiento(zona: ZonaCyd): string {
+function buildPopupHtmlAparcamiento(zona: ZonaCyd, isAdmin: boolean): string {
   return `
     <div style="font-family:system-ui,sans-serif;min-width:160px;line-height:1.5">
       <div style="font-weight:600;font-size:14px;margin-bottom:4px">🅿️ ${zona.nombre}</div>
       ${zona.descripcion
         ? `<div style="font-size:12px;color:#9ca3af">${zona.descripcion}</div>`
         : ''}
+      ${isAdmin ? popupDeleteBtnHtml : ''}
     </div>
   `;
 }
@@ -91,13 +103,19 @@ function buildPopupHtmlAparcamiento(zona: ZonaCyd): string {
 // ─── Componente ──────────────────────────────────────────────────────────────
 
 export function MapaView() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, token } = useAuth();
   const [ciudadFiltro, setCiudadFiltro]   = useState<string | undefined>();
   const [tick, setTick]                   = useState(0);
   const [showAdmin, setShowAdmin]         = useState(false);
   // Tipo de marca elegido para el próximo pin; null = modo pin inactivo
   const [modoPinTipo, setModoPinTipo]     = useState<TipoZona | null>(null);
   const [pinLatLng, setPinLatLng]         = useState<{ lat: number; lng: number } | null>(null);
+  // Horario de una zona recién creada, para configurarlo justo después de crearla
+  const [zonaHorarioNueva, setZonaHorarioNueva] = useState<ZonaCyd | null>(null);
+  // Eliminar zona directamente desde el popup del mapa
+  const [zonaEliminarPopup, setZonaEliminarPopup] = useState<ZonaCyd | null>(null);
+  const [eliminandoPopup,   setEliminandoPopup]   = useState(false);
+  const [errorEliminarPopup, setErrorEliminarPopup] = useState<string | null>(null);
 
   const { zonas, loading, error, refetch } = useZonas(ciudadFiltro);
   const { preferencia } = usePreferenciaCiudad();
@@ -149,11 +167,26 @@ export function MapaView() {
         weight:      2,
       });
 
-      marker.bindPopup(isAparcamiento ? buildPopupHtmlAparcamiento(zona) : buildPopupHtml(zona, estado));
+      marker.bindPopup(
+        isAparcamiento
+          ? buildPopupHtmlAparcamiento(zona, isAdmin)
+          : buildPopupHtml(zona, estado, isAdmin),
+      );
+      if (isAdmin) {
+        marker.on('popupopen', () => {
+          const el = marker.getPopup()?.getElement();
+          const btn = el?.querySelector<HTMLButtonElement>('.mapa-popup-delete');
+          btn?.addEventListener('click', () => {
+            marker.closePopup();
+            setErrorEliminarPopup(null);
+            setZonaEliminarPopup(zona);
+          });
+        });
+      }
       marker.addTo(mapRef.current!);
       markersRef.current.push(marker);
     });
-  }, [zonas, tick]);
+  }, [zonas, tick, isAdmin]);
 
   // Recalcular colores cada 60 segundos
   useEffect(() => {
@@ -198,6 +231,8 @@ export function MapaView() {
 
       <div ref={containerRef} className="mapa-container" />
 
+      <AppLauncher />
+
       <PreferenciaCiudad />
 
       <div className="mapa-ciudad-selector">
@@ -236,7 +271,25 @@ export function MapaView() {
           latitudInicial={pinLatLng.lat}
           longitudInicial={pinLatLng.lng}
           onClose={() => { setPinLatLng(null); setModoPinTipo(null); }}
-          onSuccess={() => { setPinLatLng(null); setModoPinTipo(null); void refetch(); }}
+          onSuccess={(zonaCreada) => {
+            setPinLatLng(null);
+            setModoPinTipo(null);
+            void refetch();
+            // Encadenar directamente a poner el horario, si no es un spot de aparcamiento
+            if (zonaCreada.tipo !== 'aparcamiento') {
+              setZonaHorarioNueva({ ...zonaCreada, horarios: [] });
+            }
+          }}
+        />
+      )}
+
+      {/* Horario de la zona recién creada */}
+      {zonaHorarioNueva && (
+        <HorarioPanel
+          zona={zonaHorarioNueva}
+          token={token ?? ''}
+          onClose={() => { setZonaHorarioNueva(null); void refetch(); }}
+          onSuccess={() => void refetch()}
         />
       )}
 
@@ -250,6 +303,79 @@ export function MapaView() {
           {modoPinTipo === 'aparcamiento'
             ? 'Haz clic en el mapa para colocar el spot de aparcamiento'
             : 'Haz clic en el mapa para colocar la nueva zona'}
+        </div>
+      )}
+
+      {/* Eliminar zona directamente desde el popup del mapa */}
+      {zonaEliminarPopup && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.35)',
+          zIndex: 1200,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 12, padding: '28px 32px',
+            maxWidth: 360, width: '90%',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+            fontFamily: 'system-ui, sans-serif',
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#1c1c1e', marginBottom: 8 }}>
+              Eliminar zona
+            </div>
+            <div style={{ fontSize: 13, color: '#636366', marginBottom: 20, lineHeight: 1.5 }}>
+              ¿Eliminar <strong>&quot;{zonaEliminarPopup.nombre}&quot;</strong>?
+              Esta acción no se puede deshacer.
+            </div>
+            {errorEliminarPopup && (
+              <div style={{ background: '#fee2e2', color: '#b91c1c', fontSize: 13, padding: '8px 12px', borderRadius: 7, marginBottom: 16 }}>
+                {errorEliminarPopup}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setZonaEliminarPopup(null)}
+                disabled={eliminandoPopup}
+                style={{ background: '#f5f5f5', color: '#1c1c1e', border: 'none', borderRadius: 7, padding: '8px 18px', fontSize: 13, cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (!token || !zonaEliminarPopup) return;
+                  setEliminandoPopup(true);
+                  setErrorEliminarPopup(null);
+                  const API = import.meta.env.BASE_URL + 'api';
+                  try {
+                    const res = await fetch(`${API}/zonas/${zonaEliminarPopup.id}`, {
+                      method: 'DELETE',
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (!res.ok && res.status !== 204) {
+                      let msg = `Error ${res.status}`;
+                      try { const b = (await res.json()) as { error?: string }; if (b.error) msg = b.error; }
+                      catch { /* ignore */ }
+                      throw new Error(msg);
+                    }
+                    setZonaEliminarPopup(null);
+                    await refetch();
+                  } catch (err) {
+                    setErrorEliminarPopup(err instanceof Error ? err.message : 'Error al eliminar');
+                  } finally {
+                    setEliminandoPopup(false);
+                  }
+                }}
+                disabled={eliminandoPopup}
+                style={{
+                  background: '#dc2626', color: '#fff', border: 'none',
+                  borderRadius: 7, padding: '8px 18px', fontSize: 13,
+                  cursor: eliminandoPopup ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {eliminandoPopup ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>

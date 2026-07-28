@@ -223,13 +223,13 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
                       <div>
                         <button
                           onClick={() => handleEditar(h)}
-                          style={{ background: 'none', border: '1px solid #e5e5ea', borderRadius: 5, padding: '3px 10px', fontSize: 12, cursor: 'pointer', marginRight: 4, color: '#1c1c1e' }}
+                          style={{ background: '#f5f5f7', border: 'none', borderRadius: 6, padding: '3px 11px', fontSize: 12, fontWeight: 500, cursor: 'pointer', marginRight: 4, color: '#1c1c1e' }}
                         >
                           Editar
                         </button>
                         <button
                           onClick={() => { setErrorEliminar(null); setHorarioAEliminar(h); }}
-                          style={{ background: 'none', border: '1px solid #fecaca', borderRadius: 5, padding: '3px 10px', fontSize: 12, cursor: 'pointer', color: '#dc2626' }}
+                          style={{ background: '#fef2f2', border: 'none', borderRadius: 6, padding: '3px 11px', fontSize: 12, fontWeight: 500, cursor: 'pointer', color: '#dc2626' }}
                         >
                           Eliminar
                         </button>
