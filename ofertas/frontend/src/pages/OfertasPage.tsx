@@ -69,6 +69,11 @@ export default function OfertasPage() {
     await load();
   };
 
+  const handleToggleHabilitada = async (id: string, habilitada: boolean) => {
+    await updateSearch(id, { habilitada });
+    await load();
+  };
+
   return (
     <div className="ofertas-layout">
       <header className="ofertas-header">
@@ -116,7 +121,12 @@ export default function OfertasPage() {
           {loading ? (
             <p className="empty-hint">Cargando…</p>
           ) : (
-            <SearchList searches={searches} onUpdate={handleUpdate} onDelete={handleDelete} />
+            <SearchList
+              searches={searches}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+              onToggleHabilitada={handleToggleHabilitada}
+            />
           )}
         </section>
       </main>

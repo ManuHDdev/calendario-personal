@@ -24,4 +24,9 @@ describe('buildActiveBusquedasQuery', () => {
     const { values } = buildActiveBusquedasQuery();
     expect(values).toEqual([]);
   });
+
+  it('also filters by habilitada = true — a paused search must not reach the scraper', () => {
+    const { text } = buildActiveBusquedasQuery();
+    expect(text).toContain('habilitada = true');
+  });
 });

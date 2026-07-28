@@ -59,6 +59,7 @@ const baseRow = {
   milanuncios_province_slug: null,
   language_filter: null,
   console_only: false,
+  habilitada: true,
   sitios: {
     wallapop: { enabled: true },
     milanuncios: { enabled: false },
@@ -211,6 +212,93 @@ describe('searchesRoutes', () => {
       });
       expect(res.statusCode).toBe(400);
       expect(mockedQuery).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /searches — habilitada', () => {
+    it('defaults to true when habilitada is omitted', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, habilitada: true }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: validCreateBody,
+      });
+      expect(res.statusCode).toBe(201);
+      expect(res.json().habilitada).toBe(true);
+      expect(mockedQuery.mock.calls[0][1]).toContain(true);
+    });
+
+    it('persists an explicit habilitada=false', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, habilitada: false }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { ...validCreateBody, habilitada: false },
+      });
+      expect(res.statusCode).toBe(201);
+      expect(res.json().habilitada).toBe(false);
+    });
+
+    it('rejects a non-boolean habilitada with a 400 and never touches the DB', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { ...validCreateBody, habilitada: 'yes' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(mockedQuery).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('PATCH /searches/:id — habilitada', () => {
+    it('toggles habilitada to false and round-trips the new value', async () => {
+      mockedQuery
+        .mockResolvedValueOnce({ rows: [{ id: baseRow.id }] }) // existence check
+        .mockResolvedValueOnce({ rows: [{ ...baseRow, habilitada: false }] }); // update
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/searches/${baseRow.id}`,
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { habilitada: false },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().habilitada).toBe(false);
+    });
+
+    it('rejects a non-boolean habilitada on PATCH with a 400', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/searches/${baseRow.id}`,
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { habilitada: 'yes' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(mockedQuery).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /searches/active — excludes paused (habilitada=false) searches', () => {
+    it('only returns rows the DB query already filtered — a paused search is simply absent', async () => {
+      // buildActiveBusquedasQuery filtra habilitada=true en SQL (ver
+      // db/queries.test.ts) — este test cubre que la ruta no vuelve a
+      // exponer una búsqueda pausada aunque el pool la devolviera por error.
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, habilitada: true }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/searches/active',
+        headers: { authorization: 'Bearer test-scraper-key' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toHaveLength(1);
     });
   });
 

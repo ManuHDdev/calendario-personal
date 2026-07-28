@@ -16,14 +16,16 @@ export function buildListBusquedasQuery(): SqlQuery {
 
 /**
  * Búsquedas activas consumidas por GET /ofertas/api/searches/active (el
- * scraper externo). Misma condición activo = true que el listado admin,
- * pero se mantiene como función separada porque alimenta el DTO público
- * (ver dto/activeSearch.dto.ts) y puede evolucionar de forma independiente
- * sin afectar al listado del panel admin.
+ * scraper externo). Además de activo = true (no borrada), exige
+ * habilitada = true: el propietario puede pausar una búsqueda concreta
+ * desde el panel sin borrarla, y eso debe excluirla del scraper igual que
+ * si estuviera borrada. Se mantiene como función separada del listado
+ * admin porque alimenta el DTO público (ver dto/activeSearch.dto.ts) y
+ * puede evolucionar de forma independiente.
  */
 export function buildActiveBusquedasQuery(): SqlQuery {
   return {
-    text: `SELECT * FROM busqueda WHERE activo = true ORDER BY nombre`,
+    text: `SELECT * FROM busqueda WHERE activo = true AND habilitada = true ORDER BY nombre`,
     values: [],
   };
 }
