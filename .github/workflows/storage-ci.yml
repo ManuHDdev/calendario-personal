@@ -47,13 +47,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-storage-frontend-
 
+      - name: Test backend
+        working-directory: storage/backend
+        run: npm ci && npm test
+
       - name: Build backend
         working-directory: storage/backend
-        run: npm ci && npm run build
+        run: npm run build
+
+      - name: Test frontend
+        working-directory: storage/frontend
+        run: npm ci && npm test
 
       - name: Build frontend
         working-directory: storage/frontend
-        run: npm ci && npm run build
+        run: npm run build
 
       - name: Set lowercase owner
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
