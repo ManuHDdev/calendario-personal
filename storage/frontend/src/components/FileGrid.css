@@ -28,6 +28,11 @@
   }
 }
 
+.file-grid-sentinel {
+  flex-basis: 100%;
+  height: 1px;
+}
+
 .grid-empty {
   display: flex;
   flex-direction: column;
