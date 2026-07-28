@@ -19,6 +19,7 @@ export interface Busqueda {
   distance_km: number;
   milanuncios_province_slug: string | null;
   language_filter: string | null;
+  console_only: boolean;
   sitios: Sitios;
   activo: boolean;
   deleted_at: string | null;
@@ -42,5 +43,6 @@ export interface ActiveSearchDto {
   distance_km: number;
   milanuncios_province_slug: string | null;
   language_filter: string | null;
+  console_only: boolean;
   sites: Sitios;
 }
