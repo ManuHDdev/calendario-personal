@@ -12,6 +12,22 @@ const CURRENCY_WITH_SIGN_REGEX = new RegExp(
 const LABEL_WORDS = /saldo|disponible|balance/i;
 const NUMERIC_ONLY_LINE = /^[\d\s.,€$/:-]+$/;
 
+// Fallback: el preprocesado de imagen (escala de grises, contraste,
+// umbralización) a veces hace que Tesseract pierda el separador decimal en
+// capturas de apps bancarias — "99,50 €" se lee "9950 €". Como los importes
+// bancarios en España siempre muestran 2 decimales, ante una tirada de 3+
+// dígitos sin separador pegada al símbolo de moneda se interpretan los 2
+// últimos como céntimos. Solo se usa si la búsqueda normal (con separador)
+// no encontró nada, para no arriesgarse a reinterpretar un importe correcto.
+const BARE_DIGITS_NEAR_CURRENCY_REGEX = /(-?)(\d{3,})\s?(€|EUR)/gi;
+
+function normalizeBareDigits(sign: string, digits: string): number {
+  const cents = digits.slice(-2);
+  const whole = digits.slice(0, -2) || '0';
+  const value = Number(`${whole}.${cents}`);
+  return sign === '-' ? -value : value;
+}
+
 const DEFAULT_CONCEPTO = 'Movimiento bancario';
 
 /**
@@ -43,6 +59,20 @@ export function parseBanco(text: string): DraftGasto {
       }
     }
   });
+
+  if (bestAmount === null) {
+    lines.forEach((line, idx) => {
+      if (LABEL_WORDS.test(line)) return;
+      const matches = line.matchAll(BARE_DIGITS_NEAR_CURRENCY_REGEX);
+      for (const m of matches) {
+        const value = normalizeBareDigits(m[1], m[2]);
+        if (bestAmount === null || Math.abs(value) > Math.abs(bestAmount)) {
+          bestAmount = value;
+          bestLineIndex = idx;
+        }
+      }
+    });
+  }
 
   let comercio = DEFAULT_CONCEPTO;
   if (bestLineIndex >= 0) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isFromOwner, pickBestPhotoFileId } from './bot';
+import { isFromOwner, pickBestPhotoFileId, HELP_MESSAGE } from './bot';
 
 describe('isFromOwner', () => {
   it('accepts a message from the configured owner chat id', () => {
@@ -31,5 +31,14 @@ describe('pickBestPhotoFileId', () => {
 
   it('returns undefined for an empty photo list', () => {
     expect(pickBestPhotoFileId([])).toBeUndefined();
+  });
+});
+
+describe('HELP_MESSAGE', () => {
+  it('documents how to use the bot and its commands', () => {
+    expect(HELP_MESSAGE).toContain('/start');
+    expect(HELP_MESSAGE).toContain('/help');
+    expect(HELP_MESSAGE).toMatch(/ticket/i);
+    expect(HELP_MESSAGE).toMatch(/banco/i);
   });
 });

@@ -14,6 +14,16 @@ export function isFromOwner(chatId: number | string | undefined, ownerChatId: st
   return String(chatId) === String(ownerChatId);
 }
 
+/** Texto de ayuda mostrado en /start y /help — extraído como constante para poder testearlo. */
+export const HELP_MESSAGE =
+  '👋 Bot de Gastos\n\n' +
+  'Envíame una foto de un ticket de compra o una captura de tu app del banco. ' +
+  'Te preguntaré de qué tipo es (🧾 Ticket / 🏦 Banco) y con eso creo un borrador ' +
+  'de gasto con importe, fecha y comercio, pendiente de revisión en la app.\n\n' +
+  'Comandos:\n' +
+  '/start, /help — muestra este mensaje\n\n' +
+  'No hace falta nada más: solo mándame la imagen.';
+
 let bot: Telegraf | null = null;
 
 interface TelegramPhotoSize { file_id: string }
@@ -43,6 +53,14 @@ export function startBot(): Telegraf {
   instance.use(async (ctx, next) => {
     if (!isFromOwner(ctx.chat?.id, OWNER_CHAT_ID)) return;
     await next();
+  });
+
+  instance.start(async (ctx) => {
+    await ctx.reply(HELP_MESSAGE);
+  });
+
+  instance.help(async (ctx) => {
+    await ctx.reply(HELP_MESSAGE);
   });
 
   instance.on('photo', async (ctx) => {
