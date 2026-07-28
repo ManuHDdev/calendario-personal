@@ -1,6 +1,14 @@
+import { useEffect, useRef, useState } from 'react';
 import type { FileItem } from '../types';
 import FileCard from './FileCard';
 import './FileGrid.css';
+
+// Cuántos FileCard se montan de una vez. Con carpetas grandes, montar todos
+// los archivos de golpe (miniaturas, listeners, etc. por cada tarjeta) es lo
+// que ralentiza la vista — el "loading=lazy" de las <img> ya difiere la
+// descarga de la miniatura, pero no evita el coste de montar el DOM de cada
+// tarjeta. Se renderiza en tandas y se amplía la ventana al hacer scroll.
+const PAGE_SIZE = 60;
 
 interface Props {
   files: FileItem[];
@@ -13,12 +21,38 @@ interface Props {
   isAdmin: boolean;
   selected: Set<string>;
   onToggleSelect: (file: FileItem) => void;
+  /** Cambia cuando cambia la carpeta activa o la búsqueda, para reiniciar la ventana visible. */
+  resetKey: string;
 }
 
 export default function FileGrid({
   files, loading, onDeleteFile, onMoveFile, onPreviewFile, onShareFile, currentUserId, isAdmin,
-  selected, onToggleSelect,
+  selected, onToggleSelect, resetKey,
 }: Props) {
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Nueva carpeta o búsqueda distinta -> volver a mostrar solo la primera tanda.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [resetKey]);
+
+  // Ampliar la ventana visible cuando el centinela del final entra en viewport.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((v) => Math.min(v + PAGE_SIZE, files.length));
+        }
+      },
+      { rootMargin: '600px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [files.length]);
+
   if (loading) {
     return (
       <div className="grid-empty">
@@ -39,9 +73,11 @@ export default function FileGrid({
     );
   }
 
+  const visibleFiles = files.slice(0, visibleCount);
+
   return (
     <div className="file-grid">
-      {files.map((file) => (
+      {visibleFiles.map((file) => (
         <FileCard
           key={file.id}
           file={file}
@@ -56,6 +92,9 @@ export default function FileGrid({
           onToggleSelect={onToggleSelect}
         />
       ))}
+      {visibleCount < files.length && (
+        <div ref={sentinelRef} className="file-grid-sentinel" aria-hidden="true" />
+      )}
     </div>
   );
 }

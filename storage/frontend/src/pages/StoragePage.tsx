@@ -213,6 +213,7 @@ export default function StoragePage() {
           isAdmin={isAdmin}
           selected={selected}
           onToggleSelect={toggleSelect}
+          resetKey={`${activeFolder ?? ''}::${search}`}
         />
       </main>
 
