@@ -252,6 +252,7 @@
 
 .search-card-actions {
   display: flex;
+  align-items: center;
   gap: 4px;
 }
 
@@ -267,6 +268,77 @@
   flex-wrap: wrap;
   font-size: 12px;
   color: var(--text-tertiary);
+}
+
+.search-card--paused {
+  opacity: 0.65;
+}
+
+.search-status {
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.search-status--on {
+  color: var(--success);
+}
+.search-status--on::before {
+  background: var(--success);
+}
+
+.search-status--off {
+  color: var(--danger);
+}
+.search-status--off::before {
+  background: var(--danger);
+}
+
+/* Switch minimalista para activar/pausar una búsqueda individual */
+.search-toggle-switch {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin-right: 6px;
+  transition: background 150ms ease;
+}
+
+.search-toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 150ms ease;
+}
+
+.search-toggle-switch--on {
+  background: var(--success);
+}
+.search-toggle-switch--on::after {
+  transform: translateX(14px);
+}
+
+.search-toggle-switch:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .tbl-btn {

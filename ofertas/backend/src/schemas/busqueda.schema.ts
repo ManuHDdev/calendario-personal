@@ -23,6 +23,7 @@ const busquedaBaseSchema = z.object({
   milanuncios_province_slug: z.string().max(100).nullable().optional(),
   language_filter: z.string().length(2).nullable().optional(),
   console_only: z.boolean().optional(),
+  habilitada: z.boolean().optional(),
   sitios: sitiosSchema,
 });
 

@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS busqueda (
     milanuncios_province_slug   TEXT,
     language_filter             TEXT,
     console_only                BOOLEAN         NOT NULL DEFAULT FALSE,
+    -- Activar/desactivar una búsqueda concreta sin borrarla ni tocar el
+    -- on/off global del scraper (scraper_state) — distinto de `activo`
+    -- (borrado lógico). GET /searches/active exige habilitada = true.
+    habilitada                  BOOLEAN         NOT NULL DEFAULT TRUE,
     sitios                      JSONB           NOT NULL,
     activo                      BOOLEAN         NOT NULL DEFAULT TRUE,
     deleted_at                  TIMESTAMP,
@@ -35,6 +39,9 @@ CREATE TRIGGER update_busqueda_updated_at
 -- Índice: lookup de búsquedas activas para el endpoint del scraper y para
 -- excluir borrados lógicos del listado admin (regla global del monorepo).
 CREATE INDEX IF NOT EXISTS idx_busqueda_activo ON busqueda(activo);
+
+-- Índice compuesto: la query de /searches/active filtra por ambas columnas.
+CREATE INDEX IF NOT EXISTS idx_busqueda_activo_habilitada ON busqueda(activo, habilitada);
 
 -- Seed: las dos búsquedas que el propietario ya validó manualmente en
 -- marketplace-watcher/config.yaml (ver design.md, "Seeding the two searches

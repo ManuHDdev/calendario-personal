@@ -51,6 +51,15 @@ describe('createBusquedaSchema', () => {
     expect(createBusquedaSchema.safeParse(validBody).success).toBe(true);
   });
 
+  it('accepts a boolean habilitada', () => {
+    expect(createBusquedaSchema.safeParse({ ...validBody, habilitada: true }).success).toBe(true);
+    expect(createBusquedaSchema.safeParse({ ...validBody, habilitada: false }).success).toBe(true);
+  });
+
+  it('accepts an omitted habilitada', () => {
+    expect(createBusquedaSchema.safeParse(validBody).success).toBe(true);
+  });
+
   it.each([
     { ...validBody, nombre: '' },
     { ...validBody, keyword: '' },
@@ -66,6 +75,8 @@ describe('createBusquedaSchema', () => {
     { ...validBody, language_filter: 123 },
     { ...validBody, console_only: 'true' },
     { ...validBody, console_only: 1 },
+    { ...validBody, habilitada: 'true' },
+    { ...validBody, habilitada: 1 },
   ])('rejects a malformed body: %j', (body) => {
     expect(createBusquedaSchema.safeParse(body).success).toBe(false);
   });
@@ -118,5 +129,14 @@ describe('updateBusquedaSchema', () => {
 
   it('rejects a non-boolean console_only on partial update', () => {
     expect(updateBusquedaSchema.safeParse({ console_only: 'true' }).success).toBe(false);
+  });
+
+  it('accepts a partial update of habilitada', () => {
+    expect(updateBusquedaSchema.safeParse({ habilitada: true }).success).toBe(true);
+    expect(updateBusquedaSchema.safeParse({ habilitada: false }).success).toBe(true);
+  });
+
+  it('rejects a non-boolean habilitada on partial update', () => {
+    expect(updateBusquedaSchema.safeParse({ habilitada: 'true' }).success).toBe(false);
   });
 });

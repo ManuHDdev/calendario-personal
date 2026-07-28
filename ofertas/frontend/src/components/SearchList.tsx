@@ -6,6 +6,7 @@ interface Props {
   searches: Busqueda[];
   onUpdate: (id: string, data: BusquedaFormData) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onToggleHabilitada: (id: string, habilitada: boolean) => Promise<void>;
 }
 
 function siteBadges(sitios: Sitios): string {
@@ -14,17 +15,31 @@ function siteBadges(sitios: Sitios): string {
     .join(', ') || 'ninguno';
 }
 
-export default function SearchList({ searches, onUpdate, onDelete }: Props) {
+export default function SearchList({ searches, onUpdate, onDelete, onToggleHabilitada }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
 
   if (searches.length === 0) {
     return <p className="empty-hint">No hay búsquedas guardadas todavía.</p>;
   }
 
+  const handleToggle = async (s: Busqueda) => {
+    setTogglingIds((prev) => new Set(prev).add(s.id));
+    try {
+      await onToggleHabilitada(s.id, !s.habilitada);
+    } finally {
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(s.id);
+        return next;
+      });
+    }
+  };
+
   return (
     <div className="search-list">
       {searches.map((s) => (
-        <div key={s.id} className="search-card">
+        <div key={s.id} className={`search-card${s.habilitada ? '' : ' search-card--paused'}`}>
           {editingId === s.id ? (
             <SearchForm
               initial={s}
@@ -39,6 +54,14 @@ export default function SearchList({ searches, onUpdate, onDelete }: Props) {
               <div className="search-card-header">
                 <h3 className="search-card-title">{s.nombre}</h3>
                 <div className="search-card-actions">
+                  <button
+                    role="switch"
+                    aria-checked={s.habilitada}
+                    className={`search-toggle-switch${s.habilitada ? ' search-toggle-switch--on' : ''}`}
+                    title={s.habilitada ? 'Activa — pulsa para pausar' : 'Pausada — pulsa para activar'}
+                    disabled={togglingIds.has(s.id)}
+                    onClick={() => void handleToggle(s)}
+                  />
                   <button className="tbl-btn" title="Editar" onClick={() => setEditingId(s.id)}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                       <path d="M12 20h9"/>
@@ -65,6 +88,9 @@ export default function SearchList({ searches, onUpdate, onDelete }: Props) {
               </div>
               <p className="search-card-keyword">"{s.keyword}"</p>
               <div className="search-card-meta">
+                <span className={`search-status ${s.habilitada ? 'search-status--on' : 'search-status--off'}`}>
+                  {s.habilitada ? 'Activa' : 'Pausada'}
+                </span>
                 <span>
                   {s.precio_min != null ? `${s.precio_min} €` : 'sin mínimo'}
                   {' – '}

@@ -21,6 +21,13 @@ export interface Busqueda {
   language_filter: string | null;
   console_only: boolean;
   sitios: Sitios;
+  /**
+   * Activar/desactivar una búsqueda concreta sin borrarla ni tocar el
+   * on/off global del scraper (scraper_state). Distinto de `activo`
+   * (borrado lógico): una búsqueda deshabilitada sigue existiendo y
+   * visible en el panel admin, solo se excluye de /searches/active.
+   */
+  habilitada: boolean;
   activo: boolean;
   deleted_at: string | null;
   created_at: string;
