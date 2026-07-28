@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import keycloak from '../services/keycloak';
+import keycloak from '../auth/keycloak';
 import './AppLauncher.css';
 
 interface AppDef {
@@ -115,13 +115,13 @@ export default function AppLauncher() {
   }, [open]);
 
   return (
-    <div className="app-launcher" ref={ref}>
+    <div className="mapa-app-launcher" ref={ref}>
       <button
-        className={`launcher-btn${open ? ' launcher-btn--active' : ''}`}
+        className={`mapa-launcher-btn${open ? ' mapa-launcher-btn--active' : ''}`}
         onClick={() => setOpen((v) => !v)}
         title="Aplicaciones"
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <rect x="3"  y="3"  width="4" height="4" rx="1"/>
           <rect x="10" y="3"  width="4" height="4" rx="1"/>
           <rect x="17" y="3"  width="4" height="4" rx="1"/>
@@ -135,19 +135,19 @@ export default function AppLauncher() {
       </button>
 
       {open && (
-        <div className="launcher-panel">
-          <div className="launcher-grid">
+        <div className="mapa-launcher-panel">
+          <div className="mapa-launcher-grid">
             {visibles.map((app) => (
               <a
                 key={app.id}
                 href={urls[app.id]}
-                className="launcher-app"
+                className="mapa-launcher-app"
                 onClick={() => setOpen(false)}
               >
-                <span className="launcher-icono" style={{ background: app.color }}>
+                <span className="mapa-launcher-icono" style={{ background: app.color }}>
                   <AppIcon id={app.id} />
                 </span>
-                <span className="launcher-nombre">{app.nombre}</span>
+                <span className="mapa-launcher-nombre">{app.nombre}</span>
               </a>
             ))}
           </div>
