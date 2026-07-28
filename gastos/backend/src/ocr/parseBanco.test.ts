@@ -40,4 +40,17 @@ describe('parseBanco', () => {
   it('leaves importe null when no currency-formatted number is found', () => {
     expect(parseBanco('Sin movimientos este mes').importe).toBeNull();
   });
+
+  it('recovers the amount when OCR drops the decimal separator (99,50 -> 9950)', () => {
+    // Bug real: el preprocesado de imagen a veces hace que Tesseract pierda
+    // la ',' de "99,50 €" y lea "9950 €" — antes esto se detectaba como 995€.
+    const text = ['MERCADONA MADRID', '9950€', '25/07/2026'].join('\n');
+    const draft = parseBanco(text);
+    expect(draft.importe).toBe(99.5);
+  });
+
+  it('prefers a properly-separated amount over the no-separator fallback', () => {
+    const text = '-45,00 €\nCOMERCIO';
+    expect(parseBanco(text).importe).toBe(45);
+  });
 });

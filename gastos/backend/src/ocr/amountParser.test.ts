@@ -33,4 +33,10 @@ describe('findCurrencyNumber', () => {
   it('returns null when no number is present', () => {
     expect(findCurrencyNumber('GRACIAS POR SU COMPRA')).toBeNull();
   });
+
+  it('does not return a truncated substring when the decimal separator is missing', () => {
+    // Si el OCR pierde la ',' de "99,50€" y lee "9950€", no debe devolver
+    // "995" ni "950" como si fuera un importe válido — ver amountParser.ts.
+    expect(findCurrencyNumber('9950€')).toBeNull();
+  });
 });

@@ -27,7 +27,13 @@ export function normalizeAmount(raw: string): number | null {
 
 // Número con formato de moneda: 1-3 dígitos, grupos opcionales de miles
 // separados por '.' o ',', y dos decimales opcionales, con signo opcional.
-export const CURRENCY_NUMBER_SOURCE = String.raw`-?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?`;
+// Los lookaround (?<!\d) / (?!\d) son obligatorios: sin ellos, un número sin
+// separador más largo de 3 dígitos (p. ej. "9950" cuando el OCR pierde la ','
+// de "99,50") deja que \d{1,3} matchee solo una sub-tira de 3 dígitos en
+// mitad de la tirada (p. ej. "995" o, reintentando en la siguiente posición,
+// "950") y la dé por válida en vez de fallar — devolviendo un importe
+// erróneo en vez de null.
+export const CURRENCY_NUMBER_SOURCE = String.raw`(?<!\d)-?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?(?!\d)`;
 
 /** Busca el primer número con formato de moneda en una línea de texto. */
 export function findCurrencyNumber(line: string): string | null {
