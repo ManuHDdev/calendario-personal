@@ -42,6 +42,15 @@ describe('createBusquedaSchema', () => {
     expect(createBusquedaSchema.safeParse(validBody).success).toBe(true);
   });
 
+  it('accepts a boolean console_only', () => {
+    expect(createBusquedaSchema.safeParse({ ...validBody, console_only: true }).success).toBe(true);
+    expect(createBusquedaSchema.safeParse({ ...validBody, console_only: false }).success).toBe(true);
+  });
+
+  it('accepts an omitted console_only', () => {
+    expect(createBusquedaSchema.safeParse(validBody).success).toBe(true);
+  });
+
   it.each([
     { ...validBody, nombre: '' },
     { ...validBody, keyword: '' },
@@ -55,6 +64,8 @@ describe('createBusquedaSchema', () => {
     { ...validBody, language_filter: 'spanish' },
     { ...validBody, language_filter: 'e' },
     { ...validBody, language_filter: 123 },
+    { ...validBody, console_only: 'true' },
+    { ...validBody, console_only: 1 },
   ])('rejects a malformed body: %j', (body) => {
     expect(createBusquedaSchema.safeParse(body).success).toBe(false);
   });
@@ -98,5 +109,14 @@ describe('updateBusquedaSchema', () => {
 
   it('rejects a malformed language_filter on partial update', () => {
     expect(updateBusquedaSchema.safeParse({ language_filter: 'english' }).success).toBe(false);
+  });
+
+  it('accepts a partial update of console_only', () => {
+    expect(updateBusquedaSchema.safeParse({ console_only: true }).success).toBe(true);
+    expect(updateBusquedaSchema.safeParse({ console_only: false }).success).toBe(true);
+  });
+
+  it('rejects a non-boolean console_only on partial update', () => {
+    expect(updateBusquedaSchema.safeParse({ console_only: 'true' }).success).toBe(false);
   });
 });

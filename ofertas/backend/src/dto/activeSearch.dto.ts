@@ -18,6 +18,7 @@ export function toActiveSearchDto(row: Busqueda): ActiveSearchDto {
     distance_km: row.distance_km,
     milanuncios_province_slug: row.milanuncios_province_slug,
     language_filter: row.language_filter,
+    console_only: row.console_only,
     sites: row.sitios,
   };
 }

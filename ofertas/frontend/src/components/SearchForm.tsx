@@ -24,6 +24,7 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
   const [distanceKm, setDistanceKm] = useState(initial?.distance_km?.toString() ?? '');
   const [provinceSlug, setProvinceSlug] = useState(initial?.milanuncios_province_slug ?? '');
   const [languageFilter, setLanguageFilter] = useState(initial?.language_filter ?? '');
+  const [consoleOnly, setConsoleOnly] = useState(initial?.console_only ?? false);
   const [sitios, setSitios] = useState<Sitios>(initial?.sitios ?? defaultSitios);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -60,6 +61,7 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
         distance_km: dist,
         milanuncios_province_slug: provinceSlug.trim() || null,
         language_filter: languageFilter.trim() || null,
+        console_only: consoleOnly,
         sitios,
       });
       if (!initial) {
@@ -72,6 +74,7 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
         setDistanceKm('');
         setProvinceSlug('');
         setLanguageFilter('');
+        setConsoleOnly(false);
         setSitios(defaultSitios);
       }
     } catch (err) {
@@ -126,6 +129,13 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
           type="text" placeholder="Idioma (es, opcional)" maxLength={2}
           value={languageFilter} onChange={(e) => setLanguageFilter(e.target.value)}
         />
+        <label className="search-form-site-toggle">
+          <input
+            type="checkbox" checked={consoleOnly}
+            onChange={(e) => setConsoleOnly(e.target.checked)}
+          />
+          <span>Solo consola</span>
+        </label>
       </div>
       <div className="search-form-sites">
         {(Object.keys(sitios) as (keyof Sitios)[]).map((site) => (

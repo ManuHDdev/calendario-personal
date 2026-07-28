@@ -58,6 +58,7 @@ const baseRow = {
   distance_km: 30,
   milanuncios_province_slug: null,
   language_filter: null,
+  console_only: false,
   sitios: {
     wallapop: { enabled: true },
     milanuncios: { enabled: false },
@@ -158,6 +159,61 @@ describe('searchesRoutes', () => {
     });
   });
 
+  describe('POST /searches — console_only', () => {
+    it('persists console_only=true and returns it in the create response', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, console_only: true }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { ...validCreateBody, console_only: true },
+      });
+      expect(res.statusCode).toBe(201);
+      expect(res.json().console_only).toBe(true);
+      expect(mockedQuery.mock.calls[0][1]).toContain(true);
+    });
+
+    it('persists an explicit console_only=false', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, console_only: false }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { ...validCreateBody, console_only: false },
+      });
+      expect(res.statusCode).toBe(201);
+      expect(res.json().console_only).toBe(false);
+    });
+
+    it('defaults to false when console_only is omitted', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, console_only: false }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: validCreateBody,
+      });
+      expect(res.statusCode).toBe(201);
+      expect(res.json().console_only).toBe(false);
+      expect(mockedQuery.mock.calls[0][1]).toContain(false);
+    });
+
+    it('rejects a non-boolean console_only with a 400 and never touches the DB', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { ...validCreateBody, console_only: 'yes' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(mockedQuery).not.toHaveBeenCalled();
+    });
+  });
+
   describe('GET /searches — list includes language_filter', () => {
     it('returns language_filter in each listed row', async () => {
       mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, language_filter: 'es' }] });
@@ -216,6 +272,35 @@ describe('searchesRoutes', () => {
     });
   });
 
+  describe('PATCH /searches/:id — console_only', () => {
+    it('updates console_only and round-trips the new value', async () => {
+      mockedQuery
+        .mockResolvedValueOnce({ rows: [{ id: baseRow.id }] }) // existence check
+        .mockResolvedValueOnce({ rows: [{ ...baseRow, console_only: true }] }); // update
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/searches/${baseRow.id}`,
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { console_only: true },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().console_only).toBe(true);
+    });
+
+    it('rejects a non-boolean console_only on PATCH with a 400', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/searches/${baseRow.id}`,
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { console_only: 'yes' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(mockedQuery).not.toHaveBeenCalled();
+    });
+  });
+
   describe('GET /searches/active — bearer-token DTO includes language_filter', () => {
     it('maps language_filter through to the scraper DTO', async () => {
       mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, language_filter: 'es' }] });
@@ -239,6 +324,32 @@ describe('searchesRoutes', () => {
       });
       expect(res.statusCode).toBe(200);
       expect(res.json()[0].language_filter).toBeNull();
+    });
+  });
+
+  describe('GET /searches/active — bearer-token DTO includes console_only', () => {
+    it('maps console_only=true through to the scraper DTO', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, console_only: true }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/searches/active',
+        headers: { authorization: 'Bearer test-scraper-key' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()[0].console_only).toBe(true);
+    });
+
+    it('returns console_only=false by default', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, console_only: false }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/searches/active',
+        headers: { authorization: 'Bearer test-scraper-key' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()[0].console_only).toBe(false);
     });
   });
 });

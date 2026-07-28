@@ -13,6 +13,7 @@ const row: Busqueda = {
   distance_km: 30,
   milanuncios_province_slug: null,
   language_filter: null,
+  console_only: false,
   sitios: {
     wallapop: { enabled: true },
     milanuncios: { enabled: false },
@@ -36,6 +37,7 @@ describe('toActiveSearchDto', () => {
       distance_km: 30,
       milanuncios_province_slug: null,
       language_filter: null,
+      console_only: false,
       sites: {
         wallapop: { enabled: true },
         milanuncios: { enabled: false },
@@ -47,6 +49,11 @@ describe('toActiveSearchDto', () => {
   it('maps a non-null language_filter through to the DTO', () => {
     const dto = toActiveSearchDto({ ...row, language_filter: 'es' });
     expect(dto.language_filter).toBe('es');
+  });
+
+  it('maps console_only=true through to the DTO', () => {
+    const dto = toActiveSearchDto({ ...row, console_only: true });
+    expect(dto.console_only).toBe(true);
   });
 
   it('never leaks internal DB-only columns (id, activo, deleted_at, timestamps)', () => {
