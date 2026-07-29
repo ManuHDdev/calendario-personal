@@ -20,7 +20,15 @@ const S = {
     width: 420,
     background: '#ffffff',
     boxShadow: '-4px 0 24px rgba(0,0,0,0.12)',
-    zIndex: 900,
+    // Tenía z-index 900, por debajo de TODOS los controles flotantes
+    // ambiente (preferencia de ciudad, selector de ciudad, botón "Panel
+    // Admin", panel de apps — todos en 1000/1001). Al estar más abajo en
+    // el stacking order, esos controles interceptaban los clics del propio
+    // sidebar (empezando por el botón de cerrar, que cae justo debajo de
+    // "Preferencia de ciudad" en la esquina superior derecha). 1050 lo deja
+    // por encima de esa capa ambiente y por debajo de los modales que se
+    // abren desde dentro del panel (ZonaModal/HorarioPanel, 1100+).
+    zIndex: 1050,
     display: 'flex',
     flexDirection: 'column' as const,
     fontFamily: 'system-ui, sans-serif',
