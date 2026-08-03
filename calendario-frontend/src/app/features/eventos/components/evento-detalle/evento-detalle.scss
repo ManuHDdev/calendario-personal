@@ -91,7 +91,38 @@
   margin: 24px 0 0;
   padding-top: 24px;
   border-top: 1px solid var(--color-border);
-  white-space: pre-wrap;
+}
+
+.descripcion-linea {
+  a { color: var(--color-accent); }
+}
+
+.descripcion-linea-vacia {
+  height: 1em;
+}
+
+.descripcion-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+
+  input[type='checkbox'] {
+    margin-top: 3px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  span a { color: var(--color-accent); }
+
+  &--marcado span {
+    color: var(--color-text-secondary);
+    text-decoration: line-through;
+  }
 }
 
 .galeria {
