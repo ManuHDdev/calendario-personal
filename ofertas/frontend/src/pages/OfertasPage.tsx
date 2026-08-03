@@ -118,7 +118,17 @@ export default function OfertasPage() {
           <h2 className="ofertas-section-title">
             Búsquedas guardadas{searches.length > 0 ? ` (${searches.length})` : ''}
           </h2>
-          {loading ? (
+          {/*
+            Solo se sustituye la lista por "Cargando…" en la carga inicial
+            (sin datos todavía). En recargas posteriores (tras crear/editar/
+            pausar/borrar una búsqueda, `load()` vuelve a poner loading=true)
+            se mantiene <SearchList> montada con los datos previos mientras
+            llega la respuesta: desmontarla aquí colapsaba el alto de la
+            página durante el fetch y el navegador clampaba el scroll al
+            nuevo `scrollHeight` más corto, lo que se percibía como "la
+            página se recarga y vuelve arriba" al editar cualquier búsqueda.
+          */}
+          {loading && searches.length === 0 ? (
             <p className="empty-hint">Cargando…</p>
           ) : (
             <SearchList
