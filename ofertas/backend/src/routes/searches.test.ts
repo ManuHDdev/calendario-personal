@@ -58,6 +58,7 @@ const baseRow = {
   distance_km: 30,
   milanuncios_province_slug: null,
   language_filter: null,
+  exclude_keywords: null,
   console_only: false,
   habilitada: true,
   sitios: {
@@ -154,6 +155,61 @@ describe('searchesRoutes', () => {
         url: '/searches',
         headers: { authorization: `Bearer ${adminJwt}` },
         payload: { ...validCreateBody, language_filter: 34 },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(mockedQuery).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /searches — exclude_keywords', () => {
+    it('persists a valid exclude_keywords and returns it in the create response', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, exclude_keywords: 'carta,cartas,tcg' }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { ...validCreateBody, exclude_keywords: 'carta,cartas,tcg' },
+      });
+      expect(res.statusCode).toBe(201);
+      expect(res.json().exclude_keywords).toBe('carta,cartas,tcg');
+      expect(mockedQuery.mock.calls[0][1]).toContain('carta,cartas,tcg');
+    });
+
+    it('defaults to null when exclude_keywords is omitted', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, exclude_keywords: null }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: validCreateBody,
+      });
+      expect(res.statusCode).toBe(201);
+      expect(res.json().exclude_keywords).toBeNull();
+      expect(mockedQuery.mock.calls[0][1]).toContain(null);
+    });
+
+    it('accepts an explicit null exclude_keywords', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, exclude_keywords: null }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { ...validCreateBody, exclude_keywords: null },
+      });
+      expect(res.statusCode).toBe(201);
+      expect(res.json().exclude_keywords).toBeNull();
+    });
+
+    it('rejects a non-string exclude_keywords with a 400 and never touches the DB', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { ...validCreateBody, exclude_keywords: 123 },
       });
       expect(res.statusCode).toBe(400);
       expect(mockedQuery).not.toHaveBeenCalled();
@@ -316,6 +372,20 @@ describe('searchesRoutes', () => {
     });
   });
 
+  describe('GET /searches — list includes exclude_keywords', () => {
+    it('returns exclude_keywords in each listed row', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, exclude_keywords: 'carta,cartas,tcg' }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/searches',
+        headers: { authorization: `Bearer ${adminJwt}` },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()[0].exclude_keywords).toBe('carta,cartas,tcg');
+    });
+  });
+
   describe('PATCH /searches/:id — language_filter', () => {
     it('updates language_filter and round-trips the new value', async () => {
       mockedQuery
@@ -354,6 +424,50 @@ describe('searchesRoutes', () => {
         url: `/searches/${baseRow.id}`,
         headers: { authorization: `Bearer ${adminJwt}` },
         payload: { language_filter: 'xx-not-a-code' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(mockedQuery).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('PATCH /searches/:id — exclude_keywords', () => {
+    it('updates exclude_keywords and round-trips the new value', async () => {
+      mockedQuery
+        .mockResolvedValueOnce({ rows: [{ id: baseRow.id }] }) // existence check
+        .mockResolvedValueOnce({ rows: [{ ...baseRow, exclude_keywords: 'trading card' }] }); // update
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/searches/${baseRow.id}`,
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { exclude_keywords: 'trading card' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().exclude_keywords).toBe('trading card');
+    });
+
+    it('clears exclude_keywords back to null via PATCH', async () => {
+      mockedQuery
+        .mockResolvedValueOnce({ rows: [{ id: baseRow.id }] })
+        .mockResolvedValueOnce({ rows: [{ ...baseRow, exclude_keywords: null }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/searches/${baseRow.id}`,
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { exclude_keywords: null },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().exclude_keywords).toBeNull();
+    });
+
+    it('rejects a non-string exclude_keywords on PATCH with a 400', async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/searches/${baseRow.id}`,
+        headers: { authorization: `Bearer ${adminJwt}` },
+        payload: { exclude_keywords: 123 },
       });
       expect(res.statusCode).toBe(400);
       expect(mockedQuery).not.toHaveBeenCalled();
@@ -412,6 +526,32 @@ describe('searchesRoutes', () => {
       });
       expect(res.statusCode).toBe(200);
       expect(res.json()[0].language_filter).toBeNull();
+    });
+  });
+
+  describe('GET /searches/active — bearer-token DTO includes exclude_keywords', () => {
+    it('maps exclude_keywords through to the scraper DTO', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, exclude_keywords: 'carta,cartas,tcg' }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/searches/active',
+        headers: { authorization: 'Bearer test-scraper-key' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()[0].exclude_keywords).toBe('carta,cartas,tcg');
+    });
+
+    it('returns null exclude_keywords when the search has none set', async () => {
+      mockedQuery.mockResolvedValueOnce({ rows: [{ ...baseRow, exclude_keywords: null }] });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/searches/active',
+        headers: { authorization: 'Bearer test-scraper-key' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()[0].exclude_keywords).toBeNull();
     });
   });
 

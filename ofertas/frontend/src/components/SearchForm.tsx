@@ -24,6 +24,7 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
   const [distanceKm, setDistanceKm] = useState(initial?.distance_km?.toString() ?? '');
   const [provinceSlug, setProvinceSlug] = useState(initial?.milanuncios_province_slug ?? '');
   const [languageFilter, setLanguageFilter] = useState(initial?.language_filter ?? '');
+  const [excludeKeywords, setExcludeKeywords] = useState(initial?.exclude_keywords ?? '');
   const [consoleOnly, setConsoleOnly] = useState(initial?.console_only ?? false);
   const [sitios, setSitios] = useState<Sitios>(initial?.sitios ?? defaultSitios);
   const [saving, setSaving] = useState(false);
@@ -61,6 +62,7 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
         distance_km: dist,
         milanuncios_province_slug: provinceSlug.trim() || null,
         language_filter: languageFilter.trim() || null,
+        exclude_keywords: excludeKeywords.trim() || null,
         console_only: consoleOnly,
         sitios,
       });
@@ -74,6 +76,7 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
         setDistanceKm('');
         setProvinceSlug('');
         setLanguageFilter('');
+        setExcludeKeywords('');
         setConsoleOnly(false);
         setSitios(defaultSitios);
       }
@@ -136,6 +139,17 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
           />
           <span>Solo consola</span>
         </label>
+      </div>
+      <div className="search-form-row">
+        <div className="search-form-field">
+          <input
+            type="text" placeholder="carta, cartas, tcg"
+            value={excludeKeywords} onChange={(e) => setExcludeKeywords(e.target.value)}
+          />
+          <small className="search-form-hint">
+            Términos separados por coma: se excluyen anuncios cuyo título contenga alguno (opcional)
+          </small>
+        </div>
       </div>
       <div className="search-form-sites">
         {(Object.keys(sitios) as (keyof Sitios)[]).map((site) => (
