@@ -176,18 +176,23 @@ export class CalendarioAnual implements OnInit {
     }
     // Comportamiento normal
     const eventos = this.getEventosDia(fecha);
-    if (eventos.length === 1) {
+    if (eventos.length === 0) return;
+    if (eventos.length === 1 && !this.esMobile()) {
       this.router.navigate(['/eventos', eventos[0].id]);
-    } else if (eventos.length > 1) {
-      // Varios eventos: abrir panel pinned
-      const target = event?.currentTarget as HTMLElement | undefined;
-      if (target) {
-        this.posicionarTooltip(target);
-      }
-      this.tooltipFecha = fecha;
-      this.tooltipEventos = eventos;
-      this.tooltipPinned = true;
+      return;
     }
+    // Varios eventos (o un único evento en mobile): abrir panel pinned
+    const target = event?.currentTarget as HTMLElement | undefined;
+    if (target) {
+      this.posicionarTooltip(target);
+    }
+    this.tooltipFecha = fecha;
+    this.tooltipEventos = eventos;
+    this.tooltipPinned = true;
+  }
+
+  private esMobile(): boolean {
+    return window.matchMedia('(max-width: 600px)').matches;
   }
 
   onDiaMouseEnter(event: MouseEvent, fecha: Date): void {

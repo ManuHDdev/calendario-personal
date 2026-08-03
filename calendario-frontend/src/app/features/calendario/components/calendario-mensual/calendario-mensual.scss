@@ -86,6 +86,38 @@
   white-space: nowrap;
 
   &:hover { background: var(--color-accent-hover); }
+
+  @media (max-width: 600px) {
+    display: none;
+  }
+}
+
+.fab-nuevo {
+  display: none;
+
+  @media (max-width: 600px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-accent);
+    color: white;
+    font-size: 1.75rem;
+    line-height: 1;
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+    z-index: 90;
+    transition: background var(--transition), transform var(--transition);
+
+    &:hover { background: var(--color-accent-hover); }
+    &:active { transform: scale(0.94); }
+  }
 }
 
 /* ── Filtros ─────────────────────────────────────────────────────────────── */

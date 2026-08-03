@@ -200,4 +200,22 @@ export class EventoForm implements OnInit {
   volver(): void {
     this.router.navigate(['/calendario']);
   }
+
+  insertarChecklist(textarea: HTMLTextAreaElement): void {
+    const control = this.form.get('descripcion')!;
+    const valorActual = (control.value as string) ?? '';
+    const inicio = textarea.selectionStart ?? valorActual.length;
+    const fin = textarea.selectionEnd ?? valorActual.length;
+    const necesitaSaltoLinea = inicio > 0 && valorActual[inicio - 1] !== '\n';
+    const snippet = (necesitaSaltoLinea ? '\n' : '') + '- [ ] ';
+    const nuevoValor = valorActual.slice(0, inicio) + snippet + valorActual.slice(fin);
+
+    control.setValue(nuevoValor);
+
+    const nuevaPosicion = inicio + snippet.length;
+    queueMicrotask(() => {
+      textarea.focus();
+      textarea.setSelectionRange(nuevaPosicion, nuevaPosicion);
+    });
+  }
 }

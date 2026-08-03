@@ -39,7 +39,24 @@
 
         <!-- Descripción -->
         @if (ev.descripcion) {
-          <p class="descripcion" [innerHTML]="ev.descripcion | linkify"></p>
+          <div class="descripcion">
+            @for (linea of descripcionLineas(); track linea.indice) {
+              @switch (linea.tipo) {
+                @case ('checklist') {
+                  <label class="descripcion-check" [class.descripcion-check--marcado]="linea.marcado">
+                    <input type="checkbox" [checked]="linea.marcado" (change)="toggleChecklistItem(linea.indice)" />
+                    <span [innerHTML]="linea.texto | linkify"></span>
+                  </label>
+                }
+                @case ('texto') {
+                  <div class="descripcion-linea" [innerHTML]="linea.texto | linkify"></div>
+                }
+                @case ('vacia') {
+                  <div class="descripcion-linea-vacia"></div>
+                }
+              }
+            }
+          </div>
         }
 
         <!-- Adjuntos (imágenes y PDFs) -->

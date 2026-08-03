@@ -17,6 +17,10 @@
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--color-border);
 
+  @media (max-width: 600px) {
+    padding: 0 16px;
+  }
+
   &__brand {
     font-size: 1.125rem;
     font-weight: 600;
@@ -34,6 +38,10 @@
     display: flex;
     align-items: center;
     gap: 16px;
+
+    @media (max-width: 600px) {
+      gap: 8px;
+    }
   }
 
   &__username {
@@ -49,13 +57,42 @@
   }
 
   &__new-event {
-    font-size: 0.875rem;
-    color: var(--color-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-accent);
+    color: #fff;
     text-decoration: none;
     font-weight: 500;
-    transition: opacity var(--transition);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.8125rem;
+    box-shadow: var(--shadow-sm);
+    transition: background var(--transition), transform var(--transition);
 
-    &:hover { opacity: 0.7; }
+    &:hover { background: var(--color-accent-hover); }
+    &:active { transform: scale(0.96); }
+
+    &-icon {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      padding: 0;
+      font-size: 1.25rem;
+      line-height: 1;
+
+      &-icon {
+        display: inline-block;
+      }
+
+      &-label {
+        display: none;
+      }
+    }
   }
 
   &__logout {

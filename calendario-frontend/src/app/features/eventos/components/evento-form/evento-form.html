@@ -65,8 +65,11 @@
 
       <!-- Descripción -->
       <div class="campo-grupo">
-        <label class="campo-label">Descripción</label>
-        <textarea class="campo-input campo-textarea" formControlName="descripcion" rows="4"
+        <div class="campo-label-fila">
+          <label class="campo-label">Descripción</label>
+          <button type="button" class="btn-checklist" (click)="insertarChecklist(descripcionInput)">+ Checklist</button>
+        </div>
+        <textarea #descripcionInput class="campo-input campo-textarea" formControlName="descripcion" rows="4"
                   placeholder="Descripción del evento (opcional)"></textarea>
       </div>
 
