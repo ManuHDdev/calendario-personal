@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import type { TipoZona, ZonaCyd } from '../types/zona';
+import type { HorarioZona, TipoZona, ZonaCyd } from '../types/zona';
 
 interface ZonaModalProps {
   modo:             'crear' | 'editar';
@@ -32,6 +32,24 @@ const labelStyle: React.CSSProperties = {
 
 const fieldStyle: React.CSSProperties = { marginBottom: 14 };
 
+// ─── Horario embebido (solo al crear zona de carga/descarga) ────────────────
+
+type TipoDia = HorarioZona['tipo_dia'];
+
+interface FranjaNueva {
+  tipo_dia:    TipoDia;
+  hora_inicio: string;
+  hora_fin:    string;
+}
+
+const TIPOS_DIA: TipoDia[] = ['LMXJV', 'SABADO', 'DOMINGO'];
+
+const SELECT_LABEL_DIA: Record<TipoDia, string> = {
+  LMXJV:   'Lunes-Viernes',
+  SABADO:  'Sábado',
+  DOMINGO: 'Domingo',
+};
+
 // ─── Componente ──────────────────────────────────────────────────────────────
 
 export function ZonaModal({
@@ -52,41 +70,109 @@ export function ZonaModal({
   const [loading, setLoading]         = useState(false);
   const [error,   setError]           = useState<string | null>(null);
 
+  // Horario embebido — solo aplica al crear una zona de carga/descarga
+  const mostrarHorario = modo === 'crear' && tipoActual === 'carga_descarga';
+
+  const [franjas,        setFranjas]        = useState<FranjaNueva[]>([]);
+  const [franjaTipoDia,  setFranjaTipoDia]  = useState<TipoDia>('LMXJV');
+  const [franjaHoraIni,  setFranjaHoraIni]  = useState('');
+  const [franjaHoraFin,  setFranjaHoraFin]  = useState('');
+  const [errorFranja,    setErrorFranja]    = useState<string | null>(null);
+  // Zona ya persistida en un intento previo (falló algún horario) — evita
+  // reenviar el POST de la zona en el reintento, solo se reintentan horarios.
+  const [zonaGuardada, setZonaGuardada]     = useState<ZonaCyd | null>(null);
+
   const isValid =
     nombre.trim().length > 0 &&
     ciudad.trim().length > 0 &&
     latitud >= -90  && latitud <= 90 &&
     longitud >= -180 && longitud <= 180;
 
+  const canSubmit = (zonaGuardada ? true : isValid) && !loading;
+
+  const handleAddFranja = () => {
+    if (!franjaHoraIni || !franjaHoraFin) {
+      setErrorFranja('Hora de inicio y fin son obligatorias');
+      return;
+    }
+    if (franjaHoraFin <= franjaHoraIni) {
+      setErrorFranja('hora_fin debe ser mayor que hora_inicio');
+      return;
+    }
+    setFranjas(prev => [...prev, { tipo_dia: franjaTipoDia, hora_inicio: franjaHoraIni, hora_fin: franjaHoraFin }]);
+    setFranjaTipoDia('LMXJV');
+    setFranjaHoraIni('');
+    setFranjaHoraFin('');
+    setErrorFranja(null);
+  };
+
+  const handleQuitarFranja = (index: number) => {
+    setFranjas(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token || !isValid || loading) return;
+    if (!token || !canSubmit) return;
     setLoading(true);
     setError(null);
     const API = import.meta.env.BASE_URL + 'api';
     try {
-      const body = {
-        nombre:      nombre.trim(),
-        descripcion: descripcion.trim() || undefined,
-        ciudad:      ciudad.trim(),
-        latitud,
-        longitud,
-        tipo:        tipoActual,
-      };
-      const url    = modo === 'editar' ? `${API}/zonas/${zona!.id}` : `${API}/zonas`;
-      const method = modo === 'editar' ? 'PUT' : 'POST';
-      const res = await fetch(url, {
-        method,
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        let msg = `Error ${res.status}`;
-        try { const b = (await res.json()) as { error?: string }; if (b.error) msg = b.error; }
-        catch { /* ignore */ }
-        throw new Error(msg);
+      let saved = zonaGuardada;
+      if (!saved) {
+        const body = {
+          nombre:      nombre.trim(),
+          descripcion: descripcion.trim() || undefined,
+          ciudad:      ciudad.trim(),
+          latitud,
+          longitud,
+          tipo:        tipoActual,
+        };
+        const url    = modo === 'editar' ? `${API}/zonas/${zona!.id}` : `${API}/zonas`;
+        const method = modo === 'editar' ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          let msg = `Error ${res.status}`;
+          try { const b = (await res.json()) as { error?: string }; if (b.error) msg = b.error; }
+          catch { /* ignore */ }
+          throw new Error(msg);
+        }
+        saved = (await res.json()) as ZonaCyd;
+        if (mostrarHorario) setZonaGuardada(saved);
       }
-      const saved = (await res.json()) as ZonaCyd;
+
+      if (mostrarHorario && franjas.length > 0) {
+        const pendientes: FranjaNueva[] = [];
+        for (const franja of franjas) {
+          try {
+            const resH = await fetch(`${API}/zonas/${saved.id}/horarios`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify(franja),
+            });
+            if (!resH.ok) {
+              let msg = `Error ${resH.status}`;
+              try { const b = (await resH.json()) as { error?: string }; if (b.error) msg = b.error; }
+              catch { /* ignore */ }
+              throw new Error(msg);
+            }
+          } catch {
+            pendientes.push(franja);
+          }
+        }
+        setFranjas(pendientes);
+        if (pendientes.length > 0) {
+          setError(
+            `La zona se ha creado, pero ${pendientes.length} franja(s) horaria(s) no se pudieron guardar. ` +
+            'Puedes reintentar o gestionarlas después desde "Horarios".',
+          );
+          return;
+        }
+      }
+
       onSuccess(saved);
       onClose();
     } catch (err) {
@@ -128,6 +214,7 @@ export function ZonaModal({
               maxLength={100}
               required
               autoFocus
+              disabled={!!zonaGuardada}
               placeholder="Zona de carga calle Mayor"
             />
           </div>
@@ -140,6 +227,7 @@ export function ZonaModal({
               value={descripcion}
               onChange={e => setDescripcion(e.target.value)}
               maxLength={255}
+              disabled={!!zonaGuardada}
               placeholder="Opcional"
             />
           </div>
@@ -153,6 +241,7 @@ export function ZonaModal({
               value={ciudad}
               onChange={e => setCiudad(e.target.value)}
               required
+              disabled={!!zonaGuardada}
               placeholder="Cáceres"
             />
           </div>
@@ -170,6 +259,7 @@ export function ZonaModal({
                 min={-90}
                 max={90}
                 required
+                disabled={!!zonaGuardada}
               />
             </div>
             <div style={{ flex: 1 }}>
@@ -183,9 +273,102 @@ export function ZonaModal({
                 min={-180}
                 max={180}
                 required
+                disabled={!!zonaGuardada}
               />
             </div>
           </div>
+
+          {/* Horario (opcional, solo al crear zona de carga/descarga) */}
+          {mostrarHorario && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={labelStyle}>Horario (opcional)</div>
+
+              {franjas.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  {franjas.map((f, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '6px 10px', background: '#f9f9f9', borderRadius: 6, marginBottom: 4,
+                      }}
+                    >
+                      <span style={{ fontSize: 13, color: '#1c1c1e', fontVariantNumeric: 'tabular-nums' }}>
+                        {SELECT_LABEL_DIA[f.tipo_dia]}: {f.hora_inicio} – {f.hora_fin}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleQuitarFranja(i)}
+                        disabled={loading}
+                        style={{
+                          background: 'none', border: 'none', color: '#dc2626',
+                          fontSize: 12, fontWeight: 500,
+                          cursor: loading ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 140px' }}>
+                  <label style={labelStyle}>Tipo día</label>
+                  <select
+                    value={franjaTipoDia}
+                    onChange={e => setFranjaTipoDia(e.target.value as TipoDia)}
+                    style={inputStyle}
+                    disabled={loading}
+                  >
+                    {TIPOS_DIA.map(t => (
+                      <option key={t} value={t}>{SELECT_LABEL_DIA[t]}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ flex: '1 1 100px' }}>
+                  <label style={labelStyle}>Inicio</label>
+                  <input
+                    type="time"
+                    value={franjaHoraIni}
+                    onChange={e => setFranjaHoraIni(e.target.value)}
+                    style={inputStyle}
+                    disabled={loading}
+                  />
+                </div>
+                <div style={{ flex: '1 1 100px' }}>
+                  <label style={labelStyle}>Fin</label>
+                  <input
+                    type="time"
+                    value={franjaHoraFin}
+                    onChange={e => setFranjaHoraFin(e.target.value)}
+                    style={inputStyle}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              {errorFranja && (
+                <div style={{ color: '#dc2626', fontSize: 12, marginBottom: 8 }}>
+                  {errorFranja}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleAddFranja}
+                disabled={loading}
+                style={{
+                  background: '#f5f5f7', color: '#1c1c1e', border: 'none',
+                  borderRadius: 7, padding: '7px 14px', fontSize: 12, fontWeight: 500,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Añadir franja
+              </button>
+            </div>
+          )}
 
           {/* Error inline */}
           {error && (
@@ -202,7 +385,7 @@ export function ZonaModal({
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => { if (zonaGuardada) onSuccess(zonaGuardada); onClose(); }}
               disabled={loading}
               style={{
                 background: '#f5f5f5', color: '#1c1c1e', border: 'none',
@@ -210,21 +393,21 @@ export function ZonaModal({
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >
-              Cancelar
+              {zonaGuardada ? 'Cerrar' : 'Cancelar'}
             </button>
             <button
               type="submit"
-              disabled={!isValid || loading}
+              disabled={!canSubmit}
               style={{
-                background: !isValid || loading ? '#b0c8e8' : '#0071e3',
+                background: !canSubmit ? '#b0c8e8' : '#0071e3',
                 color: '#fff', border: 'none',
                 borderRadius: 7, padding: '9px 18px', fontSize: 13,
                 fontWeight: 500,
-                cursor: !isValid || loading ? 'not-allowed' : 'pointer',
+                cursor: !canSubmit ? 'not-allowed' : 'pointer',
                 transition: 'background 150ms ease',
               }}
             >
-              {loading ? 'Guardando…' : 'Guardar'}
+              {loading ? 'Guardando…' : zonaGuardada ? 'Guardar horarios' : 'Guardar'}
             </button>
           </div>
         </form>

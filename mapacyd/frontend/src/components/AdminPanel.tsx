@@ -67,18 +67,21 @@ const S = {
     background: '#fff',
   },
   tdBase: { padding: '10px 16px', verticalAlign: 'middle' as const },
+  actionsGroup: { display: 'flex', gap: 6 },
   btnAction: {
-    background: '#f5f5f7', border: 'none',
-    borderRadius: 6, padding: '4px 11px', fontSize: 12, fontWeight: 500,
-    cursor: 'pointer', color: '#1c1c1e', marginRight: 4,
-    transition: 'background 150ms ease',
+    background: 'transparent', border: 'none',
+    borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500,
+    cursor: 'pointer', color: '#1c1c1e',
+    transition: 'background 180ms ease',
   },
+  btnActionHover: { background: '#f0f0f2' },
   btnDanger: {
-    background: '#fef2f2', border: 'none',
-    borderRadius: 6, padding: '4px 11px', fontSize: 12, fontWeight: 500,
-    cursor: 'pointer', color: '#dc2626', marginRight: 4,
-    transition: 'background 150ms ease',
+    background: 'transparent', border: 'none',
+    borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500,
+    cursor: 'pointer', color: '#dc2626',
+    transition: 'background 180ms ease',
   },
+  btnDangerHover: { background: '#fef2f2' },
   // Modal de confirmación
   overlay: {
     position: 'fixed' as const, inset: 0,
@@ -121,6 +124,9 @@ export function AdminPanel({ onClose, onActivarModoPin, onZonaCreada }: AdminPan
   const [zonaEliminar,  setZonaEliminar]  = useState<ZonaCyd | null>(null);
   const [eliminando,    setEliminando]    = useState(false);
   const [errorEliminar, setErrorEliminar] = useState<string | null>(null);
+  // Hover de los botones de acción de fila (no hay CSS con pseudo-clases
+  // aquí, los estilos son objetos inline) — clave = `${zonaId}:accion`
+  const [hoveredBtn, setHoveredBtn]       = useState<string | null>(null);
 
   // ── Eliminar ───────────────────────────────────────────────────────────────
   const confirmarEliminar = async () => {
@@ -226,29 +232,37 @@ export function AdminPanel({ onClose, onActivarModoPin, onZonaCreada }: AdminPan
                       {zona.tipo === 'aparcamiento' ? '—' : nHorarios}
                     </td>
                     <td style={S.tdBase}>
-                      {zona.tipo !== 'aparcamiento' && (
+                      <div style={S.actionsGroup}>
+                        {zona.tipo !== 'aparcamiento' && (
+                          <button
+                            style={hoveredBtn === `${zona.id}:horarios` ? { ...S.btnAction, ...S.btnActionHover } : S.btnAction}
+                            onClick={() => setZonaHorarios(zona)}
+                            onMouseEnter={() => setHoveredBtn(`${zona.id}:horarios`)}
+                            onMouseLeave={() => setHoveredBtn(null)}
+                            title="Gestionar horarios"
+                          >
+                            Horarios
+                          </button>
+                        )}
                         <button
-                          style={S.btnAction}
-                          onClick={() => setZonaHorarios(zona)}
-                          title="Gestionar horarios"
+                          style={hoveredBtn === `${zona.id}:editar` ? { ...S.btnAction, ...S.btnActionHover } : S.btnAction}
+                          onClick={() => setZonaEditar(zona)}
+                          onMouseEnter={() => setHoveredBtn(`${zona.id}:editar`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          title="Editar zona"
                         >
-                          Horarios
+                          Editar
                         </button>
-                      )}
-                      <button
-                        style={S.btnAction}
-                        onClick={() => setZonaEditar(zona)}
-                        title="Editar zona"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        style={S.btnDanger}
-                        onClick={() => { setErrorEliminar(null); setZonaEliminar(zona); }}
-                        title="Eliminar zona"
-                      >
-                        Eliminar
-                      </button>
+                        <button
+                          style={hoveredBtn === `${zona.id}:eliminar` ? { ...S.btnDanger, ...S.btnDangerHover } : S.btnDanger}
+                          onClick={() => { setErrorEliminar(null); setZonaEliminar(zona); }}
+                          onMouseEnter={() => setHoveredBtn(`${zona.id}:eliminar`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          title="Eliminar zona"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
