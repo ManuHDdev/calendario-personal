@@ -19,11 +19,15 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
   const [keyword, setKeyword] = useState(initial?.keyword ?? '');
   const [precioMin, setPrecioMin] = useState(initial?.precio_min?.toString() ?? '');
   const [precioMax, setPrecioMax] = useState(initial?.precio_max?.toString() ?? '');
-  const [latitude, setLatitude] = useState(initial?.latitude?.toString() ?? '');
-  const [longitude, setLongitude] = useState(initial?.longitude?.toString() ?? '');
-  const [distanceKm, setDistanceKm] = useState(initial?.distance_km?.toString() ?? '');
+  // Defaults solo para alta (sin `initial`): ubicación habitual del
+  // propietario (La Coronada, Badajoz) y un radio amplio, para no tener que
+  // rellenarlos a mano en cada búsqueda nueva — se ajustan después si hace falta.
+  const [latitude, setLatitude] = useState(initial?.latitude?.toString() ?? '38.9172');
+  const [longitude, setLongitude] = useState(initial?.longitude?.toString() ?? '-5.669852');
+  const [distanceKm, setDistanceKm] = useState(initial?.distance_km?.toString() ?? '2000');
   const [provinceSlug, setProvinceSlug] = useState(initial?.milanuncios_province_slug ?? '');
   const [languageFilter, setLanguageFilter] = useState(initial?.language_filter ?? '');
+  const [excludeKeywords, setExcludeKeywords] = useState(initial?.exclude_keywords ?? '');
   const [consoleOnly, setConsoleOnly] = useState(initial?.console_only ?? false);
   const [sitios, setSitios] = useState<Sitios>(initial?.sitios ?? defaultSitios);
   const [saving, setSaving] = useState(false);
@@ -61,6 +65,7 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
         distance_km: dist,
         milanuncios_province_slug: provinceSlug.trim() || null,
         language_filter: languageFilter.trim() || null,
+        exclude_keywords: excludeKeywords.trim() || null,
         console_only: consoleOnly,
         sitios,
       });
@@ -69,11 +74,12 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
         setKeyword('');
         setPrecioMin('');
         setPrecioMax('');
-        setLatitude('');
-        setLongitude('');
-        setDistanceKm('');
+        setLatitude('38.9172');
+        setLongitude('-5.669852');
+        setDistanceKm('2000');
         setProvinceSlug('');
         setLanguageFilter('');
+        setExcludeKeywords('');
         setConsoleOnly(false);
         setSitios(defaultSitios);
       }
@@ -85,7 +91,12 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
   };
 
   return (
-    <form className="search-form" onSubmit={handleSubmit}>
+    // noValidate: la validación HTML5 nativa (popups del navegador sin
+    // contexto en los campos `required`) se desactiva a propósito para que
+    // sea siempre el mensaje inline de abajo (`.search-form-error`) el que
+    // informe al usuario, con el mismo texto tanto si falta un campo como si
+    // el valor no es válido.
+    <form className="search-form" onSubmit={handleSubmit} noValidate>
       <div className="search-form-row">
         <input
           type="text" placeholder="Nombre (p. ej. Juegos DS baratos)"
@@ -136,6 +147,17 @@ export default function SearchForm({ initial, onSubmit, onCancel }: Props) {
           />
           <span>Solo consola</span>
         </label>
+      </div>
+      <div className="search-form-row">
+        <div className="search-form-field">
+          <input
+            type="text" placeholder="carta, cartas, tcg"
+            value={excludeKeywords} onChange={(e) => setExcludeKeywords(e.target.value)}
+          />
+          <small className="search-form-hint">
+            Términos separados por coma: se excluyen anuncios cuyo título contenga alguno (opcional)
+          </small>
+        </div>
       </div>
       <div className="search-form-sites">
         {(Object.keys(sitios) as (keyof Sitios)[]).map((site) => (

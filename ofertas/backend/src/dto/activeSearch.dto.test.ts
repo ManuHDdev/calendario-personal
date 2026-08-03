@@ -13,6 +13,7 @@ const row: Busqueda = {
   distance_km: 30,
   milanuncios_province_slug: null,
   language_filter: null,
+  exclude_keywords: null,
   console_only: false,
   sitios: {
     wallapop: { enabled: true },
@@ -37,6 +38,7 @@ describe('toActiveSearchDto', () => {
       distance_km: 30,
       milanuncios_province_slug: null,
       language_filter: null,
+      exclude_keywords: null,
       console_only: false,
       sites: {
         wallapop: { enabled: true },
@@ -49,6 +51,16 @@ describe('toActiveSearchDto', () => {
   it('maps a non-null language_filter through to the DTO', () => {
     const dto = toActiveSearchDto({ ...row, language_filter: 'es' });
     expect(dto.language_filter).toBe('es');
+  });
+
+  it('maps a non-null exclude_keywords through to the DTO', () => {
+    const dto = toActiveSearchDto({ ...row, exclude_keywords: 'carta,cartas,tcg' });
+    expect(dto.exclude_keywords).toBe('carta,cartas,tcg');
+  });
+
+  it('maps a null exclude_keywords through to the DTO', () => {
+    const dto = toActiveSearchDto({ ...row, exclude_keywords: null });
+    expect(dto.exclude_keywords).toBeNull();
   });
 
   it('maps console_only=true through to the DTO', () => {

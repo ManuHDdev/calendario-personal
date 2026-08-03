@@ -42,6 +42,16 @@ describe('createBusquedaSchema', () => {
     expect(createBusquedaSchema.safeParse(validBody).success).toBe(true);
   });
 
+  it('accepts an exclude_keywords string', () => {
+    const result = createBusquedaSchema.safeParse({ ...validBody, exclude_keywords: 'carta,cartas,tcg' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a null or omitted exclude_keywords', () => {
+    expect(createBusquedaSchema.safeParse({ ...validBody, exclude_keywords: null }).success).toBe(true);
+    expect(createBusquedaSchema.safeParse(validBody).success).toBe(true);
+  });
+
   it('accepts a boolean console_only', () => {
     expect(createBusquedaSchema.safeParse({ ...validBody, console_only: true }).success).toBe(true);
     expect(createBusquedaSchema.safeParse({ ...validBody, console_only: false }).success).toBe(true);
@@ -73,6 +83,7 @@ describe('createBusquedaSchema', () => {
     { ...validBody, language_filter: 'spanish' },
     { ...validBody, language_filter: 'e' },
     { ...validBody, language_filter: 123 },
+    { ...validBody, exclude_keywords: 123 },
     { ...validBody, console_only: 'true' },
     { ...validBody, console_only: 1 },
     { ...validBody, habilitada: 'true' },
@@ -120,6 +131,15 @@ describe('updateBusquedaSchema', () => {
 
   it('rejects a malformed language_filter on partial update', () => {
     expect(updateBusquedaSchema.safeParse({ language_filter: 'english' }).success).toBe(false);
+  });
+
+  it('accepts a partial update of exclude_keywords, including setting it back to null', () => {
+    expect(updateBusquedaSchema.safeParse({ exclude_keywords: 'carta,cartas,tcg' }).success).toBe(true);
+    expect(updateBusquedaSchema.safeParse({ exclude_keywords: null }).success).toBe(true);
+  });
+
+  it('rejects a non-string exclude_keywords on partial update', () => {
+    expect(updateBusquedaSchema.safeParse({ exclude_keywords: 123 }).success).toBe(false);
   });
 
   it('accepts a partial update of console_only', () => {

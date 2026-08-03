@@ -19,6 +19,7 @@ export interface Busqueda {
   distance_km: number;
   milanuncios_province_slug: string | null;
   language_filter: string | null;
+  exclude_keywords: string | null;
   console_only: boolean;
   /** Activa/desactiva esta búsqueda para el scraper sin borrarla ni tocar el on/off global. */
   habilitada: boolean;
@@ -38,6 +39,7 @@ export interface BusquedaFormData {
   distance_km: number;
   milanuncios_province_slug?: string | null;
   language_filter?: string | null;
+  exclude_keywords?: string | null;
   console_only?: boolean;
   habilitada?: boolean;
   sitios: Sitios;

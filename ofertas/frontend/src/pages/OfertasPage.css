@@ -173,6 +173,23 @@
   outline-offset: -1px;
 }
 
+.search-form-field {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-form-field input {
+  width: 100%;
+}
+
+.search-form-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 .search-form-sites {
   display: flex;
   gap: 16px;

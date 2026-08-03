@@ -11,6 +11,12 @@ CREATE TABLE IF NOT EXISTS busqueda (
     distance_km                 NUMERIC(6, 2)   NOT NULL,
     milanuncios_province_slug   TEXT,
     language_filter             TEXT,
+    -- Términos (separados por coma) que el scraper externo usa para excluir
+    -- anuncios cuyo título los contenga — p. ej. una búsqueda de "Pokemon
+    -- Escarlata" (videojuego) inundada de cartas TCG puede excluir
+    -- "carta,cartas,tcg,trading card". Consumido por marketplace-watcher
+    -- (SearchConfig.exclude_keywords), no interpretado en este backend.
+    exclude_keywords            TEXT,
     console_only                BOOLEAN         NOT NULL DEFAULT FALSE,
     -- Activar/desactivar una búsqueda concreta sin borrarla ni tocar el
     -- on/off global del scraper (scraper_state) — distinto de `activo`
