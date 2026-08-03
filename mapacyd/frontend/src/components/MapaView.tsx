@@ -8,7 +8,6 @@ import { useZonas } from '../hooks/useZonas';
 import { usePreferenciaCiudad } from '../hooks/usePreferenciaCiudad';
 import { AdminPanel } from './AdminPanel';
 import { ZonaModal } from './ZonaModal';
-import { HorarioPanel } from './HorarioPanel';
 import { PreferenciaCiudad } from './PreferenciaCiudad';
 import AppLauncher from './AppLauncher';
 import './MapaView.css';
@@ -110,8 +109,6 @@ export function MapaView() {
   // Tipo de marca elegido para el próximo pin; null = modo pin inactivo
   const [modoPinTipo, setModoPinTipo]     = useState<TipoZona | null>(null);
   const [pinLatLng, setPinLatLng]         = useState<{ lat: number; lng: number } | null>(null);
-  // Horario de una zona recién creada, para configurarlo justo después de crearla
-  const [zonaHorarioNueva, setZonaHorarioNueva] = useState<ZonaCyd | null>(null);
   // Eliminar zona directamente desde el popup del mapa
   const [zonaEliminarPopup, setZonaEliminarPopup] = useState<ZonaCyd | null>(null);
   const [eliminandoPopup,   setEliminandoPopup]   = useState(false);
@@ -271,25 +268,11 @@ export function MapaView() {
           latitudInicial={pinLatLng.lat}
           longitudInicial={pinLatLng.lng}
           onClose={() => { setPinLatLng(null); setModoPinTipo(null); }}
-          onSuccess={(zonaCreada) => {
+          onSuccess={() => {
             setPinLatLng(null);
             setModoPinTipo(null);
             void refetch();
-            // Encadenar directamente a poner el horario, si no es un spot de aparcamiento
-            if (zonaCreada.tipo !== 'aparcamiento') {
-              setZonaHorarioNueva({ ...zonaCreada, horarios: [] });
-            }
           }}
-        />
-      )}
-
-      {/* Horario de la zona recién creada */}
-      {zonaHorarioNueva && (
-        <HorarioPanel
-          zona={zonaHorarioNueva}
-          token={token ?? ''}
-          onClose={() => { setZonaHorarioNueva(null); void refetch(); }}
-          onSuccess={() => void refetch()}
         />
       )}
 

@@ -42,6 +42,24 @@ const labelStyle: React.CSSProperties = {
   textTransform: 'uppercase', letterSpacing: '0.04em',
 };
 
+const rowBtnAction: React.CSSProperties = {
+  background: 'transparent', border: 'none', borderRadius: 6,
+  padding: '5px 12px', fontSize: 12, fontWeight: 500,
+  cursor: 'pointer', color: '#1c1c1e',
+  transition: 'background 180ms ease',
+};
+
+const rowBtnActionHover: React.CSSProperties = { background: '#f0f0f2' };
+
+const rowBtnDanger: React.CSSProperties = {
+  background: 'transparent', border: 'none', borderRadius: 6,
+  padding: '5px 12px', fontSize: 12, fontWeight: 500,
+  cursor: 'pointer', color: '#dc2626',
+  transition: 'background 180ms ease',
+};
+
+const rowBtnDangerHover: React.CSSProperties = { background: '#fef2f2' };
+
 // ─── Componente ──────────────────────────────────────────────────────────────
 
 export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelProps) {
@@ -62,6 +80,10 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
   const [horarioAEliminar, setHorarioAEliminar] = useState<HorarioZona | null>(null);
   const [eliminando,       setEliminando]       = useState(false);
   const [errorEliminar,    setErrorEliminar]    = useState<string | null>(null);
+
+  // Hover de los botones Editar/Eliminar de cada franja (estilos inline,
+  // sin CSS con pseudo-clases en este componente) — clave = `${id}:accion`
+  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -220,16 +242,20 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
                       <span style={{ fontSize: 13, color: '#1c1c1e', fontVariantNumeric: 'tabular-nums' }}>
                         {h.hora_inicio} – {h.hora_fin}
                       </span>
-                      <div>
+                      <div style={{ display: 'flex', gap: 6 }}>
                         <button
                           onClick={() => handleEditar(h)}
-                          style={{ background: '#f5f5f7', border: 'none', borderRadius: 6, padding: '3px 11px', fontSize: 12, fontWeight: 500, cursor: 'pointer', marginRight: 4, color: '#1c1c1e' }}
+                          onMouseEnter={() => setHoveredBtn(`${h.id}:editar`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          style={hoveredBtn === `${h.id}:editar` ? { ...rowBtnAction, ...rowBtnActionHover } : rowBtnAction}
                         >
                           Editar
                         </button>
                         <button
                           onClick={() => { setErrorEliminar(null); setHorarioAEliminar(h); }}
-                          style={{ background: '#fef2f2', border: 'none', borderRadius: 6, padding: '3px 11px', fontSize: 12, fontWeight: 500, cursor: 'pointer', color: '#dc2626' }}
+                          onMouseEnter={() => setHoveredBtn(`${h.id}:eliminar`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          style={hoveredBtn === `${h.id}:eliminar` ? { ...rowBtnDanger, ...rowBtnDangerHover } : rowBtnDanger}
                         >
                           Eliminar
                         </button>
