@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const origenEnum = z.enum(['manual', 'ticket', 'banco']);
 export const estadoEnum = z.enum(['pendiente_revision', 'confirmado']);
 
-const fechaSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha YYYY-MM-DD requerido');
+export const fechaSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha YYYY-MM-DD requerido');
 
 export const createGastoSchema = z.object({
   importe:   z.number().positive('importe debe ser mayor que 0'),
