@@ -31,6 +31,20 @@
         "composite": false,
         "clientRole": false,
         "containerId": "calendario"
+      },
+      {
+        "name": "paraisos_admin",
+        "description": "Administrador de Paraísos — gestión de spots (CRUD)",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
+      },
+      {
+        "name": "mapacyd_admin",
+        "description": "Administrador de MapaCYD — gestión de zonas y horarios (CRUD)",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
       }
     ],
     "client": {

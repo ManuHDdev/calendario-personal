@@ -1,0 +1,23 @@
+services:
+  paraisos-db:
+    image: postgres:15
+    container_name: paraisos-db-local
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_DB: paraisos
+      POSTGRES_USER: paraisos
+      POSTGRES_PASSWORD: paraisos123
+    volumes:
+      - paraisos_local_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paraisos -d paraisos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  paraisos_local_data:

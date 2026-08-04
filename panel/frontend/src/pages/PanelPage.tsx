@@ -136,13 +136,13 @@ export default function PanelPage() {
                       <td className="user-email">{u.email || <span className="no-data">—</span>}</td>
                       <td>
                         <div className="role-badges">
-                          {u.roles.filter((r) => ['admin','familia','invitado'].includes(r)).map((r) => (
+                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin'].includes(r)).map((r) => (
                             <span key={r} className="role-badge"
                               style={{ '--role-color': ROLE_COLOR[r] ?? '#aeaeb2' } as React.CSSProperties}>
                               {ROLE_LABEL[r] ?? r}
                             </span>
                           ))}
-                          {u.roles.filter((r) => ['admin','familia','invitado'].includes(r)).length === 0 && (
+                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin'].includes(r)).length === 0 && (
                             <span className="no-data">Sin rol</span>
                           )}
                         </div>

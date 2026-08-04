@@ -3,7 +3,8 @@
 # keycloak-update-realm.sh
 #
 # Actualiza el realm "calendario" en Keycloak con los roles correctos
-# (admin / familia / invitado) y asigna el rol "admin" al usuario "propietario".
+# (admin / familia / invitado / paraisos_admin / mapacyd_admin) y asigna los
+# roles admin, paraisos_admin y mapacyd_admin al usuario "propietario".
 #
 # Uso:
 #   bash scripts/keycloak-update-realm.sh [host] [admin_user] [admin_password]
@@ -48,7 +49,7 @@ TOKEN=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).access_token)"
 ok "Token de admin obtenido"
 
 # ── 2. Crear roles si no existen ──────────────────────────────────────────────
-for ROLE_NAME in admin familia invitado; do
+for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin; do
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     "$HOST/admin/realms/$REALM/roles" \
     -H "Authorization: Bearer $TOKEN" \
@@ -95,6 +96,48 @@ else
   warn "Respuesta $HTTP_STATUS al asignar rol (puede que ya lo tenga)"
 fi
 
+# ── 4b. Asignar rol "paraisos_admin" al usuario ─────────────────────────────
+PARAISOS_ADMIN_ROLE_JSON=$(curl -sf \
+  "$HOST/admin/realms/$REALM/roles/paraisos_admin" \
+  -H "Authorization: Bearer $TOKEN")
+
+PARAISOS_ADMIN_ROLE_ID=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).id)" "$PARAISOS_ADMIN_ROLE_JSON")
+
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+  "$HOST/admin/realms/$REALM/users/$USER_ID/role-mappings/realm" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "[{\"id\":\"$PARAISOS_ADMIN_ROLE_ID\",\"name\":\"paraisos_admin\"}]")
+
+if [ "$HTTP_STATUS" = "204" ]; then
+  ok "Rol 'paraisos_admin' asignado a 'propietario'"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  warn "Rol 'paraisos_admin' ya estaba asignado (OK)"
+else
+  warn "Respuesta $HTTP_STATUS al asignar rol (puede que ya lo tenga)"
+fi
+
+# ── 4c. Asignar rol "mapacyd_admin" al usuario ──────────────────────────────
+MAPACYD_ADMIN_ROLE_JSON=$(curl -sf \
+  "$HOST/admin/realms/$REALM/roles/mapacyd_admin" \
+  -H "Authorization: Bearer $TOKEN")
+
+MAPACYD_ADMIN_ROLE_ID=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).id)" "$MAPACYD_ADMIN_ROLE_JSON")
+
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+  "$HOST/admin/realms/$REALM/users/$USER_ID/role-mappings/realm" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "[{\"id\":\"$MAPACYD_ADMIN_ROLE_ID\",\"name\":\"mapacyd_admin\"}]")
+
+if [ "$HTTP_STATUS" = "204" ]; then
+  ok "Rol 'mapacyd_admin' asignado a 'propietario'"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  warn "Rol 'mapacyd_admin' ya estaba asignado (OK)"
+else
+  warn "Respuesta $HTTP_STATUS al asignar rol (puede que ya lo tenga)"
+fi
+
 # ── 5. Actualizar redirect URIs del cliente calendario-frontend ───────────────
 CLIENTS_JSON=$(curl -sf \
   "$HOST/admin/realms/$REALM/clients?clientId=calendario-frontend" \
@@ -105,8 +148,8 @@ CLIENT_ID=$(node -e "const a=JSON.parse(process.argv[1]); process.stdout.write(a
 [ -z "$CLIENT_ID" ] && err "Cliente 'calendario-frontend' no encontrado en el realm '$REALM'"
 
 if [[ "$HOST" == *"localhost"* ]]; then
-  REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*"]'
-  WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175"]'
+  REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*"]'
+  WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179"]'
 else
   REDIRECT_URIS='["https://elbunkerdelingeniero.duckdns.org/*"]'
   WEB_ORIGINS='["https://elbunkerdelingeniero.duckdns.org"]'
@@ -141,7 +184,7 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Realm actualizado correctamente ✓${NC}"
 echo -e "${GREEN}════════════════════════════════════════${NC}"
 echo ""
-echo "  Roles:   admin, familia, invitado"
-echo "  Usuario 'propietario' → rol admin"
+echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin"
+echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin"
 echo "  Redirect URIs actualizadas para todos los puertos locales"
 echo ""

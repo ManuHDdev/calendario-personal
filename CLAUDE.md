@@ -97,7 +97,7 @@ Calendario/mapacyd/ dentro del monorepo elbunkerdelingeniero.
 - Sin ORM — queries directas con el cliente pg
 
 ### Roles
-- admin → gestión completa (POST/PUT/DELETE zonas y horarios)
+- admin o mapacyd_admin → gestión completa (POST/PUT/DELETE zonas y horarios)
 - familia → solo consulta (GET /api/zonas)
 - invitado → sin acceso a mapacyd
 
@@ -319,24 +319,74 @@ Calendario/ofertas/ dentro del monorepo elbunkerdelingeniero.
 ### Imágenes Docker
 `ghcr.io/manuhddev/ofertas-backend:latest`, `ghcr.io/manuhddev/ofertas-frontend:latest`
 
+## Paraísos — Mapa de paraísos naturales
+
+### Ubicación
+Calendario/paraisos/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/, storage/, mapacyd/, ytdl/, gastos/ y ofertas/)
+- Frontend: React + Vite + TypeScript
+- Base de datos: PostgreSQL 15, propia (`paraisos`), tabla `spot`
+- Mapa: Leaflet.js instalado vía npm (no CDN)
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón)
+- Validaciones: Zod en todos los endpoints que reciben body
+- Sin ORM — queries directas con el cliente pg
+
+### Acceso
+Paraísos es una herramienta pública: cualquier visitante puede ver el mapa y los spots sin iniciar sesión. El frontend inicializa Keycloak con `onLoad: 'check-sso'` (sin redirigir a login) solo para detectar si el visitante ya tiene una sesión SSO activa; si es así, se muestra el menú de apps compartido y, si el usuario tiene rol `admin` o `paraisos_admin`, los controles de gestión de spots.
+
+### Roles
+- Sin sesión / cualquier rol → consulta (GET /spots, GET /spots/:id, /stats, /regions)
+- `admin` o `paraisos_admin` → gestión completa (POST/PATCH/DELETE spots)
+
+### Rutas (`/paraisos/api/*`)
+- `GET /spots` — listado de spots activos, filtro opcional `?categoria=piscina|ruta|playa`
+- `GET /spots/:id` — detalle de un spot
+- `GET /spots/stats` — conteo por categoría
+- `GET /spots/regions` — regiones distintas
+- `POST /spots` — alta de spot (admin, Keycloak)
+- `PATCH /spots/:id` — edición de spot (admin, Keycloak)
+- `DELETE /spots/:id` — borrado lógico (admin, Keycloak)
+- `GET /health`
+
+### Variables de entorno del backend
+`PARAISOS_DB_HOST`, `PARAISOS_DB_NAME`, `PARAISOS_DB_USER`, `PARAISOS_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3007)
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/paraisos-backend:latest`, `ghcr.io/manuhddev/paraisos-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
-Los tres roles de realm en Keycloak son `admin`, `familia`, `invitado`.
+Los cinco roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`.
 Cualquier código que filtre por rol DEBE usar exactamente estos nombres.
 
-| Rol       | Acceso                                                       |
-|-----------|----------------------------------------------------------------|
-| admin     | Todas las apps + gestión completa                               |
-| familia   | Calendario, Storage (lectura), MapaCYD (lectura)                |
-| invitado  | Solo Calendario                                                 |
+| Rol             | Acceso                                                       |
+|-----------------|----------------------------------------------------------------|
+| admin           | Todas las apps + gestión completa                               |
+| familia         | Calendario, Storage (lectura), MapaCYD (lectura)                |
+| invitado        | Solo Calendario                                                 |
+| paraisos_admin  | Gestión de spots en Paraísos (CRUD)                             |
+| mapacyd_admin   | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
 
-Ytdl no aparece en esta tabla porque es pública: no requiere ningún rol ni
-sesión iniciada, a diferencia del resto de subapps. Gastos, igual que Panel,
+Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
+ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, igual que Panel,
 solo es accesible para `admin` (uso exclusivo del propietario) — `familia` e
 `invitado` no la ven en el AppLauncher ni pueden llamar a su API. Ofertas
 sigue exactamente la misma postura que Gastos/Panel: solo `admin`.
 
-El usuario por defecto se llama `propietario` y tiene rol `admin`.
+Los roles `paraisos_admin` y `mapacyd_admin` son roles delegados: permiten
+gestionar una subapp concreta sin tener acceso `admin` global. Un usuario con
+`paraisos_admin` puede crear, editar y borrar spots en Paraísos; con
+`mapacyd_admin` puede gestionar zonas y horarios en MapaCYD. Ambos roles se
+asignan automáticamente al usuario `propietario` por el script de realm.
+
+El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin` y `mapacyd_admin`.
 
 ## Keycloak — configuración y despliegue
 
@@ -375,14 +425,16 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Ytdl               | :5176    | :3004   |
 | Gastos             | :5177    | :3005   |
 | Ofertas            | :5178    | :3006   |
+| Paraísos           | :5179    | :3007   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
 | PostgreSQL (gastos) | :5435  | —       |
 | PostgreSQL (ofertas)| :5436  | —       |
+| PostgreSQL (paraisos)| :5437 | —       |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend` y `ytdl/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 6 Dockerfiles y 6 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 7 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 7 Dockerfiles y 7 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 8 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.

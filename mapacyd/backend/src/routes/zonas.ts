@@ -27,7 +27,7 @@ export async function zonasRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/zonas?ciudad=X
   app.get<{ Querystring: { ciudad?: string } }>(
     '/zonas',
-    { preHandler: authMiddleware(['admin', 'familia']) },
+    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_admin']) },
     async (request, reply: FastifyReply) => {
       try {
         const { ciudad } = request.query;
@@ -52,7 +52,7 @@ export async function zonasRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/zonas/:id
   app.get<{ Params: { id: string } }>(
     '/zonas/:id',
-    { preHandler: authMiddleware(['admin', 'familia']) },
+    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_admin']) },
     async (request, reply: FastifyReply) => {
       try {
         const { id } = request.params;
@@ -71,7 +71,7 @@ export async function zonasRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/zonas
   app.post(
     '/zonas',
-    { preHandler: authMiddleware(['admin']) },
+    { preHandler: authMiddleware(['admin', 'mapacyd_admin']) },
     async (request, reply: FastifyReply) => {
       const parsed = createZonaSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -99,7 +99,7 @@ export async function zonasRoutes(app: FastifyInstance): Promise<void> {
   // PUT /api/zonas/:id
   app.put<{ Params: { id: string } }>(
     '/zonas/:id',
-    { preHandler: authMiddleware(['admin']) },
+    { preHandler: authMiddleware(['admin', 'mapacyd_admin']) },
     async (request, reply: FastifyReply) => {
       const parsed = updateZonaSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -144,7 +144,7 @@ export async function zonasRoutes(app: FastifyInstance): Promise<void> {
   // DELETE /api/zonas/:id  (soft delete)
   app.delete<{ Params: { id: string } }>(
     '/zonas/:id',
-    { preHandler: authMiddleware(['admin']) },
+    { preHandler: authMiddleware(['admin', 'mapacyd_admin']) },
     async (request, reply: FastifyReply) => {
       const { id } = request.params;
       try {

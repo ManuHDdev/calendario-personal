@@ -20,6 +20,8 @@
 #   gastos frontend     →  :5177
 #   ofertas backend     →  :3006
 #   ofertas frontend    →  :5178
+#   paraisos backend    →  :3007
+#   paraisos frontend   →  :5179
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -43,6 +45,7 @@ function Cleanup {
   warn "  cd mapacyd\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd gastos\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd ofertas\infra; docker compose -f docker-compose.local.yml down"
+  warn "  cd paraisos\infra; docker compose -f docker-compose.local.yml down"
 }
 
 # Registrar cleanup al salir
@@ -97,6 +100,10 @@ info "PostgreSQL (ofertas :5436)..."
 Set-Location (Join-Path $SCRIPT_DIR "ofertas\infra")
 docker compose -f docker-compose.local.yml up -d
 
+info "PostgreSQL (paraisos :5437)..."
+Set-Location (Join-Path $SCRIPT_DIR "paraisos\infra")
+docker compose -f docker-compose.local.yml up -d
+
 Set-Location $SCRIPT_DIR
 
 # ── 4. Esperar a PostgreSQL (calendario) ─────────────────────────────────────
@@ -147,6 +154,18 @@ do {
   Write-Host -NoNewline "."; Start-Sleep -Seconds 2
 } while ($true)
 Write-Host ""; info "  ✓ PostgreSQL (ofertas) listo."
+
+# ── 5d. Esperar a PostgreSQL (paraisos) ─────────────────────────────────────
+info "PostgreSQL paraisos..."
+$retries = 30
+do {
+  $r = docker compose -f "$SCRIPT_DIR\paraisos\infra\docker-compose.local.yml" exec -T paraisos-db pg_isready -U paraisos -d paraisos 2>$null
+  if ($LASTEXITCODE -eq 0) { break }
+  $retries--
+  if ($retries -le 0) { err "PostgreSQL (paraisos) no arrancó." }
+  Write-Host -NoNewline "."; Start-Sleep -Seconds 2
+} while ($true)
+Write-Host ""; info "  ✓ PostgreSQL (paraisos) listo."
 
 # ── 6. Esperar a Keycloak ────────────────────────────────────────────────────
 info "Keycloak (puede tardar ~30s la primera vez)..."
@@ -225,6 +244,16 @@ StartBackground "ofertas-backend   :3006" "ofertas-backend.log" `
      CORS_ORIGIN="http://localhost:5178";
      SCRAPER_API_KEY=$(if ($env:SCRAPER_API_KEY) { $env:SCRAPER_API_KEY } else { "local-dev-scraper-key" }) }
 
+# Paraisos backend
+EnsureDeps (Join-Path $SCRIPT_DIR "paraisos\backend")
+StartBackground "paraisos-backend  :3007" "paraisos-backend.log" `
+  (Join-Path $SCRIPT_DIR "paraisos\backend") `
+  "npm run dev" `
+  @{ PORT="3007"; PARAISOS_DB_HOST="localhost"; PARAISOS_DB_PORT="5437";
+     PARAISOS_DB_NAME="paraisos"; PARAISOS_DB_USER="paraisos"; PARAISOS_DB_PASSWORD="paraisos123";
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5179" }
+
 # Calendario backend (Spring Boot)
 StartBackground "calendario-backend :8081" "calendario-backend.log" `
   (Join-Path $SCRIPT_DIR "backend") `
@@ -256,6 +285,10 @@ StartBackground "gastos-frontend    :5177" "gastos-frontend.log" `
 EnsureDeps (Join-Path $SCRIPT_DIR "ofertas\frontend")
 StartBackground "ofertas-frontend   :5178" "ofertas-frontend.log" `
   (Join-Path $SCRIPT_DIR "ofertas\frontend") "npm run dev"
+
+EnsureDeps (Join-Path $SCRIPT_DIR "paraisos\frontend")
+StartBackground "paraisos-frontend  :5179" "paraisos-frontend.log" `
+  (Join-Path $SCRIPT_DIR "paraisos\frontend") "npm run dev"
 
 EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
 StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
@@ -303,6 +336,10 @@ Write-Host "  Ofertas" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5178/ofertas/"
 Write-Host "    Backend health   ->  http://localhost:3006/ofertas/api/health"
 Write-Host "    SCRAPER_API_KEY de desarrollo por defecto: local-dev-scraper-key (sobrescribible con la env var)" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  Paraisos Naturales" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5179/paraisos/"
+Write-Host "    Backend health   ->  http://localhost:3007/paraisos/api/health"
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { UserOut, UserFormData } from '../types';
 import './UserModal.css';
 
-const ALL_ROLES = ['admin', 'familia', 'invitado'];
+const ALL_ROLES = ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin'];
 
 interface Props {
   user: UserOut | null; // null = crear
