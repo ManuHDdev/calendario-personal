@@ -117,7 +117,7 @@ async function setUserRoles(userId: string, roleNames: string[]): Promise<void> 
   if (currentRoles.ok) {
     const existing = (await currentRoles.json()) as KcRole[];
     const appRoles = existing.filter((r) =>
-      ['admin', 'familia', 'invitado'].includes(r.name),
+      ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin'].includes(r.name),
     );
     if (appRoles.length > 0) {
       await adminFetch(`/users/${userId}/role-mappings/realm`, {
@@ -237,5 +237,5 @@ export async function deleteUser(userId: string): Promise<void> {
 }
 
 export async function listRoles(): Promise<string[]> {
-  return ['admin', 'familia', 'invitado'];
+  return ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin'];
 }

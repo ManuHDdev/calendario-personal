@@ -21,6 +21,8 @@
 #   gastos frontend     →  :5177
 #   ofertas backend     →  :3006
 #   ofertas frontend    →  :5178
+#   paraisos backend    →  :3007
+#   paraisos frontend   →  :5179
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -59,6 +61,7 @@ cleanup() {
   warn "  cd mapacyd/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd gastos/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd ofertas/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd paraisos/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -126,6 +129,9 @@ info "PostgreSQL (gastos :5435)..."
 info "PostgreSQL (ofertas :5436)..."
 (cd "$SCRIPT_DIR/ofertas/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (paraisos :5437)..."
+(cd "$SCRIPT_DIR/paraisos/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -152,6 +158,12 @@ wait_for_container \
   "PostgreSQL ofertas" \
   "ofertas-db-local" \
   "docker exec ofertas-db-local pg_isready -U ofertas -d ofertas" \
+  30
+
+wait_for_container \
+  "PostgreSQL paraisos" \
+  "paraisos-db-local" \
+  "docker exec paraisos-db-local pg_isready -U paraisos -d paraisos" \
   30
 
 wait_for_container \
@@ -237,6 +249,18 @@ start_bg "ofertas-backend   :3006" "ofertas-backend.log" "$SCRIPT_DIR/ofertas/ba
       SCRAPER_API_KEY="${SCRAPER_API_KEY:-local-dev-scraper-key}" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/paraisos/backend"
+start_bg "paraisos-backend  :3007" "paraisos-backend.log" "$SCRIPT_DIR/paraisos/backend" \
+  env PORT=3007 \
+      PARAISOS_DB_HOST="localhost" \
+      PARAISOS_DB_PORT="5437" \
+      PARAISOS_DB_NAME="paraisos" \
+      PARAISOS_DB_USER="paraisos" \
+      PARAISOS_DB_PASSWORD="paraisos123" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5179" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -265,6 +289,10 @@ start_bg "gastos-frontend    :5177" "gastos-frontend.log" "$SCRIPT_DIR/gastos/fr
 
 ensure_deps "$SCRIPT_DIR/ofertas/frontend"
 start_bg "ofertas-frontend   :5178" "ofertas-frontend.log" "$SCRIPT_DIR/ofertas/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/paraisos/frontend"
+start_bg "paraisos-frontend  :5179" "paraisos-frontend.log" "$SCRIPT_DIR/paraisos/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -312,6 +340,10 @@ echo -e "  ${CYAN}Ofertas${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5178/ofertas/${NC}"
 echo -e "    Backend health   →  http://localhost:3006/ofertas/api/health"
 echo -e "    ${YELLOW}ℹ  SCRAPER_API_KEY de desarrollo por defecto: local-dev-scraper-key (sobrescribible con la env var)${NC}"
+echo ""
+echo -e "  ${CYAN}Paraísos${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5179/paraisos/${NC}"
+echo -e "    Backend health   →  http://localhost:3007/paraisos/api/health"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

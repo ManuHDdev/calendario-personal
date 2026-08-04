@@ -18,7 +18,7 @@ export function useAuth(): AuthState {
     const roles: string[] =
       (keycloak.tokenParsed as { realm_access?: { roles?: string[] } })
         ?.realm_access?.roles ?? [];
-    const isAdmin   = roles.includes('admin');
+    const isAdmin   = roles.includes('admin') || roles.includes('mapacyd_admin');
     const isFamilia = roles.includes('familia');
     const canViewMap = isAdmin || isFamilia;
 

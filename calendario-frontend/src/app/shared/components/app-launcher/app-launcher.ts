@@ -20,6 +20,7 @@ function appUrls(): Record<string, string> {
     ytdl:       local ? 'http://localhost:5176/ytdl/'     : '/ytdl/',
     gastos:     local ? 'http://localhost:5177/gastos/'   : '/gastos/',
     ofertas:    local ? 'http://localhost:5178/ofertas/'  : '/ofertas/',
+    paraisos:   local ? 'http://localhost:5179/paraisos/' : '/paraisos/',
   };
 }
 
@@ -38,11 +39,12 @@ export class AppLauncher {
   private readonly TODAS: App[] = [
     { id: 'calendario', nombre: 'Calendario', color: '#0071e3', roles: null,              url: '' },
     { id: 'storage',    nombre: 'Storage',    color: '#5e5ce6', roles: ['admin','familia'], url: '' },
-    { id: 'mapacyd',    nombre: 'MapaCYD',    color: '#30d158', roles: ['admin','familia'], url: '' },
+    { id: 'mapacyd',    nombre: 'MapaCYD',    color: '#30d158', roles: ['admin','familia','mapacyd_admin'], url: '' },
     { id: 'panel',      nombre: 'Panel',      color: '#ff9f0a', roles: ['admin'],           url: '' },
     { id: 'ytdl',       nombre: 'Ytdl',       color: '#ff375f', roles: null,                url: '' },
     { id: 'gastos',     nombre: 'Gastos',     color: '#ffd60a', roles: ['admin'],           url: '' },
     { id: 'ofertas',    nombre: 'Ofertas',    color: '#bf5af2', roles: ['admin'],           url: '' },
+    { id: 'paraisos',   nombre: 'Paraísos',   color: '#00c7be', roles: null,                url: '' },
   ];
 
   get apps(): App[] {

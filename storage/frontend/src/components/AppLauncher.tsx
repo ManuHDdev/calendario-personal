@@ -12,11 +12,12 @@ interface AppDef {
 const APPS: AppDef[] = [
   { id: 'calendario', nombre: 'Calendario', color: '#0071e3', roles: null },
   { id: 'storage',    nombre: 'Storage',    color: '#5e5ce6', roles: ['admin', 'familia'] },
-  { id: 'mapacyd',    nombre: 'MapaCYD',    color: '#30d158', roles: ['admin', 'familia'] },
+  { id: 'mapacyd',    nombre: 'MapaCYD',    color: '#30d158', roles: ['admin', 'familia', 'mapacyd_admin'] },
   { id: 'panel',      nombre: 'Panel',      color: '#ff9f0a', roles: ['admin'] },
   { id: 'ytdl',       nombre: 'Ytdl',       color: '#ff375f', roles: null },
   { id: 'gastos',     nombre: 'Gastos',     color: '#ffd60a', roles: ['admin'] },
   { id: 'ofertas',    nombre: 'Ofertas',    color: '#bf5af2', roles: ['admin'] },
+  { id: 'paraisos',   nombre: 'Paraísos',   color: '#00c7be', roles: null },
 ];
 
 function getUrls(): Record<string, string> {
@@ -29,6 +30,7 @@ function getUrls(): Record<string, string> {
     ytdl:       local ? 'http://localhost:5176/ytdl/'    : '/ytdl/',
     gastos:     local ? 'http://localhost:5177/gastos/'  : '/gastos/',
     ofertas:    local ? 'http://localhost:5178/ofertas/' : '/ofertas/',
+    paraisos:   local ? 'http://localhost:5179/paraisos/' : '/paraisos/',
   };
 }
 
@@ -82,6 +84,15 @@ function AppIcon({ id }: { id: string }) {
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
           <path d="M20.59 13.41 12 22l-9-9V3h10l7.59 7.59a2 2 0 0 1 0 2.82z"/>
           <circle cx="7.5" cy="7.5" r="1.5" fill="white" stroke="none"/>
+        </svg>
+      );
+    case 'paraisos':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <path d="M2 22l1-1h18l1 1"/>
+          <path d="M12 13V2"/>
+          <path d="M12 2c-3 4-7 5.5-7 8.5S8 16 12 13"/>
+          <path d="M12 2c3 4 7 5.5 7 8.5S16 16 12 13"/>
         </svg>
       );
     default:

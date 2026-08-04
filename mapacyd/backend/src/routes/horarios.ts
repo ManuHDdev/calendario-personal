@@ -8,7 +8,7 @@ export async function horariosRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/zonas/:id/horarios
   app.post<{ Params: { id: string } }>(
     '/zonas/:id/horarios',
-    { preHandler: authMiddleware(['admin']) },
+    { preHandler: authMiddleware(['admin', 'mapacyd_admin']) },
     async (request, reply: FastifyReply) => {
       const { id: zonaId } = request.params;
 
@@ -49,7 +49,7 @@ export async function horariosRoutes(app: FastifyInstance): Promise<void> {
   // PUT /api/zonas/:id/horarios/:horarioId
   app.put<{ Params: { id: string; horarioId: string } }>(
     '/zonas/:id/horarios/:horarioId',
-    { preHandler: authMiddleware(['admin']) },
+    { preHandler: authMiddleware(['admin', 'mapacyd_admin']) },
     async (request, reply: FastifyReply) => {
       const { id: zonaId, horarioId } = request.params;
 
@@ -124,7 +124,7 @@ export async function horariosRoutes(app: FastifyInstance): Promise<void> {
   // DELETE /api/zonas/:id/horarios/:horarioId  (soft delete)
   app.delete<{ Params: { id: string; horarioId: string } }>(
     '/zonas/:id/horarios/:horarioId',
-    { preHandler: authMiddleware(['admin']) },
+    { preHandler: authMiddleware(['admin', 'mapacyd_admin']) },
     async (request, reply: FastifyReply) => {
       const { id: zonaId, horarioId } = request.params;
 
