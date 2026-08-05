@@ -11,11 +11,15 @@ const ROLE_LABEL: Record<string, string> = {
   admin: 'Admin',
   familia: 'Familia',
   invitado: 'Invitado',
+  paraisos_admin: 'Admin Paraísos',
+  mapacyd_admin: 'Admin MapaCYD',
 };
 const ROLE_COLOR: Record<string, string> = {
   admin: '#0071e3',
   familia: '#34c759',
   invitado: '#aeaeb2',
+  paraisos_admin: '#00c7be',
+  mapacyd_admin: '#30d158',
 };
 
 export default function PanelPage() {

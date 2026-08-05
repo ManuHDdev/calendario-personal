@@ -54,11 +54,15 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
     admin: 'Administrador',
     familia: 'Familia',
     invitado: 'Invitado',
+    paraisos_admin: 'Admin Paraísos',
+    mapacyd_admin: 'Admin MapaCYD',
   };
   const roleColors: Record<string, string> = {
     admin: '#0071e3',
     familia: '#34c759',
     invitado: '#aeaeb2',
+    paraisos_admin: '#00c7be',
+    mapacyd_admin: '#30d158',
   };
 
   return (
