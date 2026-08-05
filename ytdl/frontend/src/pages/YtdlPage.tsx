@@ -92,10 +92,18 @@ export default function YtdlPage() {
 
   return (
     <div className="ytdl-page">
-      {keycloak.authenticated && (
+      {keycloak.authenticated ? (
         <div className="ytdl-launcher">
           <AppLauncher upward={false} />
         </div>
+      ) : (
+        <button
+          type="button"
+          className="ytdl-login-link"
+          onClick={() => keycloak.login()}
+        >
+          Iniciar sesión
+        </button>
       )}
       <div className="ytdl-card">
         <h1>YouTube Downloader</h1>
