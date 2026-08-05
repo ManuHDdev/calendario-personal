@@ -15,6 +15,22 @@
   z-index: 10;
 }
 
+.ytdl-login-link {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  opacity: 0.7;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.ytdl-login-link:hover {
+  opacity: 1;
+  color: var(--text-secondary);
+}
+
 .ytdl-card {
   width: 100%;
   max-width: 440px;

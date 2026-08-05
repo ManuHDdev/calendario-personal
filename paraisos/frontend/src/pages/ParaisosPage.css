@@ -117,6 +117,18 @@
   color: var(--text-primary);
 }
 
+.paraisos-login-link {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  opacity: 0.7;
+  transition: opacity 150ms ease, color 150ms ease;
+}
+
+.paraisos-login-link:hover {
+  opacity: 1;
+  color: var(--text-secondary);
+}
+
 /* ── Main ─────────────────────────────────────────────── */
 
 .paraisos-main {

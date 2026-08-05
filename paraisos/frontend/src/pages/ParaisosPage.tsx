@@ -158,7 +158,17 @@ export default function ParaisosPage() {
               </svg>
             </button>
           )}
-          {keycloak.authenticated && <AppLauncher />}
+          {keycloak.authenticated ? (
+            <AppLauncher />
+          ) : (
+            <button
+              type="button"
+              className="paraisos-login-link"
+              onClick={() => keycloak.login()}
+            >
+              Iniciar sesión
+            </button>
+          )}
         </div>
       </header>
 
