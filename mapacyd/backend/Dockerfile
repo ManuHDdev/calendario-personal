@@ -1,3 +1,4 @@
+# trigger: rebuild tras incidente de GitHub Actions (2026-08-06/07)
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
