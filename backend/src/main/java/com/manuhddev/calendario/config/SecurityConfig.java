@@ -43,7 +43,8 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers("/api/**").authenticated()
+                        .requestMatchers("/api/auth/logout").authenticated()
+                        .requestMatchers("/api/**").hasAuthority("ROLE_admin")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

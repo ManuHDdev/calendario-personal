@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Navbar } from './shared/components/navbar/navbar';
+import { Auth } from './core/services/auth';
 
 @Component({
   selector: 'app-root',
@@ -8,4 +9,6 @@ import { Navbar } from './shared/components/navbar/navbar';
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App {}
+export class App {
+  protected readonly authService = inject(Auth);
+}
