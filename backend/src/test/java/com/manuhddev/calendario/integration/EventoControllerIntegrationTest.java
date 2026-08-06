@@ -59,7 +59,7 @@ class EventoControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "admin")
     void postEvento_datosValidos_devuelve201() throws Exception {
         mockMvc.perform(post("/api/eventos")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -70,7 +70,7 @@ class EventoControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "admin")
     void postEvento_sinTitulo_devuelve400() throws Exception {
         EventoRequestDTO dto = EventoRequestDTO.builder()
                 .fechaInicio(LocalDate.of(2025, 6, 1)).color("#0071e3").build();
@@ -81,7 +81,7 @@ class EventoControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "admin")
     void postEvento_fechaFinAntesFechaInicio_devuelve500() throws Exception {
         EventoRequestDTO dto = EventoRequestDTO.builder()
                 .titulo("Test").fechaInicio(LocalDate.of(2025, 6, 10))
@@ -93,7 +93,7 @@ class EventoControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "admin")
     void getEventosByAnio_devuelve200() throws Exception {
         mockMvc.perform(get("/api/eventos").param("anio", "2025"))
                 .andExpect(status().isOk())
@@ -101,7 +101,7 @@ class EventoControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "admin")
     void getEventoById_existente_devuelve200() throws Exception {
         String body = mockMvc.perform(post("/api/eventos")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -114,14 +114,14 @@ class EventoControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "admin")
     void getEventoById_inexistente_devuelve404() throws Exception {
         mockMvc.perform(get("/api/eventos/9999"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "admin")
     void putEvento_devuelve200() throws Exception {
         String body = mockMvc.perform(post("/api/eventos")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -139,7 +139,7 @@ class EventoControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "admin")
     void deleteEvento_devuelve204_yGetPosteriorDevuelve404() throws Exception {
         String body = mockMvc.perform(post("/api/eventos")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -158,5 +158,12 @@ class EventoControllerIntegrationTest {
     void sinAutenticacion_devuelve401() throws Exception {
         mockMvc.perform(get("/api/eventos").param("anio", "2025"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "familia")
+    void conRolNoAdmin_devuelve403() throws Exception {
+        mockMvc.perform(get("/api/eventos").param("anio", "2025"))
+                .andExpect(status().isForbidden());
     }
 }

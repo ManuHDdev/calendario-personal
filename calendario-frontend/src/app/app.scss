@@ -7,4 +7,8 @@
 .main-content {
   flex: 1;
   padding-top: 56px; // offset for fixed navbar
+
+  &--sin-navbar {
+    padding-top: 0;
+  }
 }

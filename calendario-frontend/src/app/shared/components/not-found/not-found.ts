@@ -18,7 +18,7 @@ import { RouterLink } from '@angular/router';
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: calc(100vh - 56px);
+      min-height: calc(100vh - 56px);
       gap: 12px;
     }
     .not-found__code {

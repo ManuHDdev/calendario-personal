@@ -1,4 +1,6 @@
-<app-navbar />
-<main class="main-content">
+@if (authService.isAdmin()) {
+  <app-navbar />
+}
+<main class="main-content" [class.main-content--sin-navbar]="!authService.isAdmin()">
   <router-outlet />
 </main>

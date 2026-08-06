@@ -10,6 +10,13 @@
 - Calidad: SonarQube Community
 - Documentación API: OpenAPI 3 / Swagger UI (springdoc-openapi)
 
+## Roles
+Único rol con acceso: `admin` (el propietario es el único usuario). `familia` e `invitado`
+no tienen acceso a Calendario, ni a la API ni al AppLauncher — el backend exige
+`ROLE_admin` en todo `/api/**` (salvo `/api/auth/logout`, accesible a cualquier
+autenticado para poder cerrar sesión), y el frontend oculta navbar/rutas y
+redirige a `/acceso-denegado` si el usuario autenticado no es admin.
+
 ## Paquete base Java
 com.manuhddev.calendario
 
@@ -369,16 +376,16 @@ Cualquier código que filtre por rol DEBE usar exactamente estos nombres.
 | Rol             | Acceso                                                       |
 |-----------------|----------------------------------------------------------------|
 | admin           | Todas las apps + gestión completa                               |
-| familia         | Calendario, Storage (lectura), MapaCYD (lectura)                |
-| invitado        | Solo Calendario                                                 |
+| familia         | Storage (lectura), MapaCYD (lectura)                             |
+| invitado        | Sin acceso a ninguna app                                         |
 | paraisos_admin  | Gestión de spots en Paraísos (CRUD)                             |
 | mapacyd_admin   | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
-ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, igual que Panel,
-solo es accesible para `admin` (uso exclusivo del propietario) — `familia` e
-`invitado` no la ven en el AppLauncher ni pueden llamar a su API. Ofertas
-sigue exactamente la misma postura que Gastos/Panel: solo `admin`.
+ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
+Ofertas y Calendario solo son accesibles para `admin` (uso exclusivo del
+propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
+llamar a su API.
 
 Los roles `paraisos_admin` y `mapacyd_admin` son roles delegados: permiten
 gestionar una subapp concreta sin tener acceso `admin` global. Un usuario con
