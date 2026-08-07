@@ -1,0 +1,604 @@
+{
+  "prompts": [
+    {
+      "texto": "¿Cuál ha sido la mentira más grande que has dicho?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿A quién de este grupo llamarías primero si tuvieras un problema grave?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu mayor miedo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más vergonzoso que te ha pasado en público?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Alguna vez has copiado en un examen?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es el secreto que menos gente conoce de ti?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿A quién de este grupo besarías si tuvieras que elegir a alguien?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu mayor inseguridad?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo peor que has hecho a un ex?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has fingido alguna vez que te gustaba un regalo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es la cosa más rara que has buscado en internet?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué app tienes escondida en el móvil?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu peor hábito?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Alguna vez has hablado mal de alguien de este grupo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo que más te arrepientes de haber dicho?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu recuerdo más vergonzoso del colegio?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has fingido estar enfermo alguna vez para no ir a algún sitio?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál ha sido tu cita más desastrosa?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo que menos te gusta de ti mismo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿A quién admiras en secreto de este grupo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es la mentira más tonta que has dicho a tus padres?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has stalkeado el perfil de alguien de este grupo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu mayor logro del que estás orgulloso?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué canción te da vergüenza admitir que te gusta?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es el peor regalo que has dado?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Alguna vez te has hecho pasar por otra persona?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu mayor arrepentimiento en el amor?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más caro que has roto de otra persona?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has llorado viendo una película? ¿Cuál?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu opinión más impopular?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más raro que has hecho por amor?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Alguna vez has robado algo, aunque fuera pequeño?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu peor recuerdo de una fiesta?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo que más odias de tu trabajo o estudios?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has tenido un crush con un profesor o compañero de trabajo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu mayor vergüenza familiar?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más incómodo que te ha pasado en una cita?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Alguna vez has fingido un orgasmo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es la peor excusa que has puesto para faltar al trabajo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más tonto por lo que has llorado?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu mayor manía?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has traicionado la confianza de un amigo alguna vez?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más vergonzoso que tienes guardado en el móvil?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu peor cualidad según tu pareja o expareja?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Alguna vez has fingido que conocías a alguien para no quedar mal?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es el chisme más jugoso que sabes de alguien en esta sala?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más caro que te has comprado sin necesitarlo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has mentido en tu currículum alguna vez?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es la cosa más vergonzosa de tu historial de búsqueda?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo peor que has hecho a un profesor?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Alguna vez has fingido estar de acuerdo con algo que odiabas?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu peor mentira piadosa?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más raro que haces cuando estás solo/a?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿A quién de este grupo le tienes más envidia sana?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu peor decisión de moda del pasado?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has fingido que se te cortaba la llamada para colgar a alguien?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es la peor cosa que has dicho de alguien a sus espaldas?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más ridículo por lo que has discutido con tu pareja?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Alguna vez te has hecho el dormido para no hablar con alguien?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu secreto mejor guardado?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más vergonzoso que ha visto tu familia hacer?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has copiado la idea de alguien y la has hecho pasar por tuya?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu mayor miedo sobre el futuro?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo peor que le has hecho a un amigo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Alguna vez te has arrepentido de un tatuaje o piercing?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es la mentira que más veces has repetido?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más raro que has hecho para impresionar a alguien?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has salido con alguien solo por interés?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu momento más humillante en redes sociales?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo que más te cuesta admitir de ti mismo?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Alguna vez has hecho trampa en un juego para ganar?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es la peor cosa que le has dicho a un familiar en un enfado?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Qué es lo más vergonzoso que has hecho borracho/a?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Cuál es tu mayor inseguridad física?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "¿Has fingido que te gustaba alguien solo para no herirle?",
+      "tipo": "verdad"
+    },
+    {
+      "texto": "Baila sin música durante 30 segundos delante de todos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Imita a otra persona del grupo hasta que adivinen a quién",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que alguien del grupo publique algo en tu estado/red social",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Habla con acento extranjero durante los próximos 3 turnos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz 15 flexiones o sentadillas ahora mismo",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Canta el estribillo de tu canción favorita en voz alta",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que el grupo revise tus últimas 5 fotos en el móvil",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Llama a alguien de tu agenda y dile algo random sin contexto",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una imitación de un animal durante 20 segundos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que te maquillen o te peinen de forma ridícula (si hay material a mano)",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cuenta un chiste malo y ríete como si fuera el mejor chiste del mundo",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Habla sin usar la letra \"a\" durante 2 minutos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Enséñale al grupo la última foto que hiciste",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz de estatua durante 1 minuto sin moverte",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que alguien te dibuje algo en la cara con un rotulador (lavable)",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Camina como un pato durante toda la siguiente ronda",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Recita el abecedario al revés",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una declaración de amor exagerada a un objeto de la sala",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que el grupo elija tu próxima foto de perfil por un día",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Imita el llanto de un bebé durante 15 segundos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una plancha (posición) durante 30 segundos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cuenta la historia de tu primer beso con lujo de detalles",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que alguien del grupo lea en voz alta tu último mensaje enviado",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Habla como un robot durante los próximos 3 turnos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz de presentador de telediario improvisando una noticia falsa",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que te hagan una pregunta incómoda y respóndela sin dudar",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Enséñale al grupo tu playlist más escuchada",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz 10 saltos de tijera",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cambia tu foto de perfil por una selfie ridícula durante 1 hora",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Habla en susurros durante toda la siguiente ronda",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Imita la forma de caminar de alguien del grupo",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cuenta hasta 20 en otro idioma que no sea el tuyo materno",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una coreografía improvisada de 30 segundos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que el grupo revise tus emojis más usados y los explique",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Recita un trabalenguas 3 veces seguidas rápido",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz de mimo durante 1 minuto representando una película",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cuenta el peor chiste que sepas",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Ponte algo ridículo puesto (si hay algo a mano) durante 10 minutos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que alguien del grupo te haga una pregunta y debes responder solo con mímica",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una imitación de un famoso hasta que adivinen quién es",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cántale \"cumpleaños feliz\" a alguien del grupo aunque no sea su cumpleaños",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Habla solo con preguntas durante 2 minutos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz 20 segundos de baile robot",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que el grupo decida qué foto subes a tus redes esta semana",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cuenta una historia inventada como si fuera real, con total seriedad",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una carrera de sacos imaginaria por la sala",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Imita cómo te levantas por las mañanas, exagerando",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Habla con la voz más aguda que puedas durante 2 turnos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que te tomen una foto graciosa y la enseñen al grupo",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz de comentarista deportivo narrando algo cotidiano de la sala",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Recita las tablas de multiplicar del 7 lo más rápido que puedas",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una pose de superhéroe y mantente así 30 segundos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cuenta tu peor cita como si fuera una noticia de última hora",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que el grupo te elija un nuevo apodo para el resto de la partida",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una imitación de cómo hablas cuando estás enfadado/a",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Camina en cuclillas hasta la cocina y vuelve",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una versión cantada de una frase que te digan",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que alguien te haga cosquillas durante 10 segundos sin reírte",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Habla como si fueras de la realeza durante 3 turnos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una imitación exagerada de cómo ronca alguien del grupo",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cuenta cómo sería tu día perfecto narrándolo como un tráiler de película",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz 10 sentadillas mientras cantas el abecedario",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que el grupo revise las últimas 3 conversaciones de tu móvil (las que tú elijas mostrar)",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Imita a un presentador de anuncios de teletienda vendiendo un objeto random de la sala",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una reverencia exagerada cada vez que alguien hable durante 2 minutos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cuenta un secreto random (no comprometedor) que nunca hayas dicho en voz alta",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz de comentarista de un partido imaginario de la partida actual",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que alguien del grupo te maquille o dibuje algo temporal en la mano",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Habla imitando a un personaje de dibujos animados durante 2 turnos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una pose de yoga (la que sepas) y aguántala 20 segundos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Cuenta tu horóscopo de mañana inventado con total confianza",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz de vendedor y trata de \"vender\" tus zapatos al grupo",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Deja que el grupo elija una canción y baila 20 segundos",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Imita cómo hablarías si tuvieras 80 años",
+      "tipo": "reto"
+    },
+    {
+      "texto": "Haz una imitación de un locutor de radio anunciando el resultado de esta ronda",
+      "tipo": "reto"
+    }
+  ]
+}

@@ -1,0 +1,1416 @@
+{
+  "words": [
+    {
+      "palabra": "Paella",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Tortilla de patatas",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Gazpacho",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Croquetas",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Jamón",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Queso manchego",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Pan",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Pizza",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Hamburguesa",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Sushi",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Tacos",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Lasaña",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Espaguetis",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Ensalada",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Sopa",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Arroz",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Lentejas",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Cocido",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Fabada",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Churros",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Tarta de queso",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Flan",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Helado",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Chocolate",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Palomitas",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Patatas fritas",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Empanada",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Ceviche",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Guacamole",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Nachos",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Sandwich",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Bocadillo",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Kebab",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Ramen",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Curry",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Falafel",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Hummus",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Paté",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Salmón",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Pulpo a la gallega",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Callos",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Morcilla",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Chorizo",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Tortilla francesa",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Huevos fritos",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Bacon",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Yogur",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Mermelada",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Miel",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Aceitunas",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Gazpachuelo",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Migas",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Pisto",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Escalivada",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Zarzuela",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Marmitako",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Pote gallego",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Cochinillo",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "Cordero asado",
+      "categoria": "comida"
+    },
+    {
+      "palabra": "León",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Tigre",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Elefante",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Jirafa",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Cebra",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Mono",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Gorila",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Oso",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Lobo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Zorro",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Conejo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Ardilla",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Ciervo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Jabalí",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Toro",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Vaca",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Caballo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Cerdo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Oveja",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Cabra",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Gallina",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Pato",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Ganso",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Pavo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Águila",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Búho",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Loro",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Pingüino",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Flamenco",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Cigüeña",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Delfín",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Ballena",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Tiburón",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Pulpo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Medusa",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Estrella de mar",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Cangrejo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Langosta",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Rana",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Sapo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Tortuga",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Cocodrilo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Serpiente",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Lagarto",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Camaleón",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Araña",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Escorpión",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Abeja",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Mariposa",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Hormiga",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Mosquito",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Mosca",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Grillo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Caracol",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Gato",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Perro",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Hámster",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Erizo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Koala",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Canguro",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Panda",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Rinoceronte",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Hipopótamo",
+      "categoria": "animales"
+    },
+    {
+      "palabra": "Silla",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Mesa",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Sofá",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Cama",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Almohada",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Manta",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Espejo",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Lámpara",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Reloj",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Teléfono",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Ordenador",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Televisor",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Mando a distancia",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Nevera",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Lavadora",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Microondas",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Tostadora",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Cafetera",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Sartén",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Cazuela",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Cuchara",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Tenedor",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Cuchillo",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Plato",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Vaso",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Taza",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Tijeras",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Paraguas",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Mochila",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Bolso",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Cartera",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Llaves",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Gafas",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Cepillo de dientes",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Peine",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Toalla",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Jabón",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Champú",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Maquinilla de afeitar",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Plancha",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Escoba",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Fregona",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Aspiradora",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Cubo",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Bombilla",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Enchufe",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Cargador",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Auriculares",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Mando de videoconsola",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Libro",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Cuaderno",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Bolígrafo",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Lápiz",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Goma de borrar",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Regla",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Calculadora",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Mochila escolar",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Maleta",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Sombrilla",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Linterna",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Vela",
+      "categoria": "objetosCotidianos"
+    },
+    {
+      "palabra": "Médico",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Enfermero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Profesor",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Bombero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Policía",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Abogado",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Ingeniero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Arquitecto",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Cocinero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Camarero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Panadero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Carpintero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Electricista",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Fontanero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Peluquero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Dentista",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Veterinario",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Piloto",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Azafata",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Conductor de autobús",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Taxista",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Agricultor",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Pescador",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Pastor",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Jardinero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Albañil",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Pintor",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Fotógrafo",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Periodista",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Escritor",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Actor",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Músico",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Cantante",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Bailarín",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Futbolista",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Entrenador",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Farmacéutico",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Psicólogo",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Contable",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Notario",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Juez",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Traductor",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Programador",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Diseñador gráfico",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Repartidor",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Cartero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Guía turístico",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Recepcionista",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Vendedor",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Cajero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Mecánico",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Astronauta",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Científico",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Biólogo",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Químico",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Astrónomo",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Soldador",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Sastre",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Zapatero",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Florista",
+      "categoria": "profesiones"
+    },
+    {
+      "palabra": "Playa",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Montaña",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Bosque",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Desierto",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Ciudad",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Pueblo",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Aeropuerto",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Estación de tren",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Hospital",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Escuela",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Universidad",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Biblioteca",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Museo",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Teatro",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Cine",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Restaurante",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Bar",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Supermercado",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Centro comercial",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Farmacia",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Panadería",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Peluquería",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Gimnasio",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Piscina",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Parque",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Zoológico",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Acuario",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Iglesia",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Castillo",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Puente",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Puerto",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Isla",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Río",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Lago",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Cascada",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Cueva",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Volcán",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Granja",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Fábrica",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Oficina",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Cocina",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Dormitorio",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Baño",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Garaje",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Jardín",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Terraza",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Ascensor",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Escalera",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Sótano",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Ático",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Iglú",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Tienda de campaña",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Faro",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Molino",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Cementerio",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Estadio",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Circo",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Feria",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Mercado",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Plaza",
+      "categoria": "lugares"
+    },
+    {
+      "palabra": "Fútbol",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Baloncesto",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Tenis",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Voleibol",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Natación",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Atletismo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Ciclismo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Boxeo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Judo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Karate",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Golf",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Béisbol",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Rugby",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Balonmano",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Hockey",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Esquí",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Snowboard",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Surf",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Patinaje",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Gimnasia",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Remo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Vela (deporte)",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Esgrima",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Bádminton",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Squash",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Tenis de mesa",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Escalada",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Senderismo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Triatlón",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Maratón",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Halterofilia",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Taekwondo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Waterpolo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Curling",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Bolos",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Billar",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Dardos",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Ajedrez",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Ala delta",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Paracaidismo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Buceo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Motociclismo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Automovilismo",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Tiro con arco",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Lucha libre",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Petanca",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Ultimate frisbee",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Skateboard",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Parkour",
+      "categoria": "deportes"
+    },
+    {
+      "palabra": "Kickboxing",
+      "categoria": "deportes"
+    }
+  ]
+}

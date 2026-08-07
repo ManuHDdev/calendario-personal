@@ -1,0 +1,5570 @@
+{
+  "questions": [
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Francia?",
+      "opciones": [
+        "Brasilia",
+        "París",
+        "Atenas",
+        "Manila"
+      ],
+      "correcta": "París"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de España?",
+      "opciones": [
+        "Dublín",
+        "Washington D. C.",
+        "Pretoria",
+        "Madrid"
+      ],
+      "correcta": "Madrid"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Italia?",
+      "opciones": [
+        "Roma",
+        "Londres",
+        "Santiago",
+        "París"
+      ],
+      "correcta": "Roma"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Alemania?",
+      "opciones": [
+        "Berlín",
+        "Asunción",
+        "Berna",
+        "Manila"
+      ],
+      "correcta": "Berlín"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Portugal?",
+      "opciones": [
+        "Atenas",
+        "Roma",
+        "Beirut",
+        "Lisboa"
+      ],
+      "correcta": "Lisboa"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Reino Unido?",
+      "opciones": [
+        "Pekín",
+        "Londres",
+        "Wellington",
+        "Asunción"
+      ],
+      "correcta": "Londres"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Países Bajos?",
+      "opciones": [
+        "Ankara",
+        "Ámsterdam",
+        "Bratislava",
+        "Moscú"
+      ],
+      "correcta": "Ámsterdam"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Bélgica?",
+      "opciones": [
+        "Bruselas",
+        "Sofía",
+        "Lima",
+        "Berlín"
+      ],
+      "correcta": "Bruselas"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Suiza?",
+      "opciones": [
+        "Lima",
+        "Madrid",
+        "Berna",
+        "París"
+      ],
+      "correcta": "Berna"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Austria?",
+      "opciones": [
+        "Viena",
+        "Bratislava",
+        "Montevideo",
+        "Dublín"
+      ],
+      "correcta": "Viena"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Grecia?",
+      "opciones": [
+        "Ámsterdam",
+        "Moscú",
+        "Tokio",
+        "Atenas"
+      ],
+      "correcta": "Atenas"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Polonia?",
+      "opciones": [
+        "Varsovia",
+        "Abuya",
+        "Santiago",
+        "Roma"
+      ],
+      "correcta": "Varsovia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Suecia?",
+      "opciones": [
+        "Estocolmo",
+        "Londres",
+        "Buenos Aires",
+        "Montevideo"
+      ],
+      "correcta": "Estocolmo"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Noruega?",
+      "opciones": [
+        "Moscú",
+        "Bogotá",
+        "Roma",
+        "Oslo"
+      ],
+      "correcta": "Oslo"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Dinamarca?",
+      "opciones": [
+        "Madrid",
+        "Seúl",
+        "Santiago",
+        "Copenhague"
+      ],
+      "correcta": "Copenhague"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Finlandia?",
+      "opciones": [
+        "Abuya",
+        "Copenhague",
+        "Tokio",
+        "Helsinki"
+      ],
+      "correcta": "Helsinki"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Irlanda?",
+      "opciones": [
+        "Dublín",
+        "Yakarta",
+        "Wellington",
+        "Lisboa"
+      ],
+      "correcta": "Dublín"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Rusia?",
+      "opciones": [
+        "Moscú",
+        "Copenhague",
+        "Lisboa",
+        "Brasilia"
+      ],
+      "correcta": "Moscú"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Turquía?",
+      "opciones": [
+        "Bratislava",
+        "Jerusalén",
+        "Ankara",
+        "Pretoria"
+      ],
+      "correcta": "Ankara"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Ucrania?",
+      "opciones": [
+        "Kiev",
+        "Wellington",
+        "Buenos Aires",
+        "Copenhague"
+      ],
+      "correcta": "Kiev"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Japón?",
+      "opciones": [
+        "Wellington",
+        "Roma",
+        "Tokio",
+        "Jerusalén"
+      ],
+      "correcta": "Tokio"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de China?",
+      "opciones": [
+        "Quito",
+        "Atenas",
+        "Pekín",
+        "El Cairo"
+      ],
+      "correcta": "Pekín"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de India?",
+      "opciones": [
+        "Bangkok",
+        "París",
+        "Nairobi",
+        "Nueva Delhi"
+      ],
+      "correcta": "Nueva Delhi"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Corea del Sur?",
+      "opciones": [
+        "Hanói",
+        "Bucarest",
+        "Seúl",
+        "París"
+      ],
+      "correcta": "Seúl"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Tailandia?",
+      "opciones": [
+        "Ciudad de México",
+        "Estocolmo",
+        "Viena",
+        "Bangkok"
+      ],
+      "correcta": "Bangkok"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Vietnam?",
+      "opciones": [
+        "Hanói",
+        "Reikiavik",
+        "Pekín",
+        "Washington D. C."
+      ],
+      "correcta": "Hanói"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Indonesia?",
+      "opciones": [
+        "Bogotá",
+        "Yakarta",
+        "Varsovia",
+        "Helsinki"
+      ],
+      "correcta": "Yakarta"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Filipinas?",
+      "opciones": [
+        "París",
+        "Oslo",
+        "Madrid",
+        "Manila"
+      ],
+      "correcta": "Manila"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Australia?",
+      "opciones": [
+        "Bratislava",
+        "Canberra",
+        "Varsovia",
+        "Beirut"
+      ],
+      "correcta": "Canberra"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Nueva Zelanda?",
+      "opciones": [
+        "Oslo",
+        "Rabat",
+        "Ámsterdam",
+        "Wellington"
+      ],
+      "correcta": "Wellington"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Egipto?",
+      "opciones": [
+        "Abuya",
+        "Bucarest",
+        "Helsinki",
+        "El Cairo"
+      ],
+      "correcta": "El Cairo"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Marruecos?",
+      "opciones": [
+        "Kiev",
+        "Rabat",
+        "Reikiavik",
+        "Ciudad de México"
+      ],
+      "correcta": "Rabat"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Sudáfrica?",
+      "opciones": [
+        "Pretoria",
+        "Manila",
+        "París",
+        "Yakarta"
+      ],
+      "correcta": "Pretoria"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Kenia?",
+      "opciones": [
+        "Nairobi",
+        "Pretoria",
+        "El Cairo",
+        "Varsovia"
+      ],
+      "correcta": "Nairobi"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Nigeria?",
+      "opciones": [
+        "Brasilia",
+        "Moscú",
+        "Londres",
+        "Abuya"
+      ],
+      "correcta": "Abuya"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Argelia?",
+      "opciones": [
+        "Bangkok",
+        "Madrid",
+        "Budapest",
+        "Argel"
+      ],
+      "correcta": "Argel"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de México?",
+      "opciones": [
+        "Ciudad de México",
+        "Ámsterdam",
+        "Buenos Aires",
+        "Seúl"
+      ],
+      "correcta": "Ciudad de México"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Canadá?",
+      "opciones": [
+        "Ottawa",
+        "Bruselas",
+        "Pretoria",
+        "Belgrado"
+      ],
+      "correcta": "Ottawa"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Estados Unidos?",
+      "opciones": [
+        "París",
+        "Washington D. C.",
+        "Helsinki",
+        "Rabat"
+      ],
+      "correcta": "Washington D. C."
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Brasil?",
+      "opciones": [
+        "Canberra",
+        "Brasilia",
+        "Yakarta",
+        "Reikiavik"
+      ],
+      "correcta": "Brasilia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Argentina?",
+      "opciones": [
+        "Buenos Aires",
+        "Berna",
+        "Bratislava",
+        "Copenhague"
+      ],
+      "correcta": "Buenos Aires"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Chile?",
+      "opciones": [
+        "Santiago",
+        "Estocolmo",
+        "Roma",
+        "Bruselas"
+      ],
+      "correcta": "Santiago"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Perú?",
+      "opciones": [
+        "Ankara",
+        "Lima",
+        "Atenas",
+        "Budapest"
+      ],
+      "correcta": "Lima"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Colombia?",
+      "opciones": [
+        "Quito",
+        "Rabat",
+        "Lima",
+        "Bogotá"
+      ],
+      "correcta": "Bogotá"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Venezuela?",
+      "opciones": [
+        "París",
+        "Quito",
+        "Roma",
+        "Caracas"
+      ],
+      "correcta": "Caracas"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Uruguay?",
+      "opciones": [
+        "Berlín",
+        "Lisboa",
+        "Montevideo",
+        "Bogotá"
+      ],
+      "correcta": "Montevideo"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Paraguay?",
+      "opciones": [
+        "Asunción",
+        "Argel",
+        "Bogotá",
+        "Beirut"
+      ],
+      "correcta": "Asunción"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Bolivia?",
+      "opciones": [
+        "Sucre",
+        "Oslo",
+        "Berlín",
+        "Roma"
+      ],
+      "correcta": "Sucre"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Ecuador?",
+      "opciones": [
+        "París",
+        "Bratislava",
+        "Varsovia",
+        "Quito"
+      ],
+      "correcta": "Quito"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Cuba?",
+      "opciones": [
+        "Kiev",
+        "Madrid",
+        "Roma",
+        "La Habana"
+      ],
+      "correcta": "La Habana"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Islandia?",
+      "opciones": [
+        "Reikiavik",
+        "Yakarta",
+        "Londres",
+        "Rabat"
+      ],
+      "correcta": "Reikiavik"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Croacia?",
+      "opciones": [
+        "Nueva Delhi",
+        "Berlín",
+        "Lima",
+        "Zagreb"
+      ],
+      "correcta": "Zagreb"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Serbia?",
+      "opciones": [
+        "Lisboa",
+        "Praga",
+        "Belgrado",
+        "París"
+      ],
+      "correcta": "Belgrado"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Hungría?",
+      "opciones": [
+        "Budapest",
+        "Ottawa",
+        "Bruselas",
+        "La Habana"
+      ],
+      "correcta": "Budapest"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Rumanía?",
+      "opciones": [
+        "Seúl",
+        "Bucarest",
+        "Montevideo",
+        "Manila"
+      ],
+      "correcta": "Bucarest"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Bulgaria?",
+      "opciones": [
+        "Pekín",
+        "Roma",
+        "Sofía",
+        "Yakarta"
+      ],
+      "correcta": "Sofía"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de República Checa?",
+      "opciones": [
+        "Praga",
+        "Estocolmo",
+        "Asunción",
+        "París"
+      ],
+      "correcta": "Praga"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Eslovaquia?",
+      "opciones": [
+        "Bratislava",
+        "Wellington",
+        "Caracas",
+        "Kiev"
+      ],
+      "correcta": "Bratislava"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Israel?",
+      "opciones": [
+        "Bruselas",
+        "Berlín",
+        "Abuya",
+        "Jerusalén"
+      ],
+      "correcta": "Jerusalén"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital de Líbano?",
+      "opciones": [
+        "Oslo",
+        "Abuya",
+        "Copenhague",
+        "Beirut"
+      ],
+      "correcta": "Beirut"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Japón?",
+      "opciones": [
+        "Dólar",
+        "Libra esterlina",
+        "Baht",
+        "Yen"
+      ],
+      "correcta": "Yen"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Reino Unido?",
+      "opciones": [
+        "Won",
+        "Baht",
+        "Real",
+        "Libra esterlina"
+      ],
+      "correcta": "Libra esterlina"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Estados Unidos?",
+      "opciones": [
+        "Dólar",
+        "Rublo",
+        "Corona danesa",
+        "Zloty"
+      ],
+      "correcta": "Dólar"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de India?",
+      "opciones": [
+        "Rupia",
+        "Won",
+        "Libra esterlina",
+        "Yuan"
+      ],
+      "correcta": "Rupia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Suiza?",
+      "opciones": [
+        "Franco suizo",
+        "Baht",
+        "Rupia",
+        "Corona danesa"
+      ],
+      "correcta": "Franco suizo"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Brasil?",
+      "opciones": [
+        "Yen",
+        "Real",
+        "Won",
+        "Corona danesa"
+      ],
+      "correcta": "Real"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de México?",
+      "opciones": [
+        "Peso mexicano",
+        "Lira turca",
+        "Baht",
+        "Franco suizo"
+      ],
+      "correcta": "Peso mexicano"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Rusia?",
+      "opciones": [
+        "Rublo",
+        "Zloty",
+        "Peso mexicano",
+        "Franco suizo"
+      ],
+      "correcta": "Rublo"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de China?",
+      "opciones": [
+        "Corona danesa",
+        "Dólar",
+        "Corona noruega",
+        "Yuan"
+      ],
+      "correcta": "Yuan"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Corea del Sur?",
+      "opciones": [
+        "Won",
+        "Baht",
+        "Corona sueca",
+        "Corona noruega"
+      ],
+      "correcta": "Won"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Suecia?",
+      "opciones": [
+        "Yen",
+        "Rand",
+        "Franco suizo",
+        "Corona sueca"
+      ],
+      "correcta": "Corona sueca"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Noruega?",
+      "opciones": [
+        "Corona noruega",
+        "Baht",
+        "Corona danesa",
+        "Yen"
+      ],
+      "correcta": "Corona noruega"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Dinamarca?",
+      "opciones": [
+        "Corona noruega",
+        "Rupia",
+        "Corona danesa",
+        "Rublo"
+      ],
+      "correcta": "Corona danesa"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Polonia?",
+      "opciones": [
+        "Libra egipcia",
+        "Yuan",
+        "Zloty",
+        "Peso mexicano"
+      ],
+      "correcta": "Zloty"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Turquía?",
+      "opciones": [
+        "Peso mexicano",
+        "Dólar",
+        "Lira turca",
+        "Rupia indonesia"
+      ],
+      "correcta": "Lira turca"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Tailandia?",
+      "opciones": [
+        "Baht",
+        "Rublo",
+        "Corona noruega",
+        "Franco suizo"
+      ],
+      "correcta": "Baht"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Indonesia?",
+      "opciones": [
+        "Rupia indonesia",
+        "Yen",
+        "Corona noruega",
+        "Libra esterlina"
+      ],
+      "correcta": "Rupia indonesia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Sudáfrica?",
+      "opciones": [
+        "Corona danesa",
+        "Baht",
+        "Rand",
+        "Yen"
+      ],
+      "correcta": "Rand"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Egipto?",
+      "opciones": [
+        "Séquel",
+        "Rupia",
+        "Dólar",
+        "Libra egipcia"
+      ],
+      "correcta": "Libra egipcia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la moneda oficial de Israel?",
+      "opciones": [
+        "Rublo",
+        "Yen",
+        "Séquel",
+        "Baht"
+      ],
+      "correcta": "Séquel"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuántos continentes hay en el mundo?",
+      "opciones": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correcta": "7"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el océano más grande del mundo?",
+      "opciones": [
+        "Atlántico",
+        "Índico",
+        "Pacífico",
+        "Ártico"
+      ],
+      "correcta": "Pacífico"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el río más largo del mundo?",
+      "opciones": [
+        "Nilo",
+        "Amazonas",
+        "Yangtsé",
+        "Misisipi"
+      ],
+      "correcta": "Amazonas"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el desierto más grande del mundo?",
+      "opciones": [
+        "Gobi",
+        "Sahara",
+        "Kalahari",
+        "Antártida"
+      ],
+      "correcta": "Antártida"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la montaña más alta del mundo?",
+      "opciones": [
+        "K2",
+        "Everest",
+        "Kilimanjaro",
+        "Aconcagua"
+      ],
+      "correcta": "Everest"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el país más poblado del mundo?",
+      "opciones": [
+        "China",
+        "India",
+        "Estados Unidos",
+        "Indonesia"
+      ],
+      "correcta": "India"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el país más extenso del mundo?",
+      "opciones": [
+        "Canadá",
+        "China",
+        "Rusia",
+        "Brasil"
+      ],
+      "correcta": "Rusia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuántos husos horarios tiene Rusia?",
+      "opciones": [
+        "7",
+        "9",
+        "11",
+        "13"
+      ],
+      "correcta": "11"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué continente está Egipto?",
+      "opciones": [
+        "Asia",
+        "África",
+        "Europa",
+        "Oceanía"
+      ],
+      "correcta": "África"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma más hablado del mundo como lengua materna?",
+      "opciones": [
+        "Inglés",
+        "Español",
+        "Mandarín",
+        "Hindi"
+      ],
+      "correcta": "Mandarín"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué mar separa Europa de África en su punto más cercano?",
+      "opciones": [
+        "Mar Rojo",
+        "Mar Negro",
+        "Estrecho de Gibraltar",
+        "Mar Egeo"
+      ],
+      "correcta": "Estrecho de Gibraltar"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la ciudad más poblada del mundo?",
+      "opciones": [
+        "Tokio",
+        "Nueva York",
+        "São Paulo",
+        "Shanghái"
+      ],
+      "correcta": "Tokio"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué país tiene forma de bota en el mapa?",
+      "opciones": [
+        "Grecia",
+        "Italia",
+        "España",
+        "Portugal"
+      ],
+      "correcta": "Italia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el país más pequeño del mundo?",
+      "opciones": [
+        "Mónaco",
+        "San Marino",
+        "Ciudad del Vaticano",
+        "Liechtenstein"
+      ],
+      "correcta": "Ciudad del Vaticano"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Machu Picchu?",
+      "opciones": [
+        "Bolivia",
+        "Ecuador",
+        "Perú",
+        "Chile"
+      ],
+      "correcta": "Perú"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el lago más grande de agua dulce del mundo?",
+      "opciones": [
+        "Lago Baikal",
+        "Lago Superior",
+        "Lago Victoria",
+        "Mar Caspio"
+      ],
+      "correcta": "Lago Superior"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué país tiene más husos horarios en su territorio?",
+      "opciones": [
+        "Rusia",
+        "Estados Unidos",
+        "Francia",
+        "China"
+      ],
+      "correcta": "Francia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el punto más bajo de la Tierra sobre la corteza continental?",
+      "opciones": [
+        "Mar Muerto",
+        "Valle de la Muerte",
+        "Fosa de las Marianas",
+        "Depresión de Turfan"
+      ],
+      "correcta": "Mar Muerto"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué país limita al norte con España?",
+      "opciones": [
+        "Portugal",
+        "Francia",
+        "Andorra",
+        "Marruecos"
+      ],
+      "correcta": "Francia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la cordillera más larga del mundo?",
+      "opciones": [
+        "Himalaya",
+        "Andes",
+        "Rocosas",
+        "Alpes"
+      ],
+      "correcta": "Andes"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuántos husos horarios oficiales tiene China?",
+      "opciones": [
+        "1",
+        "4",
+        "8",
+        "11"
+      ],
+      "correcta": "1"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué animal aparece en el escudo de España junto al águila histórica?",
+      "opciones": [
+        "León",
+        "Toro",
+        "Águila de San Juan",
+        "Lobo"
+      ],
+      "correcta": "Águila de San Juan"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país nació el café más famoso del mundo por su exportación, junto a Brasil?",
+      "opciones": [
+        "Colombia",
+        "Vietnam",
+        "Etiopía",
+        "México"
+      ],
+      "correcta": "Colombia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué país europeo tiene más lagos, apodado \"la tierra de los mil lagos\"?",
+      "opciones": [
+        "Suecia",
+        "Finlandia",
+        "Noruega",
+        "Canadá"
+      ],
+      "correcta": "Finlandia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es la capital financiera de Estados Unidos (no la política)?",
+      "opciones": [
+        "Los Ángeles",
+        "Chicago",
+        "Nueva York",
+        "Boston"
+      ],
+      "correcta": "Nueva York"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué mar bordea las costas de Cuba y México?",
+      "opciones": [
+        "Mar Caribe",
+        "Golfo de México",
+        "Mar de los Sargazos",
+        "Océano Atlántico"
+      ],
+      "correcta": "Golfo de México"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué continente se encuentra el desierto del Sahara?",
+      "opciones": [
+        "Asia",
+        "África",
+        "Oceanía",
+        "América"
+      ],
+      "correcta": "África"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el volcán activo más alto de Europa?",
+      "opciones": [
+        "Vesubio",
+        "Etna",
+        "Teide",
+        "Estrómboli"
+      ],
+      "correcta": "Etna"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué país tiene la mayor cantidad de islas del mundo?",
+      "opciones": [
+        "Indonesia",
+        "Filipinas",
+        "Suecia",
+        "Noruega"
+      ],
+      "correcta": "Suecia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Torre Eiffel?",
+      "opciones": [
+        "Francia",
+        "Japón",
+        "Italia",
+        "Rusia"
+      ],
+      "correcta": "Francia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Coliseo?",
+      "opciones": [
+        "Italia",
+        "Alemania",
+        "Francia",
+        "Estados Unidos"
+      ],
+      "correcta": "Italia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Big Ben?",
+      "opciones": [
+        "Reino Unido",
+        "México",
+        "Malasia",
+        "China"
+      ],
+      "correcta": "Reino Unido"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Taj Mahal?",
+      "opciones": [
+        "Estados Unidos",
+        "Japón",
+        "India",
+        "Brasil"
+      ],
+      "correcta": "India"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Cristo Redentor?",
+      "opciones": [
+        "Australia",
+        "Estados Unidos",
+        "Malasia",
+        "Brasil"
+      ],
+      "correcta": "Brasil"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Gran Muralla?",
+      "opciones": [
+        "Italia",
+        "China",
+        "Francia",
+        "Alemania"
+      ],
+      "correcta": "China"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Torre de Pisa?",
+      "opciones": [
+        "Italia",
+        "Japón",
+        "Emiratos Árabes Unidos",
+        "Estados Unidos"
+      ],
+      "correcta": "Italia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Sagrada Familia?",
+      "opciones": [
+        "China",
+        "Francia",
+        "España",
+        "Italia"
+      ],
+      "correcta": "España"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Estatua de la Libertad?",
+      "opciones": [
+        "Turquía",
+        "Estados Unidos",
+        "Camboya",
+        "Francia"
+      ],
+      "correcta": "Estados Unidos"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Petra?",
+      "opciones": [
+        "Camboya",
+        "India",
+        "España",
+        "Jordania"
+      ],
+      "correcta": "Jordania"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Acrópolis?",
+      "opciones": [
+        "Grecia",
+        "Brasil",
+        "España",
+        "Italia"
+      ],
+      "correcta": "Grecia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Kremlin?",
+      "opciones": [
+        "Camboya",
+        "Grecia",
+        "Rusia",
+        "Francia"
+      ],
+      "correcta": "Rusia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Chichén Itzá?",
+      "opciones": [
+        "Australia",
+        "México",
+        "Alemania",
+        "Estados Unidos"
+      ],
+      "correcta": "México"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Ópera de Sídney?",
+      "opciones": [
+        "Estados Unidos",
+        "Camboya",
+        "Francia",
+        "Australia"
+      ],
+      "correcta": "Australia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Alhambra?",
+      "opciones": [
+        "Italia",
+        "Japón",
+        "India",
+        "España"
+      ],
+      "correcta": "España"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Torre de Tokio?",
+      "opciones": [
+        "Grecia",
+        "India",
+        "Estados Unidos",
+        "Japón"
+      ],
+      "correcta": "Japón"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Puerta de Brandeburgo?",
+      "opciones": [
+        "Brasil",
+        "China",
+        "Grecia",
+        "Alemania"
+      ],
+      "correcta": "Alemania"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Mezquita Azul?",
+      "opciones": [
+        "Francia",
+        "Estados Unidos",
+        "Turquía",
+        "Canadá"
+      ],
+      "correcta": "Turquía"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Templo de Angkor Wat?",
+      "opciones": [
+        "España",
+        "Australia",
+        "México",
+        "Camboya"
+      ],
+      "correcta": "Camboya"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Pirámides de Guiza?",
+      "opciones": [
+        "Egipto",
+        "Alemania",
+        "Estados Unidos",
+        "Reino Unido"
+      ],
+      "correcta": "Egipto"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Stonehenge?",
+      "opciones": [
+        "Reino Unido",
+        "India",
+        "Brasil",
+        "Turquía"
+      ],
+      "correcta": "Reino Unido"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Burj Khalifa?",
+      "opciones": [
+        "Grecia",
+        "Francia",
+        "Emiratos Árabes Unidos",
+        "España"
+      ],
+      "correcta": "Emiratos Árabes Unidos"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Torre CN?",
+      "opciones": [
+        "México",
+        "Canadá",
+        "Brasil",
+        "Japón"
+      ],
+      "correcta": "Canadá"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Fontana di Trevi?",
+      "opciones": [
+        "Italia",
+        "Francia",
+        "Rusia",
+        "Grecia"
+      ],
+      "correcta": "Italia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Puente Golden Gate?",
+      "opciones": [
+        "Australia",
+        "Jordania",
+        "Turquía",
+        "Estados Unidos"
+      ],
+      "correcta": "Estados Unidos"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Neuschwanstein?",
+      "opciones": [
+        "Estados Unidos",
+        "Jordania",
+        "China",
+        "Alemania"
+      ],
+      "correcta": "Alemania"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Monte Rushmore?",
+      "opciones": [
+        "Australia",
+        "Jordania",
+        "Estados Unidos",
+        "Italia"
+      ],
+      "correcta": "Estados Unidos"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Casa Blanca?",
+      "opciones": [
+        "China",
+        "Estados Unidos",
+        "Grecia",
+        "Malasia"
+      ],
+      "correcta": "Estados Unidos"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país se encuentra Torres Petronas?",
+      "opciones": [
+        "Italia",
+        "Australia",
+        "Emiratos Árabes Unidos",
+        "Malasia"
+      ],
+      "correcta": "Malasia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Brasil?",
+      "opciones": [
+        "Turco",
+        "Ruso",
+        "Húngaro",
+        "Portugués"
+      ],
+      "correcta": "Portugués"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de México?",
+      "opciones": [
+        "Polaco",
+        "Coreano",
+        "Portugués",
+        "Español"
+      ],
+      "correcta": "Español"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Francia?",
+      "opciones": [
+        "Tailandés",
+        "Italiano",
+        "Húngaro",
+        "Francés"
+      ],
+      "correcta": "Francés"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Alemania?",
+      "opciones": [
+        "Sueco",
+        "Polaco",
+        "Español",
+        "Alemán"
+      ],
+      "correcta": "Alemán"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Italia?",
+      "opciones": [
+        "Español",
+        "Indonesio",
+        "Francés",
+        "Italiano"
+      ],
+      "correcta": "Italiano"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Japón?",
+      "opciones": [
+        "Japonés",
+        "Francés",
+        "Tailandés",
+        "Español"
+      ],
+      "correcta": "Japonés"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de China?",
+      "opciones": [
+        "Italiano",
+        "Mandarín",
+        "Coreano",
+        "Francés"
+      ],
+      "correcta": "Mandarín"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Rusia?",
+      "opciones": [
+        "Ruso",
+        "Coreano",
+        "Neerlandés",
+        "Portugués"
+      ],
+      "correcta": "Ruso"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Países Bajos?",
+      "opciones": [
+        "Sueco",
+        "Alemán",
+        "Polaco",
+        "Neerlandés"
+      ],
+      "correcta": "Neerlandés"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Grecia?",
+      "opciones": [
+        "Ruso",
+        "Alemán",
+        "Mandarín",
+        "Griego"
+      ],
+      "correcta": "Griego"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Turquía?",
+      "opciones": [
+        "Alemán",
+        "Turco",
+        "Húngaro",
+        "Portugués"
+      ],
+      "correcta": "Turco"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Polonia?",
+      "opciones": [
+        "Ruso",
+        "Polaco",
+        "Neerlandés",
+        "Vietnamita"
+      ],
+      "correcta": "Polaco"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Suecia?",
+      "opciones": [
+        "Alemán",
+        "Francés",
+        "Sueco",
+        "Húngaro"
+      ],
+      "correcta": "Sueco"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Finlandia?",
+      "opciones": [
+        "Portugués",
+        "Finés",
+        "Turco",
+        "Alemán"
+      ],
+      "correcta": "Finés"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Hungría?",
+      "opciones": [
+        "Alemán",
+        "Vietnamita",
+        "Húngaro",
+        "Árabe"
+      ],
+      "correcta": "Húngaro"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Vietnam?",
+      "opciones": [
+        "Tailandés",
+        "Sueco",
+        "Vietnamita",
+        "Árabe"
+      ],
+      "correcta": "Vietnamita"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Tailandia?",
+      "opciones": [
+        "Tailandés",
+        "Francés",
+        "Español",
+        "Vietnamita"
+      ],
+      "correcta": "Tailandés"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Indonesia?",
+      "opciones": [
+        "Francés",
+        "Indonesio",
+        "Alemán",
+        "Mandarín"
+      ],
+      "correcta": "Indonesio"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Corea del Sur?",
+      "opciones": [
+        "Español",
+        "Portugués",
+        "Ruso",
+        "Coreano"
+      ],
+      "correcta": "Coreano"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el idioma oficial (o principal) de Egipto?",
+      "opciones": [
+        "Español",
+        "Árabe",
+        "Portugués",
+        "Vietnamita"
+      ],
+      "correcta": "Árabe"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del oro?",
+      "opciones": [
+        "Cu",
+        "Pb",
+        "Sn",
+        "Au"
+      ],
+      "correcta": "Au"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del plata?",
+      "opciones": [
+        "He",
+        "Ca",
+        "C",
+        "Ag"
+      ],
+      "correcta": "Ag"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del hierro?",
+      "opciones": [
+        "Fe",
+        "Pb",
+        "K",
+        "Na"
+      ],
+      "correcta": "Fe"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del cobre?",
+      "opciones": [
+        "N",
+        "Cu",
+        "Zn",
+        "C"
+      ],
+      "correcta": "Cu"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del sodio?",
+      "opciones": [
+        "Na",
+        "Au",
+        "Ag",
+        "Al"
+      ],
+      "correcta": "Na"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del potasio?",
+      "opciones": [
+        "Ag",
+        "Cu",
+        "Na",
+        "K"
+      ],
+      "correcta": "K"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del oxígeno?",
+      "opciones": [
+        "Cl",
+        "O",
+        "Au",
+        "C"
+      ],
+      "correcta": "O"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del hidrógeno?",
+      "opciones": [
+        "S",
+        "Ne",
+        "H",
+        "Ca"
+      ],
+      "correcta": "H"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del carbono?",
+      "opciones": [
+        "K",
+        "C",
+        "Ne",
+        "Na"
+      ],
+      "correcta": "C"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del nitrógeno?",
+      "opciones": [
+        "N",
+        "Cu",
+        "Ne",
+        "Fe"
+      ],
+      "correcta": "N"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del helio?",
+      "opciones": [
+        "He",
+        "Cl",
+        "Zn",
+        "Fe"
+      ],
+      "correcta": "He"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del neón?",
+      "opciones": [
+        "Fe",
+        "Zn",
+        "Ne",
+        "Cl"
+      ],
+      "correcta": "Ne"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del cloro?",
+      "opciones": [
+        "Ca",
+        "Cl",
+        "N",
+        "Hg"
+      ],
+      "correcta": "Cl"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del calcio?",
+      "opciones": [
+        "Sn",
+        "He",
+        "Ca",
+        "N"
+      ],
+      "correcta": "Ca"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del zinc?",
+      "opciones": [
+        "Zn",
+        "H",
+        "He",
+        "S"
+      ],
+      "correcta": "Zn"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del plomo?",
+      "opciones": [
+        "Pb",
+        "Sn",
+        "N",
+        "Fe"
+      ],
+      "correcta": "Pb"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del estaño?",
+      "opciones": [
+        "Sn",
+        "Al",
+        "K",
+        "Hg"
+      ],
+      "correcta": "Sn"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del mercurio?",
+      "opciones": [
+        "Hg",
+        "Fe",
+        "Al",
+        "Ne"
+      ],
+      "correcta": "Hg"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del azufre?",
+      "opciones": [
+        "Al",
+        "Na",
+        "Cu",
+        "S"
+      ],
+      "correcta": "S"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del aluminio?",
+      "opciones": [
+        "Zn",
+        "Ne",
+        "Ca",
+        "Al"
+      ],
+      "correcta": "Al"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué planeta es el más cercano al Sol?",
+      "opciones": [
+        "Mercurio",
+        "Júpiter",
+        "Urano",
+        "Venus"
+      ],
+      "correcta": "Mercurio"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué planeta es el más grande del sistema solar?",
+      "opciones": [
+        "Venus",
+        "Tierra",
+        "Júpiter",
+        "Mercurio"
+      ],
+      "correcta": "Júpiter"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué planeta es conocido como el planeta rojo?",
+      "opciones": [
+        "Marte",
+        "Neptuno",
+        "Júpiter",
+        "Mercurio"
+      ],
+      "correcta": "Marte"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué planeta es el que tiene los anillos más visibles?",
+      "opciones": [
+        "Mercurio",
+        "Venus",
+        "Marte",
+        "Saturno"
+      ],
+      "correcta": "Saturno"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué planeta es el más pequeño del sistema solar?",
+      "opciones": [
+        "Saturno",
+        "Mercurio",
+        "Marte",
+        "Júpiter"
+      ],
+      "correcta": "Mercurio"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué planeta es el más caliente del sistema solar?",
+      "opciones": [
+        "Neptuno",
+        "Venus",
+        "Júpiter",
+        "Saturno"
+      ],
+      "correcta": "Venus"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué planeta es el único con vida conocida?",
+      "opciones": [
+        "Marte",
+        "Saturno",
+        "Neptuno",
+        "Tierra"
+      ],
+      "correcta": "Tierra"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué planeta es el más lejano del Sol?",
+      "opciones": [
+        "Neptuno",
+        "Marte",
+        "Saturno",
+        "Tierra"
+      ],
+      "correcta": "Neptuno"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuántos huesos tiene el cuerpo humano adulto?",
+      "opciones": [
+        "196",
+        "206",
+        "216",
+        "226"
+      ],
+      "correcta": "206"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el órgano más grande del cuerpo humano?",
+      "opciones": [
+        "Hígado",
+        "Piel",
+        "Pulmón",
+        "Corazón"
+      ],
+      "correcta": "Piel"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué gas necesitan las plantas para hacer la fotosíntesis?",
+      "opciones": [
+        "Oxígeno",
+        "Nitrógeno",
+        "Dióxido de carbono",
+        "Hidrógeno"
+      ],
+      "correcta": "Dióxido de carbono"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es la velocidad de la luz aproximada en el vacío?",
+      "opciones": [
+        "300.000 km/s",
+        "150.000 km/s",
+        "3.000 km/s",
+        "30.000 km/s"
+      ],
+      "correcta": "300.000 km/s"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Quién formuló la teoría de la relatividad?",
+      "opciones": [
+        "Isaac Newton",
+        "Albert Einstein",
+        "Galileo Galilei",
+        "Nikola Tesla"
+      ],
+      "correcta": "Albert Einstein"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es la unidad básica de la herencia genética?",
+      "opciones": [
+        "Célula",
+        "Gen",
+        "Cromosoma",
+        "Proteína"
+      ],
+      "correcta": "Gen"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué parte de la célula contiene el material genético?",
+      "opciones": [
+        "Mitocondria",
+        "Citoplasma",
+        "Núcleo",
+        "Membrana"
+      ],
+      "correcta": "Núcleo"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuántos pares de cromosomas tiene el ser humano?",
+      "opciones": [
+        "21",
+        "22",
+        "23",
+        "24"
+      ],
+      "correcta": "23"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+      "opciones": [
+        "Gregor Mendel",
+        "Charles Darwin",
+        "Louis Pasteur",
+        "Alexander Fleming"
+      ],
+      "correcta": "Charles Darwin"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el metal líquido a temperatura ambiente?",
+      "opciones": [
+        "Plomo",
+        "Mercurio",
+        "Estaño",
+        "Zinc"
+      ],
+      "correcta": "Mercurio"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué instrumento se usa para medir la temperatura?",
+      "opciones": [
+        "Barómetro",
+        "Termómetro",
+        "Higrómetro",
+        "Anemómetro"
+      ],
+      "correcta": "Termómetro"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el hueso más largo del cuerpo humano?",
+      "opciones": [
+        "Húmero",
+        "Fémur",
+        "Tibia",
+        "Radio"
+      ],
+      "correcta": "Fémur"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué vitamina se obtiene principalmente del sol?",
+      "opciones": [
+        "Vitamina A",
+        "Vitamina C",
+        "Vitamina D",
+        "Vitamina K"
+      ],
+      "correcta": "Vitamina D"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el proceso por el que el agua pasa de líquido a gas?",
+      "opciones": [
+        "Condensación",
+        "Evaporación",
+        "Sublimación",
+        "Fusión"
+      ],
+      "correcta": "Evaporación"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué tipo de animal es la ballena?",
+      "opciones": [
+        "Pez",
+        "Reptil",
+        "Mamífero",
+        "Anfibio"
+      ],
+      "correcta": "Mamífero"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el planeta con más lunas confirmadas?",
+      "opciones": [
+        "Júpiter",
+        "Saturno",
+        "Urano",
+        "Neptuno"
+      ],
+      "correcta": "Saturno"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué aparato del cuerpo humano se encarga de bombear la sangre?",
+      "opciones": [
+        "Pulmones",
+        "Corazón",
+        "Hígado",
+        "Riñones"
+      ],
+      "correcta": "Corazón"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cómo se llama la capa de gases que rodea la Tierra?",
+      "opciones": [
+        "Litosfera",
+        "Atmósfera",
+        "Hidrosfera",
+        "Estratosfera"
+      ],
+      "correcta": "Atmósfera"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué científico descubrió la penicilina?",
+      "opciones": [
+        "Louis Pasteur",
+        "Alexander Fleming",
+        "Robert Koch",
+        "Marie Curie"
+      ],
+      "correcta": "Alexander Fleming"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es la fórmula química del agua?",
+      "opciones": [
+        "CO2",
+        "H2O",
+        "O2",
+        "NaCl"
+      ],
+      "correcta": "H2O"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué mide la escala de Richter?",
+      "opciones": [
+        "Temperatura",
+        "Terremotos",
+        "Presión atmosférica",
+        "Velocidad del viento"
+      ],
+      "correcta": "Terremotos"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el animal terrestre más grande del mundo?",
+      "opciones": [
+        "Rinoceronte",
+        "Elefante africano",
+        "Hipopótamo",
+        "Jirafa"
+      ],
+      "correcta": "Elefante africano"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué es el ADN?",
+      "opciones": [
+        "Un tipo de célula",
+        "Una proteína",
+        "El material genético",
+        "Un órgano"
+      ],
+      "correcta": "El material genético"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuántos corazones tiene un pulpo?",
+      "opciones": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correcta": "3"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué proceso convierte la energía solar en energía química en las plantas?",
+      "opciones": [
+        "Respiración",
+        "Fotosíntesis",
+        "Transpiración",
+        "Fermentación"
+      ],
+      "correcta": "Fotosíntesis"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del litio?",
+      "opciones": [
+        "Li",
+        "Ra",
+        "B",
+        "Ar"
+      ],
+      "correcta": "Li"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del magnesio?",
+      "opciones": [
+        "U",
+        "Li",
+        "Mg",
+        "Ar"
+      ],
+      "correcta": "Mg"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del silicio?",
+      "opciones": [
+        "Br",
+        "Ti",
+        "Pt",
+        "Si"
+      ],
+      "correcta": "Si"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del fósforo?",
+      "opciones": [
+        "Mg",
+        "P",
+        "Br",
+        "Si"
+      ],
+      "correcta": "P"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del argón?",
+      "opciones": [
+        "Pt",
+        "Ti",
+        "Ar",
+        "Cr"
+      ],
+      "correcta": "Ar"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del titanio?",
+      "opciones": [
+        "Ti",
+        "I",
+        "B",
+        "Ni"
+      ],
+      "correcta": "Ti"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del cromo?",
+      "opciones": [
+        "I",
+        "Mg",
+        "P",
+        "Cr"
+      ],
+      "correcta": "Cr"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del manganeso?",
+      "opciones": [
+        "I",
+        "Mn",
+        "Li",
+        "P"
+      ],
+      "correcta": "Mn"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del níquel?",
+      "opciones": [
+        "Ni",
+        "Ar",
+        "Si",
+        "B"
+      ],
+      "correcta": "Ni"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del bromo?",
+      "opciones": [
+        "Br",
+        "Si",
+        "Li",
+        "Ti"
+      ],
+      "correcta": "Br"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del yodo?",
+      "opciones": [
+        "U",
+        "I",
+        "Mg",
+        "Pt"
+      ],
+      "correcta": "I"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del platino?",
+      "opciones": [
+        "Ti",
+        "Pt",
+        "Mn",
+        "I"
+      ],
+      "correcta": "Pt"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del uranio?",
+      "opciones": [
+        "B",
+        "Li",
+        "Ar",
+        "U"
+      ],
+      "correcta": "U"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del radio?",
+      "opciones": [
+        "Cr",
+        "B",
+        "Ra",
+        "Ar"
+      ],
+      "correcta": "Ra"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el símbolo químico del boro?",
+      "opciones": [
+        "B",
+        "Cr",
+        "Ni",
+        "Mn"
+      ],
+      "correcta": "B"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el animal más grande del mundo?",
+      "opciones": [
+        "Elefante africano",
+        "Ballena azul",
+        "Tiburón ballena",
+        "Calamar gigante"
+      ],
+      "correcta": "Ballena azul"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuántas patas tiene una araña?",
+      "opciones": [
+        "6",
+        "8",
+        "10",
+        "12"
+      ],
+      "correcta": "8"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué parte de la planta realiza la fotosíntesis principalmente?",
+      "opciones": [
+        "Raíz",
+        "Tallo",
+        "Hoja",
+        "Flor"
+      ],
+      "correcta": "Hoja"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el hueso más pequeño del cuerpo humano?",
+      "opciones": [
+        "Estribo (oído)",
+        "Falange",
+        "Rótula",
+        "Clavícula"
+      ],
+      "correcta": "Estribo (oído)"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué gas es el más abundante en la atmósfera terrestre?",
+      "opciones": [
+        "Oxígeno",
+        "Dióxido de carbono",
+        "Nitrógeno",
+        "Hidrógeno"
+      ],
+      "correcta": "Nitrógeno"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuántos litros de sangre tiene aproximadamente un adulto?",
+      "opciones": [
+        "2",
+        "5",
+        "8",
+        "10"
+      ],
+      "correcta": "5"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué tipo de energía produce una central solar?",
+      "opciones": [
+        "Eólica",
+        "Solar fotovoltaica",
+        "Hidráulica",
+        "Geotérmica"
+      ],
+      "correcta": "Solar fotovoltaica"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el ave más grande del mundo que no vuela?",
+      "opciones": [
+        "Pingüino emperador",
+        "Avestruz",
+        "Emú",
+        "Casuario"
+      ],
+      "correcta": "Avestruz"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué animal cambia de color para camuflarse?",
+      "opciones": [
+        "Iguana",
+        "Camaleón",
+        "Salamandra",
+        "Lagartija"
+      ],
+      "correcta": "Camaleón"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el mamífero marino más grande?",
+      "opciones": [
+        "Orca",
+        "Cachalote",
+        "Ballena azul",
+        "Tiburón blanco"
+      ],
+      "correcta": "Ballena azul"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué proceso libera energía al romper enlaces del ATP en la célula?",
+      "opciones": [
+        "Fotosíntesis",
+        "Respiración celular",
+        "Digestión",
+        "Ósmosis"
+      ],
+      "correcta": "Respiración celular"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el planeta conocido por su gran mancha roja?",
+      "opciones": [
+        "Marte",
+        "Júpiter",
+        "Saturno",
+        "Neptuno"
+      ],
+      "correcta": "Júpiter"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué instrumento se usa para observar objetos muy pequeños?",
+      "opciones": [
+        "Telescopio",
+        "Microscopio",
+        "Periscopio",
+        "Binoculares"
+      ],
+      "correcta": "Microscopio"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es la estrella más cercana a la Tierra?",
+      "opciones": [
+        "Próxima Centauri",
+        "El Sol",
+        "Sirio",
+        "Alfa Centauri"
+      ],
+      "correcta": "El Sol"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué animal es conocido por hibernar durante el invierno?",
+      "opciones": [
+        "Zorro",
+        "Oso",
+        "Lobo",
+        "Ciervo"
+      ],
+      "correcta": "Oso"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuántos minutos tarda la luz del Sol en llegar a la Tierra aproximadamente?",
+      "opciones": [
+        "1",
+        "4",
+        "8",
+        "15"
+      ],
+      "correcta": "8"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué tipo de roca se forma por enfriamiento del magma?",
+      "opciones": [
+        "Sedimentaria",
+        "Ígnea",
+        "Metamórfica",
+        "Caliza"
+      ],
+      "correcta": "Ígnea"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuál es el insecto que produce miel?",
+      "opciones": [
+        "Avispa",
+        "Abeja",
+        "Hormiga",
+        "Mariposa"
+      ],
+      "correcta": "Abeja"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué órgano filtra la sangre y produce la orina?",
+      "opciones": [
+        "Hígado",
+        "Riñón",
+        "Páncreas",
+        "Bazo"
+      ],
+      "correcta": "Riñón"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Cuántos huesos tiene la mano humana (incluida la muñeca)?",
+      "opciones": [
+        "21",
+        "27",
+        "31",
+        "35"
+      ],
+      "correcta": "27"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién dirigió la trilogía original de \"El Padrino\"?",
+      "opciones": [
+        "Martin Scorsese",
+        "Francis Ford Coppola",
+        "Steven Spielberg",
+        "Stanley Kubrick"
+      ],
+      "correcta": "Francis Ford Coppola"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película ganó el Óscar a Mejor Película en 1998?",
+      "opciones": [
+        "Titanic",
+        "Salvar al soldado Ryan",
+        "La vida es bella",
+        "Shakespeare in Love"
+      ],
+      "correcta": "Titanic"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿En qué saga aparece el personaje \"Darth Vader\"?",
+      "opciones": [
+        "Star Trek",
+        "Star Wars",
+        "Dune",
+        "Marvel"
+      ],
+      "correcta": "Star Wars"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién interpretó a Jack Sparrow en \"Piratas del Caribe\"?",
+      "opciones": [
+        "Orlando Bloom",
+        "Johnny Depp",
+        "Geoffrey Rush",
+        "Javier Bardem"
+      ],
+      "correcta": "Johnny Depp"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué estudio de animación creó \"Toy Story\"?",
+      "opciones": [
+        "DreamWorks",
+        "Pixar",
+        "Illumination",
+        "Disney Animation"
+      ],
+      "correcta": "Pixar"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién dirigió \"Jurassic Park\"?",
+      "opciones": [
+        "James Cameron",
+        "Steven Spielberg",
+        "Ridley Scott",
+        "Tim Burton"
+      ],
+      "correcta": "Steven Spielberg"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un barco que choca con un iceberg?",
+      "opciones": [
+        "Titanic",
+        "El Náufrago",
+        "La vida de Pi",
+        "Deep Impact"
+      ],
+      "correcta": "Titanic"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién interpreta a Iron Man en el Universo Marvel?",
+      "opciones": [
+        "Chris Evans",
+        "Robert Downey Jr.",
+        "Chris Hemsworth",
+        "Mark Ruffalo"
+      ],
+      "correcta": "Robert Downey Jr."
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿En qué película aparece el personaje \"Hannibal Lecter\"?",
+      "opciones": [
+        "El silencio de los corderos",
+        "Seven",
+        "Zodiac",
+        "Psicosis"
+      ],
+      "correcta": "El silencio de los corderos"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué director es conocido por \"Pulp Fiction\"?",
+      "opciones": [
+        "Quentin Tarantino",
+        "David Fincher",
+        "Christopher Nolan",
+        "Guy Ritchie"
+      ],
+      "correcta": "Quentin Tarantino"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película de animación trata sobre un pez payaso que busca a su hijo?",
+      "opciones": [
+        "Buscando a Nemo",
+        "Shark Tale",
+        "El espantatiburones",
+        "Ponyo"
+      ],
+      "correcta": "Buscando a Nemo"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién dirigió la trilogía de \"El Señor de los Anillos\"?",
+      "opciones": [
+        "Peter Jackson",
+        "Guillermo del Toro",
+        "James Cameron",
+        "Ang Lee"
+      ],
+      "correcta": "Peter Jackson"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué actor interpreta a Batman en \"The Dark Knight\"?",
+      "opciones": [
+        "George Clooney",
+        "Val Kilmer",
+        "Christian Bale",
+        "Ben Affleck"
+      ],
+      "correcta": "Christian Bale"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película ganó el Óscar a Mejor Película en 2020?",
+      "opciones": [
+        "1917",
+        "Parásitos",
+        "Joker",
+        "Once Upon a Time in Hollywood"
+      ],
+      "correcta": "Parásitos"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién compuso la banda sonora original de \"Star Wars\"?",
+      "opciones": [
+        "Hans Zimmer",
+        "John Williams",
+        "Danny Elfman",
+        "Alan Silvestri"
+      ],
+      "correcta": "John Williams"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un hombre que revive el mismo día una y otra vez?",
+      "opciones": [
+        "El día de la marmota",
+        "Bola de fuego",
+        "Groundhog Life",
+        "Deja Vu"
+      ],
+      "correcta": "El día de la marmota"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿En qué ciudad se ambienta principalmente \"Batman\"?",
+      "opciones": [
+        "Metrópolis",
+        "Ciudad Gótica",
+        "Central City",
+        "Star City"
+      ],
+      "correcta": "Ciudad Gótica"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué actriz interpretó a Hermione Granger en \"Harry Potter\"?",
+      "opciones": [
+        "Emma Watson",
+        "Emma Stone",
+        "Emma Roberts",
+        "Emily Blunt"
+      ],
+      "correcta": "Emma Watson"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película dirigió Christopher Nolan sobre los sueños?",
+      "opciones": [
+        "Interstellar",
+        "Origen",
+        "Memento",
+        "El truco final"
+      ],
+      "correcta": "Origen"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué saga de películas presenta al agente 007?",
+      "opciones": [
+        "Misión Imposible",
+        "James Bond",
+        "Bourne",
+        "Kingsman"
+      ],
+      "correcta": "James Bond"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién dirigió \"Titanic\" y \"Avatar\"?",
+      "opciones": [
+        "Steven Spielberg",
+        "James Cameron",
+        "Ridley Scott",
+        "Peter Jackson"
+      ],
+      "correcta": "James Cameron"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué personaje dice la frase \"Que la fuerza te acompañe\"?",
+      "opciones": [
+        "Yoda",
+        "Obi-Wan Kenobi",
+        "Han Solo",
+        "Darth Vader"
+      ],
+      "correcta": "Obi-Wan Kenobi"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿En qué película aparece el personaje \"Forrest Gump\"?",
+      "opciones": [
+        "Forrest Gump",
+        "Cast Away",
+        "Big",
+        "Rain Man"
+      ],
+      "correcta": "Forrest Gump"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué estudio produce la saga de \"Rápidos y Furiosos\"?",
+      "opciones": [
+        "Warner Bros",
+        "Universal Pictures",
+        "Sony Pictures",
+        "Paramount"
+      ],
+      "correcta": "Universal Pictures"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película ganó el primer Óscar a Mejor Película?",
+      "opciones": [
+        "El cantor de jazz",
+        "Alas",
+        "Sunrise",
+        "Metrópolis"
+      ],
+      "correcta": "Alas"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién interpretó al Joker en \"Joker\" (2019)?",
+      "opciones": [
+        "Heath Ledger",
+        "Joaquin Phoenix",
+        "Jared Leto",
+        "Jack Nicholson"
+      ],
+      "correcta": "Joaquin Phoenix"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿En qué película Woody y Buzz Lightyear son los protagonistas?",
+      "opciones": [
+        "Toy Story",
+        "Cars",
+        "Up",
+        "Ratatouille"
+      ],
+      "correcta": "Toy Story"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué director dirigió \"El Laberinto del Fauno\"?",
+      "opciones": [
+        "Guillermo del Toro",
+        "Alfonso Cuarón",
+        "Alejandro González Iñárritu",
+        "Pedro Almodóvar"
+      ],
+      "correcta": "Guillermo del Toro"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué actor da voz a Woody en la versión original de \"Toy Story\"?",
+      "opciones": [
+        "Tom Hanks",
+        "Tim Allen",
+        "Billy Crystal",
+        "Robin Williams"
+      ],
+      "correcta": "Tom Hanks"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un tiburón que aterroriza un pueblo costero?",
+      "opciones": [
+        "Tiburón",
+        "Deep Blue Sea",
+        "El mundo azul",
+        "Piraña"
+      ],
+      "correcta": "Tiburón"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre dinosaurios clonados en un parque temático?",
+      "opciones": [
+        "Jurassic Park",
+        "Godzilla",
+        "King Kong",
+        "La isla"
+      ],
+      "correcta": "Jurassic Park"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién dirigió \"Matrix\"?",
+      "opciones": [
+        "Las hermanas Wachowski",
+        "James Cameron",
+        "Ridley Scott",
+        "Michael Bay"
+      ],
+      "correcta": "Las hermanas Wachowski"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película de Disney trata sobre una sirena que quiere ser humana?",
+      "opciones": [
+        "La Sirenita",
+        "Moana",
+        "Frozen",
+        "Pocahontas"
+      ],
+      "correcta": "La Sirenita"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién interpreta a Neo en \"Matrix\"?",
+      "opciones": [
+        "Keanu Reeves",
+        "Brad Pitt",
+        "Tom Cruise",
+        "Will Smith"
+      ],
+      "correcta": "Keanu Reeves"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un niño mago que estudia en Hogwarts?",
+      "opciones": [
+        "Harry Potter",
+        "Percy Jackson",
+        "Las crónicas de Narnia",
+        "Eragon"
+      ],
+      "correcta": "Harry Potter"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién dirigió \"El Rey León\" original de 1994?",
+      "opciones": [
+        "Roger Allers y Rob Minkoff",
+        "John Lasseter",
+        "Brenda Chapman",
+        "Chris Buck"
+      ],
+      "correcta": "Roger Allers y Rob Minkoff"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué actor interpreta a Wolverine en la saga X-Men?",
+      "opciones": [
+        "Hugh Jackman",
+        "Ryan Reynolds",
+        "Patrick Stewart",
+        "Ian McKellen"
+      ],
+      "correcta": "Hugh Jackman"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un robot que limpia la Tierra tras ser abandonada?",
+      "opciones": [
+        "WALL-E",
+        "Big Hero 6",
+        "Los Increíbles",
+        "Ratatouille"
+      ],
+      "correcta": "WALL-E"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién dirigió \"Parásitos\", ganadora del Óscar en 2020?",
+      "opciones": [
+        "Bong Joon-ho",
+        "Park Chan-wook",
+        "Kim Ki-duk",
+        "Lee Chang-dong"
+      ],
+      "correcta": "Bong Joon-ho"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué actriz interpretó a Katniss Everdeen en \"Los Juegos del Hambre\"?",
+      "opciones": [
+        "Emma Stone",
+        "Jennifer Lawrence",
+        "Kristen Stewart",
+        "Shailene Woodley"
+      ],
+      "correcta": "Jennifer Lawrence"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué saga de películas trata sobre un anillo que debe ser destruido?",
+      "opciones": [
+        "Harry Potter",
+        "El Señor de los Anillos",
+        "Las crónicas de Narnia",
+        "Eragon"
+      ],
+      "correcta": "El Señor de los Anillos"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién interpretó al Guasón en \"The Dark Knight\" (2008)?",
+      "opciones": [
+        "Jared Leto",
+        "Heath Ledger",
+        "Joaquin Phoenix",
+        "Jack Nicholson"
+      ],
+      "correcta": "Heath Ledger"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película de animación trata sobre una princesa con poderes de hielo?",
+      "opciones": [
+        "Frozen",
+        "Enredados",
+        "Valiente",
+        "Moana"
+      ],
+      "correcta": "Frozen"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién dirigió \"Origen\" (Inception)?",
+      "opciones": [
+        "Christopher Nolan",
+        "Denis Villeneuve",
+        "David Fincher",
+        "Ridley Scott"
+      ],
+      "correcta": "Christopher Nolan"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un tiburón mecánico en Amity Island?",
+      "opciones": [
+        "Tiburón",
+        "Piraña 3D",
+        "Deep Blue Sea",
+        "Meg"
+      ],
+      "correcta": "Tiburón"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué actor interpreta a Tony Stark / Iron Man?",
+      "opciones": [
+        "Chris Evans",
+        "Robert Downey Jr.",
+        "Mark Ruffalo",
+        "Chris Pratt"
+      ],
+      "correcta": "Robert Downey Jr."
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película ganó el Óscar a Mejor Película en 2010?",
+      "opciones": [
+        "Avatar",
+        "Up",
+        "En tierra hostil",
+        "Precious"
+      ],
+      "correcta": "En tierra hostil"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién interpreta a Hermione, Ron y Harry en la saga Harry Potter (apellidos)?",
+      "opciones": [
+        "Watson, Grint y Radcliffe",
+        "Watson, Felton y Radcliffe",
+        "Wright, Grint y Radcliffe",
+        "Watson, Grint y Fiennes"
+      ],
+      "correcta": "Watson, Grint y Radcliffe"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué director dirigió \"Avatar\" en 2009?",
+      "opciones": [
+        "James Cameron",
+        "Peter Jackson",
+        "George Lucas",
+        "Ridley Scott"
+      ],
+      "correcta": "James Cameron"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un extraterrestre que quiere volver a casa y hace amistad con un niño?",
+      "opciones": [
+        "E.T., el extraterrestre",
+        "Marte necesita mamás",
+        "Señales",
+        "Paul"
+      ],
+      "correcta": "E.T., el extraterrestre"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué actor interpreta a Thor en el Universo Marvel?",
+      "opciones": [
+        "Chris Hemsworth",
+        "Chris Evans",
+        "Chris Pratt",
+        "Liam Hemsworth"
+      ],
+      "correcta": "Chris Hemsworth"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un payaso que aterroriza un pueblo llamado Derry?",
+      "opciones": [
+        "It",
+        "El Resplandor",
+        "Annabelle",
+        "Cementerio de animales"
+      ],
+      "correcta": "It"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién dirigió \"Coco\" (2017)?",
+      "opciones": [
+        "Lee Unkrich",
+        "Pete Docter",
+        "Brad Bird",
+        "Andrew Stanton"
+      ],
+      "correcta": "Lee Unkrich"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un abuelo que viaja a Sudamérica con su casa flotando con globos?",
+      "opciones": [
+        "Up",
+        "WALL-E",
+        "Del revés",
+        "Coco"
+      ],
+      "correcta": "Up"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué actriz interpretó a la Bella en \"La Bella y la Bestia\" (2017)?",
+      "opciones": [
+        "Emma Watson",
+        "Lily James",
+        "Emma Stone",
+        "Anne Hathaway"
+      ],
+      "correcta": "Emma Watson"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cada cuántos años se celebran los Juegos Olímpicos de verano?",
+      "opciones": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "correcta": "4"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores forman un equipo de fútbol en el campo?",
+      "opciones": [
+        "9",
+        "10",
+        "11",
+        "12"
+      ],
+      "correcta": "11"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué deporte se usa un \"birdie\" o volante?",
+      "opciones": [
+        "Tenis",
+        "Bádminton",
+        "Squash",
+        "Ping pong"
+      ],
+      "correcta": "Bádminton"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos puntos vale un try en rugby?",
+      "opciones": [
+        "3",
+        "5",
+        "6",
+        "7"
+      ],
+      "correcta": "5"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué país se originó el sumo?",
+      "opciones": [
+        "China",
+        "Japón",
+        "Corea del Sur",
+        "Mongolia"
+      ],
+      "correcta": "Japón"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos sets como máximo se juegan en un partido de tenis masculino de Grand Slam?",
+      "opciones": [
+        "3",
+        "4",
+        "5",
+        "7"
+      ],
+      "correcta": "5"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores hay en un equipo de baloncesto en la cancha?",
+      "opciones": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "correcta": "5"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué país ha ganado más Copas del Mundo de fútbol masculino?",
+      "opciones": [
+        "Alemania",
+        "Argentina",
+        "Brasil",
+        "Italia"
+      ],
+      "correcta": "Brasil"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué deporte se compite por el trofeo \"Copa Davis\"?",
+      "opciones": [
+        "Golf",
+        "Tenis",
+        "Vela",
+        "Automovilismo"
+      ],
+      "correcta": "Tenis"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos hoyos tiene un campo de golf estándar?",
+      "opciones": [
+        "9",
+        "12",
+        "18",
+        "21"
+      ],
+      "correcta": "18"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué distancia tiene una maratón oficial?",
+      "opciones": [
+        "21,097 km",
+        "30 km",
+        "42,195 km",
+        "50 km"
+      ],
+      "correcta": "42,195 km"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué deporte se realiza un \"ippon\"?",
+      "opciones": [
+        "Karate",
+        "Judo",
+        "Taekwondo",
+        "Boxeo"
+      ],
+      "correcta": "Judo"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores componen un equipo de voleibol en pista?",
+      "opciones": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correcta": "6"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué competición ciclista se disputa anualmente en Francia?",
+      "opciones": [
+        "Vuelta a España",
+        "Giro de Italia",
+        "Tour de Francia",
+        "Milán-San Remo"
+      ],
+      "correcta": "Tour de Francia"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos asaltos tiene un combate de boxeo profesional habitualmente?",
+      "opciones": [
+        "8",
+        "10",
+        "12",
+        "15"
+      ],
+      "correcta": "12"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué deporte olímpico se usa un florete?",
+      "opciones": [
+        "Tiro con arco",
+        "Esgrima",
+        "Pentatlón",
+        "Lucha"
+      ],
+      "correcta": "Esgrima"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos anillos tiene la bandera olímpica?",
+      "opciones": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "correcta": "5"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué país organizó el primer Mundial de fútbol en 1930?",
+      "opciones": [
+        "Brasil",
+        "Uruguay",
+        "Italia",
+        "Francia"
+      ],
+      "correcta": "Uruguay"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué deporte se utiliza el término \"strike\"?",
+      "opciones": [
+        "Béisbol",
+        "Bolos",
+        "Ambos",
+        "Ninguno"
+      ],
+      "correcta": "Ambos"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos periodos tiene un partido de hockey sobre hielo?",
+      "opciones": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "correcta": "3"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué altura tiene una canasta de baloncesto reglamentaria?",
+      "opciones": [
+        "2,80 m",
+        "3,05 m",
+        "3,20 m",
+        "3,50 m"
+      ],
+      "correcta": "3,05 m"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué deporte compiten Fórmula 1 y MotoGP respectivamente?",
+      "opciones": [
+        "Coches y motos",
+        "Motos y coches",
+        "Ambos coches",
+        "Ambos motos"
+      ],
+      "correcta": "Coches y motos"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores tiene un equipo de balonmano en pista?",
+      "opciones": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correcta": "7"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué torneo de tenis se juega sobre hierba?",
+      "opciones": [
+        "Roland Garros",
+        "Wimbledon",
+        "US Open",
+        "Australian Open"
+      ],
+      "correcta": "Wimbledon"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué país nació el baloncesto como deporte?",
+      "opciones": [
+        "Estados Unidos",
+        "Canadá",
+        "Reino Unido",
+        "Francia"
+      ],
+      "correcta": "Estados Unidos"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores tiene un equipo de rugby a 15 en el campo?",
+      "opciones": [
+        "13",
+        "14",
+        "15",
+        "16"
+      ],
+      "correcta": "15"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué nadador ganó 8 medallas de oro en unos únicos Juegos Olímpicos (Pekín 2008)?",
+      "opciones": [
+        "Ryan Lochte",
+        "Michael Phelps",
+        "Ian Thorpe",
+        "Caeleb Dressel"
+      ],
+      "correcta": "Michael Phelps"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué deporte se lucha por el \"Trofeo Ryder\"?",
+      "opciones": [
+        "Golf",
+        "Vela",
+        "Rugby",
+        "Críquet"
+      ],
+      "correcta": "Golf"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores forman un equipo de béisbol en el campo?",
+      "opciones": [
+        "8",
+        "9",
+        "10",
+        "11"
+      ],
+      "correcta": "9"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué ciudad se celebraron los Juegos Olímpicos de 1992?",
+      "opciones": [
+        "Atlanta",
+        "Barcelona",
+        "Sídney",
+        "Seúl"
+      ],
+      "correcta": "Barcelona"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué país ganó el Mundial de fútbol de 2010?",
+      "opciones": [
+        "Países Bajos",
+        "España",
+        "Alemania",
+        "Brasil"
+      ],
+      "correcta": "España"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores hay en un equipo de fútbol sala en pista?",
+      "opciones": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "correcta": "5"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué deporte se compite en la \"Vuelta a España\"?",
+      "opciones": [
+        "Atletismo",
+        "Ciclismo",
+        "Automovilismo",
+        "Motociclismo"
+      ],
+      "correcta": "Ciclismo"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores tiene un equipo de waterpolo en el agua?",
+      "opciones": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correcta": "7"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué país es conocido por dominar el cricket junto a India y Australia?",
+      "opciones": [
+        "Inglaterra",
+        "Francia",
+        "Alemania",
+        "España"
+      ],
+      "correcta": "Inglaterra"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué distancia se recorre en una prueba olímpica de 100 metros lisos?",
+      "opciones": [
+        "100 m",
+        "200 m",
+        "110 m",
+        "90 m"
+      ],
+      "correcta": "100 m"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué deporte destacó el atleta jamaicano Usain Bolt?",
+      "opciones": [
+        "Salto de altura",
+        "Velocidad (sprint)",
+        "Maratón",
+        "Lanzamiento de disco"
+      ],
+      "correcta": "Velocidad (sprint)"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores conforman un equipo de críquet?",
+      "opciones": [
+        "9",
+        "10",
+        "11",
+        "12"
+      ],
+      "correcta": "11"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué competición reúne a los mejores clubes de fútbol de Europa cada año?",
+      "opciones": [
+        "Copa del Mundo",
+        "Champions League",
+        "Eurocopa",
+        "Copa América"
+      ],
+      "correcta": "Champions League"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos Juegos Olímpicos de verano ha organizado Francia hasta 2024?",
+      "opciones": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correcta": "3"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué deporte se usa el término \"ace\" al sacar directo sin respuesta?",
+      "opciones": [
+        "Tenis",
+        "Bádminton",
+        "Voleibol",
+        "Todos los anteriores"
+      ],
+      "correcta": "Todos los anteriores"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué país tiene el equipo de rugby apodado \"Los Pumas\"?",
+      "opciones": [
+        "Argentina",
+        "Chile",
+        "Uruguay",
+        "Sudáfrica"
+      ],
+      "correcta": "Argentina"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos minutos dura un partido de fútbol reglamentario (sin prórroga)?",
+      "opciones": [
+        "80",
+        "90",
+        "100",
+        "120"
+      ],
+      "correcta": "90"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué deporte de raqueta se juega en una pista con paredes de cristal?",
+      "opciones": [
+        "Squash",
+        "Pádel",
+        "Bádminton",
+        "Ambos (squash y pádel)"
+      ],
+      "correcta": "Ambos (squash y pádel)"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué país nació el pádel como deporte?",
+      "opciones": [
+        "España",
+        "México",
+        "Argentina",
+        "Brasil"
+      ],
+      "correcta": "México"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué nadador español ganó medalla de oro olímpica en natación en Sídney 2000?",
+      "opciones": [
+        "Mireia Belmonte",
+        "Ona Carbonell",
+        "Martín López-Zubero",
+        "Rafael Muñoz"
+      ],
+      "correcta": "Martín López-Zubero"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos árbitros principales hay en un partido de fútbol dentro del campo?",
+      "opciones": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correcta": "1"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué país acogerá los Juegos Olímpicos de 2028?",
+      "opciones": [
+        "París",
+        "Los Ángeles",
+        "Brisbane",
+        "Tokio"
+      ],
+      "correcta": "Los Ángeles"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos puntos se necesitan para ganar un set de voleibol (por diferencia normal)?",
+      "opciones": [
+        "15",
+        "21",
+        "25",
+        "30"
+      ],
+      "correcta": "25"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año cayó el Muro de Berlín?",
+      "opciones": [
+        "1987",
+        "1989",
+        "1991",
+        "1993"
+      ],
+      "correcta": "1989"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Quién fue el primer emperador de Roma?",
+      "opciones": [
+        "Julio César",
+        "Augusto",
+        "Nerón",
+        "Trajano"
+      ],
+      "correcta": "Augusto"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año llegó Cristóbal Colón a América?",
+      "opciones": [
+        "1490",
+        "1492",
+        "1498",
+        "1500"
+      ],
+      "correcta": "1492"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué imperio construyó Machu Picchu?",
+      "opciones": [
+        "Azteca",
+        "Maya",
+        "Inca",
+        "Olmeca"
+      ],
+      "correcta": "Inca"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año comenzó la Primera Guerra Mundial?",
+      "opciones": [
+        "1912",
+        "1914",
+        "1916",
+        "1918"
+      ],
+      "correcta": "1914"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año terminó la Segunda Guerra Mundial?",
+      "opciones": [
+        "1943",
+        "1944",
+        "1945",
+        "1946"
+      ],
+      "correcta": "1945"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué revolución comenzó en 1789?",
+      "opciones": [
+        "Revolución Rusa",
+        "Revolución Francesa",
+        "Revolución Industrial",
+        "Revolución Americana"
+      ],
+      "correcta": "Revolución Francesa"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Quién pintó la Capilla Sixtina?",
+      "opciones": [
+        "Leonardo da Vinci",
+        "Miguel Ángel",
+        "Rafael",
+        "Donatello"
+      ],
+      "correcta": "Miguel Ángel"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué civilización construyó las pirámides de Giza?",
+      "opciones": [
+        "Mesopotámica",
+        "Egipcia",
+        "Griega",
+        "Romana"
+      ],
+      "correcta": "Egipcia"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué siglo vivió Napoleón Bonaparte?",
+      "opciones": [
+        "XVII",
+        "XVIII-XIX",
+        "XIX-XX",
+        "XX"
+      ],
+      "correcta": "XVIII-XIX"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué país fue el primero en llegar a la Luna con una misión tripulada?",
+      "opciones": [
+        "Unión Soviética",
+        "Estados Unidos",
+        "China",
+        "Reino Unido"
+      ],
+      "correcta": "Estados Unidos"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año se proclamó la Segunda República Española?",
+      "opciones": [
+        "1929",
+        "1931",
+        "1936",
+        "1939"
+      ],
+      "correcta": "1931"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Quién fue la reina de Inglaterra durante más tiempo en la historia moderna hasta 2022?",
+      "opciones": [
+        "Isabel I",
+        "Victoria",
+        "Isabel II",
+        "Ana"
+      ],
+      "correcta": "Isabel II"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué muro dividió Berlín entre 1961 y 1989?",
+      "opciones": [
+        "Muro de Adriano",
+        "Muro de Berlín",
+        "Muro de China",
+        "Muro de Trump"
+      ],
+      "correcta": "Muro de Berlín"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué explorador dio la primera vuelta al mundo (expedición completada tras su muerte)?",
+      "opciones": [
+        "Cristóbal Colón",
+        "Fernando de Magallanes",
+        "Vasco da Gama",
+        "Américo Vespucio"
+      ],
+      "correcta": "Fernando de Magallanes"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año se firmó la Declaración de Independencia de Estados Unidos?",
+      "opciones": [
+        "1774",
+        "1776",
+        "1783",
+        "1787"
+      ],
+      "correcta": "1776"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué antigua civilización desarrolló la democracia en Atenas?",
+      "opciones": [
+        "Romana",
+        "Griega",
+        "Egipcia",
+        "Persa"
+      ],
+      "correcta": "Griega"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué dinastía gobernó China durante la construcción de la Gran Muralla original?",
+      "opciones": [
+        "Ming",
+        "Qin",
+        "Han",
+        "Tang"
+      ],
+      "correcta": "Qin"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Quién fue el líder de la independencia de la India mediante la resistencia no violenta?",
+      "opciones": [
+        "Nehru",
+        "Gandhi",
+        "Bose",
+        "Ambedkar"
+      ],
+      "correcta": "Gandhi"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año comenzó la Guerra Civil Española?",
+      "opciones": [
+        "1931",
+        "1934",
+        "1936",
+        "1939"
+      ],
+      "correcta": "1936"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué imperio fue gobernado por Gengis Kan?",
+      "opciones": [
+        "Imperio Otomano",
+        "Imperio Mongol",
+        "Imperio Persa",
+        "Imperio Bizantino"
+      ],
+      "correcta": "Imperio Mongol"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué tratado puso fin a la Primera Guerra Mundial?",
+      "opciones": [
+        "Tratado de Versalles",
+        "Tratado de Utrecht",
+        "Tratado de Tordesillas",
+        "Congreso de Viena"
+      ],
+      "correcta": "Tratado de Versalles"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Quién fue el primer presidente de Estados Unidos?",
+      "opciones": [
+        "Thomas Jefferson",
+        "George Washington",
+        "John Adams",
+        "Abraham Lincoln"
+      ],
+      "correcta": "George Washington"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año cayó el Imperio Romano de Occidente?",
+      "opciones": [
+        "376",
+        "410",
+        "476",
+        "526"
+      ],
+      "correcta": "476"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué faraón egipcio es famoso por su máscara funeraria de oro?",
+      "opciones": [
+        "Ramsés II",
+        "Tutankamón",
+        "Akenatón",
+        "Keops"
+      ],
+      "correcta": "Tutankamón"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué país cedió Alaska a Estados Unidos en 1867?",
+      "opciones": [
+        "Reino Unido",
+        "Rusia",
+        "Francia",
+        "Dinamarca"
+      ],
+      "correcta": "Rusia"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué batalla fue derrotado Napoleón definitivamente en 1815?",
+      "opciones": [
+        "Trafalgar",
+        "Austerlitz",
+        "Waterloo",
+        "Leipzig"
+      ],
+      "correcta": "Waterloo"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué explorador italiano navegaba al servicio de la Corona de Castilla al llegar a América?",
+      "opciones": [
+        "Américo Vespucio",
+        "Cristóbal Colón",
+        "Marco Polo",
+        "Fernando de Magallanes"
+      ],
+      "correcta": "Cristóbal Colón"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año se independizó Estados Unidos oficialmente reconocida por Reino Unido?",
+      "opciones": [
+        "1776",
+        "1781",
+        "1783",
+        "1789"
+      ],
+      "correcta": "1783"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué antigua civilización mesoamericana desarrolló un calendario muy preciso y la escritura jeroglífica?",
+      "opciones": [
+        "Azteca",
+        "Maya",
+        "Inca",
+        "Olmeca"
+      ],
+      "correcta": "Maya"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Quién fue el líder soviético durante la Segunda Guerra Mundial?",
+      "opciones": [
+        "Lenin",
+        "Stalin",
+        "Trotski",
+        "Jrushchov"
+      ],
+      "correcta": "Stalin"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año se creó la Organización de las Naciones Unidas?",
+      "opciones": [
+        "1919",
+        "1945",
+        "1948",
+        "1955"
+      ],
+      "correcta": "1945"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué reina española envió a Colón en su primer viaje?",
+      "opciones": [
+        "Isabel I de Castilla",
+        "Juana la Loca",
+        "Isabel II",
+        "Urraca I"
+      ],
+      "correcta": "Isabel I de Castilla"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué acontecimiento marcó el inicio de la Gran Depresión en 1929?",
+      "opciones": [
+        "Crack de la bolsa de Nueva York",
+        "Fin de la Primera Guerra Mundial",
+        "Revolución Rusa",
+        "Tratado de Versalles"
+      ],
+      "correcta": "Crack de la bolsa de Nueva York"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué antiguo pueblo construyó el Coliseo de Roma?",
+      "opciones": [
+        "Griegos",
+        "Romanos",
+        "Etruscos",
+        "Fenicios"
+      ],
+      "correcta": "Romanos"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año se unificó Alemania tras la caída del Muro de Berlín?",
+      "opciones": [
+        "1989",
+        "1990",
+        "1991",
+        "1992"
+      ],
+      "correcta": "1990"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué civilización antigua inventó la escritura cuneiforme?",
+      "opciones": [
+        "Egipcia",
+        "Sumeria",
+        "China",
+        "Fenicia"
+      ],
+      "correcta": "Sumeria"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Quién lideró la expedición española que conquistó el Imperio Azteca?",
+      "opciones": [
+        "Francisco Pizarro",
+        "Hernán Cortés",
+        "Diego de Almagro",
+        "Pedro de Alvarado"
+      ],
+      "correcta": "Hernán Cortés"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Quién conquistó el Imperio Inca para la Corona española?",
+      "opciones": [
+        "Hernán Cortés",
+        "Francisco Pizarro",
+        "Vasco Núñez de Balboa",
+        "Juan Ponce de León"
+      ],
+      "correcta": "Francisco Pizarro"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año se produjo el atentado de las Torres Gemelas en Nueva York?",
+      "opciones": [
+        "1998",
+        "2001",
+        "2003",
+        "2005"
+      ],
+      "correcta": "2001"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué imperio fue gobernado por Julio César antes de convertirse en emperador propiamente?",
+      "opciones": [
+        "República Romana",
+        "Imperio Bizantino",
+        "Imperio Persa",
+        "Imperio Griego"
+      ],
+      "correcta": "República Romana"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué país fue dividido por el Telón de Acero durante la Guerra Fría junto a otros países de Europa del Este?",
+      "opciones": [
+        "España",
+        "Alemania",
+        "Portugal",
+        "Italia"
+      ],
+      "correcta": "Alemania"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué revolución llevó a los bolcheviques al poder en 1917?",
+      "opciones": [
+        "Revolución Francesa",
+        "Revolución Rusa",
+        "Revolución Industrial",
+        "Revolución Mexicana"
+      ],
+      "correcta": "Revolución Rusa"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué siglo se produjo el Descubrimiento de América?",
+      "opciones": [
+        "XIV",
+        "XV",
+        "XVI",
+        "XVII"
+      ],
+      "correcta": "XV"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué líder egipcio antiguo es conocido por su alianza con Marco Antonio y Julio César?",
+      "opciones": [
+        "Nefertiti",
+        "Cleopatra",
+        "Hatshepsut",
+        "Isis"
+      ],
+      "correcta": "Cleopatra"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué guerra enfrentó a Estados Unidos contra Vietnam del Norte?",
+      "opciones": [
+        "Guerra de Corea",
+        "Guerra de Vietnam",
+        "Guerra del Golfo",
+        "Guerra Fría"
+      ],
+      "correcta": "Guerra de Vietnam"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué imperio precolombino tenía su capital en Tenochtitlán?",
+      "opciones": [
+        "Maya",
+        "Inca",
+        "Azteca",
+        "Olmeca"
+      ],
+      "correcta": "Azteca"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Cuántas cuerdas tiene una guitarra clásica estándar?",
+      "opciones": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "correcta": "6"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento tiene 88 teclas en su versión estándar?",
+      "opciones": [
+        "Órgano",
+        "Piano",
+        "Acordeón",
+        "Clavicémbalo"
+      ],
+      "correcta": "Piano"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué banda británica interpretó \"Bohemian Rhapsody\"?",
+      "opciones": [
+        "The Beatles",
+        "Queen",
+        "Led Zeppelin",
+        "Pink Floyd"
+      ],
+      "correcta": "Queen"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Quién compuso \"La Novena Sinfonía\"?",
+      "opciones": [
+        "Mozart",
+        "Bach",
+        "Beethoven",
+        "Chopin"
+      ],
+      "correcta": "Beethoven"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento de cuerda se toca con un arco?",
+      "opciones": [
+        "Guitarra",
+        "Violín",
+        "Banjo",
+        "Arpa"
+      ],
+      "correcta": "Violín"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué género musical nació en Jamaica en los años 60?",
+      "opciones": [
+        "Blues",
+        "Reggae",
+        "Jazz",
+        "Soul"
+      ],
+      "correcta": "Reggae"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué cantante es conocida como \"La Reina del Pop\"?",
+      "opciones": [
+        "Whitney Houston",
+        "Madonna",
+        "Mariah Carey",
+        "Cher"
+      ],
+      "correcta": "Madonna"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Cuántas notas musicales básicas existen en la escala occidental?",
+      "opciones": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correcta": "7"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento de percusión se usa típicamente en una batería para marcar el tiempo con el pie?",
+      "opciones": [
+        "Caja",
+        "Bombo",
+        "Platillo",
+        "Timbal"
+      ],
+      "correcta": "Bombo"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué banda de Liverpool revolucionó la música pop en los años 60?",
+      "opciones": [
+        "The Rolling Stones",
+        "The Beatles",
+        "The Who",
+        "The Kinks"
+      ],
+      "correcta": "The Beatles"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento tiene teclas negras y blancas?",
+      "opciones": [
+        "Guitarra",
+        "Piano",
+        "Flauta",
+        "Trompeta"
+      ],
+      "correcta": "Piano"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué compositor austriaco fue niño prodigio y compuso desde los 5 años?",
+      "opciones": [
+        "Beethoven",
+        "Mozart",
+        "Haydn",
+        "Schubert"
+      ],
+      "correcta": "Mozart"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento de viento tiene forma de \"S\" y es de metal, típico del jazz?",
+      "opciones": [
+        "Trompeta",
+        "Saxofón",
+        "Clarinete",
+        "Trombón"
+      ],
+      "correcta": "Saxofón"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué artista lanzó el álbum \"Thriller\" en 1982?",
+      "opciones": [
+        "Prince",
+        "Michael Jackson",
+        "Stevie Wonder",
+        "Lionel Richie"
+      ],
+      "correcta": "Michael Jackson"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Cuál es el instrumento nacional de España más asociado al flamenco?",
+      "opciones": [
+        "Piano",
+        "Guitarra española",
+        "Violín",
+        "Acordeón"
+      ],
+      "correcta": "Guitarra española"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué género musical se originó en Nueva Orleans a principios del siglo XX?",
+      "opciones": [
+        "Rock",
+        "Jazz",
+        "Country",
+        "Disco"
+      ],
+      "correcta": "Jazz"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué banda sueca es famosa por \"Dancing Queen\"?",
+      "opciones": [
+        "Roxette",
+        "ABBA",
+        "Ace of Base",
+        "Europe"
+      ],
+      "correcta": "ABBA"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento de cuerda tradicional tiene forma triangular y muchas cuerdas?",
+      "opciones": [
+        "Arpa",
+        "Guitarra",
+        "Bajo",
+        "Ukelele"
+      ],
+      "correcta": "Arpa"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué cantante colombiana es conocida como \"La Loba\" y por éxitos como \"Hips Don't Lie\"?",
+      "opciones": [
+        "Shakira",
+        "Karol G",
+        "J Balvin",
+        "Maluma"
+      ],
+      "correcta": "Shakira"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento se toca soplando y tiene una lengüeta simple, típico de bandas y orquestas?",
+      "opciones": [
+        "Clarinete",
+        "Flauta",
+        "Trompeta",
+        "Trombón"
+      ],
+      "correcta": "Clarinete"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué compositor alemán quedó sordo y siguió componiendo?",
+      "opciones": [
+        "Bach",
+        "Beethoven",
+        "Brahms",
+        "Wagner"
+      ],
+      "correcta": "Beethoven"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué ritmo latino se originó en Cuba y da nombre a un famoso baile de pareja?",
+      "opciones": [
+        "Tango",
+        "Salsa",
+        "Merengue",
+        "Bachata"
+      ],
+      "correcta": "Salsa"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento de teclado se acciona con aire y fuelles, típico de la música popular?",
+      "opciones": [
+        "Órgano",
+        "Acordeón",
+        "Piano",
+        "Sintetizador"
+      ],
+      "correcta": "Acordeón"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué banda estadounidense de rock alternativo lanzó \"Smells Like Teen Spirit\"?",
+      "opciones": [
+        "Pearl Jam",
+        "Nirvana",
+        "Soundgarden",
+        "Foo Fighters"
+      ],
+      "correcta": "Nirvana"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Cuántas cuerdas tiene un bajo eléctrico estándar?",
+      "opciones": [
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "correcta": "4"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué compositor italiano es famoso por óperas como \"La Traviata\"?",
+      "opciones": [
+        "Puccini",
+        "Verdi",
+        "Rossini",
+        "Bellini"
+      ],
+      "correcta": "Verdi"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué cantante puertorriqueño es conocido como el \"Rey del Reguetón\"?",
+      "opciones": [
+        "Bad Bunny",
+        "Daddy Yankee",
+        "Wisin",
+        "Ozuna"
+      ],
+      "correcta": "Daddy Yankee"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué festival de música se celebra anualmente en Glastonbury, Reino Unido?",
+      "opciones": [
+        "Coachella",
+        "Glastonbury Festival",
+        "Tomorrowland",
+        "Rock in Rio"
+      ],
+      "correcta": "Glastonbury Festival"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué banda de rock formaron los hermanos Gallagher?",
+      "opciones": [
+        "Blur",
+        "Oasis",
+        "Radiohead",
+        "Coldplay"
+      ],
+      "correcta": "Oasis"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué concurso musical europeo se celebra cada año con representantes de distintos países?",
+      "opciones": [
+        "Grammy",
+        "Eurovisión",
+        "Brit Awards",
+        "MTV Music Awards"
+      ],
+      "correcta": "Eurovisión"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento tiene un mástil largo y suele tener 4 cuerdas graves en una orquesta?",
+      "opciones": [
+        "Violonchelo",
+        "Contrabajo",
+        "Viola",
+        "Violín"
+      ],
+      "correcta": "Contrabajo"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué grupo español interpretó \"Waka Waka\" junto a Shakira en el Mundial 2010?",
+      "opciones": [
+        "Freshlyground",
+        "Estopa",
+        "Mecano",
+        "Jarabe de Palo"
+      ],
+      "correcta": "Freshlyground"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué compositor alemán es conocido por \"Las cuatro estaciones\"? (dato: es italiano)",
+      "opciones": [
+        "Bach",
+        "Vivaldi",
+        "Mozart",
+        "Handel"
+      ],
+      "correcta": "Vivaldi"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué banda española formaron Ana Torroja, Nacho Cano y José María Cano?",
+      "opciones": [
+        "Héroes del Silencio",
+        "Mecano",
+        "Hombres G",
+        "La Oreja de Van Gogh"
+      ],
+      "correcta": "Mecano"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento de percusión latino se toca con las manos y tiene forma de barril?",
+      "opciones": [
+        "Timbal",
+        "Congas",
+        "Bongó",
+        "Cajón"
+      ],
+      "correcta": "Congas"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué artista es conocida como \"la Diva de la Motown\" y cantó \"I Will Always Love You\"?",
+      "opciones": [
+        "Diana Ross",
+        "Whitney Houston",
+        "Aretha Franklin",
+        "Tina Turner"
+      ],
+      "correcta": "Whitney Houston"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué banda de rock británica formaron Mick Jagger y Keith Richards?",
+      "opciones": [
+        "The Beatles",
+        "The Rolling Stones",
+        "The Who",
+        "Led Zeppelin"
+      ],
+      "correcta": "The Rolling Stones"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento de viento-metal se usa mucho en fanfarrias y tiene forma enrollada?",
+      "opciones": [
+        "Trompeta",
+        "Trombón",
+        "Tuba",
+        "Corno francés"
+      ],
+      "correcta": "Trompeta"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué cantante española ganó Eurovisión en 1968 con \"La, la, la\"?",
+      "opciones": [
+        "Rocío Jurado",
+        "Massiel",
+        "Julio Iglesias",
+        "Karina"
+      ],
+      "correcta": "Massiel"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué compositor ruso escribió el ballet \"El Lago de los Cisnes\"?",
+      "opciones": [
+        "Stravinsky",
+        "Chaikovski",
+        "Rachmaninoff",
+        "Prokofiev"
+      ],
+      "correcta": "Chaikovski"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué género musical urbano surgió en el Bronx (Nueva York) en los años 70?",
+      "opciones": [
+        "Reggae",
+        "Hip hop",
+        "Funk",
+        "Disco"
+      ],
+      "correcta": "Hip hop"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento tiene forma de caja rectangular con cuerdas y se percute con macillos, antecesor del piano?",
+      "opciones": [
+        "Clavicémbalo",
+        "Clavicordio",
+        "Órgano",
+        "Arpa"
+      ],
+      "correcta": "Clavicordio"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué banda islandesa/no, qué solista canadiense es conocido por \"Hello\" y \"Someone Like You\"?",
+      "opciones": [
+        "Adele",
+        "Sam Smith",
+        "Ed Sheeran",
+        "Rihanna"
+      ],
+      "correcta": "Adele"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué compositor compuso \"El Mesías\", famoso por el \"Aleluya\"?",
+      "opciones": [
+        "Bach",
+        "Handel",
+        "Mozart",
+        "Haydn"
+      ],
+      "correcta": "Handel"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué cantante mexicana es conocida como \"La Reina de la Onda Grupera\"?",
+      "opciones": [
+        "Thalía",
+        "Selena Quintanilla",
+        "Gloria Trevi",
+        "Paulina Rubio"
+      ],
+      "correcta": "Selena Quintanilla"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué género musical se caracteriza por el uso de sintetizadores y ritmo repetitivo bailable, popular en discotecas?",
+      "opciones": [
+        "Jazz",
+        "Electrónica",
+        "Country",
+        "Folk"
+      ],
+      "correcta": "Electrónica"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el punto cardinal opuesto al norte?",
+      "opciones": [
+        "Este",
+        "Oeste",
+        "Sur",
+        "Noreste"
+      ],
+      "correcta": "Sur"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuántos días tiene un año bisiesto?",
+      "opciones": [
+        "364",
+        "365",
+        "366",
+        "367"
+      ],
+      "correcta": "366"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuántas horas tiene un día?",
+      "opciones": [
+        "12",
+        "24",
+        "36",
+        "48"
+      ],
+      "correcta": "24"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuántos meses del año tienen 31 días?",
+      "opciones": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correcta": "7"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué instrumento se usa para orientarse indicando el norte magnético?",
+      "opciones": [
+        "Sextante",
+        "Brújula",
+        "Astrolabio",
+        "GPS"
+      ],
+      "correcta": "Brújula"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el continente más pequeño del mundo?",
+      "opciones": [
+        "Europa",
+        "Oceanía",
+        "Antártida",
+        "América"
+      ],
+      "correcta": "Oceanía"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué país tiene la Torre Eiffel como uno de sus símbolos junto con el Arco del Triunfo?",
+      "opciones": [
+        "Italia",
+        "Francia",
+        "España",
+        "Bélgica"
+      ],
+      "correcta": "Francia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuántos colores tiene el arcoíris tradicionalmente?",
+      "opciones": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correcta": "7"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué instrumento mide la presión atmosférica?",
+      "opciones": [
+        "Termómetro",
+        "Barómetro",
+        "Higrómetro",
+        "Anemómetro"
+      ],
+      "correcta": "Barómetro"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el mar más salado del mundo?",
+      "opciones": [
+        "Mar Rojo",
+        "Mar Muerto",
+        "Mar Mediterráneo",
+        "Mar Negro"
+      ],
+      "correcta": "Mar Muerto"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué país es conocido por el sushi y el sumo?",
+      "opciones": [
+        "China",
+        "Japón",
+        "Corea del Sur",
+        "Tailandia"
+      ],
+      "correcta": "Japón"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el animal considerado el rey de la selva?",
+      "opciones": [
+        "Tigre",
+        "León",
+        "Elefante",
+        "Leopardo"
+      ],
+      "correcta": "León"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué país tiene forma de hoja de arce en su bandera?",
+      "opciones": [
+        "Estados Unidos",
+        "Canadá",
+        "Suecia",
+        "Noruega"
+      ],
+      "correcta": "Canadá"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuántos husos horarios tiene el mundo en total?",
+      "opciones": [
+        "12",
+        "24",
+        "36",
+        "48"
+      ],
+      "correcta": "24"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué gas usan los buceadores mezclado con oxígeno para respirar a profundidad?",
+      "opciones": [
+        "Helio",
+        "Nitrógeno",
+        "Hidrógeno",
+        "Argón"
+      ],
+      "correcta": "Nitrógeno"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿En qué país está situada la Torre de Pisa?",
+      "opciones": [
+        "España",
+        "Italia",
+        "Grecia",
+        "Francia"
+      ],
+      "correcta": "Italia"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el nombre del explorador que dio la primera vuelta al mundo completa (su expedición)?",
+      "opciones": [
+        "Colón",
+        "Magallanes",
+        "Vespucio",
+        "Elcano"
+      ],
+      "correcta": "Elcano"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué país europeo es famoso por los tulipanes y los molinos de viento?",
+      "opciones": [
+        "Bélgica",
+        "Países Bajos",
+        "Dinamarca",
+        "Alemania"
+      ],
+      "correcta": "Países Bajos"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuál es el desierto de arena más grande fuera de la Antártida y el Ártico?",
+      "opciones": [
+        "Gobi",
+        "Sahara",
+        "Atacama",
+        "Kalahari"
+      ],
+      "correcta": "Sahara"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué país tiene una hoja de arce en su bandera y el francés como uno de sus idiomas oficiales?",
+      "opciones": [
+        "Suiza",
+        "Bélgica",
+        "Canadá",
+        "Luxemburgo"
+      ],
+      "correcta": "Canadá"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película de Pixar trata sobre las emociones dentro de la mente de una niña?",
+      "opciones": [
+        "Del revés (Inside Out)",
+        "Up",
+        "Coco",
+        "Onward"
+      ],
+      "correcta": "Del revés (Inside Out)"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién interpreta a Katniss en \"Los Juegos del Hambre: En llamas\"?",
+      "opciones": [
+        "Jennifer Lawrence",
+        "Shailene Woodley",
+        "Chloë Grace Moretz",
+        "Emma Watson"
+      ],
+      "correcta": "Jennifer Lawrence"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre juguetes que cobran vida cuando los humanos no miran?",
+      "opciones": [
+        "Toy Story",
+        "Pinocho",
+        "El Cascanueces",
+        "Small Soldiers"
+      ],
+      "correcta": "Toy Story"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué actor interpreta a Gandalf en \"El Señor de los Anillos\"?",
+      "opciones": [
+        "Ian McKellen",
+        "Christopher Lee",
+        "Anthony Hopkins",
+        "Michael Gambon"
+      ],
+      "correcta": "Ian McKellen"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un chico que descubre que es mitad dios griego?",
+      "opciones": [
+        "Percy Jackson",
+        "Harry Potter",
+        "Eragon",
+        "Las crónicas de Narnia"
+      ],
+      "correcta": "Percy Jackson"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Quién dirigió \"Tiburón\" en 1975?",
+      "opciones": [
+        "George Lucas",
+        "Steven Spielberg",
+        "Francis Ford Coppola",
+        "Ridley Scott"
+      ],
+      "correcta": "Steven Spielberg"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué actor interpreta al Capitán América?",
+      "opciones": [
+        "Chris Evans",
+        "Chris Hemsworth",
+        "Chris Pratt",
+        "Chris Pine"
+      ],
+      "correcta": "Chris Evans"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película animada trata sobre un ogro verde que vive en un pantano?",
+      "opciones": [
+        "Shrek",
+        "Hotel Transilvania",
+        "Madagascar",
+        "Kung Fu Panda"
+      ],
+      "correcta": "Shrek"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué director es conocido por sus películas de terror \"El Resplandor\" y \"2001: Una odisea del espacio\"?",
+      "opciones": [
+        "Stanley Kubrick",
+        "Alfred Hitchcock",
+        "Wes Craven",
+        "John Carpenter"
+      ],
+      "correcta": "Stanley Kubrick"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata de un aventurero arqueólogo llamado Indiana Jones?",
+      "opciones": [
+        "En busca del arca perdida",
+        "La momia",
+        "Tomb Raider",
+        "National Treasure"
+      ],
+      "correcta": "En busca del arca perdida"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores tiene un equipo de fútbol americano en el campo?",
+      "opciones": [
+        "9",
+        "10",
+        "11",
+        "12"
+      ],
+      "correcta": "11"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿En qué país se inventó el golf?",
+      "opciones": [
+        "Inglaterra",
+        "Escocia",
+        "Irlanda",
+        "Estados Unidos"
+      ],
+      "correcta": "Escocia"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué deporte se practica en Wimbledon?",
+      "opciones": [
+        "Tenis",
+        "Golf",
+        "Críquet",
+        "Rugby"
+      ],
+      "correcta": "Tenis"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores hay en un equipo de fútbol siete en el campo?",
+      "opciones": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correcta": "7"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué país ganó la Eurocopa de fútbol en 2012?",
+      "opciones": [
+        "Alemania",
+        "España",
+        "Italia",
+        "Portugal"
+      ],
+      "correcta": "España"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos metros mide una piscina olímpica estándar?",
+      "opciones": [
+        "25 m",
+        "50 m",
+        "75 m",
+        "100 m"
+      ],
+      "correcta": "50 m"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué deporte practica un jockey?",
+      "opciones": [
+        "Hípica (carreras de caballos)",
+        "Ciclismo",
+        "Automovilismo",
+        "Vela"
+      ],
+      "correcta": "Hípica (carreras de caballos)"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores tiene un equipo de voleibol playa en pista?",
+      "opciones": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correcta": "2"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Qué país es tradicionalmente conocido como potencia en hockey sobre hielo?",
+      "opciones": [
+        "España",
+        "Canadá",
+        "Portugal",
+        "Brasil"
+      ],
+      "correcta": "Canadá"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores forman un equipo de fútbol playa en la arena?",
+      "opciones": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "correcta": "5"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué antigua ciudad fue destruida por la erupción del Vesubio en el año 79?",
+      "opciones": [
+        "Cartago",
+        "Pompeya",
+        "Troya",
+        "Alejandría"
+      ],
+      "correcta": "Pompeya"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué faraón mandó construir la Gran Pirámide de Guiza?",
+      "opciones": [
+        "Tutankamón",
+        "Keops",
+        "Ramsés II",
+        "Akenatón"
+      ],
+      "correcta": "Keops"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué imperio fue gobernado por Carlomagno?",
+      "opciones": [
+        "Imperio Romano",
+        "Imperio Carolingio",
+        "Imperio Bizantino",
+        "Imperio Otomano"
+      ],
+      "correcta": "Imperio Carolingio"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿En qué año se produjo la Revolución Industrial aproximadamente en su inicio?",
+      "opciones": [
+        "Siglo XVI",
+        "Siglo XVII",
+        "Siglo XVIII",
+        "Siglo XIX"
+      ],
+      "correcta": "Siglo XVIII"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué país fue el primero en dar el voto a las mujeres a nivel nacional?",
+      "opciones": [
+        "Estados Unidos",
+        "Nueva Zelanda",
+        "Reino Unido",
+        "Francia"
+      ],
+      "correcta": "Nueva Zelanda"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué antiguo pueblo navegante fundó colonias como Cartago?",
+      "opciones": [
+        "Griegos",
+        "Fenicios",
+        "Romanos",
+        "Egipcios"
+      ],
+      "correcta": "Fenicios"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué líder militar francés se autoproclamó emperador en 1804?",
+      "opciones": [
+        "Luis XIV",
+        "Napoleón Bonaparte",
+        "Robespierre",
+        "Carlos de Gaulle"
+      ],
+      "correcta": "Napoleón Bonaparte"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué país fue gobernado por los zares hasta 1917?",
+      "opciones": [
+        "Polonia",
+        "Rusia",
+        "Ucrania",
+        "Serbia"
+      ],
+      "correcta": "Rusia"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento de cuerda pulsada es típico de Hawái, pequeño y con 4 cuerdas?",
+      "opciones": [
+        "Ukelele",
+        "Banjo",
+        "Mandolina",
+        "Guitarra"
+      ],
+      "correcta": "Ukelele"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué cantante británico es conocido por \"Shape of You\"?",
+      "opciones": [
+        "Ed Sheeran",
+        "Sam Smith",
+        "James Arthur",
+        "Charlie Puth"
+      ],
+      "correcta": "Ed Sheeran"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué compositor es autor de \"Para Elisa\"?",
+      "opciones": [
+        "Mozart",
+        "Beethoven",
+        "Chopin",
+        "Liszt"
+      ],
+      "correcta": "Beethoven"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué banda alemana de metal es conocida por canciones en inglés como \"The Bard's Song\"?",
+      "opciones": [
+        "Rammstein",
+        "Blind Guardian",
+        "Scorpions",
+        "Helloween"
+      ],
+      "correcta": "Blind Guardian"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento de percusión se toca con baquetas y tiene forma de plato metálico colgante?",
+      "opciones": [
+        "Platillo",
+        "Triángulo",
+        "Pandereta",
+        "Xilófono"
+      ],
+      "correcta": "Platillo"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué cantante estadounidense es conocida como \"Queen Bey\"?",
+      "opciones": [
+        "Rihanna",
+        "Beyoncé",
+        "Alicia Keys",
+        "Mariah Carey"
+      ],
+      "correcta": "Beyoncé"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué género musical mezcla elementos del rock con letras urbanas y nació en los 2000 en España como \"himno generacional\"? (pista: Estopa)",
+      "opciones": [
+        "Rumba catalana",
+        "Flamenco",
+        "Pop rock",
+        "Indie"
+      ],
+      "correcta": "Rumba catalana"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué es un ecosistema?",
+      "opciones": [
+        "Un tipo de célula",
+        "Una comunidad de seres vivos y su entorno",
+        "Un mineral",
+        "Un tipo de roca"
+      ],
+      "correcta": "Una comunidad de seres vivos y su entorno"
+    },
+    {
+      "categoria": "ciencia",
+      "pregunta": "¿Qué animal es el más rápido en tierra?",
+      "opciones": [
+        "León",
+        "Guepardo",
+        "Caballo",
+        "Antílope"
+      ],
+      "correcta": "Guepardo"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Cuántos jugadores forman un equipo estándar de ajedrez por partida (jugadores enfrentados)?",
+      "opciones": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correcta": "2"
+    },
+    {
+      "categoria": "general",
+      "pregunta": "¿Qué instrumento se usa tradicionalmente para ver las estrellas?",
+      "opciones": [
+        "Microscopio",
+        "Telescopio",
+        "Periscopio",
+        "Lupa"
+      ],
+      "correcta": "Telescopio"
+    },
+    {
+      "categoria": "historia",
+      "pregunta": "¿Qué imperio antiguo tuvo como capital Constantinopla?",
+      "opciones": [
+        "Imperio Romano de Occidente",
+        "Imperio Bizantino",
+        "Imperio Otomano temprano",
+        "Imperio Persa"
+      ],
+      "correcta": "Imperio Bizantino"
+    },
+    {
+      "categoria": "musica",
+      "pregunta": "¿Qué instrumento de teclado usa tubos de aire y es típico de las iglesias?",
+      "opciones": [
+        "Piano",
+        "Órgano",
+        "Clavicémbalo",
+        "Acordeón"
+      ],
+      "correcta": "Órgano"
+    },
+    {
+      "categoria": "deporte",
+      "pregunta": "¿Cuántos jugadores hay en un equipo de baloncesto 3x3?",
+      "opciones": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "correcta": "3"
+    },
+    {
+      "categoria": "cine",
+      "pregunta": "¿Qué película trata sobre un grupo de superhéroes de Marvel que se unen para salvar el mundo por primera vez?",
+      "opciones": [
+        "Los Vengadores",
+        "X-Men",
+        "La Liga de la Justicia",
+        "Guardianes de la Galaxia"
+      ],
+      "correcta": "Los Vengadores"
+    }
+  ]
+}

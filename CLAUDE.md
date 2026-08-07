@@ -372,6 +372,56 @@ Paraísos es una herramienta pública: cualquier visitante puede ver el mapa y l
 
 ---
 
+## Juegos — Hub de juegos de fiesta
+
+### Ubicación
+Calendario/juegos/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/, storage/, mapacyd/, ytdl/, gastos/, ofertas/ y paraisos/)
+- Frontend: React + Vite + TypeScript
+- Sin base de datos: los bancos de contenido (palabras, preguntas, prompts) son JSON estático cargado en memoria al arrancar; el estado de las salas en vivo vive solo en memoria del proceso (`Map<roomCode, RoomState>`), nunca se persiste
+- Tiempo real: `@fastify/websocket` — primera feature del monorepo con WebSocket, una única ruta `/juegos/api/ws` que dispatcha según `gameType` de la sala
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón que el resto de subapps); el WS lleva el JWT como query param (`?token=`), igual que storage para `<img>`/`<video>`, porque el WebSocket nativo del navegador no permite fijar cabeceras custom en el handshake
+- Validaciones: manuales (sin Zod)
+- Sin ORM — no aplica (sin base de datos)
+
+### Acceso
+Juegos es la primera subapp del monorepo abierta a **cualquier rol autenticado**
+(`admin`, `familia` e `invitado` por igual) — no confundir con Ytdl/Paraísos, que
+son públicas sin sesión: aquí sí se exige login válido, pero ningún rol
+concreto. El guard es `requireAuthenticated` (JWT válido, sin comprobación de
+rol), una función nueva y separada de `hasAnyRole` — no una lista de roles
+metida en el patrón existente.
+
+### Roles
+- Cualquier usuario autenticado (`admin`, `familia`, `invitado`) → acceso completo a los cinco juegos
+
+### Rutas (`/juegos/api/*`)
+- `GET /impostor/word?categoria=` — palabra de El Impostor (pasar y jugar), extraída del shuffle-bag
+- `GET /yo-nunca/prompt` — prompt de Yo Nunca
+- `GET /verdad-o-reto/prompt?tipo=verdad|reto` — prompt de Verdad o Reto
+- `POST /rooms` — crea una sala en vivo (`{ gameType: 'impostor-live' | 'trivia-live' }`), devuelve `{ roomCode }` y registra al creador como host
+- `GET /ws?token=&room=` — upgrade a WebSocket, une al jugador a la sala y retransmite el estado (roles, votos, preguntas, marcador) según `gameType`
+- `GET /health`
+
+### Bancos de contenido (estático, no editable en v1)
+`juegos/backend/src/content/*.json` — ≥300 palabras (Impostor), ≥500 preguntas (Trivia), ≥150 prompts (Yo Nunca), ≥150 prompts (Verdad o Reto). No existe ningún endpoint de escritura sobre estos bancos; editar contenido implica editar el JSON y redesplegar. Un `shuffle-bag` (Fisher–Yates por sesión) garantiza no repetir hasta agotar el banco completo.
+
+### Salas en vivo
+Estado en memoria (`Map<roomCode, RoomState>`), sin Redis ni pub/sub — coherente con que cada subapp es una única instancia Docker. Reconexión con ~60s de período de gracia (el jugador conserva su rol/slot); pasado ese tiempo el hueco se libera y se avisa al resto. Un reinicio del backend destruye las salas activas (aceptado como trade-off v1, ver design.md).
+
+### Variables de entorno del backend
+`KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3008)
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/juegos-backend:latest`, `ghcr.io/manuhddev/juegos-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los cinco roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`.
@@ -380,8 +430,8 @@ Cualquier código que filtre por rol DEBE usar exactamente estos nombres.
 | Rol             | Acceso                                                       |
 |-----------------|----------------------------------------------------------------|
 | admin           | Todas las apps + gestión completa                               |
-| familia         | Storage (lectura), MapaCYD (lectura)                             |
-| invitado        | Sin acceso a ninguna app                                         |
+| familia         | Storage (lectura), MapaCYD (lectura), Juegos (completo)         |
+| invitado        | Juegos (completo) — sin acceso a ninguna otra app                |
 | paraisos_admin  | Gestión de spots en Paraísos (CRUD)                             |
 | mapacyd_admin   | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
 
@@ -389,7 +439,9 @@ Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
 Ofertas y Calendario solo son accesibles para `admin` (uso exclusivo del
 propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
-llamar a su API.
+llamar a su API. Juegos es la única excepción a ese último punto: es la primera
+subapp visible y utilizable por los tres roles por igual (ver sección "Juegos"
+arriba).
 
 Los roles `paraisos_admin` y `mapacyd_admin` son roles delegados: permiten
 gestionar una subapp concreta sin tener acceso `admin` global. Un usuario con
@@ -437,6 +489,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Gastos             | :5177    | :3005   |
 | Ofertas            | :5178    | :3006   |
 | Paraísos           | :5179    | :3007   |
+| Juegos             | :5180    | :3008   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -448,4 +501,4 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 
 - **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend` y `ytdl/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 7 Dockerfiles y 7 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 8 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 8 Dockerfiles y 8 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 9 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.

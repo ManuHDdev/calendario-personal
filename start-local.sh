@@ -23,6 +23,8 @@
 #   ofertas frontend    →  :5178
 #   paraisos backend    →  :3007
 #   paraisos frontend   →  :5179
+#   juegos backend      →  :3008
+#   juegos frontend     →  :5180
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -263,6 +265,13 @@ start_bg "paraisos-backend  :3007" "paraisos-backend.log" "$SCRIPT_DIR/paraisos/
       ORS_API_KEY="${ORS_API_KEY:-}" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/juegos/backend"
+start_bg "juegos-backend    :3008" "juegos-backend.log" "$SCRIPT_DIR/juegos/backend" \
+  env PORT=3008 \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5180" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -295,6 +304,10 @@ start_bg "ofertas-frontend   :5178" "ofertas-frontend.log" "$SCRIPT_DIR/ofertas/
 
 ensure_deps "$SCRIPT_DIR/paraisos/frontend"
 start_bg "paraisos-frontend  :5179" "paraisos-frontend.log" "$SCRIPT_DIR/paraisos/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/juegos/frontend"
+start_bg "juegos-frontend    :5180" "juegos-frontend.log" "$SCRIPT_DIR/juegos/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -346,6 +359,10 @@ echo ""
 echo -e "  ${CYAN}Paraísos${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5179/paraisos/${NC}"
 echo -e "    Backend health   →  http://localhost:3007/paraisos/api/health"
+echo ""
+echo -e "  ${CYAN}Juegos${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5180/juegos/${NC}"
+echo -e "    Backend health   →  http://localhost:3008/juegos/api/health"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

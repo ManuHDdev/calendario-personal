@@ -18,6 +18,11 @@ const APPS: AppDef[] = [
   { id: 'gastos',     nombre: 'Gastos',     color: '#ffd60a', roles: ['admin'] },
   { id: 'ofertas',    nombre: 'Ofertas',    color: '#bf5af2', roles: ['admin'] },
   { id: 'paraisos',   nombre: 'Paraísos',   color: '#00c7be', roles: null },
+  // juegos: primera subapp abierta a CUALQUIER rol autenticado (admin,
+  // familia, invitado) — no confundir con `roles: null` de ytdl/paraisos,
+  // que son públicas sin sesión. Aquí sí se exige login, pero ningún rol
+  // concreto (ver design.md "Access guard: any valid role").
+  { id: 'juegos',     nombre: 'Juegos',     color: '#ff453a', roles: ['admin', 'familia', 'invitado'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -31,6 +36,7 @@ function getUrls(): Record<string, string> {
     gastos:     local ? 'http://localhost:5177/gastos/'  : '/gastos/',
     ofertas:    local ? 'http://localhost:5178/ofertas/' : '/ofertas/',
     paraisos:   local ? 'http://localhost:5179/paraisos/' : '/paraisos/',
+    juegos:     local ? 'http://localhost:5180/juegos/'  : '/juegos/',
   };
 }
 
@@ -93,6 +99,17 @@ function AppIcon({ id }: { id: string }) {
           <path d="M12 13V2"/>
           <path d="M12 2c-3 4-7 5.5-7 8.5S8 16 12 13"/>
           <path d="M12 2c3 4 7 5.5 7 8.5S16 16 12 13"/>
+        </svg>
+      );
+    case 'juegos':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <rect x="2" y="7" width="20" height="10" rx="5"/>
+          <line x1="7" y1="12" x2="7" y2="12.01"/>
+          <line x1="6" y1="10.5" x2="6" y2="13.5"/>
+          <line x1="4.5" y1="12" x2="7.5" y2="12"/>
+          <circle cx="16" cy="10.5" r="1" fill="white" stroke="none"/>
+          <circle cx="18" cy="13" r="1" fill="white" stroke="none"/>
         </svg>
       );
     default:
