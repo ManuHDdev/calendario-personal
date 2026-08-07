@@ -21,6 +21,7 @@ function appUrls(): Record<string, string> {
     gastos:     local ? 'http://localhost:5177/gastos/'   : '/gastos/',
     ofertas:    local ? 'http://localhost:5178/ofertas/'  : '/ofertas/',
     paraisos:   local ? 'http://localhost:5179/paraisos/' : '/paraisos/',
+    juegos:     local ? 'http://localhost:5180/juegos/'   : '/juegos/',
   };
 }
 
@@ -45,6 +46,11 @@ export class AppLauncher {
     { id: 'gastos',     nombre: 'Gastos',     color: '#ffd60a', roles: ['admin'],           url: '' },
     { id: 'ofertas',    nombre: 'Ofertas',    color: '#bf5af2', roles: ['admin'],           url: '' },
     { id: 'paraisos',   nombre: 'Paraísos',   color: '#00c7be', roles: null,                url: '' },
+    // juegos: primera subapp abierta a CUALQUIER rol autenticado (admin,
+    // familia, invitado) — no confundir con `roles: null` de ytdl/paraisos,
+    // que son públicas sin sesión. Aquí sí se exige login, pero ningún rol
+    // concreto (ver design.md "Access guard: any valid role").
+    { id: 'juegos',     nombre: 'Juegos',     color: '#ff453a', roles: ['admin','familia','invitado'], url: '' },
   ];
 
   get apps(): App[] {

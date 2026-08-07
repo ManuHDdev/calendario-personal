@@ -1,0 +1,67 @@
+.juegos-page {
+  min-height: 100%;
+  padding: 24px 20px 60px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.juegos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.juegos-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.juegos-seccion {
+  margin-bottom: 32px;
+}
+
+.juegos-seccion h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.juegos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.juego-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.juego-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.juego-card-icono {
+  font-size: 28px;
+}
+
+.juego-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.juego-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+}

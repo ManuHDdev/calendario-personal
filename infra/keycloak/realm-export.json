@@ -72,7 +72,8 @@
         "http://localhost:5176/*",
         "http://localhost:5177/*",
         "http://localhost:5178/*",
-        "http://localhost:5179/*"
+        "http://localhost:5179/*",
+        "http://localhost:5180/*"
       ],
       "webOrigins": [
         "http://localhost:4200",
@@ -82,12 +83,13 @@
         "http://localhost:5176",
         "http://localhost:5177",
         "http://localhost:5178",
-        "http://localhost:5179"
+        "http://localhost:5179",
+        "http://localhost:5180"
       ],
       "rootUrl": "http://localhost:4200",
       "baseUrl": "http://localhost:4200",
       "attributes": {
-        "post.logout.redirect.uris": "http://localhost:4200/*##http://localhost:5173/*##http://localhost:5174/*##http://localhost:5175/*##http://localhost:5176/*##http://localhost:5177/*##http://localhost:5178/*##http://localhost:5179/*",
+        "post.logout.redirect.uris": "http://localhost:4200/*##http://localhost:5173/*##http://localhost:5174/*##http://localhost:5175/*##http://localhost:5176/*##http://localhost:5177/*##http://localhost:5178/*##http://localhost:5179/*##http://localhost:5180/*",
         "pkce.code.challenge.method": "S256"
       },
       "defaultClientScopes": [

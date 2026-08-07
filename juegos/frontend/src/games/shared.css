@@ -1,0 +1,100 @@
+.juego-shell {
+  min-height: 100%;
+  padding: 24px 20px 60px;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.juego-shell-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.juego-volver {
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+}
+
+.juego-shell h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.juego-card-central {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 32px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-height: 220px;
+  justify-content: center;
+}
+
+.juego-boton {
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  transition: background 150ms ease;
+}
+
+.juego-boton:hover {
+  background: var(--accent-hover);
+}
+
+.juego-boton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.juego-boton-secundario {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+}
+
+.juego-input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 15px;
+  width: 100%;
+}
+
+.juego-lista-jugadores {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.juego-jugador-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.juego-texto-secundario {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.juego-error {
+  color: var(--danger);
+  font-size: 14px;
+}

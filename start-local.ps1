@@ -22,6 +22,8 @@
 #   ofertas frontend    →  :5178
 #   paraisos backend    →  :3007
 #   paraisos frontend   →  :5179
+#   juegos backend      →  :3008
+#   juegos frontend     →  :5180
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -256,6 +258,14 @@ StartBackground "paraisos-backend  :3007" "paraisos-backend.log" `
      PARAISOS_IMAGES_PATH=(Join-Path $SCRIPT_DIR "paraisos\backend\data\images");
      ORS_API_KEY=$env:ORS_API_KEY }
 
+# Juegos backend
+EnsureDeps (Join-Path $SCRIPT_DIR "juegos\backend")
+StartBackground "juegos-backend    :3008" "juegos-backend.log" `
+  (Join-Path $SCRIPT_DIR "juegos\backend") `
+  "npm run dev" `
+  @{ PORT="3008"; KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5180" }
+
 # Calendario backend (Spring Boot)
 StartBackground "calendario-backend :8081" "calendario-backend.log" `
   (Join-Path $SCRIPT_DIR "backend") `
@@ -291,6 +301,10 @@ StartBackground "ofertas-frontend   :5178" "ofertas-frontend.log" `
 EnsureDeps (Join-Path $SCRIPT_DIR "paraisos\frontend")
 StartBackground "paraisos-frontend  :5179" "paraisos-frontend.log" `
   (Join-Path $SCRIPT_DIR "paraisos\frontend") "npm run dev"
+
+EnsureDeps (Join-Path $SCRIPT_DIR "juegos\frontend")
+StartBackground "juegos-frontend    :5180" "juegos-frontend.log" `
+  (Join-Path $SCRIPT_DIR "juegos\frontend") "npm run dev"
 
 EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
 StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
@@ -342,6 +356,10 @@ Write-Host ""
 Write-Host "  Paraisos Naturales" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5179/paraisos/"
 Write-Host "    Backend health   ->  http://localhost:3007/paraisos/api/health"
+Write-Host ""
+Write-Host "  Juegos" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5180/juegos/"
+Write-Host "    Backend health   ->  http://localhost:3008/juegos/api/health"
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow
