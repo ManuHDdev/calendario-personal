@@ -358,11 +358,11 @@ Paraísos es una herramienta pública: cualquier visitante puede ver el mapa y l
 - `DELETE /spots/:id` — borrado lógico (admin, Keycloak)
 - `POST /images` — subida de imagen de spot (admin, Keycloak), `multipart/form-data` campo `file`, devuelve `{ url }`
 - `GET /images/:filename` — sirve una imagen subida (público, sin auth)
-- `GET /route-distance` — distancia y duración por carretera entre dos puntos vía OpenRouteService (público, sin auth), query `fromLat`/`fromLng`/`toLat`/`toLng`
+- `GET /route-distance` — distancia y duración por carretera entre dos puntos vía OpenRouteService (público, sin auth), query `fromLat`/`fromLng`/`toLat`/`toLng`. Protegido con límite propio de 2000 peticiones/día (por debajo del límite real de ORS), límite de 20 peticiones/5min por IP, y caché en memoria de 6h por par de coordenadas (redondeadas a ~100m) — todo en memoria del proceso, se resetea en cada redeploy
 - `GET /health`
 
 ### Variables de entorno del backend
-`PARAISOS_DB_HOST`, `PARAISOS_DB_NAME`, `PARAISOS_DB_USER`, `PARAISOS_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3007), `PARAISOS_IMAGES_PATH` (prod: `/app/data/images`, volumen Docker persistente), `ORS_API_KEY` (gratuito, generar en openrouteservice.org — límite 2000 peticiones/día)
+`PARAISOS_DB_HOST`, `PARAISOS_DB_NAME`, `PARAISOS_DB_USER`, `PARAISOS_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3007), `PARAISOS_IMAGES_PATH` (prod: `/app/data/images`, volumen Docker persistente), `ORS_API_KEY` (gratuito, generar en openrouteservice.org — plan gratuito real: 2500 peticiones/día, 40.000/mes, 40 concurrentes), `ORS_API_KEY` (gratuito, generar en openrouteservice.org — límite 2000 peticiones/día)
 
 ### Red Docker
 `calendario-net` (externa)
