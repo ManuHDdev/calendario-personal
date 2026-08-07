@@ -67,7 +67,7 @@ const S = {
     background: '#fff',
   },
   tdBase: { padding: '10px 16px', verticalAlign: 'middle' as const },
-  actionsGroup: { display: 'flex', gap: 6 },
+  actionsGroup: { display: 'flex', flexDirection: 'column' as const, gap: 4 },
   btnAction: {
     background: 'transparent', border: 'none',
     borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500,

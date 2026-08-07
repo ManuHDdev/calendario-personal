@@ -50,13 +50,31 @@ const LABEL_DIA: Record<typeof TIPOS_DIA[number], string> = {
   DOMINGO: 'Domingo',
 };
 
+const popupEditBtnHtml = `
+  <button class="mapa-popup-edit" style="
+    margin-top:10px;width:100%;background:none;border:1px solid #0071e3;
+    border-radius:6px;padding:5px 10px;font-size:12px;font-family:system-ui,sans-serif;
+    color:#0071e3;cursor:pointer;
+  ">Editar</button>
+`;
+
 const popupDeleteBtnHtml = `
   <button class="mapa-popup-delete" style="
-    margin-top:10px;width:100%;background:none;border:1px solid #fecaca;
+    margin-top:6px;width:100%;background:none;border:1px solid #fecaca;
     border-radius:6px;padding:5px 10px;font-size:12px;font-family:system-ui,sans-serif;
     color:#dc2626;cursor:pointer;
   ">Eliminar zona</button>
 `;
+
+function popupMapsLinkHtml(zona: ZonaCyd): string {
+  return `
+    <a href="https://www.google.com/maps/search/?api=1&query=${zona.latitud},${zona.longitud}"
+       target="_blank" rel="noopener noreferrer" style="
+      display:inline-block;margin-top:4px;font-size:12px;color:#0071e3;
+      text-decoration:none;font-family:system-ui,sans-serif;
+    ">📍 Cómo llegar</a>
+  `;
+}
 
 function buildPopupHtml(zona: ZonaCyd, estado: EstadoZona, isAdmin: boolean): string {
   const horarioLines = TIPOS_DIA.map(tipo => {
@@ -82,6 +100,8 @@ function buildPopupHtml(zona: ZonaCyd, estado: EstadoZona, isAdmin: boolean): st
         : ''}
       <div style="margin-bottom:8px">${horarioLines}</div>
       <div style="font-size:13px;font-weight:500;color:${estadoColor}">${estadoIcon} ${estadoLabel}</div>
+      ${popupMapsLinkHtml(zona)}
+      ${isAdmin ? popupEditBtnHtml : ''}
       ${isAdmin ? popupDeleteBtnHtml : ''}
     </div>
   `;
@@ -94,6 +114,8 @@ function buildPopupHtmlAparcamiento(zona: ZonaCyd, isAdmin: boolean): string {
       ${zona.descripcion
         ? `<div style="font-size:12px;color:#9ca3af">${zona.descripcion}</div>`
         : ''}
+      ${popupMapsLinkHtml(zona)}
+      ${isAdmin ? popupEditBtnHtml : ''}
       ${isAdmin ? popupDeleteBtnHtml : ''}
     </div>
   `;
@@ -113,6 +135,8 @@ export function MapaView() {
   const [zonaEliminarPopup, setZonaEliminarPopup] = useState<ZonaCyd | null>(null);
   const [eliminandoPopup,   setEliminandoPopup]   = useState(false);
   const [errorEliminarPopup, setErrorEliminarPopup] = useState<string | null>(null);
+  // Editar zona directamente desde el popup del mapa
+  const [zonaEditarPopup, setZonaEditarPopup] = useState<ZonaCyd | null>(null);
 
   const { zonas, loading, error, refetch } = useZonas(ciudadFiltro);
   const { preferencia } = usePreferenciaCiudad();
@@ -172,6 +196,11 @@ export function MapaView() {
       if (isAdmin) {
         marker.on('popupopen', () => {
           const el = marker.getPopup()?.getElement();
+          const btnEdit = el?.querySelector<HTMLButtonElement>('.mapa-popup-edit');
+          btnEdit?.addEventListener('click', () => {
+            marker.closePopup();
+            setZonaEditarPopup(zona);
+          });
           const btn = el?.querySelector<HTMLButtonElement>('.mapa-popup-delete');
           btn?.addEventListener('click', () => {
             marker.closePopup();
@@ -287,6 +316,18 @@ export function MapaView() {
             ? 'Haz clic en el mapa para colocar el spot de aparcamiento'
             : 'Haz clic en el mapa para colocar la nueva zona'}
         </div>
+      )}
+
+      {/* Editar zona directamente desde el popup del mapa */}
+      {zonaEditarPopup && (
+        <ZonaModal
+          modo="editar"
+          zona={zonaEditarPopup}
+          latitudInicial={zonaEditarPopup.latitud}
+          longitudInicial={zonaEditarPopup.longitud}
+          onClose={() => setZonaEditarPopup(null)}
+          onSuccess={() => { setZonaEditarPopup(null); void refetch(); }}
+        />
       )}
 
       {/* Eliminar zona directamente desde el popup del mapa */}
