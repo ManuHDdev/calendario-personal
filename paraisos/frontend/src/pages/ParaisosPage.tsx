@@ -23,6 +23,7 @@ export default function ParaisosPage() {
   const [pickingMode, setPickingMode] = useState<'spot' | 'parking' | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingParkingCoords, setPendingParkingCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [pendingLocationCoords, setPendingLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [createSpotMode, setCreateSpotMode] = useState(false);
   const [measurePin, setMeasurePin] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -65,6 +66,7 @@ export default function ParaisosPage() {
     setEditingSpot(null);
     setPendingCoords(null);
     setPendingParkingCoords(null);
+    setPendingLocationCoords(null);
     loadData();
   };
 
@@ -84,6 +86,11 @@ export default function ParaisosPage() {
       setPickingMode(null);
       return;
     }
+    if (pickingMode === 'spot') {
+      setPendingLocationCoords({ lat, lng });
+      setPickingMode(null);
+      return;
+    }
     if (createSpotMode) {
       setPendingCoords({ lat, lng });
       setEditingSpot(null);
@@ -97,7 +104,8 @@ export default function ParaisosPage() {
 
   const handlePickFromMap = useCallback((target: 'spot' | 'parking') => {
     setPickingMode(target);
-    setPendingParkingCoords(null);
+    if (target === 'parking') setPendingParkingCoords(null);
+    else setPendingLocationCoords(null);
   }, []);
 
   const handleFormClose = useCallback(() => {
@@ -105,6 +113,7 @@ export default function ParaisosPage() {
     setEditingSpot(null);
     setPendingCoords(null);
     setPendingParkingCoords(null);
+    setPendingLocationCoords(null);
     setPickingMode(null);
   }, []);
 
@@ -243,6 +252,7 @@ export default function ParaisosPage() {
         <SpotFormModal
           spot={editingSpot ? spotDetail : null}
           initialCoords={!editingSpot ? pendingCoords : null}
+          pendingLocationCoords={pickingMode === null ? pendingLocationCoords : null}
           pendingParkingCoords={pickingMode === null ? pendingParkingCoords : null}
           hidden={pickingMode !== null}
           onSave={handleSpotCreated}

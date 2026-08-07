@@ -6,6 +6,7 @@ import './SpotFormModal.css';
 interface Props {
   spot: SpotDetail | null;
   initialCoords?: { lat: number; lng: number } | null;
+  pendingLocationCoords?: { lat: number; lng: number } | null;
   pendingParkingCoords?: { lat: number; lng: number } | null;
   hidden?: boolean;
   onSave: () => void;
@@ -13,7 +14,7 @@ interface Props {
   onPickFromMap?: (target: 'spot' | 'parking') => void;
 }
 
-export default function SpotFormModal({ spot, initialCoords, pendingParkingCoords, hidden, onSave, onClose, onPickFromMap }: Props) {
+export default function SpotFormModal({ spot, initialCoords, pendingLocationCoords, pendingParkingCoords, hidden, onSave, onClose, onPickFromMap }: Props) {
   const isEditing = spot !== null;
   const [nombre, setNombre] = useState(spot?.nombre ?? '');
   const [region, setRegion] = useState(spot?.region ?? '');
@@ -47,6 +48,14 @@ export default function SpotFormModal({ spot, initialCoords, pendingParkingCoord
       setHasParking(true);
     }
   }, [pendingParkingCoords]);
+
+  // Update spot location when returning from map pick
+  useEffect(() => {
+    if (pendingLocationCoords) {
+      setLatitud(pendingLocationCoords.lat.toFixed(6));
+      setLongitud(pendingLocationCoords.lng.toFixed(6));
+    }
+  }, [pendingLocationCoords]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -213,6 +222,16 @@ export default function SpotFormModal({ spot, initialCoords, pendingParkingCoord
               />
             </div>
           </div>
+
+          {onPickFromMap && (
+            <button type="button" className="pick-map-btn" onClick={() => onPickFromMap('spot')}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                <circle cx="12" cy="9" r="2.5"/>
+              </svg>
+              Seleccionar ubicación en el mapa
+            </button>
+          )}
 
           <div className="form-group">
             <label>Imagen</label>
