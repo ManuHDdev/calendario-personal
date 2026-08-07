@@ -34,7 +34,11 @@ services:
       PARAISOS_DB_PASSWORD: ${PARAISOS_DB_PASSWORD}
       KEYCLOAK_CERTS_URL:   ${KEYCLOAK_CERTS_URL}
       CORS_ORIGIN:          ${CORS_ORIGIN}
+      PARAISOS_IMAGES_PATH: /app/data/images
+      ORS_API_KEY:          ${ORS_API_KEY}
       NODE_ENV:             production
+    volumes:
+      - paraisos_images:/app/data/images
     depends_on:
       paraisos-db:
         condition: service_healthy
@@ -58,3 +62,4 @@ services:
 
 volumes:
   paraisos_pgdata:
+  paraisos_images:

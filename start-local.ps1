@@ -252,7 +252,9 @@ StartBackground "paraisos-backend  :3007" "paraisos-backend.log" `
   @{ PORT="3007"; PARAISOS_DB_HOST="localhost"; PARAISOS_DB_PORT="5437";
      PARAISOS_DB_NAME="paraisos"; PARAISOS_DB_USER="paraisos"; PARAISOS_DB_PASSWORD="paraisos123";
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
-     CORS_ORIGIN="http://localhost:5179" }
+     CORS_ORIGIN="http://localhost:5179";
+     PARAISOS_IMAGES_PATH=(Join-Path $SCRIPT_DIR "paraisos\backend\data\images");
+     ORS_API_KEY=$env:ORS_API_KEY }
 
 # Calendario backend (Spring Boot)
 StartBackground "calendario-backend :8081" "calendario-backend.log" `

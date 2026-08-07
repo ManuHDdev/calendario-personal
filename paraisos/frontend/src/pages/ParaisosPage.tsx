@@ -23,6 +23,8 @@ export default function ParaisosPage() {
   const [pickingMode, setPickingMode] = useState<'spot' | 'parking' | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingParkingCoords, setPendingParkingCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [createSpotMode, setCreateSpotMode] = useState(false);
+  const [measurePin, setMeasurePin] = useState<{ lat: number; lng: number } | null>(null);
 
   const roles = (keycloak.tokenParsed as { realm_access?: { roles?: string[] } })
     ?.realm_access?.roles ?? [];
@@ -82,12 +84,16 @@ export default function ParaisosPage() {
       setPickingMode(null);
       return;
     }
-    // Map click creates a new spot (admin only)
-    if (!isAdmin) return;
-    setPendingCoords({ lat, lng });
-    setEditingSpot(null);
-    setShowForm(true);
-  }, [isAdmin, pickingMode]);
+    if (createSpotMode) {
+      setPendingCoords({ lat, lng });
+      setEditingSpot(null);
+      setShowForm(true);
+      setCreateSpotMode(false);
+      return;
+    }
+    // Default: drop/move the reference pin
+    setMeasurePin({ lat, lng });
+  }, [createSpotMode, pickingMode]);
 
   const handlePickFromMap = useCallback((target: 'spot' | 'parking') => {
     setPickingMode(target);
@@ -149,7 +155,7 @@ export default function ParaisosPage() {
           {isAdmin && (
             <button
               className="add-spot-btn"
-              onClick={() => { setEditingSpot(null); setPendingCoords(null); setShowForm(true); }}
+              onClick={() => setCreateSpotMode((v) => !v)}
               title="Nuevo spot"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -197,13 +203,28 @@ export default function ParaisosPage() {
           </div>
         )}
 
+        {createSpotMode && (
+          <div className="picking-banner">
+            <span>Clica en el mapa para crear un spot ahí</span>
+            <button onClick={() => setCreateSpotMode(false)}>Cancelar</button>
+          </div>
+        )}
+
+        {!createSpotMode && measurePin !== null && (
+          <div className="picking-banner">
+            <span>Pincho colocado — clica un spot para ver la distancia</span>
+            <button onClick={() => setMeasurePin(null)}>Quitar pincho</button>
+          </div>
+        )}
+
         <SpotMap
           spots={spots}
           selectedSpot={selectedSpot}
           onSpotSelect={setSelectedSpot}
           onMapClick={handleMapClick}
-          pickingMode={pickingMode}
+          pickingMode={pickingMode ?? (createSpotMode ? 'create' : null)}
           parkingMarker={spotDetail?.parking ? { lat: spotDetail.parking.latitud, lng: spotDetail.parking.longitud } : null}
+          measurePin={measurePin}
         />
 
         {spotDetail && (
@@ -213,6 +234,7 @@ export default function ParaisosPage() {
             onClose={() => setSelectedSpot(null)}
             onEdit={() => handleEdit(spotDetail)}
             onDelete={handleDelete}
+            pinOrigin={measurePin}
           />
         )}
       </main>

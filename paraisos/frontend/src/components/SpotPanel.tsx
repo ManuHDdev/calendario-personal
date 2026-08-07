@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { deleteSpot } from '../services/api';
+import { deleteSpot, getRoadDistance } from '../services/api';
 import type { SpotDetail } from '../types';
 import './SpotPanel.css';
 
@@ -39,16 +39,21 @@ interface Props {
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  pinOrigin?: { lat: number; lng: number } | null;
 }
 
 type OriginMode = 'idle' | 'locating' | 'located' | 'error';
 
-export default function SpotPanel({ spot, isAdmin, onClose, onEdit, onDelete }: Props) {
+export default function SpotPanel({ spot, isAdmin, onClose, onEdit, onDelete, pinOrigin }: Props) {
   const [originMode, setOriginMode] = useState<OriginMode>('idle');
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
+  const [roadDistance, setRoadDistance] = useState<{ distanceKm: number; durationMin: number } | null>(null);
+  const [roadDistanceLoading, setRoadDistanceLoading] = useState(false);
+  const [roadDistanceFailed, setRoadDistanceFailed] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -57,6 +62,36 @@ export default function SpotPanel({ spot, isAdmin, onClose, onEdit, onDelete }: 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [spot.imagen_url]);
+
+  useEffect(() => {
+    if (!pinOrigin) {
+      setRoadDistance(null);
+      setRoadDistanceFailed(false);
+      return;
+    }
+    let cancelled = false;
+    setRoadDistance(null);
+    setRoadDistanceFailed(false);
+    setRoadDistanceLoading(true);
+    getRoadDistance(pinOrigin, { lat: spot.latitud, lng: spot.longitud })
+      .then((result) => {
+        if (cancelled) return;
+        setRoadDistance(result);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRoadDistanceFailed(true);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setRoadDistanceLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [pinOrigin, spot.id]);
 
   const calculateFromLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -119,13 +154,13 @@ export default function SpotPanel({ spot, isAdmin, onClose, onEdit, onDelete }: 
         </button>
       </div>
 
-      {spot.imagen_url && (
+      {spot.imagen_url && !imgError && (
         <a href={spot.imagen_url} target="_blank" rel="noopener noreferrer" className="panel-image-link">
           <img
             src={spot.imagen_url}
             alt={spot.nombre}
             className="panel-image"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            onError={() => setImgError(true)}
           />
         </a>
       )}
@@ -147,58 +182,118 @@ export default function SpotPanel({ spot, isAdmin, onClose, onEdit, onDelete }: 
       <div className="panel-section">
         <h3 className="panel-section-title">Distancia y navegación</h3>
 
-        {originMode === 'idle' && (
-          <button className="panel-action-btn" onClick={calculateFromLocation}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <circle cx="12" cy="12" r="3"/>
-              <line x1="12" y1="2" x2="12" y2="6"/>
-              <line x1="12" y1="18" x2="12" y2="22"/>
-              <line x1="2" y1="12" x2="6" y2="12"/>
-              <line x1="18" y1="12" x2="22" y2="12"/>
-            </svg>
-            Calcular desde mi ubicación
-          </button>
-        )}
+        {pinOrigin ? (
+          <>
+            {roadDistanceLoading && (
+              <div className="panel-locating">
+                <div className="loading-spinner loading-spinner--small" />
+                <span>Calculando distancia...</span>
+              </div>
+            )}
 
-        {originMode === 'locating' && (
-          <div className="panel-locating">
-            <div className="loading-spinner loading-spinner--small" />
-            <span>Obteniendo ubicación...</span>
-          </div>
-        )}
+            {!roadDistanceLoading && roadDistance && (
+              <div className="panel-distance-result">
+                <div className="distance-value">
+                  <span className="distance-number">{roadDistance.distanceKm}</span>
+                  <span className="distance-unit">km</span>
+                  <span className="distance-label">por carretera (~{roadDistance.durationMin} min)</span>
+                </div>
+                <a
+                  href={googleMapsDirectionsUrl(pinOrigin.lat, pinOrigin.lng, spot.latitud, spot.longitud)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="panel-maps-btn"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                  Abrir ruta en Google Maps
+                </a>
+              </div>
+            )}
 
-        {originMode === 'error' && (
-          <div className="panel-error-inline">
-            <p>No se pudo obtener la ubicación.</p>
-            <button className="panel-action-btn panel-action-btn--small" onClick={calculateFromLocation}>
-              Reintentar
-            </button>
-          </div>
-        )}
+            {!roadDistanceLoading && roadDistanceFailed && (
+              <div className="panel-distance-result">
+                <div className="distance-value">
+                  <span className="distance-number">
+                    {(() => {
+                      const km = haversineKm(pinOrigin.lat, pinOrigin.lng, spot.latitud, spot.longitud);
+                      return km < 1 ? km.toFixed(2) : km.toFixed(1);
+                    })()}
+                  </span>
+                  <span className="distance-unit">km</span>
+                  <span className="distance-label">en línea recta (ruta no disponible)</span>
+                </div>
+                <a
+                  href={googleMapsDirectionsUrl(pinOrigin.lat, pinOrigin.lng, spot.latitud, spot.longitud)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="panel-maps-btn"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                  Abrir ruta en Google Maps
+                </a>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {originMode === 'idle' && (
+              <button className="panel-action-btn" onClick={calculateFromLocation}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="3"/>
+                  <line x1="12" y1="2" x2="12" y2="6"/>
+                  <line x1="12" y1="18" x2="12" y2="22"/>
+                  <line x1="2" y1="12" x2="6" y2="12"/>
+                  <line x1="18" y1="12" x2="22" y2="12"/>
+                </svg>
+                Calcular desde mi ubicación
+              </button>
+            )}
 
-        {originMode === 'located' && distance !== null && origin && (
-          <div className="panel-distance-result">
-            <div className="distance-value">
-              <span className="distance-number">{distance < 1 ? distance.toFixed(2) : distance.toFixed(1)}</span>
-              <span className="distance-unit">km</span>
-              <span className="distance-label">en línea recta</span>
-            </div>
-            <a
-              href={googleMapsDirectionsUrl(origin.lat, origin.lng, spot.latitud, spot.longitud)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="panel-maps-btn"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 18l6-6-6-6"/>
-              </svg>
-              Abrir ruta en Google Maps
-            </a>
-            <button className="panel-text-btn" onClick={resetDistance}>
-              Recalcular
-            </button>
-          </div>
+            {originMode === 'locating' && (
+              <div className="panel-locating">
+                <div className="loading-spinner loading-spinner--small" />
+                <span>Obteniendo ubicación...</span>
+              </div>
+            )}
+
+            {originMode === 'error' && (
+              <div className="panel-error-inline">
+                <p>No se pudo obtener la ubicación.</p>
+                <button className="panel-action-btn panel-action-btn--small" onClick={calculateFromLocation}>
+                  Reintentar
+                </button>
+              </div>
+            )}
+
+            {originMode === 'located' && distance !== null && origin && (
+              <div className="panel-distance-result">
+                <div className="distance-value">
+                  <span className="distance-number">{distance < 1 ? distance.toFixed(2) : distance.toFixed(1)}</span>
+                  <span className="distance-unit">km</span>
+                  <span className="distance-label">en línea recta</span>
+                </div>
+                <a
+                  href={googleMapsDirectionsUrl(origin.lat, origin.lng, spot.latitud, spot.longitud)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="panel-maps-btn"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                  Abrir ruta en Google Maps
+                </a>
+                <button className="panel-text-btn" onClick={resetDistance}>
+                  Recalcular
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

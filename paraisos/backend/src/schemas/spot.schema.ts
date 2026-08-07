@@ -8,7 +8,7 @@ export const spotCreateSchema = z.object({
   provincia: z.string().optional(),
   latitud: z.number({ required_error: 'La latitud es obligatoria' }),
   longitud: z.number({ required_error: 'La longitud es obligatoria' }),
-  imagen_url: z.string().url().optional(),
+  imagen_url: z.string().min(1).optional(),
   descripcion: z.string().optional(),
   categoria: categoriaEnum,
 });
@@ -20,7 +20,7 @@ export const spotUpdateSchema = z
     provincia: z.string().optional(),
     latitud: z.number().optional(),
     longitud: z.number().optional(),
-    imagen_url: z.string().url().nullable().optional(),
+    imagen_url: z.string().min(1).nullable().optional(),
     descripcion: z.string().nullable().optional(),
     categoria: categoriaEnum.optional(),
   })

@@ -60,19 +60,38 @@ const PARKING_ICON = L.divIcon({
   iconAnchor: [12, 12],
 });
 
+const PIN_ICON = L.divIcon({
+  className: 'measure-pin-marker',
+  html: `<div style="
+    width: 30px; height: 30px;
+    position: relative;
+  ">
+    <svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 1c-6.6 0-12 5.4-12 12 0 9 12 16 12 16s12-7 12-16c0-6.6-5.4-12-12-12z"
+        fill="#ff2d55" stroke="white" stroke-width="2"/>
+      <circle cx="15" cy="13" r="4.5" fill="white"/>
+    </svg>
+  </div>`,
+  iconSize: [30, 30],
+  iconAnchor: [15, 29],
+  popupAnchor: [0, -26],
+});
+
 interface Props {
   spots: Spot[];
   selectedSpot: Spot | null;
   onSpotSelect: (spot: Spot | null) => void;
   onMapClick?: (lat: number, lng: number) => void;
-  pickingMode?: 'spot' | 'parking' | null;
+  pickingMode?: 'spot' | 'parking' | 'create' | null;
   parkingMarker?: { lat: number; lng: number } | null;
+  measurePin?: { lat: number; lng: number } | null;
 }
 
-export default function SpotMap({ spots, selectedSpot, onSpotSelect, onMapClick, pickingMode, parkingMarker }: Props) {
+export default function SpotMap({ spots, selectedSpot, onSpotSelect, onMapClick, pickingMode, parkingMarker, measurePin }: Props) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.LayerGroup>(L.layerGroup());
   const parkingMarkerRef = useRef<L.Marker | null>(null);
+  const measurePinRef = useRef<L.Marker | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -156,6 +175,25 @@ export default function SpotMap({ spots, selectedSpot, onSpotSelect, onMapClick,
       parkingMarkerRef.current = marker;
     }
   }, [parkingMarker]);
+
+  // Measure pin marker
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Remove old pin marker
+    if (measurePinRef.current) {
+      map.removeLayer(measurePinRef.current);
+      measurePinRef.current = null;
+    }
+
+    // Add new one if needed
+    if (measurePin) {
+      const marker = L.marker([measurePin.lat, measurePin.lng], { icon: PIN_ICON });
+      marker.addTo(map);
+      measurePinRef.current = marker;
+    }
+  }, [measurePin]);
 
   useEffect(() => {
     if (selectedSpot && mapRef.current) {
