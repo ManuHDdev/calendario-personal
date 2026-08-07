@@ -7,7 +7,10 @@ import { routeDistanceRoutes } from './routes/route';
 import { seedLegacyImages } from './services/imageService';
 
 const isProd = process.env.NODE_ENV === 'production';
-const app = Fastify({ logger: isProd });
+// trustProxy: necesario para que request.ip refleje al visitante real (dos saltos de
+// nginx delante) en vez de la IP interna del contenedor paraisos-frontend — usado por
+// el limitador por IP de /route-distance.
+const app = Fastify({ logger: isProd, trustProxy: true });
 
 const MB = 1024 * 1024;
 
