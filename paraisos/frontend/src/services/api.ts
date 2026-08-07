@@ -49,6 +49,62 @@ export async function getRegions(): Promise<string[]> {
   return res.json() as Promise<string[]>;
 }
 
+export async function getRoadDistance(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number },
+): Promise<{ distanceKm: number; durationMin: number }> {
+  const params = new URLSearchParams({
+    fromLat: String(from.lat),
+    fromLng: String(from.lng),
+    toLat: String(to.lat),
+    toLng: String(to.lng),
+  });
+  const res = await fetch(`${BASE}/route-distance?${params}`);
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<{ distanceKm: number; durationMin: number }>;
+}
+
+export function uploadSpotImage(
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<{ url: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const url = new URL(BASE + '/images', window.location.origin);
+
+    xhr.open('POST', url.toString());
+
+    const token = keycloak.token;
+    if (!token) { reject(new Error('No auth token available')); return; }
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText) as { url: string });
+      } else {
+        try {
+          const body = JSON.parse(xhr.responseText) as { error?: string };
+          reject(new Error(body.error ?? `Upload failed: ${xhr.status}`));
+        } catch {
+          reject(new Error(`Upload failed: ${xhr.status}`));
+        }
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+
+    const form = new FormData();
+    form.append('file', file);
+    xhr.send(form);
+  });
+}
+
 export async function createSpot(data: SpotCreateData): Promise<Spot> {
   const res = await fetch(`${BASE}/spots`, {
     method: 'POST',

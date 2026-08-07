@@ -23,6 +23,8 @@ dist/
 logs/
 storage/storage-data/
 storage/backend/.test-storage/
+gastos/backend/data/
+paraisos/backend/data/
 
 # OS
 .DS_Store

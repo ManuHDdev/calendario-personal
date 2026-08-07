@@ -259,6 +259,8 @@ start_bg "paraisos-backend  :3007" "paraisos-backend.log" "$SCRIPT_DIR/paraisos/
       PARAISOS_DB_PASSWORD="paraisos123" \
       KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
       CORS_ORIGIN="http://localhost:5179" \
+      PARAISOS_IMAGES_PATH="$SCRIPT_DIR/paraisos/backend/data/images" \
+      ORS_API_KEY="${ORS_API_KEY:-}" \
   npm run dev
 
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \

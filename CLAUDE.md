@@ -339,6 +339,7 @@ Calendario/paraisos/ dentro del monorepo elbunkerdelingeniero.
 - Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón)
 - Validaciones: Zod en todos los endpoints que reciben body
 - Sin ORM — queries directas con el cliente pg
+- Procesado de imágenes: sharp (redimensionado a 1600px de ancho máx. + reencode JPEG calidad 82 en cada subida)
 
 ### Acceso
 Paraísos es una herramienta pública: cualquier visitante puede ver el mapa y los spots sin iniciar sesión. El frontend inicializa Keycloak con `onLoad: 'check-sso'` (sin redirigir a login) solo para detectar si el visitante ya tiene una sesión SSO activa; si es así, se muestra el menú de apps compartido y, si el usuario tiene rol `admin` o `paraisos_admin`, los controles de gestión de spots.
@@ -355,10 +356,13 @@ Paraísos es una herramienta pública: cualquier visitante puede ver el mapa y l
 - `POST /spots` — alta de spot (admin, Keycloak)
 - `PATCH /spots/:id` — edición de spot (admin, Keycloak)
 - `DELETE /spots/:id` — borrado lógico (admin, Keycloak)
+- `POST /images` — subida de imagen de spot (admin, Keycloak), `multipart/form-data` campo `file`, devuelve `{ url }`
+- `GET /images/:filename` — sirve una imagen subida (público, sin auth)
+- `GET /route-distance` — distancia y duración por carretera entre dos puntos vía OpenRouteService (público, sin auth), query `fromLat`/`fromLng`/`toLat`/`toLng`
 - `GET /health`
 
 ### Variables de entorno del backend
-`PARAISOS_DB_HOST`, `PARAISOS_DB_NAME`, `PARAISOS_DB_USER`, `PARAISOS_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3007)
+`PARAISOS_DB_HOST`, `PARAISOS_DB_NAME`, `PARAISOS_DB_USER`, `PARAISOS_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3007), `PARAISOS_IMAGES_PATH` (prod: `/app/data/images`, volumen Docker persistente), `ORS_API_KEY` (gratuito, generar en openrouteservice.org — límite 2000 peticiones/día)
 
 ### Red Docker
 `calendario-net` (externa)

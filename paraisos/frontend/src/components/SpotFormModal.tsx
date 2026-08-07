@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createSpot, updateSpot, upsertParking, deleteParking } from '../services/api';
+import { createSpot, updateSpot, upsertParking, deleteParking, uploadSpotImage } from '../services/api';
 import type { SpotDetail, SpotCreateData, SpotUpdateData } from '../types';
 import './SpotFormModal.css';
 
@@ -25,6 +25,11 @@ export default function SpotFormModal({ spot, initialCoords, pendingParkingCoord
     spot?.longitud?.toString() ?? initialCoords?.lng?.toFixed(6) ?? ''
   );
   const [imagenUrl, setImagenUrl] = useState(spot?.imagen_url ?? '');
+  const [imageMode, setImageMode] = useState<'upload' | 'url'>(
+    spot?.imagen_url?.startsWith('/paraisos/api/images/') ? 'upload' : spot?.imagen_url ? 'url' : 'upload'
+  );
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [descripcion, setDescripcion] = useState(spot?.descripcion ?? '');
   const [categoria, setCategoria] = useState<'piscina' | 'ruta' | 'playa'>(spot?.categoria ?? 'piscina');
   const [hasParking, setHasParking] = useState(spot?.parking != null);
@@ -50,6 +55,23 @@ export default function SpotFormModal({ spot, initialCoords, pendingParkingCoord
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setUploadError(null);
+    setUploadProgress(0);
+    try {
+      const { url } = await uploadSpotImage(file, setUploadProgress);
+      setImagenUrl(url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Error al subir la imagen');
+    } finally {
+      setUploadProgress(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,14 +215,48 @@ export default function SpotFormModal({ spot, initialCoords, pendingParkingCoord
           </div>
 
           <div className="form-group">
-            <label htmlFor="imagen">URL de la imagen</label>
-            <input
-              id="imagen"
-              type="url"
-              value={imagenUrl}
-              onChange={(e) => setImagenUrl(e.target.value)}
-              placeholder="https://..."
-            />
+            <label>Imagen</label>
+            <div className="category-selector">
+              <button
+                type="button"
+                className={`category-option${imageMode === 'upload' ? ' category-option--active' : ''}`}
+                onClick={() => setImageMode('upload')}
+              >
+                Subir imagen
+              </button>
+              <button
+                type="button"
+                className={`category-option${imageMode === 'url' ? ' category-option--active' : ''}`}
+                onClick={() => setImageMode('url')}
+              >
+                URL externa
+              </button>
+            </div>
+
+            {imageMode === 'upload' ? (
+              <>
+                <input
+                  id="imagen-file"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif,image/heic"
+                  onChange={handleFileSelect}
+                />
+                {uploadProgress !== null && <p className="form-hint">Subiendo... {uploadProgress}%</p>}
+                {uploadError && <p className="form-error">{uploadError}</p>}
+              </>
+            ) : (
+              <input
+                id="imagen"
+                type="url"
+                value={imagenUrl}
+                onChange={(e) => setImagenUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            )}
+
+            {imagenUrl && (
+              <img src={imagenUrl} alt="Vista previa" className="image-preview" />
+            )}
           </div>
 
           <div className="form-group">
