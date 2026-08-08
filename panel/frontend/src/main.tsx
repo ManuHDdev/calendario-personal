@@ -23,34 +23,11 @@ keycloak
 
     const roles: string[] =
       (keycloak.tokenParsed as { realm_access?: { roles?: string[] } })?.realm_access?.roles ?? [];
-
-    if (!roles.includes('admin')) {
-      root.render(
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          height: '100vh', gap: 16, fontFamily: 'system-ui, sans-serif',
-        }}>
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" strokeWidth="1.5">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          <p style={{ fontSize: 16, fontWeight: 600, color: '#1c1c1e', margin: 0 }}>Acceso denegado</p>
-          <p style={{ fontSize: 14, color: '#8e8e93', margin: 0 }}>Necesitas el rol de administrador.</p>
-          <button
-            onClick={() => keycloak.logout()}
-            style={{ marginTop: 8, padding: '8px 20px', fontSize: 14, background: '#0071e3', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}
-          >
-            Cerrar sesión
-          </button>
-        </div>,
-      );
-      return;
-    }
+    const isAdmin = roles.includes('admin');
 
     root.render(
       <StrictMode>
-        <App />
+        <App isAdmin={isAdmin} />
       </StrictMode>,
     );
   })

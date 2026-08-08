@@ -60,3 +60,12 @@ export async function deleteUser(id: string): Promise<void> {
   });
   if (!res.ok && res.status !== 204) await handleError(res);
 }
+
+export async function changeMyPassword(password: string): Promise<void> {
+  const res = await fetch(`${BASE}/me/password`, {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ password }),
+  });
+  if (!res.ok && res.status !== 204) await handleError(res);
+}
