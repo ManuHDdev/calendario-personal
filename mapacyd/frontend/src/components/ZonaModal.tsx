@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../hooks/useAuth';
 import type { HorarioZona, TipoZona, ZonaCyd } from '../types/zona';
 
@@ -70,6 +72,10 @@ export function ZonaModal({
   const [loading, setLoading]         = useState(false);
   const [error,   setError]           = useState<string | null>(null);
 
+  const mapPickerContainerRef = useRef<HTMLDivElement>(null);
+  const mapPickerRef          = useRef<L.Map | null>(null);
+  const markerPickerRef       = useRef<L.CircleMarker | null>(null);
+
   // Horario embebido — solo aplica al crear una zona de carga/descarga
   const mostrarHorario = modo === 'crear' && tipoActual === 'carga_descarga';
 
@@ -89,6 +95,28 @@ export function ZonaModal({
     longitud >= -180 && longitud <= 180;
 
   const canSubmit = (zonaGuardada ? true : isValid) && !loading;
+
+  // ─── Mini-mapa de selección de ubicación (solo al editar) ──────────────────
+  useEffect(() => {
+    if (modo !== 'editar' || !mapPickerContainerRef.current || mapPickerRef.current) return;
+    mapPickerRef.current = L.map(mapPickerContainerRef.current).setView([latitud, longitud], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+    }).addTo(mapPickerRef.current);
+    markerPickerRef.current = L.circleMarker([latitud, longitud], {
+      color: '#0071e3', fillColor: '#0071e3', radius: 10, fillOpacity: 0.85, weight: 2,
+    }).addTo(mapPickerRef.current);
+    mapPickerRef.current.on('click', (e: L.LeafletMouseEvent) => {
+      markerPickerRef.current?.setLatLng(e.latlng);
+      setLatitud(e.latlng.lat);
+      setLongitud(e.latlng.lng);
+    });
+    return () => { mapPickerRef.current?.remove(); mapPickerRef.current = null; };
+  }, []);
+
+  useEffect(() => {
+    markerPickerRef.current?.setLatLng([latitud, longitud]);
+  }, [latitud, longitud]);
 
   const handleAddFranja = () => {
     if (!franjaHoraIni || !franjaHoraFin) {
@@ -192,6 +220,7 @@ export function ZonaModal({
       <div style={{
         background: '#fff', borderRadius: 12, padding: 24,
         maxWidth: 480, width: '90%',
+        maxHeight: '90vh', overflowY: 'auto' as const,
         boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
         fontFamily: 'system-ui, sans-serif',
       }}>
@@ -277,6 +306,23 @@ export function ZonaModal({
               />
             </div>
           </div>
+
+          {/* Selector de ubicación en mini-mapa (solo al editar) */}
+          {modo === 'editar' && (
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Ubicación en el mapa</label>
+              <div
+                ref={mapPickerContainerRef}
+                style={{
+                  height: 200, borderRadius: 8, border: '1px solid #d1d1d6',
+                  overflow: 'hidden',
+                }}
+              />
+              <div style={{ fontSize: 11, color: '#8e8e93', marginTop: 4 }}>
+                Haz clic en el mapa para marcar la nueva ubicación
+              </div>
+            </div>
+          )}
 
           {/* Horario (opcional, solo al crear zona de carga/descarga) */}
           {mostrarHorario && (
