@@ -25,7 +25,7 @@ jobs:
 
       - name: Install & build
         working-directory: juegos/backend
-        run: npm ci && npm run build
+        run: npm install && npm run build
 
       - name: Run tests
         working-directory: juegos/backend
