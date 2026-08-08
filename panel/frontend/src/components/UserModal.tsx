@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { UserOut, UserFormData } from '../types';
+import PasswordInput from './PasswordInput';
 import './UserModal.css';
 
 const ALL_ROLES = ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin'];
@@ -66,14 +67,14 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+      <div className="modal-box">
         <div className="modal-header">
           <h2 className="modal-title">{isEdit ? 'Editar usuario' : 'Nuevo usuario'}</h2>
           <button className="modal-close" onClick={onCancel} aria-label="Cerrar">×</button>
         </div>
 
-        <form className="modal-form" onSubmit={handleSubmit}>
+        <form className="modal-form" onSubmit={handleSubmit} autoComplete="off">
           <div className="field-group">
             <label className="field-label">Usuario</label>
             <input
@@ -84,6 +85,7 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
               required
               disabled={isEdit}
               autoFocus={!isEdit}
+              autoComplete="off"
             />
           </div>
 
@@ -95,6 +97,7 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="correo@ejemplo.com"
+              autoComplete="off"
             />
           </div>
 
@@ -102,11 +105,9 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
             <label className="field-label">
               Contraseña {isEdit && <span className="field-optional">(dejar vacío para no cambiar)</span>}
             </label>
-            <input
-              className="field-input"
-              type="password"
+            <PasswordInput
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
               placeholder={isEdit ? '••••••••' : 'Contraseña'}
               required={!isEdit}
               autoFocus={isEdit}

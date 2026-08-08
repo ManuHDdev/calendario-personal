@@ -136,6 +136,14 @@ async function setUserRoles(userId: string, roleNames: string[]): Promise<void> 
   });
 }
 
+async function resetPassword(userId: string, password: string): Promise<void> {
+  const res = await adminFetch(`/users/${userId}/reset-password`, {
+    method: 'PUT',
+    body: JSON.stringify({ type: 'password', value: password, temporary: false }),
+  });
+  if (!res.ok) throw new Error(`Failed to reset password: ${res.status}`);
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function listUsers(): Promise<UserOut[]> {
@@ -204,11 +212,7 @@ export async function updateUser(
 
   // Cambiar contraseña si se proporcionó
   if (data.password) {
-    const res = await adminFetch(`/users/${userId}/reset-password`, {
-      method: 'PUT',
-      body: JSON.stringify({ type: 'password', value: data.password, temporary: false }),
-    });
-    if (!res.ok) throw new Error(`Failed to reset password: ${res.status}`);
+    await resetPassword(userId, data.password);
   }
 
   // Actualizar roles si se proporcionaron
@@ -238,4 +242,8 @@ export async function deleteUser(userId: string): Promise<void> {
 
 export async function listRoles(): Promise<string[]> {
   return ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin'];
+}
+
+export async function changeOwnPassword(userId: string, password: string): Promise<void> {
+  await resetPassword(userId, password);
 }

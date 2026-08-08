@@ -71,7 +71,7 @@ declare module 'fastify' {
   }
 }
 
-export async function authAdminMiddleware(
+export async function authMiddleware(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
@@ -84,14 +84,21 @@ export async function authAdminMiddleware(
   }
 
   try {
-    const payload = await verifyJwt(token);
-    const roles = payload.realm_access?.roles ?? [];
-    if (!roles.includes('admin')) {
-      reply.code(403).send({ error: 'Forbidden', message: 'Se requiere rol admin' });
-      return;
-    }
-    request.user = payload;
+    request.user = await verifyJwt(token);
   } catch (err) {
     reply.code(401).send({ error: 'Unauthorized', message: err instanceof Error ? err.message : 'Token error' });
+  }
+}
+
+export async function authAdminMiddleware(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  await authMiddleware(request, reply);
+  if (reply.sent) return;
+
+  const roles = request.user?.realm_access?.roles ?? [];
+  if (!roles.includes('admin')) {
+    reply.code(403).send({ error: 'Forbidden', message: 'Se requiere rol admin' });
   }
 }
