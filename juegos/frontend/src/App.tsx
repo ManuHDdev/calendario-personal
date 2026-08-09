@@ -4,6 +4,8 @@ import HubPage from './pages/HubPage';
 import PassAndPlayImpostor from './games/impostor/PassAndPlayImpostor';
 import YoNunca from './games/yonunca/YoNunca';
 import VerdadOReto from './games/verdadoreto/VerdadOReto';
+import Tabu from './games/tabu/Tabu';
+import Mimica from './games/mimica/Mimica';
 import RoomLobby from './games/live/RoomLobby';
 import ImpostorLive from './games/live/ImpostorLive';
 import TriviaLive from './games/live/TriviaLive';
@@ -17,6 +19,8 @@ export default function App() {
           <Route path="/impostor" element={<PassAndPlayImpostor />} />
           <Route path="/yo-nunca" element={<YoNunca />} />
           <Route path="/verdad-o-reto" element={<VerdadOReto />} />
+          <Route path="/tabu" element={<Tabu />} />
+          <Route path="/mimica" element={<Mimica />} />
           <Route path="/live" element={<RoomLobby />} />
           <Route path="/live/impostor/:code" element={<ImpostorLive />} />
           <Route path="/live/trivia/:code" element={<TriviaLive />} />

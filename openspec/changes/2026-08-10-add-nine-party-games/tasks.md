@@ -11,11 +11,11 @@ Implementation is split into 5 independent batches by play-pattern/complexity (s
 
 ## Batch B — Team play: Tabú, Mímica
 
-- [ ] B.1 Content banks: `tabu-cartas.json` (≥80 cards, each `{palabra, prohibidas: string[4-5], categoria}`), `mimica-cartas.json` (≥80 items, each `{texto, categoria}`)
-- [ ] B.2 `loader.ts`: load/validate both, volume-minimum gates, verify every Tabú card has 4-5 forbidden words
-- [ ] B.3 `content.ts`: simple `GET /juegos/api/tabu/cartas?categoria=` and `GET /juegos/api/mimica/cartas?categoria=` — these can return a shuffled batch rather than one-at-a-time if simpler, since there's no live session concept here beyond the local game
-- [ ] B.4 Frontend: shared team-turn module (team setup, timer, card reveal-gate, scoreboard) used by both `juegos/frontend/src/games/tabu/Tabu.tsx` and `juegos/frontend/src/games/mimica/Mimica.tsx`; Tabú gets the "Acierto"/"¡Prohibida!" buttons + rules-reference "?" overlay, Mímica gets "Acierto"/"Pasar" (config pass-penalty)
-- [ ] B.7 `HubPage.tsx`: add both under "Equipos, un móvil"
+- [x] B.1 Content banks: `tabu-cartas.json` (≥80 cards, each `{palabra, prohibidas: string[4-5], categoria}`), `mimica-cartas.json` (≥80 items, each `{texto, categoria}`)
+- [x] B.2 `loader.ts`: load/validate both, volume-minimum gates, verify every Tabú card has 4-5 forbidden words
+- [x] B.3 `content.ts`: simple `GET /juegos/api/tabu/cartas?categoria=` and `GET /juegos/api/mimica/cartas?categoria=` — these can return a shuffled batch rather than one-at-a-time if simpler, since there's no live session concept here beyond the local game
+- [x] B.4 Frontend: shared team-turn module (team setup, timer, card reveal-gate, scoreboard) used by both `juegos/frontend/src/games/tabu/Tabu.tsx` and `juegos/frontend/src/games/mimica/Mimica.tsx`; Tabú gets the "Acierto"/"¡Prohibida!" buttons + rules-reference "?" overlay, Mímica gets "Acierto"/"Pasar" (config pass-penalty)
+- [x] B.7 `HubPage.tsx`: add both under "Equipos, un móvil"
 
 ## Batch C — Multi-device rooms: Respuestas falsas, Stop
 

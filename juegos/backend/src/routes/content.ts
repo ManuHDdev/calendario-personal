@@ -180,6 +180,55 @@ export async function contentRoutes(app: FastifyInstance): Promise<void> {
       return reply.send({ prompt, tipo });
     },
   );
+
+  // GET /juegos/api/tabu/cartas?categoria= — devuelve un lote barajado de
+  // cartas (no un shuffle-bag por sesión: Tabú/Mímica son team play en un
+  // solo dispositivo compartido, sin concepto de sesión de servidor — ver
+  // design.md "Tabú and Mímica share one client-side 'team turn' module").
+  app.get<{ Querystring: { categoria?: string } }>(
+    '/juegos/api/tabu/cartas',
+    { preHandler: requireAuthenticated },
+    async (request, reply: FastifyReply) => {
+      const categoria = normalizeCategoria(request.query.categoria);
+      const pool = categoria
+        ? contentBanks.tabuCartas.filter((c) => c.categoria === categoria)
+        : contentBanks.tabuCartas;
+      if (pool.length === 0) {
+        return reply.code(400).send({ error: 'Bad Request', message: `Categoría desconocida: ${categoria}` });
+      }
+      return reply.send({ cartas: shuffleBatch(pool) });
+    },
+  );
+
+  // GET /juegos/api/mimica/cartas?categoria=
+  app.get<{ Querystring: { categoria?: string } }>(
+    '/juegos/api/mimica/cartas',
+    { preHandler: requireAuthenticated },
+    async (request, reply: FastifyReply) => {
+      const categoria = normalizeCategoria(request.query.categoria);
+      const pool = categoria
+        ? contentBanks.mimicaItems.filter((i) => i.categoria === categoria)
+        : contentBanks.mimicaItems;
+      if (pool.length === 0) {
+        return reply.code(400).send({ error: 'Bad Request', message: `Categoría desconocida: ${categoria}` });
+      }
+      return reply.send({ items: shuffleBatch(pool) });
+    },
+  );
+}
+
+/** Baraja un array sin mutar el original (Fisher–Yates) — usado por los
+ * endpoints de Tabú/Mímica, que devuelven un lote ya barajado en vez de un
+ * shuffle-bag por sesión (ver design.md "Tabú and Mímica share one
+ * client-side 'team turn' module": no hay concepto de sesión de servidor más
+ * allá de la propia partida local). */
+function shuffleBatch<T>(items: T[]): T[] {
+  const arr = items.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 export function drawTriviaQuestion(bag: ShuffleBag<TriviaQuestion>): TriviaQuestion {

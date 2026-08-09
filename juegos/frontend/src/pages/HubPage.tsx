@@ -9,6 +9,11 @@ const PASS_AND_PLAY = [
   { to: '/verdad-o-reto', icon: '🎲', title: 'Verdad o Reto', desc: 'Clásico, sin excusas.' },
 ];
 
+const EQUIPOS_UN_MOVIL = [
+  { to: '/tabu', icon: '🤐', title: 'Tabú', desc: 'Descríbelo sin decir las palabras prohibidas.' },
+  { to: '/mimica', icon: '🎭', title: 'Mímica', desc: 'Actúalo, sin hablar.' },
+];
+
 const EN_VIVO = [
   { gameType: 'impostor-live' as const, icon: '📱', title: 'El Impostor en vivo', desc: 'Cada uno con su móvil.' },
   { gameType: 'trivia-live' as const, icon: '🧠', title: 'Trivia en vivo', desc: 'Preguntas contrarreloj.' },
@@ -29,6 +34,19 @@ export default function HubPage() {
         <h2>Un móvil (pasar y jugar)</h2>
         <div className="juegos-grid">
           {PASS_AND_PLAY.map((g) => (
+            <Link key={g.to} to={g.to} className="juego-card">
+              <span className="juego-card-icono">{g.icon}</span>
+              <h3>{g.title}</h3>
+              <p>{g.desc}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="juegos-seccion">
+        <h2>Equipos, un móvil</h2>
+        <div className="juegos-grid">
+          {EQUIPOS_UN_MOVIL.map((g) => (
             <Link key={g.to} to={g.to} className="juego-card">
               <span className="juego-card-icono">{g.icon}</span>
               <h3>{g.title}</h3>

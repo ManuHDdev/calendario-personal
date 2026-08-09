@@ -48,6 +48,31 @@ export function getVerdadORetoPrompt(
   return authFetch(`/verdad-o-reto/prompt?${params}`).then((r) => r.json());
 }
 
+export interface TabuCarta {
+  palabra: string;
+  prohibidas: string[];
+  categoria: string;
+}
+
+export function getTabuCartas(categoria?: string): Promise<{ cartas: TabuCarta[] }> {
+  const params = new URLSearchParams();
+  if (categoria) params.set('categoria', categoria);
+  const qs = params.toString();
+  return authFetch(`/tabu/cartas${qs ? `?${qs}` : ''}`).then((r) => r.json());
+}
+
+export interface MimicaItem {
+  texto: string;
+  categoria: string;
+}
+
+export function getMimicaCartas(categoria?: string): Promise<{ items: MimicaItem[] }> {
+  const params = new URLSearchParams();
+  if (categoria) params.set('categoria', categoria);
+  const qs = params.toString();
+  return authFetch(`/mimica/cartas${qs ? `?${qs}` : ''}`).then((r) => r.json());
+}
+
 export type GameType = 'impostor-live' | 'trivia-live';
 
 export function createRoom(

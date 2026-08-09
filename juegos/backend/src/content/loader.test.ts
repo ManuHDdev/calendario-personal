@@ -46,6 +46,43 @@ describe('loadContentBanks', () => {
     }
   });
 
+  it('tabu-cartas meets the minimum pool size (>=80) and every card has 4-5 forbidden words', () => {
+    expect(contentBanks.tabuCartas.length).toBeGreaterThanOrEqual(80);
+    for (const carta of contentBanks.tabuCartas) {
+      expect(carta.prohibidas.length).toBeGreaterThanOrEqual(4);
+      expect(carta.prohibidas.length).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it('mimica-cartas meets the minimum pool size (>=80)', () => {
+    expect(contentBanks.mimicaItems.length).toBeGreaterThanOrEqual(80);
+  });
+
+  it('rejects a Tabú card with fewer than 4 or more than 5 forbidden words', () => {
+    const { z } = require('zod') as typeof import('zod');
+    const badSchema = z.object({
+      cartas: z.array(
+        z.object({
+          palabra: z.string().min(1),
+          prohibidas: z.array(z.string().min(1)).min(4).max(5),
+          categoria: z.string().min(1),
+        }),
+      ),
+    });
+    const tooFew = { cartas: [{ palabra: 'Pizza', prohibidas: ['queso', 'redonda', 'horno'], categoria: 'comida' }] };
+    const tooMany = {
+      cartas: [
+        {
+          palabra: 'Pizza',
+          prohibidas: ['queso', 'redonda', 'horno', 'italiana', 'porción', 'extra'],
+          categoria: 'comida',
+        },
+      ],
+    };
+    expect(() => badSchema.parse(tooFew)).toThrow();
+    expect(() => badSchema.parse(tooMany)).toThrow();
+  });
+
   it('rejects a malformed content bank (fail fast at load time)', () => {
     // No podemos mutar los ficheros reales importados estáticamente, así que
     // esta prueba valida el mismo Zod schema con un fixture inválido en
