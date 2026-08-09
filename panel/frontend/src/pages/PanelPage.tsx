@@ -4,6 +4,7 @@ import { getUsers, createUser, updateUser, deleteUser } from '../services/api';
 import UserModal from '../components/UserModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AppLauncher from '../components/AppLauncher';
+import ThemeToggle from '../components/ThemeToggle';
 import type { UserOut, UserFormData } from '../types';
 import './PanelPage.css';
 
@@ -77,6 +78,7 @@ export default function PanelPage() {
           <h1 className="panel-title">Panel de Administración</h1>
         </div>
         <div className="panel-header-right">
+          <ThemeToggle />
           <AppLauncher />
           <span className="panel-username">{username}</span>
           <a href="/storage/" className="panel-link-btn" title="Ir a Storage">

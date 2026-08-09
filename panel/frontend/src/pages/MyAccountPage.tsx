@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import keycloak from '../services/keycloak';
 import { changeMyPassword } from '../services/api';
 import PasswordInput from '../components/PasswordInput';
+import ThemeToggle from '../components/ThemeToggle';
 import '../components/UserModal.css';
 import './PanelPage.css';
 import './MyAccountPage.css';
@@ -49,6 +50,7 @@ export default function MyAccountPage() {
           <h1 className="panel-title">Mi cuenta</h1>
         </div>
         <div className="panel-header-right">
+          <ThemeToggle />
           <span className="panel-username">{username}</span>
           <button className="panel-logout-btn" onClick={() => keycloak.logout()}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
