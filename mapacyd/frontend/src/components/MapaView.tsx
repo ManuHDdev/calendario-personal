@@ -11,6 +11,7 @@ import { ZonaModal } from './ZonaModal';
 import { HorarioPanel } from './HorarioPanel';
 import { PreferenciaCiudad } from './PreferenciaCiudad';
 import AppLauncher from './AppLauncher';
+import ThemeToggle from './ThemeToggle';
 import './MapaView.css';
 
 const CACERES: L.LatLngExpression = [39.4753, -6.3724];
@@ -288,6 +289,8 @@ export function MapaView() {
       <div ref={containerRef} className="mapa-container" />
 
       <AppLauncher />
+
+      <ThemeToggle />
 
       <PreferenciaCiudad />
 

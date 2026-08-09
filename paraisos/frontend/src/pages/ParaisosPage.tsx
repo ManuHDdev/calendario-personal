@@ -5,6 +5,7 @@ import SpotMap from '../components/SpotMap';
 import SpotPanel from '../components/SpotPanel';
 import SpotFormModal from '../components/SpotFormModal';
 import AppLauncher from '../components/AppLauncher';
+import ThemeToggle from '../components/ThemeToggle';
 import type { Spot, SpotStats, SpotDetail } from '../types';
 import './ParaisosPage.css';
 
@@ -161,6 +162,7 @@ export default function ParaisosPage() {
         </nav>
 
         <div className="header-right">
+          <ThemeToggle />
           {isAdmin && (
             <button
               className="add-spot-btn"

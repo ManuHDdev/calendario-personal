@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import keycloak from '../services/keycloak';
 import AppLauncher from '../components/AppLauncher';
+import ThemeToggle from '../components/ThemeToggle';
 import SearchForm from '../components/SearchForm';
 import SearchList from '../components/SearchList';
 import { getSearches, createSearch, updateSearch, deleteSearch, getScraperState, updateScraperState } from '../services/api';
@@ -85,6 +86,7 @@ export default function OfertasPage() {
           <h1 className="ofertas-title">Ofertas</h1>
         </div>
         <div className="ofertas-header-right">
+          <ThemeToggle />
           <AppLauncher />
           <span className="ofertas-username">{username}</span>
           <button className="ofertas-logout-btn" onClick={() => keycloak.logout()}>Salir</button>

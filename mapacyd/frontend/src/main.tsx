@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import keycloak from './auth/keycloak';
 import App from './App';
+import './styles/globals.css';
 
 const root = createRoot(document.getElementById('root')!);
 

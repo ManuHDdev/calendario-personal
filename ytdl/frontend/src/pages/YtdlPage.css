@@ -15,6 +15,13 @@
   z-index: 10;
 }
 
+.ytdl-theme-toggle {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+}
+
 .ytdl-login-link {
   position: absolute;
   top: 20px;
