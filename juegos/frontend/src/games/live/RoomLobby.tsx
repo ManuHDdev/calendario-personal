@@ -8,11 +8,38 @@ const GAME_LABEL: Record<GameType, string> = {
   'trivia-live': '🧠 Trivia en vivo',
 };
 
+// Mismo listado que `contentBanks.triviaCategories` en el backend (derivado
+// de trivia-questions.json) — ver design.md "Category chosen at room
+// creation, not mid-game". No hay endpoint que exponga la lista, así que se
+// mantiene aquí a mano, igual que CATEGORIAS en PassAndPlayImpostor.tsx.
+const TRIVIA_CATEGORIAS = [
+  'ciencia',
+  'cine',
+  'cultura_general',
+  'curiosidades',
+  'deporte',
+  'geografia',
+  'historia',
+  'musica',
+];
+
+const CATEGORIA_LABEL: Record<string, string> = {
+  ciencia: 'Ciencia',
+  cine: 'Cine',
+  cultura_general: 'Cultura general',
+  curiosidades: 'Curiosidades',
+  deporte: 'Deporte',
+  geografia: 'Geografía',
+  historia: 'Historia',
+  musica: 'Música',
+};
+
 export default function RoomLobby() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const initialGameType = (params.get('gameType') as GameType | null) ?? 'impostor-live';
   const [gameType, setGameType] = useState<GameType>(initialGameType);
+  const [categoria, setCategoria] = useState('todas');
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
@@ -23,7 +50,7 @@ export default function RoomLobby() {
     setError('');
     setCreating(true);
     try {
-      const room = await createRoom(gameType);
+      const room = await createRoom(gameType, gameType === 'trivia-live' ? categoria : undefined);
       navigate(`/live/${path}/${room.roomCode}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la sala');
@@ -60,6 +87,22 @@ export default function RoomLobby() {
             </button>
           ))}
         </div>
+
+        {gameType === 'trivia-live' && (
+          <div style={{ width: '100%' }}>
+            <label className="juego-texto-secundario">Categoría</label>
+            <select
+              className="juego-input"
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
+            >
+              <option value="todas">Todas</option>
+              {TRIVIA_CATEGORIAS.map((c) => (
+                <option key={c} value={c}>{CATEGORIA_LABEL[c] ?? c}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <button className="juego-boton" disabled={creating} onClick={handleCreate}>
           {creating ? 'Creando sala…' : 'Crear sala (ser host)'}

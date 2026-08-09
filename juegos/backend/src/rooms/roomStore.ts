@@ -27,7 +27,12 @@ export function generateRoomCode(): string {
   return code;
 }
 
-export function createRoom(gameType: GameType, hostId: string, hostUsername: string): RoomState {
+export function createRoom(
+  gameType: GameType,
+  hostId: string,
+  hostUsername: string,
+  categoria?: string,
+): RoomState {
   const code = generateRoomCode();
   const now = Date.now();
 
@@ -47,8 +52,17 @@ export function createRoom(gameType: GameType, hostId: string, hostUsername: str
       phase: 'lobby',
     };
   } else {
+    // Sala de Trivia en vivo escogida por categoría (o el pool completo si se
+    // omite/`todas`) — ver design.md "Category chosen at room creation, not
+    // mid-game". La validación de categoría desconocida vive en
+    // rooms.route.ts, así que aquí ya se asume una categoría válida.
+    const pool =
+      categoria && categoria !== 'todas'
+        ? contentBanks.triviaQuestions.filter((question) => question.categoria === categoria)
+        : contentBanks.triviaQuestions;
+
     room.trivia = {
-      bag: createShuffleBag(contentBanks.triviaQuestions),
+      bag: createShuffleBag(pool),
       currentQuestion: null,
       questionStartedAt: null,
       timerMs: 20_000,
