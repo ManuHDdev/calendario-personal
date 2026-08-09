@@ -1,154 +1,1244 @@
 {
   "prompts": [
-    "Yo nunca me he quedado dormido en el cine",
-    "Yo nunca me he comido algo que se cayó al suelo",
-    "Yo nunca he mentido para librarme de un plan",
-    "Yo nunca he fingido estar enfermo para no ir a trabajar o estudiar",
-    "Yo nunca me he perdido en una ciudad sin batería en el móvil",
-    "Yo nunca he cantado en la ducha a todo volumen",
-    "Yo nunca me he enamorado de un amigo de un amigo",
-    "Yo nunca he llorado viendo una película de dibujos animados",
-    "Yo nunca he roto algo en casa de otra persona y no lo he dicho",
-    "Yo nunca he stalkeado a un ex en redes sociales",
-    "Yo nunca he mandado un mensaje a la persona equivocada",
-    "Yo nunca me he quedado sin batería en una cita",
-    "Yo nunca he fingido conocer una canción para quedar bien",
-    "Yo nunca me he hecho el dormido para no hablar con alguien",
-    "Yo nunca he salido de fiesta con ropa prestada",
-    "Yo nunca me he reído en un funeral por nervios",
-    "Yo nunca he hecho trampa jugando a un juego de mesa",
-    "Yo nunca me he escondido de alguien en un supermercado",
-    "Yo nunca he tenido una cita a ciegas",
-    "Yo nunca me he olvidado del cumpleaños de un familiar cercano",
-    "Yo nunca he cotilleado el móvil de mi pareja",
-    "Yo nunca me he quedado despierto toda la noche por una serie",
-    "Yo nunca he mandado una foto vergonzosa por error",
-    "Yo nunca he fingido que se me cortaba la llamada para colgar",
-    "Yo nunca he plagiado un trabajo de clase",
-    "Yo nunca me he comido la comida de otra persona en la nevera común",
-    "Yo nunca he bailado encima de una mesa",
-    "Yo nunca he tenido un crush con un profesor o profesora",
-    "Yo nunca he salido con dos personas a la vez sin que lo supieran",
-    "Yo nunca he hecho novillos / me he saltado clases",
-    "Yo nunca he fingido un orgasmo",
-    "Yo nunca he besado a alguien el mismo día que lo conocí",
-    "Yo nunca me he emborrachado antes de las 6 de la tarde",
-    "Yo nunca he perdido las llaves de casa estando de fiesta",
-    "Yo nunca he vomitado en un sitio público",
-    "Yo nunca he tenido una llamada perdida de más de 10 personas la misma noche",
-    "Yo nunca he entrado al baño equivocado en un bar",
-    "Yo nunca me he dormido durante una película en el cine con mi pareja",
-    "Yo nunca he tenido un sueño erótico con un amigo o amiga",
-    "Yo nunca he chocado el coche de otra persona sin decírselo",
-    "Yo nunca he ghosteado a alguien",
-    "Yo nunca he tenido una crisis existencial en el trabajo",
-    "Yo nunca me he peleado con un desconocido por redes sociales",
-    "Yo nunca he fingido que me gustaba un regalo",
-    "Yo nunca me he hecho pasar por otra persona por teléfono",
-    "Yo nunca he robado algo (aunque fuese pequeño)",
-    "Yo nunca me he saltado un semáforo en rojo a propósito",
-    "Yo nunca he tenido una pelea de comida",
-    "Yo nunca me he quedado en ropa interior en un lugar público por accidente",
-    "Yo nunca he hecho una videollamada sin darme cuenta de que se veía algo vergonzoso",
-    "Yo nunca he cancelado planes por pereza y he puesto una excusa falsa",
-    "Yo nunca he tenido celos de un amigo de mi pareja",
-    "Yo nunca he mandado indirectas en redes sociales",
-    "Yo nunca me he quedado dormido en clase o en una reunión",
-    "Yo nunca he salido a la calle en pijama",
-    "Yo nunca he perdido una apuesta humillante",
-    "Yo nunca he tenido que fingir que no conocía a alguien",
-    "Yo nunca he hablado mal de alguien que estaba justo detrás de mí",
-    "Yo nunca he tenido una resaca que me hizo jurar no beber nunca más",
-    "Yo nunca he tenido un accidente montando en bici o patinete",
-    "Yo nunca he confundido a dos personas que se parecían",
-    "Yo nunca he llorado por una discusión con mis padres",
-    "Yo nunca he hecho una promesa que no cumplí",
-    "Yo nunca he tenido miedo a la oscuridad de adulto",
-    "Yo nunca he ido a trabajar con resaca",
-    "Yo nunca he perdido un vuelo o un tren",
-    "Yo nunca he tenido un apodo vergonzoso en el colegio",
-    "Yo nunca he salido con alguien solo por su físico",
-    "Yo nunca he escrito algo en redes que luego borré por vergüenza",
-    "Yo nunca he tenido una cita que fue un desastre total",
-    "Yo nunca me he quedado atrapado en un ascensor",
-    "Yo nunca he mentido sobre mi edad",
-    "Yo nunca he tenido un jefe del que hable mal en su cara sin querer",
-    "Yo nunca me he disfrazado para una fiesta y me he arrepentido",
-    "Yo nunca he tenido una discusión pública con mi pareja",
-    "Yo nunca he hecho una lista de \"para cuando sea rico\"",
-    "Yo nunca he mentido sobre haber leído un libro",
-    "Yo nunca he tenido que devolver algo por vergüenza a decir que no me gustaba",
-    "Yo nunca he cantado una canción entera sin saber la letra real",
-    "Yo nunca he entrado en la casa equivocada por error",
-    "Yo nunca he tenido una app de citas",
-    "Yo nunca he hecho un examen sin haber estudiado nada",
-    "Yo nunca he tenido que fingir que trabajaba mientras dormía la siesta",
-    "Yo nunca he pasado vergüenza ajena por alguien de mi familia en público",
-    "Yo nunca me he creído una broma evidente",
-    "Yo nunca he tenido una obsesión con una serie durante semanas",
-    "Yo nunca he intentado cocinar algo y ha salido fatal",
-    "Yo nunca he tenido que pedir dinero prestado a un amigo por apuro",
-    "Yo nunca he perdido el móvil en una noche de fiesta",
-    "Yo nunca me he arrepentido de un tatuaje o corte de pelo",
-    "Yo nunca he tenido un flechazo a primera vista",
-    "Yo nunca he fingido reírme de un chiste que no entendí",
-    "Yo nunca he tenido que dormir en el sofá de un desconocido",
-    "Yo nunca he mandado un audio interminable sin darme cuenta",
-    "Yo nunca me he equivocado de nombre llamando a mi pareja",
-    "Yo nunca he tenido que salir corriendo de una cita",
-    "Yo nunca he hecho una fiesta sorpresa que salió mal",
-    "Yo nunca he discutido con un desconocido en la carretera",
-    "Yo nunca me he escapado de casa de adolescente",
-    "Yo nunca he tenido que devolver un regalo por error de talla o gusto",
-    "Yo nunca he tenido una pelea de almohadas de adulto",
-    "Yo nunca he estado en un karaoke y me he negado a cantar",
-    "Yo nunca he tenido que fingir que me gustaba la comida de alguien",
-    "Yo nunca he hecho una foto que terminó siendo viral entre mis amigos",
-    "Yo nunca he tenido una llamada incómoda con un ex delante de mi pareja actual",
-    "Yo nunca he confundido el día de una cita importante",
-    "Yo nunca he tenido un accidente vergonzoso en una piscina",
-    "Yo nunca he mentido en una entrevista de trabajo",
-    "Yo nunca he tenido que esconder algo antes de que llegasen visitas",
-    "Yo nunca he tenido que salir de un grupo de WhatsApp para evitar un drama",
-    "Yo nunca he fingido tener planes para no quedar con alguien",
-    "Yo nunca he perdido la voz de tanto gritar en un concierto",
-    "Yo nunca he tenido un mal viaje de avión por turbulencias",
-    "Yo nunca he tenido que llamar a mis padres para que me recogiesen de una fiesta",
-    "Yo nunca he tenido una cita con alguien de una app y no se pareció nada a la foto",
-    "Yo nunca he tenido que disculparme por algo que dije borracho",
-    "Yo nunca he tenido pesadillas después de ver una película de terror",
-    "Yo nunca he perdido dinero en una apuesta con amigos",
-    "Yo nunca he tenido que fingir un accidente para librarme de un compromiso",
-    "Yo nunca he tenido un baile improvisado que salió mal",
-    "Yo nunca me he equivocado de fecha para un evento importante",
-    "Yo nunca he tenido que hacer una presentación sin haberla preparado",
-    "Yo nunca he tenido una discusión de tráfico con un familiar en el coche",
-    "Yo nunca he tenido que cambiar de ropa a mitad de una salida por accidente",
-    "Yo nunca he tenido un mote que me pusieron mis compañeros de trabajo",
-    "Yo nunca he tenido que fingir estar de acuerdo con algo que odiaba",
-    "Yo nunca he perdido una final importante de algún deporte y lo he pasado fatal",
-    "Yo nunca he tenido que devolver una llamada varias horas después por vergüenza",
-    "Yo nunca he tenido que buscar excusas para llegar tarde al trabajo",
-    "Yo nunca he tenido una charla incómoda sobre dinero con amigos",
-    "Yo nunca he tenido que pedir perdón a un desconocido por un malentendido",
-    "Yo nunca he tenido que fingir que sabía bailar en una boda",
-    "Yo nunca he tenido que rechazar un plan porque ya tenía otro mejor",
-    "Yo nunca he tenido que hacer una videollamada de trabajo desde la cama",
-    "Yo nunca he tenido que salir de una fiesta sin despedirme de nadie",
-    "Yo nunca he tenido que explicar una foto vergonzosa a mis padres",
-    "Yo nunca me he peleado con un hermano/a por algo absurdo de adulto",
-    "Yo nunca he tenido que rechazar una invitación por no tener plan para llevar ropa adecuada",
-    "Yo nunca me he hecho pis de la risa",
-    "Yo nunca he tenido que fingir que entendía un chiste en otro idioma",
-    "Yo nunca he tenido una discusión absurda por el mando de la tele",
-    "Yo nunca he tenido que esconderme de un profesor por no llevar los deberes",
-    "Yo nunca he tenido un mote puesto por mi familia que odio",
-    "Yo nunca he tenido que fingir que no vi un mensaje para no responder",
-    "Yo nunca he tenido que devolver la llamada a alguien 3 días tarde por vergüenza",
-    "Yo nunca he tenido una cena con los suegros que fue un desastre",
-    "Yo nunca me he quedado con hambre por no pedir más comida por vergüenza",
-    "Yo nunca he tenido que fingir que se me había olvidado un plan para no ir",
-    "Yo nunca he tenido que salir de un examen antes de tiempo por los nervios",
-    "Yo nunca he tenido una pelea con un amigo que duró más de un mes"
+    {
+      "texto": "Yo nunca me he quedado dormido en el cine",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he comido algo que se cayó al suelo",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he mentido para librarme de un plan",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he fingido estar enfermo para no ir a trabajar o estudiar",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he perdido en una ciudad sin batería en el móvil",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he cantado en la ducha a todo volumen",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he enamorado de un amigo de un amigo",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he llorado viendo una película de dibujos animados",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he roto algo en casa de otra persona y no lo he dicho",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he stalkeado a un ex en redes sociales",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he mandado un mensaje a la persona equivocada",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he quedado sin batería en una cita",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he fingido conocer una canción para quedar bien",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he hecho el dormido para no hablar con alguien",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he salido de fiesta con ropa prestada",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he reído en un funeral por nervios",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he hecho trampa jugando a un juego de mesa",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he escondido de alguien en un supermercado",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una cita a ciegas",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he olvidado del cumpleaños de un familiar cercano",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he cotilleado el móvil de mi pareja",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he quedado despierto toda la noche por una serie",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he mandado una foto vergonzosa por error",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he fingido que se me cortaba la llamada para colgar",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he plagiado un trabajo de clase",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he comido la comida de otra persona en la nevera común",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he bailado encima de una mesa",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un crush con un profesor o profesora",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he salido con dos personas a la vez sin que lo supieran",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he hecho novillos / me he saltado clases",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he fingido un orgasmo",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he besado a alguien el mismo día que lo conocí",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he emborrachado antes de las 6 de la tarde",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he perdido las llaves de casa estando de fiesta",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he vomitado en un sitio público",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una llamada perdida de más de 10 personas la misma noche",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he entrado al baño equivocado en un bar",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he dormido durante una película en el cine con mi pareja",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un sueño erótico con un amigo o amiga",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he chocado el coche de otra persona sin decírselo",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he ghosteado a alguien",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una crisis existencial en el trabajo",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he peleado con un desconocido por redes sociales",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he fingido que me gustaba un regalo",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he hecho pasar por otra persona por teléfono",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he robado algo (aunque fuese pequeño)",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he saltado un semáforo en rojo a propósito",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una pelea de comida",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he quedado en ropa interior en un lugar público por accidente",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he hecho una videollamada sin darme cuenta de que se veía algo vergonzoso",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he cancelado planes por pereza y he puesto una excusa falsa",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido celos de un amigo de mi pareja",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he mandado indirectas en redes sociales",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he quedado dormido en clase o en una reunión",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he salido a la calle en pijama",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he perdido una apuesta humillante",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir que no conocía a alguien",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he hablado mal de alguien que estaba justo detrás de mí",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una resaca que me hizo jurar no beber nunca más",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un accidente montando en bici o patinete",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he confundido a dos personas que se parecían",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he llorado por una discusión con mis padres",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he hecho una promesa que no cumplí",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido miedo a la oscuridad de adulto",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he ido a trabajar con resaca",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he perdido un vuelo o un tren",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un apodo vergonzoso en el colegio",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he salido con alguien solo por su físico",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he escrito algo en redes que luego borré por vergüenza",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una cita que fue un desastre total",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he quedado atrapado en un ascensor",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he mentido sobre mi edad",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un jefe del que hable mal en su cara sin querer",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he disfrazado para una fiesta y me he arrepentido",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una discusión pública con mi pareja",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he hecho una lista de \"para cuando sea rico\"",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he mentido sobre haber leído un libro",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que devolver algo por vergüenza a decir que no me gustaba",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he cantado una canción entera sin saber la letra real",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he entrado en la casa equivocada por error",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una app de citas",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he hecho un examen sin haber estudiado nada",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir que trabajaba mientras dormía la siesta",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he pasado vergüenza ajena por alguien de mi familia en público",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he creído una broma evidente",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una obsesión con una serie durante semanas",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he intentado cocinar algo y ha salido fatal",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que pedir dinero prestado a un amigo por apuro",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he perdido el móvil en una noche de fiesta",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he arrepentido de un tatuaje o corte de pelo",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un flechazo a primera vista",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he fingido reírme de un chiste que no entendí",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que dormir en el sofá de un desconocido",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he mandado un audio interminable sin darme cuenta",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he equivocado de nombre llamando a mi pareja",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que salir corriendo de una cita",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he hecho una fiesta sorpresa que salió mal",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he discutido con un desconocido en la carretera",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he escapado de casa de adolescente",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que devolver un regalo por error de talla o gusto",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una pelea de almohadas de adulto",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he estado en un karaoke y me he negado a cantar",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir que me gustaba la comida de alguien",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he hecho una foto que terminó siendo viral entre mis amigos",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una llamada incómoda con un ex delante de mi pareja actual",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he confundido el día de una cita importante",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un accidente vergonzoso en una piscina",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he mentido en una entrevista de trabajo",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que esconder algo antes de que llegasen visitas",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que salir de un grupo de WhatsApp para evitar un drama",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he fingido tener planes para no quedar con alguien",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he perdido la voz de tanto gritar en un concierto",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un mal viaje de avión por turbulencias",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que llamar a mis padres para que me recogiesen de una fiesta",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una cita con alguien de una app y no se pareció nada a la foto",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que disculparme por algo que dije borracho",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido pesadillas después de ver una película de terror",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he perdido dinero en una apuesta con amigos",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir un accidente para librarme de un compromiso",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un baile improvisado que salió mal",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he equivocado de fecha para un evento importante",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que hacer una presentación sin haberla preparado",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una discusión de tráfico con un familiar en el coche",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que cambiar de ropa a mitad de una salida por accidente",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un mote que me pusieron mis compañeros de trabajo",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir estar de acuerdo con algo que odiaba",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he perdido una final importante de algún deporte y lo he pasado fatal",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que devolver una llamada varias horas después por vergüenza",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que buscar excusas para llegar tarde al trabajo",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una charla incómoda sobre dinero con amigos",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que pedir perdón a un desconocido por un malentendido",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir que sabía bailar en una boda",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que rechazar un plan porque ya tenía otro mejor",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que hacer una videollamada de trabajo desde la cama",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que salir de una fiesta sin despedirme de nadie",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que explicar una foto vergonzosa a mis padres",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he peleado con un hermano/a por algo absurdo de adulto",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que rechazar una invitación por no tener plan para llevar ropa adecuada",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he hecho pis de la risa",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir que entendía un chiste en otro idioma",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una discusión absurda por el mando de la tele",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que esconderme de un profesor por no llevar los deberes",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido un mote puesto por mi familia que odio",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir que no vi un mensaje para no responder",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que devolver la llamada a alguien 3 días tarde por vergüenza",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una cena con los suegros que fue un desastre",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca me he quedado con hambre por no pedir más comida por vergüenza",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir que se me había olvidado un plan para no ir",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido que salir de un examen antes de tiempo por los nervios",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he tenido una pelea con un amigo que duró más de un mes",
+      "categoria": "clasico"
+    },
+    {
+      "texto": "Yo nunca he besado a alguien en la primera cita",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he mandado un mensaje coqueteando estando borracho/a",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un rollo con el ex de un amigo o amiga",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he fingido estar interesado/a en alguien solo para darle celos a otra persona",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca me he enrollado con alguien de este grupo",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un sueño picante con alguien que está en esta sala",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he stalkeado el perfil de alguien que me gusta durante más de media hora",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he dado mi número a alguien solo por no quedar mal",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he fingido que se me había acabado la batería para no seguir hablando con alguien por match",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido una cita con dos personas distintas el mismo día",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca me he enamorado de alguien que sabía que no me convenía",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he escrito y borrado un mensaje coqueteando más de tres veces antes de enviarlo",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un ligue de verano",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he flirteado con alguien solo para conseguir algo (una copa, un favor, que me subieran de categoría en un vuelo...)",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que salir a escondidas de la habitación de alguien",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he fingido un accidente para tener una excusa para hablar con alguien que me gustaba",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca me he quedado mirando fijamente a alguien pensando en si me atrevía a acercarme",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he dado un beso y me he arrepentido al segundo siguiente",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido feelings por alguien que ya tenía pareja",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he usado una app de citas estando en una relación",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he fingido que no vi a alguien para no tener que saludar a un ex",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca me he probado ropa pensando en una cita concreta",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un momento incómodo justo después de un beso",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he mentido sobre mi edad en una cita",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he seguido hablando con alguien por interés después de que dejara de gustarme",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido celos de alguien sin motivo real",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he mandado una foto pensando \"esta seguro que le gusta\" y luego me he arrepentido",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido tensión con alguien de este grupo (aunque sea de broma)",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he practicado lo que iba a decir en una cita antes de llegar",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un \"casi algo\" con alguien que nunca se llegó a concretar",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he besado a alguien solo por no quedar mal en ese momento",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he dejado plantado a alguien en una cita sin avisar",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca me he inventado una excusa para tocar a alguien que me gustaba",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un crush que duró más de un año sin decir nada",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he sentido mariposas hablando con alguien por mensaje antes de conocerlo/a en persona",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un momento romántico arruinado por algo vergonzoso",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he fingido que me gustaba algo (una peli, una serie, un plan) solo para gustarle a alguien",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido más de un match a la vez con el mismo tipo de persona sin darme cuenta",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que explicarle a alguien por qué tenía un chupetón",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he salido con alguien solo por aburrimiento",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he sentido que un abrazo duró más de lo normal a propósito",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he mirado el móvil de alguien buscando conversaciones con otra persona",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir sorpresa al enterarme de un cotilleo de pareja que ya sabía",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido una conversación subida de tono por mensaje",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido dudas sobre si alguien me estaba tirando los tejos o solo siendo amable",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he cambiado de planes de última hora por ver a alguien que me gustaba",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he sentido celos de la pareja de un amigo o amiga",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que borrar el historial de búsqueda del móvil antes de que alguien lo viera",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca me he arreglado más de lo normal sabiendo que iba a ver a alguien en concreto",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que disimular una sonrisa al leer un mensaje delante de otras personas",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he besado a más de una persona en la misma noche de fiesta",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un rollo de una noche",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he sentido que la conversación con alguien se puso tensa de repente por algo no dicho",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que elegir entre dos personas que me gustaban a la vez",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he seguido a alguien en redes sociales solo para ver si tenía pareja",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he mentido sobre estar soltero/a para ligar",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido una segunda cita solo por cortesía, sin ganas reales",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he fingido reírme de un chiste malo solo porque me lo contó alguien que me gustaba",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he sentido que alguien coqueteaba conmigo y no supe cómo reaccionar",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que taparle la pantalla del móvil a alguien para que no leyera un mensaje",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un beso que arruinó una amistad",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he cambiado mi foto de perfil pensando en alguien en concreto",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que aguantar ver a un ex con otra persona en el mismo plan",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he sentido que un roce \"accidental\" no fue tan accidental",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir que no me afectaba ver a alguien besarse con otra persona",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he escrito el nombre de alguien y lo he borrado antes de mandarlo por miedo a que se notara",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido una cita que empezó fatal y acabó genial",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he sentido que alguien me estaba analizando el lenguaje corporal",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que disimular delante de mis amigos que me gustaba alguien del grupo",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un \"algo\" con alguien que nunca definimos qué era",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he sentido nervios reales antes de un primer beso",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que borrar una conversación entera por vergüenza",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he fingido que se me olvidó algo para tener una excusa de volver a hablar con alguien",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido celos de alguien del pasado de mi pareja actual",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que responder \"jajaja\" a algo que no me hizo ninguna gracia solo por seguirle el rollo a alguien que me gustaba",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he sentido que una simple mirada dijo más que mil palabras",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido que disimular que estaba comprobando si alguien me había visto el estado",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he tenido un momento incómodo al cruzarme con un ex en un sitio inesperado",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he fingido que no me importaba con quién estaba hablando alguien que me gustaba",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he sentido que una conversación de \"buenos días\" se convirtió en algo más",
+      "categoria": "picante"
+    },
+    {
+      "texto": "Yo nunca he vomitado en una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca me he quedado dormido/a en una fiesta antes de que acabara",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he perdido un zapato en una discoteca",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he bailado subido/a a una mesa o barra",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he mezclado bebidas que no debía mezclar",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he llegado a mi casa sin saber muy bien cómo",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he bebido directamente de una botella que no era mía",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he perdido el móvil en una fiesta y lo he encontrado al día siguiente en un sitio absurdo",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he pedido una ronda de chupitos que luego no podía pagar",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he perdido a propósito en un juego de beber porque me daba pereza jugar en serio",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he despertado con ropa que no era mía",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he cantado un karaoke completamente borracho/a",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que pedir dinero prestado a un desconocido en una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he perdido una apuesta en una fiesta y he tenido que hacer algo vergonzoso",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca me he caído bailando delante de todo el mundo",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he mandado un audio de más de dos minutos estando borracho/a",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he intentado colarme en una fiesta a la que no estaba invitado/a",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he bebido algo sin saber ni qué era",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he improvisado un discurso de cumpleaños estando ya varias copas de más",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido resaca dos días seguidos",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he perdido la cuenta de cuántas copas llevaba",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado la noche comiendo algo que jamás comería sobrio/a",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he hecho una promesa en una fiesta que no pensaba cumplir",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he llorado de la risa hasta no poder respirar en una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca me he despertado en el sofá de casa de otra persona sin recordar cómo llegué",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he organizado un pre-party que acabó siendo mejor que la fiesta principal",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir estar sobrio/a delante de mis padres o de alguien importante",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he roto algo en una fiesta y no lo he dicho",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he bailado una coreografía entera con desconocidos",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he hecho una videollamada estando claramente borracho/a",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he pedido comida a domicilio a las 5 de la mañana después de una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he intentado ligar con alguien y me han dado calabazas delante de todo el grupo",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que buscar a un amigo o amiga perdido/a en mitad de una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he hecho de barman improvisado en una fiesta de casa",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado bailando encima de una silla",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he mentido sobre mi edad para entrar a un sitio",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he bebido algo cuyo nombre no sabía ni pronunciar",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que sujetar el pelo de alguien mientras vomitaba",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he hecho un brindis improvisado que salió fatal",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca me he despertado todavía con la ropa de fiesta puesta a mediodía",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he perdido las llaves de casa en una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he sido el último o la última en irse de una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado jugando al escondite en una fiesta de adultos",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que explicarle a un vecino por qué había tanto ruido en mi casa",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he bebido en un vaso que no era el mío por error",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado con purpurina encima sin saber de dónde salió",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido una discusión absurda por algo sin importancia estando de fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he intentado hacer un truco de magia estando borracho/a y me ha salido fatal",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado bailando reggaetón en una boda",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca me he despertado con la cara pintada por mis amigos",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he hecho una lista de reproducción entera para una fiesta y nadie la ha escuchado",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que pagar un taxi carísimo por volver tarde de fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he perdido una prenda de ropa en una fiesta y nunca la he recuperado",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado la noche en un after sin haberlo planeado",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he intentado convencer a todo el mundo de seguir de fiesta cuando ya nadie quería",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he hecho de DJ improvisado con el móvil de otra persona",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir que me sabía la letra de una canción en un karaoke",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he bailado un baile que no sabía bailar en mitad de una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado la noche jugando a algún videojuego de baile ya borracho/a",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que devolver algo prestado al día siguiente de una fiesta sin recordar de quién era",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he brindado por algo completamente inventado",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado durmiendo en el suelo en una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que fingir estar bien delante de la familia con una resaca terrible",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he perdido una discusión tonta sobre qué canción poner en una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he salido en una foto de grupo fatal por estar todos borrachos",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado la noche haciendo una fogata improvisada",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que rescatar a un amigo o amiga de una situación incómoda en una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he bebido algo directamente de una fuente que no era para eso",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado jugando a las cartas apostando cosas absurdas",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que limpiar mi casa entera al día siguiente de organizar una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he bailado un baile en pareja improvisado con un desconocido en una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca me he reído tan fuerte en una fiesta que me dolía la tripa",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he brindado con algo que no era alcohol solo por seguir el ritmo del grupo",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he perdido una prenda jugando a algo en una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que inventarme una excusa para irme antes de una fiesta aburrida",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado la noche en una gasolinera comprando comida a deshoras",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he organizado una fiesta sorpresa que casi se descubre",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he acabado hablando con un desconocido durante horas en una fiesta como si fuera mi mejor amigo",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he tenido que hacer de taxista de mis amigos después de una fiesta",
+      "categoria": "fiesta"
+    },
+    {
+      "texto": "Yo nunca he brindado tantas veces en una noche que perdí la cuenta",
+      "categoria": "fiesta"
+    }
   ]
 }

@@ -1,87 +1,172 @@
 import { describe, it, expect } from 'vitest';
-import { assignRoles, startRound, recordVote, tallyVotes } from './impostorGame';
+import {
+  assignRoles,
+  startGame,
+  recordVote,
+  resolveElimination,
+  checkGameEnd,
+  applyElimination,
+  maxImpostors,
+} from './impostorGame';
+
+describe('maxImpostors', () => {
+  it('computes floor((n-1)/2)', () => {
+    expect(maxImpostors(4)).toBe(1);
+    expect(maxImpostors(5)).toBe(2);
+    expect(maxImpostors(8)).toBe(3);
+    expect(maxImpostors(9)).toBe(4);
+  });
+});
 
 describe('assignRoles', () => {
-  it('assigns exactly one impostor per round', () => {
+  it('assigns exactly the requested number of impostors', () => {
     const players = ['p1', 'p2', 'p3', 'p4', 'p5'];
-    const { roles } = assignRoles(players, 'Playa');
+    const { roles } = assignRoles(players, 2, 'Playa');
     const impostors = roles.filter((r) => r.isImpostor);
-    expect(impostors).toHaveLength(1);
+    expect(impostors).toHaveLength(2);
   });
 
-  it('never gives the word to the impostor', () => {
+  it('never gives the word to an impostor', () => {
     const players = ['p1', 'p2', 'p3', 'p4'];
-    const { roles } = assignRoles(players, 'Guitarra');
+    const { roles } = assignRoles(players, 1, 'Guitarra');
     const impostorRole = roles.find((r) => r.isImpostor)!;
     expect(impostorRole.word).toBeNull();
   });
 
   it('gives the word to every non-impostor player', () => {
     const players = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
-    const { roles } = assignRoles(players, 'Elefante');
+    const { roles } = assignRoles(players, 1, 'Elefante');
     const nonImpostors = roles.filter((r) => !r.isImpostor);
     expect(nonImpostors).toHaveLength(5);
     for (const r of nonImpostors) expect(r.word).toBe('Elefante');
   });
 
-  it('throws with fewer than 3 players', () => {
-    expect(() => assignRoles(['p1', 'p2'], 'Palabra')).toThrow();
+  it('throws with fewer than 4 players', () => {
+    expect(() => assignRoles(['p1', 'p2', 'p3'], 1, 'Palabra')).toThrow();
   });
 
-  it('distributes the impostor role across different players over many rounds (not always the same index)', () => {
+  it('rejects an impostorCount above floor((n-1)/2)', () => {
+    // 5 players -> max 2 impostors
+    expect(() => assignRoles(['p1', 'p2', 'p3', 'p4', 'p5'], 3, 'Palabra')).toThrow();
+  });
+
+  it('rejects an impostorCount below 1', () => {
+    expect(() => assignRoles(['p1', 'p2', 'p3', 'p4'], 0, 'Palabra')).toThrow();
+  });
+
+  it('distributes the impostor role across different players over many rounds', () => {
     const players = ['p1', 'p2', 'p3', 'p4', 'p5'];
-    const impostorsSeen = new Set<string>();
+    const seen = new Set<string>();
     for (let i = 0; i < 100; i++) {
-      const { impostorId } = assignRoles(players, 'Palabra');
-      impostorsSeen.add(impostorId);
+      const { impostorIds } = assignRoles(players, 1, 'Palabra');
+      seen.add(impostorIds[0]);
     }
-    expect(impostorsSeen.size).toBeGreaterThan(1);
+    expect(seen.size).toBeGreaterThan(1);
   });
 });
 
-describe('startRound', () => {
-  it('produces a round with the word, category, impostor and per-player roles', () => {
-    const round = startRound(['p1', 'p2', 'p3'], 'Playa', 'lugares');
-    expect(round.word).toBe('Playa');
-    expect(round.categoria).toBe('lugares');
-    expect(round.roles).toHaveLength(3);
-    expect(round.votes).toEqual({});
+describe('startGame', () => {
+  it('produces a game state with the word, category, roles and full alive roster', () => {
+    const game = startGame(['p1', 'p2', 'p3', 'p4'], 1, 'Playa', 'lugares');
+    expect(game.word).toBe('Playa');
+    expect(game.categoria).toBe('lugares');
+    expect(game.roles).toHaveLength(4);
+    expect(game.alive).toEqual(['p1', 'p2', 'p3', 'p4']);
+    expect(game.eliminated).toEqual([]);
+    expect(game.votes).toEqual({});
+    expect(game.ended).toBe(false);
   });
 });
 
-describe('recordVote / tallyVotes', () => {
-  it('tallies votes correctly and detects when the impostor is caught', () => {
-    let round = startRound(['p1', 'p2', 'p3', 'p4'], 'Palabra', 'comida');
-    const impostorId = round.impostorId;
-    const others = round.roles.filter((r) => r.playerId !== impostorId).map((r) => r.playerId);
-
-    round = recordVote(round, others[0], impostorId);
-    round = recordVote(round, others[1], impostorId);
-    round = recordVote(round, others[2], others[0]);
-
-    const tally = tallyVotes(round);
-    expect(tally.counts[impostorId]).toBe(2);
-    expect(tally.mostVotedId).toBe(impostorId);
-    expect(tally.wasImpostorCaught).toBe(true);
+describe('resolveElimination', () => {
+  it('returns the most-voted player id', () => {
+    const votes = { p1: 'p3', p2: 'p3', p4: 'p1' };
+    expect(resolveElimination(votes)).toBe('p3');
   });
 
-  it('reports no winner on a tie', () => {
-    let round = startRound(['p1', 'p2', 'p3', 'p4'], 'Palabra', 'comida');
-    round = recordVote(round, 'p1', 'p2');
-    round = recordVote(round, 'p2', 'p1');
+  it('returns null on a tie', () => {
+    const votes = { p1: 'p2', p2: 'p1' };
+    expect(resolveElimination(votes)).toBeNull();
+  });
+});
 
-    const tally = tallyVotes(round);
-    expect(tally.mostVotedId).toBeNull();
+describe('checkGameEnd', () => {
+  it('reports no winner while multiple impostors remain among more than 3 players', () => {
+    const game = startGame(['p1', 'p2', 'p3', 'p4', 'p5', 'p6'], 2, 'Palabra', 'comida');
+    expect(checkGameEnd(game)).toEqual({ ended: false, winner: null });
   });
 
-  it('reports the impostor not caught when votes point elsewhere', () => {
-    let round = startRound(['p1', 'p2', 'p3'], 'Palabra', 'comida');
-    const impostorId = round.impostorId;
-    const others = round.roles.filter((r) => r.playerId !== impostorId).map((r) => r.playerId);
-    round = recordVote(round, others[0], others[1]);
-    round = recordVote(round, impostorId, others[1]);
+  it('declares the crew the winner the instant the last impostor is eliminated, even with >3 players left', () => {
+    const game = startGame(['p1', 'p2', 'p3', 'p4', 'p5', 'p6'], 1, 'Palabra', 'comida');
+    const impostorId = [...game.impostorIds][0];
+    const stateAfterElimination = { ...game, alive: game.alive.filter((id) => id !== impostorId) };
+    expect(checkGameEnd(stateAfterElimination)).toEqual({ ended: true, winner: 'crew' });
+  });
 
-    const tally = tallyVotes(round);
-    expect(tally.wasImpostorCaught).toBe(false);
+  it('declares the impostors the winner exactly when 3 players remain and one is an impostor', () => {
+    const game = startGame(['p1', 'p2', 'p3', 'p4', 'p5', 'p6'], 2, 'Palabra', 'comida');
+    // Deja exactamente 3 vivos, conservando al menos un impostor.
+    const impostorId = [...game.impostorIds][0];
+    const others = game.alive.filter((id) => id !== impostorId).slice(0, 2);
+    const stateAtThree = { ...game, alive: [impostorId, ...others] };
+    expect(checkGameEnd(stateAtThree)).toEqual({ ended: true, winner: 'impostors' });
+  });
+});
+
+describe('applyElimination', () => {
+  it('eliminates the most-voted player and does not end the game when impostors remain above the threshold', () => {
+    const game = startGame(['p1', 'p2', 'p3', 'p4', 'p5', 'p6'], 1, 'Palabra', 'comida');
+    const impostorId = [...game.impostorIds][0];
+    const crewIds = game.alive.filter((id) => id !== impostorId);
+    // Todo el mundo vota a un tripulante que no es el impostor.
+    let state = game;
+    for (const voter of game.alive) {
+      state = recordVote(state, voter, crewIds[0]);
+    }
+    const result = applyElimination(state);
+    expect(result.eliminatedId).toBe(crewIds[0]);
+    expect(result.gameEnd.ended).toBe(false);
+    expect(result.state.alive).not.toContain(crewIds[0]);
+    expect(result.state.alive).toHaveLength(5);
+    // El estado devuelto no revela si el eliminado era o no impostor.
+    expect(result.state).not.toHaveProperty('eliminatedWasImpostor');
+  });
+
+  it('ends the game with the crew as winner the instant the last impostor is eliminated', () => {
+    const game = startGame(['p1', 'p2', 'p3', 'p4'], 1, 'Palabra', 'comida');
+    const impostorId = [...game.impostorIds][0];
+    let state = game;
+    for (const voter of game.alive) {
+      state = recordVote(state, voter, impostorId);
+    }
+    const result = applyElimination(state);
+    expect(result.eliminatedId).toBe(impostorId);
+    expect(result.gameEnd).toEqual({ ended: true, winner: 'crew' });
+    expect(result.state.ended).toBe(true);
+    expect(result.state.winner).toBe('crew');
+  });
+
+  it('ends the game with the impostors as winner exactly at the 3-player threshold', () => {
+    const game = startGame(['p1', 'p2', 'p3', 'p4'], 1, 'Palabra', 'comida');
+    const impostorId = [...game.impostorIds][0];
+    const crewIds = game.alive.filter((id) => id !== impostorId);
+    let state = game;
+    for (const voter of game.alive) {
+      state = recordVote(state, voter, crewIds[0]);
+    }
+    const result = applyElimination(state);
+    expect(result.gameEnd).toEqual({ ended: true, winner: 'impostors' });
+    expect(result.state.alive).toHaveLength(3);
+  });
+
+  it('eliminates no one on a tied vote and the game continues', () => {
+    const game = startGame(['p1', 'p2', 'p3', 'p4'], 1, 'Palabra', 'comida');
+    let state = recordVote(game, 'p1', 'p2');
+    state = recordVote(state, 'p2', 'p1');
+    const result = applyElimination(state);
+    expect(result.eliminatedId).toBeNull();
+    expect(result.gameEnd.ended).toBe(false);
+    expect(result.state.alive).toHaveLength(4);
+    expect(result.state.votes).toEqual({});
   });
 });

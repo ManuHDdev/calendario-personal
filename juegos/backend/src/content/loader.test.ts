@@ -18,16 +18,30 @@ describe('loadContentBanks', () => {
     }
   });
 
-  it('yo-nunca meets the minimum pool size (>=150)', () => {
-    expect(contentBanks.yoNuncaPrompts.length).toBeGreaterThanOrEqual(150);
+  it('yo-nunca meets the minimum pool size (>=240) with >=80 per categoria', () => {
+    expect(contentBanks.yoNuncaPrompts.length).toBeGreaterThanOrEqual(240);
+    for (const categoria of ['clasico', 'picante', 'fiesta'] as const) {
+      const count = contentBanks.yoNuncaPrompts.filter((p) => p.categoria === categoria).length;
+      expect(count).toBeGreaterThanOrEqual(80);
+    }
   });
 
-  it('verdad-o-reto meets the minimum pool size (>=150) and is split verdad/reto', () => {
-    expect(contentBanks.verdadORetoPrompts.length).toBeGreaterThanOrEqual(150);
+  it('verdad-o-reto meets the minimum pool size (>=180) with >=15 per categoria x tipo x nivel bucket', () => {
+    expect(contentBanks.verdadORetoPrompts.length).toBeGreaterThanOrEqual(180);
     const verdad = contentBanks.verdadORetoPrompts.filter((p) => p.tipo === 'verdad');
     const reto = contentBanks.verdadORetoPrompts.filter((p) => p.tipo === 'reto');
     expect(verdad.length).toBeGreaterThan(0);
     expect(reto.length).toBeGreaterThan(0);
+    for (const categoria of ['clasico', 'picante', 'fiesta'] as const) {
+      for (const tipo of ['verdad', 'reto'] as const) {
+        for (const nivel of ['estandar', 'sin_pareja'] as const) {
+          const count = contentBanks.verdadORetoPrompts.filter(
+            (p) => p.categoria === categoria && p.tipo === tipo && p.nivel === nivel,
+          ).length;
+          expect(count).toBeGreaterThanOrEqual(15);
+        }
+      }
+    }
   });
 
   it('rejects a malformed content bank (fail fast at load time)', () => {

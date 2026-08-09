@@ -3,40 +3,97 @@ import { Link } from 'react-router-dom';
 import { getImpostorWord, newSessionId } from '../../services/api';
 import '../shared.css';
 
-type Phase = 'setup' | 'revealing' | 'discussion' | 'voting' | 'result';
+// Bucle de eliminación de El Impostor en pass-and-play: la lógica se duplica
+// intencionalmente respecto a backend/src/games/impostorGame.ts (mismo
+// comentario que ya existía antes de este cambio) porque el modo
+// pass-and-play no tiene estado en el servidor — solo el backend sirve la
+// palabra. Ver design.md "El Impostor: elimination loop, not single-round
+// reveal" y spec.md "El Impostor elimination loop (pass-and-play and live)".
+
+type Phase =
+  | 'setup-count'
+  | 'setup-names'
+  | 'setup-impostors'
+  | 'revealing'
+  | 'discussion'
+  | 'voting'
+  | 'eliminated'
+  | 'final';
 
 const CATEGORIAS = ['comida', 'animales', 'objetosCotidianos', 'profesiones', 'lugares', 'deportes'];
 const DISCUSSION_SECONDS = 120;
+const MIN_PLAYERS = 4;
+
+interface PlayerEntry {
+  id: string;
+  name: string;
+}
+
+function maxImpostors(playerCount: number): number {
+  return Math.floor((playerCount - 1) / 2);
+}
+
+function shuffle<T>(items: T[]): T[] {
+  const arr = items.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 export default function PassAndPlayImpostor() {
   const sessionId = useMemo(() => newSessionId(), []);
-  const [phase, setPhase] = useState<Phase>('setup');
-  const [playerCount, setPlayerCount] = useState(4);
+  const [phase, setPhase] = useState<Phase>('setup-count');
+  const [playerCount, setPlayerCount] = useState(MIN_PLAYERS);
+  const [players, setPlayers] = useState<PlayerEntry[]>([]);
+  const [impostorCount, setImpostorCount] = useState(1);
   const [categoria, setCategoria] = useState('');
   const [word, setWord] = useState('');
   const [category, setCategory] = useState('');
-  const [impostorIndex, setImpostorIndex] = useState(0);
+  const [impostorIds, setImpostorIds] = useState<Set<string>>(new Set());
+  const [alive, setAlive] = useState<string[]>([]);
+  const [eliminated, setEliminated] = useState<string[]>([]);
   const [revealIndex, setRevealIndex] = useState(0);
   const [cardShown, setCardShown] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(DISCUSSION_SECONDS);
-  const [votes, setVotes] = useState<number[]>([]);
+  const [votes, setVotes] = useState<Record<string, string>>({});
+  const [lastEliminatedId, setLastEliminatedId] = useState<string | null>(null);
+  const [winner, setWinner] = useState<'crew' | 'impostors' | null>(null);
   const [error, setError] = useState('');
 
-  async function startRound() {
+  function confirmPlayerCount() {
+    setPlayers(
+      Array.from({ length: playerCount }, (_, i) => ({ id: `p${i}`, name: `Jugador ${i + 1}` })),
+    );
+    setPhase('setup-names');
+  }
+
+  function updateName(id: string, name: string) {
+    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)));
+  }
+
+  function confirmNames() {
+    setImpostorCount(1);
+    setPhase('setup-impostors');
+  }
+
+  async function startGame() {
     setError('');
     try {
       const res = await getImpostorWord(sessionId, categoria || undefined);
       setWord(res.word);
       setCategory(res.category);
-      // La asignación de impostor es local al pass-and-play (el backend no
-      // conoce el número de jugadores en este modo, solo sirve el banco de
-      // palabras) — misma lógica simple que games/impostorGame.ts en el
-      // backend (índice aleatorio uniforme), duplicada intencionalmente por
-      // ser trivial y no depender de red para cada pase de móvil.
-      setImpostorIndex(Math.floor(Math.random() * playerCount));
+
+      const ids = players.map((p) => p.id);
+      const chosenImpostors = new Set(shuffle(ids).slice(0, impostorCount));
+      setImpostorIds(chosenImpostors);
+      setAlive(ids);
+      setEliminated([]);
+      setWinner(null);
       setRevealIndex(0);
       setCardShown(false);
-      setVotes([]);
+      setVotes({});
       setPhase('revealing');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo obtener la palabra');
@@ -44,7 +101,7 @@ export default function PassAndPlayImpostor() {
   }
 
   function nextReveal() {
-    if (revealIndex + 1 >= playerCount) {
+    if (revealIndex + 1 >= players.length) {
       setSecondsLeft(DISCUSSION_SECONDS);
       setPhase('discussion');
       startTimer();
@@ -67,21 +124,73 @@ export default function PassAndPlayImpostor() {
     }, 1000);
   }
 
-  function castVote(playerIndex: number) {
-    setVotes((v) => {
-      const next = [...v, playerIndex];
-      if (next.length >= playerCount) setPhase('result');
+  function castVote(voterId: string, votedForId: string) {
+    setVotes((prev) => {
+      const next = { ...prev, [voterId]: votedForId };
+      if (Object.keys(next).length >= alive.length) {
+        resolveRound(next);
+      }
       return next;
     });
   }
 
-  const tally = useMemo(() => {
-    const counts = new Array(playerCount).fill(0);
-    for (const v of votes) counts[v]++;
-    return counts;
-  }, [votes, playerCount]);
+  function resolveRound(finalVotes: Record<string, string>) {
+    const counts: Record<string, number> = {};
+    for (const votedForId of Object.values(finalVotes)) {
+      counts[votedForId] = (counts[votedForId] ?? 0) + 1;
+    }
+    let mostVotedId: string | null = null;
+    let maxVotes = 0;
+    let tie = false;
+    for (const [id, count] of Object.entries(counts)) {
+      if (count > maxVotes) {
+        maxVotes = count;
+        mostVotedId = id;
+        tie = false;
+      } else if (count === maxVotes && maxVotes > 0) {
+        tie = true;
+      }
+    }
+    const eliminatedId = tie ? null : mostVotedId;
 
-  const mostVotedIndex = tally.indexOf(Math.max(...tally));
+    if (!eliminatedId) {
+      setLastEliminatedId(null);
+      setVotes({});
+      setPhase('eliminated');
+      return;
+    }
+
+    const nextAlive = alive.filter((id) => id !== eliminatedId);
+    setAlive(nextAlive);
+    setEliminated((prev) => [...prev, eliminatedId]);
+    setLastEliminatedId(eliminatedId);
+    setVotes({});
+
+    const aliveImpostors = nextAlive.filter((id) => impostorIds.has(id));
+    if (aliveImpostors.length === 0) {
+      setWinner('crew');
+      setPhase('final');
+      return;
+    }
+    if (nextAlive.length === 3) {
+      setWinner('impostors');
+      setPhase('final');
+      return;
+    }
+    setPhase('eliminated');
+  }
+
+  function continueAfterElimination() {
+    setSecondsLeft(DISCUSSION_SECONDS);
+    setPhase('discussion');
+    startTimer();
+  }
+
+  function nameOf(id: string): string {
+    return players.find((p) => p.id === id)?.name ?? id;
+  }
+
+  const currentImpostorMax = maxImpostors(players.length || playerCount);
 
   return (
     <div className="juego-shell">
@@ -90,16 +199,16 @@ export default function PassAndPlayImpostor() {
         <h1>🕵️ El Impostor</h1>
       </div>
 
-      {phase === 'setup' && (
+      {phase === 'setup-count' && (
         <div className="juego-card-central">
-          <label className="juego-texto-secundario">Número de jugadores</label>
+          <label className="juego-texto-secundario">Número de jugadores (mínimo {MIN_PLAYERS})</label>
           <input
             className="juego-input"
             type="number"
-            min={3}
+            min={MIN_PLAYERS}
             max={20}
             value={playerCount}
-            onChange={(e) => setPlayerCount(Math.max(3, Number(e.target.value) || 3))}
+            onChange={(e) => setPlayerCount(Math.max(MIN_PLAYERS, Number(e.target.value) || MIN_PLAYERS))}
           />
           <label className="juego-texto-secundario">Categoría (opcional)</label>
           <select className="juego-input" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
@@ -108,19 +217,59 @@ export default function PassAndPlayImpostor() {
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
+          <button className="juego-boton" onClick={confirmPlayerCount}>Siguiente: nombres</button>
+        </div>
+      )}
+
+      {phase === 'setup-names' && (
+        <div className="juego-card-central">
+          <h2>Nombres de los jugadores</h2>
+          <div className="juego-lista-jugadores">
+            {players.map((p) => (
+              <input
+                key={p.id}
+                className="juego-input"
+                value={p.name}
+                onChange={(e) => updateName(p.id, e.target.value)}
+              />
+            ))}
+          </div>
+          <button className="juego-boton" onClick={confirmNames}>Siguiente: impostores</button>
+        </div>
+      )}
+
+      {phase === 'setup-impostors' && (
+        <div className="juego-card-central">
+          <h2>¿Cuántos impostores?</h2>
+          <p className="juego-texto-secundario">Máximo {currentImpostorMax} para {players.length} jugadores</p>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button
+              className="juego-boton-secundario"
+              onClick={() => setImpostorCount((n) => Math.max(1, n - 1))}
+            >
+              −
+            </button>
+            <span style={{ fontSize: 32, fontWeight: 700 }}>{impostorCount}</span>
+            <button
+              className="juego-boton-secundario"
+              onClick={() => setImpostorCount((n) => Math.min(currentImpostorMax, n + 1))}
+            >
+              +
+            </button>
+          </div>
           {error && <p className="juego-error">{error}</p>}
-          <button className="juego-boton" onClick={startRound}>Empezar ronda</button>
+          <button className="juego-boton" onClick={startGame}>Empezar ronda</button>
         </div>
       )}
 
       {phase === 'revealing' && (
         <div className="juego-card-central">
-          <p className="juego-texto-secundario">Pasa el móvil al Jugador {revealIndex + 1}</p>
+          <p className="juego-texto-secundario">Pasa el móvil a {nameOf(players[revealIndex].id)}</p>
           {!cardShown ? (
             <button className="juego-boton" onClick={() => setCardShown(true)}>Toca para ver tu rol</button>
           ) : (
             <>
-              {revealIndex === impostorIndex ? (
+              {impostorIds.has(players[revealIndex].id) ? (
                 <>
                   <h2>😈 Eres el Impostor</h2>
                   <p className="juego-texto-secundario">No conoces la palabra. ¡Disimula!</p>
@@ -132,7 +281,7 @@ export default function PassAndPlayImpostor() {
                 </>
               )}
               <button className="juego-boton" onClick={nextReveal}>
-                {revealIndex + 1 >= playerCount ? 'Empezar debate' : 'Siguiente jugador'}
+                {revealIndex + 1 >= players.length ? 'Empezar debate' : 'Siguiente jugador'}
               </button>
             </>
           )}
@@ -151,25 +300,68 @@ export default function PassAndPlayImpostor() {
       {phase === 'voting' && (
         <div className="juego-card-central">
           <h2>🗳️ Votación</h2>
-          <p className="juego-texto-secundario">Voto {votes.length + 1} de {playerCount} — ¿quién es el impostor?</p>
+          <p className="juego-texto-secundario">
+            Voto {Object.keys(votes).length + 1} de {alive.length} — ¿quién es el impostor?
+          </p>
+          <p className="juego-texto-secundario">Pasa el móvil de jugador en jugador para votar</p>
           <div className="juego-lista-jugadores">
-            {Array.from({ length: playerCount }, (_, i) => (
-              <button key={i} className="juego-boton-secundario" onClick={() => castVote(i)}>
-                Jugador {i + 1}
-              </button>
-            ))}
+            {alive
+              .filter((id) => !(id in votes))
+              .slice(0, 1)
+              .map((voterId) => (
+                <div key={voterId}>
+                  <p className="juego-texto-secundario">Vota {nameOf(voterId)}:</p>
+                  {alive
+                    .filter((id) => id !== voterId)
+                    .map((candidateId) => (
+                      <button
+                        key={candidateId}
+                        className="juego-boton-secundario"
+                        onClick={() => castVote(voterId, candidateId)}
+                      >
+                        {nameOf(candidateId)}
+                      </button>
+                    ))}
+                </div>
+              ))}
           </div>
         </div>
       )}
 
-      {phase === 'result' && (
+      {phase === 'eliminated' && (
         <div className="juego-card-central">
-          <h2>🎭 Revelación</h2>
-          <p>El impostor era: <strong>Jugador {impostorIndex + 1}</strong></p>
+          <h2>☠️ Resultado de la ronda</h2>
+          {lastEliminatedId ? (
+            <p>
+              <strong>{nameOf(lastEliminatedId)}</strong> ha sido eliminado/a
+            </p>
+          ) : (
+            <p>Empate en la votación — nadie ha sido eliminado esta ronda</p>
+          )}
+          <p className="juego-texto-secundario">
+            El juego no revela si era o no el impostor — eso solo se sabe en la revelación final.
+          </p>
+          <p className="juego-texto-secundario">Jugadores en juego: {alive.length}</p>
+          <button className="juego-boton" onClick={continueAfterElimination}>Continuar debate</button>
+        </div>
+      )}
+
+      {phase === 'final' && (
+        <div className="juego-card-central">
+          <h2>🎭 Revelación final</h2>
           <p className="juego-texto-secundario">La palabra era: {word}</p>
-          <p className="juego-texto-secundario">Más votado: Jugador {mostVotedIndex + 1}</p>
-          <p>{mostVotedIndex === impostorIndex ? '✅ ¡Cazado!' : '❌ Escapó'}</p>
-          <button className="juego-boton" onClick={() => setPhase('setup')}>Otra ronda</button>
+          <p>
+            {winner === 'crew' ? '✅ Ganan los tripulantes' : '😈 Ganan los impostores'}
+          </p>
+          <div className="juego-lista-jugadores">
+            {players.map((p) => (
+              <p key={p.id}>
+                {p.name}: {impostorIds.has(p.id) ? '😈 Impostor' : '🙂 Tripulante'}
+                {eliminated.includes(p.id) ? ' (eliminado/a)' : ''}
+              </p>
+            ))}
+          </div>
+          <button className="juego-boton" onClick={() => setPhase('setup-count')}>Otra partida</button>
         </div>
       )}
     </div>

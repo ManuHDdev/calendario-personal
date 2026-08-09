@@ -14,9 +14,8 @@ import { createShuffleBag, ShuffleBag } from '../services/shuffleBag';
 
 interface PassAndPlaySession {
   impostorBags: Map<string, ShuffleBag<{ palabra: string; categoria: string }>>;
-  yoNuncaBag: ShuffleBag<string>;
-  verdadBag: ShuffleBag<string>;
-  retoBag: ShuffleBag<string>;
+  yoNuncaBags: Map<string, ShuffleBag<string>>;
+  verdadORetoBags: Map<string, ShuffleBag<string>>;
   lastUsed: number;
 }
 
@@ -34,13 +33,10 @@ function getOrCreateSession(sessionId: string): PassAndPlaySession {
   cleanupIdleSessions();
   let session = sessions.get(sessionId);
   if (!session) {
-    const verdadPool = contentBanks.verdadORetoPrompts.filter((p) => p.tipo === 'verdad').map((p) => p.texto);
-    const retoPool = contentBanks.verdadORetoPrompts.filter((p) => p.tipo === 'reto').map((p) => p.texto);
     session = {
       impostorBags: new Map(),
-      yoNuncaBag: createShuffleBag(contentBanks.yoNuncaPrompts),
-      verdadBag: createShuffleBag(verdadPool),
-      retoBag: createShuffleBag(retoPool),
+      yoNuncaBags: new Map(),
+      verdadORetoBags: new Map(),
       lastUsed: Date.now(),
     };
     sessions.set(sessionId, session);
@@ -63,6 +59,54 @@ function getImpostorBag(session: PassAndPlaySession, categoria: string | undefin
   return bag;
 }
 
+/** Ver design.md "Yo Nunca / Verdad o Reto: categories via the existing
+ * per-category shuffle-bag pattern" — mismo mecanismo que getImpostorBag,
+ * aplicado a Yo Nunca (bolsa keyed por categoría, o 'todas' para el pool
+ * combinado). */
+function getYoNuncaBag(session: PassAndPlaySession, categoria: string | undefined) {
+  const key = categoria ?? '__todas__';
+  let bag = session.yoNuncaBags.get(key);
+  if (!bag) {
+    const pool = categoria
+      ? contentBanks.yoNuncaPrompts.filter((p) => p.categoria === categoria).map((p) => p.texto)
+      : contentBanks.yoNuncaPrompts.map((p) => p.texto);
+    if (pool.length === 0) return null;
+    bag = createShuffleBag(pool);
+    session.yoNuncaBags.set(key, bag);
+  }
+  return bag;
+}
+
+/** Verdad o Reto: bolsa keyed por `${tipo}:${categoria ?? 'todas'}:${sinPareja ? 'con_sin_pareja' : 'estandar_solo'}`
+ * — el toggle "Modo SIN PAREJA" es aditivo (superset), no un swap de contenido
+ * (design.md "Verdad o Reto's extra axis — nivel"). */
+function getVerdadORetoBag(
+  session: PassAndPlaySession,
+  tipo: 'verdad' | 'reto',
+  categoria: string | undefined,
+  sinPareja: boolean,
+) {
+  const key = `${tipo}:${categoria ?? '__todas__'}:${sinPareja ? 'con_sin_pareja' : 'estandar_solo'}`;
+  let bag = session.verdadORetoBags.get(key);
+  if (!bag) {
+    const niveles = sinPareja ? ['estandar', 'sin_pareja'] : ['estandar'];
+    const pool = contentBanks.verdadORetoPrompts
+      .filter((p) => p.tipo === tipo)
+      .filter((p) => !categoria || p.categoria === categoria)
+      .filter((p) => niveles.includes(p.nivel))
+      .map((p) => p.texto);
+    if (pool.length === 0) return null;
+    bag = createShuffleBag(pool);
+    session.verdadORetoBags.set(key, bag);
+  }
+  return bag;
+}
+
+/** `categoria=todas` (o ausente) significa "sin filtro" — el pool combinado. */
+function normalizeCategoria(categoria: string | undefined): string | undefined {
+  return !categoria || categoria === 'todas' ? undefined : categoria;
+}
+
 function getSessionId(request: FastifyRequest): string {
   const query = request.query as Record<string, string | undefined>;
   // Sin sessionId el cliente no puede garantizar "no repite en la sesión" —
@@ -77,7 +121,7 @@ export async function contentRoutes(app: FastifyInstance): Promise<void> {
     '/juegos/api/impostor/word',
     { preHandler: requireAuthenticated },
     async (request, reply: FastifyReply) => {
-      const { categoria } = request.query;
+      const categoria = normalizeCategoria(request.query.categoria);
       const session = getOrCreateSession(getSessionId(request));
       const bag = getImpostorBag(session, categoria);
       if (!bag) {
@@ -88,19 +132,24 @@ export async function contentRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  // GET /juegos/api/yo-nunca/prompt?sessionId=
-  app.get<{ Querystring: { sessionId?: string } }>(
+  // GET /juegos/api/yo-nunca/prompt?categoria=&sessionId=
+  app.get<{ Querystring: { categoria?: string; sessionId?: string } }>(
     '/juegos/api/yo-nunca/prompt',
     { preHandler: requireAuthenticated },
     async (request, reply: FastifyReply) => {
+      const categoria = normalizeCategoria(request.query.categoria);
       const session = getOrCreateSession(getSessionId(request));
-      const prompt = session.yoNuncaBag.draw();
+      const bag = getYoNuncaBag(session, categoria);
+      if (!bag) {
+        return reply.code(400).send({ error: 'Bad Request', message: `Categoría desconocida: ${categoria}` });
+      }
+      const prompt = bag.draw();
       return reply.send({ prompt });
     },
   );
 
-  // GET /juegos/api/verdad-o-reto/prompt?tipo=verdad|reto&sessionId=
-  app.get<{ Querystring: { tipo?: string; sessionId?: string } }>(
+  // GET /juegos/api/verdad-o-reto/prompt?tipo=verdad|reto&categoria=&sinPareja=true|false&sessionId=
+  app.get<{ Querystring: { tipo?: string; categoria?: string; sinPareja?: string; sessionId?: string } }>(
     '/juegos/api/verdad-o-reto/prompt',
     { preHandler: requireAuthenticated },
     async (request, reply: FastifyReply) => {
@@ -108,8 +157,13 @@ export async function contentRoutes(app: FastifyInstance): Promise<void> {
       if (tipo !== 'verdad' && tipo !== 'reto') {
         return reply.code(400).send({ error: 'Bad Request', message: "tipo debe ser 'verdad' o 'reto'" });
       }
+      const categoria = normalizeCategoria(request.query.categoria);
+      const sinPareja = request.query.sinPareja === 'true';
       const session = getOrCreateSession(getSessionId(request));
-      const bag = tipo === 'verdad' ? session.verdadBag : session.retoBag;
+      const bag = getVerdadORetoBag(session, tipo, categoria, sinPareja);
+      if (!bag) {
+        return reply.code(400).send({ error: 'Bad Request', message: `Categoría desconocida: ${categoria}` });
+      }
       const prompt = bag.draw();
       return reply.send({ prompt, tipo });
     },
