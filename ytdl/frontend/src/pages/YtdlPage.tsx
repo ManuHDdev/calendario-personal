@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { buildDownloadUrl, isAllowedYoutubeUrl, type DownloadFormat } from '../services/api';
 import keycloak from '../services/keycloak';
 import AppLauncher from '../components/AppLauncher';
+import ThemeToggle from '../components/ThemeToggle';
 import './YtdlPage.css';
 
 // Cuánto tiempo esperamos leyendo el iframe oculto antes de asumir que la
@@ -92,6 +93,9 @@ export default function YtdlPage() {
 
   return (
     <div className="ytdl-page">
+      <div className="ytdl-theme-toggle">
+        <ThemeToggle />
+      </div>
       {keycloak.authenticated ? (
         <div className="ytdl-launcher">
           <AppLauncher upward={false} />
