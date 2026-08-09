@@ -3,17 +3,19 @@ import { Link } from 'react-router-dom';
 import { getVerdadORetoPrompt, newSessionId } from '../../services/api';
 import '../shared.css';
 
-const CATEGORIAS: { value: string; label: string }[] = [
-  { value: 'todas', label: 'Todas' },
-  { value: 'clasico', label: '😇 Clásico' },
-  { value: 'picante', label: '🌶️ Picante' },
-  { value: 'fiesta', label: '🎉 Fiesta' },
+// Dureza compartida con Yo Nunca — ver design.md "`dureza` replaces
+// `categoria` as the single axis; 'Mezcla' combines all three".
+const DUREZAS: { value: string; label: string }[] = [
+  { value: 'suave', label: '😇 Suave' },
+  { value: 'media', label: '🌶️ Media' },
+  { value: 'fuerte', label: '🔥 Fuerte' },
+  { value: 'mezcla', label: '🎲 Mezcla' },
 ];
 
 export default function VerdadOReto() {
   const sessionId = useMemo(() => newSessionId(), []);
   const [started, setStarted] = useState(false);
-  const [categoria, setCategoria] = useState('todas');
+  const [dureza, setDureza] = useState('mezcla');
   const [sinPareja, setSinPareja] = useState(false);
   const [prompt, setPrompt] = useState<string | null>(null);
   const [tipo, setTipo] = useState<'verdad' | 'reto' | null>(null);
@@ -25,7 +27,7 @@ export default function VerdadOReto() {
       const res = await getVerdadORetoPrompt(
         sessionId,
         tipoElegido,
-        categoria === 'todas' ? undefined : categoria,
+        dureza === 'mezcla' ? undefined : dureza,
         sinPareja,
       );
       setPrompt(res.prompt);
@@ -44,15 +46,15 @@ export default function VerdadOReto() {
 
       {!started ? (
         <div className="juego-card-central">
-          <label className="juego-texto-secundario">Elige una categoría</label>
+          <label className="juego-texto-secundario">Elige el nivel de dureza</label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {CATEGORIAS.map((c) => (
+            {DUREZAS.map((d) => (
               <button
-                key={c.value}
-                className={c.value === categoria ? 'juego-boton' : 'juego-boton-secundario'}
-                onClick={() => setCategoria(c.value)}
+                key={d.value}
+                className={d.value === dureza ? 'juego-boton' : 'juego-boton-secundario'}
+                onClick={() => setDureza(d.value)}
               >
-                {c.label}
+                {d.label}
               </button>
             ))}
           </div>

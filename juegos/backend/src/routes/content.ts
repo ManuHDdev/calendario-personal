@@ -59,17 +59,20 @@ function getImpostorBag(session: PassAndPlaySession, categoria: string | undefin
   return bag;
 }
 
-/** Ver design.md "Yo Nunca / Verdad o Reto: categories via the existing
- * per-category shuffle-bag pattern" — mismo mecanismo que getImpostorBag,
- * aplicado a Yo Nunca (bolsa keyed por categoría, o 'todas' para el pool
- * combinado). */
-function getYoNuncaBag(session: PassAndPlaySession, categoria: string | undefined) {
-  const key = categoria ?? '__todas__';
+/** Ver design.md "`dureza` replaces `categoria` as the single axis; 'Mezcla'
+ * combines all three" — mismo mecanismo que getImpostorBag, aplicado a Yo
+ * Nunca (bolsa keyed por `${dureza ?? 'mezcla'}:${sinPareja ? 'con_sin_pareja' : 'estandar_solo'}`).
+ * El toggle "Modo SIN PAREJA" es aditivo (superset), no un swap de contenido —
+ * mismo principio que ya tenía Verdad o Reto, ahora aplicado también aquí. */
+function getYoNuncaBag(session: PassAndPlaySession, dureza: string | undefined, sinPareja: boolean) {
+  const key = `${dureza ?? '__mezcla__'}:${sinPareja ? 'con_sin_pareja' : 'estandar_solo'}`;
   let bag = session.yoNuncaBags.get(key);
   if (!bag) {
-    const pool = categoria
-      ? contentBanks.yoNuncaPrompts.filter((p) => p.categoria === categoria).map((p) => p.texto)
-      : contentBanks.yoNuncaPrompts.map((p) => p.texto);
+    const niveles = sinPareja ? ['estandar', 'sin_pareja'] : ['estandar'];
+    const pool = contentBanks.yoNuncaPrompts
+      .filter((p) => !dureza || p.dureza === dureza)
+      .filter((p) => niveles.includes(p.nivel))
+      .map((p) => p.texto);
     if (pool.length === 0) return null;
     bag = createShuffleBag(pool);
     session.yoNuncaBags.set(key, bag);
@@ -77,22 +80,22 @@ function getYoNuncaBag(session: PassAndPlaySession, categoria: string | undefine
   return bag;
 }
 
-/** Verdad o Reto: bolsa keyed por `${tipo}:${categoria ?? 'todas'}:${sinPareja ? 'con_sin_pareja' : 'estandar_solo'}`
+/** Verdad o Reto: bolsa keyed por `${tipo}:${dureza ?? 'mezcla'}:${sinPareja ? 'con_sin_pareja' : 'estandar_solo'}`
  * — el toggle "Modo SIN PAREJA" es aditivo (superset), no un swap de contenido
- * (design.md "Verdad o Reto's extra axis — nivel"). */
+ * (design.md "Modo SIN PAREJA extended to Yo Nunca"). */
 function getVerdadORetoBag(
   session: PassAndPlaySession,
   tipo: 'verdad' | 'reto',
-  categoria: string | undefined,
+  dureza: string | undefined,
   sinPareja: boolean,
 ) {
-  const key = `${tipo}:${categoria ?? '__todas__'}:${sinPareja ? 'con_sin_pareja' : 'estandar_solo'}`;
+  const key = `${tipo}:${dureza ?? '__mezcla__'}:${sinPareja ? 'con_sin_pareja' : 'estandar_solo'}`;
   let bag = session.verdadORetoBags.get(key);
   if (!bag) {
     const niveles = sinPareja ? ['estandar', 'sin_pareja'] : ['estandar'];
     const pool = contentBanks.verdadORetoPrompts
       .filter((p) => p.tipo === tipo)
-      .filter((p) => !categoria || p.categoria === categoria)
+      .filter((p) => !dureza || p.dureza === dureza)
       .filter((p) => niveles.includes(p.nivel))
       .map((p) => p.texto);
     if (pool.length === 0) return null;
@@ -102,9 +105,17 @@ function getVerdadORetoBag(
   return bag;
 }
 
-/** `categoria=todas` (o ausente) significa "sin filtro" — el pool combinado. */
+/** `dureza=mezcla` (o ausente) significa "sin filtro" — el pool combinado de
+ * los tres niveles. `categoria=todas` sigue el mismo patrón para El Impostor,
+ * que no forma parte de este cambio. */
 function normalizeCategoria(categoria: string | undefined): string | undefined {
   return !categoria || categoria === 'todas' ? undefined : categoria;
+}
+
+/** Igual que `normalizeCategoria` pero para el axis `dureza` de Yo Nunca y
+ * Verdad o Reto (ver design.md "Mezcla combines all three"). */
+function normalizeDureza(dureza: string | undefined): string | undefined {
+  return !dureza || dureza === 'mezcla' ? undefined : dureza;
 }
 
 function getSessionId(request: FastifyRequest): string {
@@ -132,24 +143,25 @@ export async function contentRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  // GET /juegos/api/yo-nunca/prompt?categoria=&sessionId=
-  app.get<{ Querystring: { categoria?: string; sessionId?: string } }>(
+  // GET /juegos/api/yo-nunca/prompt?dureza=&sinPareja=true|false&sessionId=
+  app.get<{ Querystring: { dureza?: string; sinPareja?: string; sessionId?: string } }>(
     '/juegos/api/yo-nunca/prompt',
     { preHandler: requireAuthenticated },
     async (request, reply: FastifyReply) => {
-      const categoria = normalizeCategoria(request.query.categoria);
+      const dureza = normalizeDureza(request.query.dureza);
+      const sinPareja = request.query.sinPareja === 'true';
       const session = getOrCreateSession(getSessionId(request));
-      const bag = getYoNuncaBag(session, categoria);
+      const bag = getYoNuncaBag(session, dureza, sinPareja);
       if (!bag) {
-        return reply.code(400).send({ error: 'Bad Request', message: `Categoría desconocida: ${categoria}` });
+        return reply.code(400).send({ error: 'Bad Request', message: `Dureza desconocida: ${dureza}` });
       }
       const prompt = bag.draw();
       return reply.send({ prompt });
     },
   );
 
-  // GET /juegos/api/verdad-o-reto/prompt?tipo=verdad|reto&categoria=&sinPareja=true|false&sessionId=
-  app.get<{ Querystring: { tipo?: string; categoria?: string; sinPareja?: string; sessionId?: string } }>(
+  // GET /juegos/api/verdad-o-reto/prompt?tipo=verdad|reto&dureza=&sinPareja=true|false&sessionId=
+  app.get<{ Querystring: { tipo?: string; dureza?: string; sinPareja?: string; sessionId?: string } }>(
     '/juegos/api/verdad-o-reto/prompt',
     { preHandler: requireAuthenticated },
     async (request, reply: FastifyReply) => {
@@ -157,12 +169,12 @@ export async function contentRoutes(app: FastifyInstance): Promise<void> {
       if (tipo !== 'verdad' && tipo !== 'reto') {
         return reply.code(400).send({ error: 'Bad Request', message: "tipo debe ser 'verdad' o 'reto'" });
       }
-      const categoria = normalizeCategoria(request.query.categoria);
+      const dureza = normalizeDureza(request.query.dureza);
       const sinPareja = request.query.sinPareja === 'true';
       const session = getOrCreateSession(getSessionId(request));
-      const bag = getVerdadORetoBag(session, tipo, categoria, sinPareja);
+      const bag = getVerdadORetoBag(session, tipo, dureza, sinPareja);
       if (!bag) {
-        return reply.code(400).send({ error: 'Bad Request', message: `Categoría desconocida: ${categoria}` });
+        return reply.code(400).send({ error: 'Bad Request', message: `Dureza desconocida: ${dureza}` });
       }
       const prompt = bag.draw();
       return reply.send({ prompt, tipo });

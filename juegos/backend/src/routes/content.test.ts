@@ -127,43 +127,75 @@ describe('content routes', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it('GET /yo-nunca/prompt filters by categoria and rejects an unknown category with 400', async () => {
+  it('GET /yo-nunca/prompt filters by dureza and rejects an unknown dureza with 400', async () => {
     const app = await buildApp();
     for (let i = 0; i < 5; i++) {
       const res = await app.inject({
         method: 'GET',
-        url: '/juegos/api/yo-nunca/prompt?categoria=picante&sessionId=yn-picante',
+        url: '/juegos/api/yo-nunca/prompt?dureza=media&sessionId=yn-media',
         headers: { 'x-test-role': 'invitado' },
       });
       expect(res.statusCode).toBe(200);
     }
     const bad = await app.inject({
       method: 'GET',
-      url: '/juegos/api/yo-nunca/prompt?categoria=noexiste&sessionId=yn-bad',
+      url: '/juegos/api/yo-nunca/prompt?dureza=noexiste&sessionId=yn-bad',
       headers: { 'x-test-role': 'invitado' },
     });
     expect(bad.statusCode).toBe(400);
   });
 
-  it("GET /yo-nunca/prompt with categoria='todas' draws from the combined pool", async () => {
+  it("GET /yo-nunca/prompt with dureza='mezcla' draws from the combined pool", async () => {
     const app = await buildApp();
     const res = await app.inject({
       method: 'GET',
-      url: '/juegos/api/yo-nunca/prompt?categoria=todas&sessionId=yn-todas',
+      url: '/juegos/api/yo-nunca/prompt?dureza=mezcla&sessionId=yn-mezcla',
       headers: { 'x-test-role': 'invitado' },
     });
     expect(res.statusCode).toBe(200);
+  });
+
+  it('GET /yo-nunca/prompt with sinPareja=false stays within the estandar-only pool for every dureza', async () => {
+    const app = await buildApp();
+    for (const dureza of ['suave', 'media', 'fuerte']) {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/juegos/api/yo-nunca/prompt?dureza=${dureza}&sinPareja=false&sessionId=yn-safe-${dureza}`,
+        headers: { 'x-test-role': 'invitado' },
+      });
+      expect(res.statusCode).toBe(200);
+    }
+  });
+
+  it('GET /yo-nunca/prompt with sinPareja=true is additive (still serves the combined pool without error)', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/yo-nunca/prompt?dureza=fuerte&sinPareja=true&sessionId=yn-bold',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('GET /verdad-o-reto/prompt rejects an unknown dureza with 400', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/verdad-o-reto/prompt?tipo=verdad&dureza=noexiste&sessionId=vor-bad',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(400);
   });
 
   it('GET /verdad-o-reto/prompt with sinPareja=false never returns a sin_pareja-level item', async () => {
     const app = await buildApp();
     // No hay forma de inspeccionar el nivel desde la respuesta (solo se
     // devuelve el texto), así que esta prueba confirma que el endpoint
-    // sirve del bucket 'estandar' sin errores para las 3 categorías.
-    for (const categoria of ['clasico', 'picante', 'fiesta']) {
+    // sirve del bucket 'estandar' sin errores para los 3 niveles de dureza.
+    for (const dureza of ['suave', 'media', 'fuerte']) {
       const res = await app.inject({
         method: 'GET',
-        url: `/juegos/api/verdad-o-reto/prompt?tipo=reto&categoria=${categoria}&sinPareja=false&sessionId=vor-safe-${categoria}`,
+        url: `/juegos/api/verdad-o-reto/prompt?tipo=reto&dureza=${dureza}&sinPareja=false&sessionId=vor-safe-${dureza}`,
         headers: { 'x-test-role': 'invitado' },
       });
       expect(res.statusCode).toBe(200);
@@ -174,7 +206,7 @@ describe('content routes', () => {
     const app = await buildApp();
     const res = await app.inject({
       method: 'GET',
-      url: '/juegos/api/verdad-o-reto/prompt?tipo=verdad&categoria=fiesta&sinPareja=true&sessionId=vor-bold',
+      url: '/juegos/api/verdad-o-reto/prompt?tipo=verdad&dureza=fuerte&sinPareja=true&sessionId=vor-bold',
       headers: { 'x-test-role': 'invitado' },
     });
     expect(res.statusCode).toBe(200);
