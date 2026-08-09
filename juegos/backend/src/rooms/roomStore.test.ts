@@ -104,4 +104,32 @@ describe('roomStore', () => {
     expect(removed).toBe(0);
     expect(getRoom(room.code)).toBeDefined();
   });
+
+  // Ver specs/juegos/spec.md "Live room creation and join": el shuffle-bag de
+  // Trivia en vivo se escoge por categoría en la creación de la sala.
+  it('createRoom with a trivia categoria only ever draws questions from that category', () => {
+    const room = createRoom('trivia-live', 'host-1', 'Manu', 'curiosidades');
+    for (let i = 0; i < 30; i++) {
+      const question = room.trivia!.bag.draw();
+      expect(question.categoria).toBe('curiosidades');
+    }
+  });
+
+  it('createRoom without a categoria draws from the full combined pool', () => {
+    const room = createRoom('trivia-live', 'host-1', 'Manu');
+    const seenCategories = new Set<string>();
+    for (let i = 0; i < 100; i++) {
+      seenCategories.add(room.trivia!.bag.draw().categoria);
+    }
+    expect(seenCategories.size).toBeGreaterThan(1);
+  });
+
+  it('createRoom with categoria "todas" draws from the full combined pool, same as omitted', () => {
+    const room = createRoom('trivia-live', 'host-1', 'Manu', 'todas');
+    const seenCategories = new Set<string>();
+    for (let i = 0; i < 100; i++) {
+      seenCategories.add(room.trivia!.bag.draw().categoria);
+    }
+    expect(seenCategories.size).toBeGreaterThan(1);
+  });
 });

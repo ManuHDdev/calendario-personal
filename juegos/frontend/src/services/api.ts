@@ -39,8 +39,15 @@ export function getVerdadORetoPrompt(
 
 export type GameType = 'impostor-live' | 'trivia-live';
 
-export function createRoom(gameType: GameType): Promise<{ roomCode: string; gameType: GameType; hostId: string }> {
-  return authFetch('/rooms', { method: 'POST', body: JSON.stringify({ gameType }) }).then((r) => r.json());
+export function createRoom(
+  gameType: GameType,
+  categoria?: string,
+): Promise<{ roomCode: string; gameType: GameType; hostId: string }> {
+  const body: { gameType: GameType; categoria?: string } = { gameType };
+  // `categoria` solo tiene sentido para trivia-live — ver rooms.route.ts,
+  // que la ignora/no-op para impostor-live.
+  if (gameType === 'trivia-live' && categoria) body.categoria = categoria;
+  return authFetch('/rooms', { method: 'POST', body: JSON.stringify(body) }).then((r) => r.json());
 }
 
 /** Genera un identificador de sesión de pass-and-play, único por sentada de juego. */

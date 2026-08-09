@@ -63,6 +63,7 @@ const MIN_VERDAD_O_RETO_PROMPTS = 150;
 export interface ContentBanks {
   impostorWords: ImpostorWord[];
   triviaQuestions: TriviaQuestion[];
+  triviaCategories: string[];
   yoNuncaPrompts: string[];
   verdadORetoPrompts: VerdadORetoPrompt[];
 }
@@ -99,6 +100,10 @@ export function loadContentBanks(): ContentBanks {
   return {
     impostorWords: impostor.words,
     triviaQuestions: trivia.questions,
+    // Categorías conocidas de Trivia en vivo, derivadas del propio banco en
+    // vez de mantenidas a mano — ver specs/juegos/spec.md "Live room creation
+    // and join" (categoria validada contra la lista de categorías conocidas).
+    triviaCategories: [...new Set(trivia.questions.map((question) => question.categoria))].sort(),
     yoNuncaPrompts: yoNunca.prompts,
     verdadORetoPrompts: verdadOReto.prompts,
   };
