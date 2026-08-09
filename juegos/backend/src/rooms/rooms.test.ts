@@ -96,19 +96,23 @@ describe('WebSocket room layer (integration)', () => {
     const p3Messages = collectMessages(p3Ws);
     await new Promise((r) => p3Ws.once('open', r));
 
+    const p4Ws = new WebSocket(`${baseUrl}/juegos/api/ws?token=p4::Eva&room=${room.code}`);
+    const p4Messages = collectMessages(p4Ws);
+    await new Promise((r) => p4Ws.once('open', r));
+
     // Da tiempo a que los mensajes de "players-updated" lleguen a todos.
     await new Promise((r) => setTimeout(r, 100));
 
-    hostWs.send(JSON.stringify({ type: 'start-round' }));
+    hostWs.send(JSON.stringify({ type: 'start-round', impostorCount: 1 }));
     await new Promise((r) => setTimeout(r, 150));
 
-    for (const messages of [hostMessages, p2Messages, p3Messages]) {
+    for (const messages of [hostMessages, p2Messages, p3Messages, p4Messages]) {
       const roleMsg = messages.find((m) => m.type === 'role-assigned');
       expect(roleMsg).toBeDefined();
       expect(typeof roleMsg!.isImpostor).toBe('boolean');
     }
 
-    const impostorCount = [hostMessages, p2Messages, p3Messages].filter(
+    const impostorCount = [hostMessages, p2Messages, p3Messages, p4Messages].filter(
       (messages) => messages.find((m) => m.type === 'role-assigned')?.isImpostor === true,
     ).length;
     expect(impostorCount).toBe(1);
@@ -116,5 +120,6 @@ describe('WebSocket room layer (integration)', () => {
     hostWs.close();
     p2Ws.close();
     p3Ws.close();
+    p4Ws.close();
   });
 });

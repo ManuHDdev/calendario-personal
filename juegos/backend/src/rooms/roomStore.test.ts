@@ -47,7 +47,17 @@ describe('roomStore', () => {
     vi.useFakeTimers();
     const room = createRoom('impostor-live', 'host-1', 'Manu');
     joinOrReconnect(room, 'p2', 'Ana', fakeSocket());
-    room.impostor!.roleByPlayer.set('p2', { playerId: 'p2', isImpostor: false, word: 'Playa' });
+    room.impostor!.game = {
+      word: 'Playa',
+      categoria: 'lugares',
+      impostorIds: new Set(),
+      roles: [{ playerId: 'p2', isImpostor: false, word: 'Playa' }],
+      alive: ['p2'],
+      eliminated: [],
+      votes: {},
+      ended: false,
+      winner: null,
+    };
 
     const onExpire = vi.fn();
     markDisconnected(room, 'p2', onExpire);
@@ -57,7 +67,7 @@ describe('roomStore', () => {
     vi.advanceTimersByTime(30_000);
     const { reconnected } = joinOrReconnect(room, 'p2', 'Ana', fakeSocket());
     expect(reconnected).toBe(true);
-    expect(room.impostor!.roleByPlayer.get('p2')?.word).toBe('Playa');
+    expect(room.impostor!.game?.roles.find((r) => r.playerId === 'p2')?.word).toBe('Playa');
 
     // El temporizador de expiración fue cancelado: avanzar más no debe expulsar al jugador
     vi.advanceTimersByTime(60_000);

@@ -3,7 +3,7 @@ import type { WebSocket } from 'ws';
 import { extractToken, verifyToken } from '../middleware/auth';
 import { getRoom, joinOrReconnect, markDisconnected, touchRoom } from './roomStore';
 import type { RoomState } from './types';
-import { handleStartRound, handleVote, handleReveal } from '../games/impostorLive';
+import { handleStartRound, handleVote, handleResolveRound } from '../games/impostorLive';
 import { handleStartQuestion, handleAnswer, closeQuestion } from '../games/triviaLive';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -109,11 +109,11 @@ function dispatch(room: RoomState, userId: string, message: { type?: string; [ke
   if (room.gameType === 'impostor-live') {
     switch (message.type) {
       case 'start-round':
-        return handleStartRound(room, userId);
+        return handleStartRound(room, userId, Number(message.impostorCount ?? 1));
       case 'vote':
         return handleVote(room, userId, String(message.votedForId ?? ''));
-      case 'reveal':
-        return handleReveal(room, userId);
+      case 'resolve-round':
+        return handleResolveRound(room, userId);
       default:
         return { error: `Tipo de mensaje desconocido: ${message.type}` };
     }

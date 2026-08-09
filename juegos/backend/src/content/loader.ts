@@ -24,10 +24,19 @@ export interface TriviaQuestion {
 }
 
 export type VerdadORetoTipo = 'verdad' | 'reto';
+export type Categoria = 'clasico' | 'picante' | 'fiesta';
+export type Nivel = 'estandar' | 'sin_pareja';
+
+export interface YoNuncaPrompt {
+  texto: string;
+  categoria: Categoria;
+}
 
 export interface VerdadORetoPrompt {
   texto: string;
   tipo: VerdadORetoTipo;
+  categoria: Categoria;
+  nivel: Nivel;
 }
 
 const impostorWordSchema = z.object({
@@ -46,24 +55,37 @@ const triviaQuestionSchema = z.object({
 });
 const triviaBankSchema = z.object({ questions: z.array(triviaQuestionSchema) });
 
-const promptSchema = z.string().min(1);
-const yoNuncaBankSchema = z.object({ prompts: z.array(promptSchema) });
+const categoriaEnum = z.enum(['clasico', 'picante', 'fiesta']);
+const nivelEnum = z.enum(['estandar', 'sin_pareja']);
+
+const yoNuncaPromptSchema = z.object({
+  texto: z.string().min(1),
+  categoria: categoriaEnum,
+});
+const yoNuncaBankSchema = z.object({ prompts: z.array(yoNuncaPromptSchema) });
 
 const verdadORetoPromptSchema = z.object({
   texto: z.string().min(1),
   tipo: z.enum(['verdad', 'reto']),
+  categoria: categoriaEnum,
+  nivel: nivelEnum,
 });
 const verdadORetoBankSchema = z.object({ prompts: z.array(verdadORetoPromptSchema) });
 
 const MIN_IMPOSTOR_WORDS = 300;
 const MIN_TRIVIA_QUESTIONS = 500;
-const MIN_YO_NUNCA_PROMPTS = 150;
-const MIN_VERDAD_O_RETO_PROMPTS = 150;
+const MIN_YO_NUNCA_PROMPTS = 240;
+const MIN_YO_NUNCA_PER_CATEGORIA = 80;
+const MIN_VERDAD_O_RETO_PROMPTS = 180;
+const MIN_VERDAD_O_RETO_PER_BUCKET = 15;
+const CATEGORIAS: Categoria[] = ['clasico', 'picante', 'fiesta'];
+const TIPOS: VerdadORetoTipo[] = ['verdad', 'reto'];
+const NIVELES: Nivel[] = ['estandar', 'sin_pareja'];
 
 export interface ContentBanks {
   impostorWords: ImpostorWord[];
   triviaQuestions: TriviaQuestion[];
-  yoNuncaPrompts: string[];
+  yoNuncaPrompts: YoNuncaPrompt[];
   verdadORetoPrompts: VerdadORetoPrompt[];
 }
 
@@ -88,12 +110,34 @@ export function loadContentBanks(): ContentBanks {
       `yo-nunca.json: se requieren al menos ${MIN_YO_NUNCA_PROMPTS} prompts, hay ${yoNunca.prompts.length}`,
     );
   }
+  for (const categoria of CATEGORIAS) {
+    const count = yoNunca.prompts.filter((p) => p.categoria === categoria).length;
+    if (count < MIN_YO_NUNCA_PER_CATEGORIA) {
+      throw new Error(
+        `yo-nunca.json: la categoría '${categoria}' requiere al menos ${MIN_YO_NUNCA_PER_CATEGORIA} prompts, hay ${count}`,
+      );
+    }
+  }
 
   const verdadOReto = verdadORetoBankSchema.parse(verdadORetoRaw);
   if (verdadOReto.prompts.length < MIN_VERDAD_O_RETO_PROMPTS) {
     throw new Error(
       `verdad-o-reto.json: se requieren al menos ${MIN_VERDAD_O_RETO_PROMPTS} prompts, hay ${verdadOReto.prompts.length}`,
     );
+  }
+  for (const categoria of CATEGORIAS) {
+    for (const tipo of TIPOS) {
+      for (const nivel of NIVELES) {
+        const count = verdadOReto.prompts.filter(
+          (p) => p.categoria === categoria && p.tipo === tipo && p.nivel === nivel,
+        ).length;
+        if (count < MIN_VERDAD_O_RETO_PER_BUCKET) {
+          throw new Error(
+            `verdad-o-reto.json: el bucket '${categoria}:${tipo}:${nivel}' requiere al menos ${MIN_VERDAD_O_RETO_PER_BUCKET} prompts, hay ${count}`,
+          );
+        }
+      }
+    }
   }
 
   return {

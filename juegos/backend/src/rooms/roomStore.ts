@@ -43,8 +43,7 @@ export function createRoom(gameType: GameType, hostId: string, hostUsername: str
   if (gameType === 'impostor-live') {
     room.impostor = {
       bag: createShuffleBag(contentBanks.impostorWords),
-      round: null,
-      roleByPlayer: new Map(),
+      game: null,
       phase: 'lobby',
     };
   } else {

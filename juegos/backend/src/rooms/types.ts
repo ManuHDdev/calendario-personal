@@ -1,4 +1,4 @@
-import type { ImpostorRole, ImpostorRound } from '../games/impostorGame';
+import type { ImpostorGameState } from '../games/impostorGame';
 import type { TriviaQuestion } from '../content/loader';
 import type { ShuffleBag } from '../services/shuffleBag';
 
@@ -27,9 +27,8 @@ export interface Player {
 
 export interface ImpostorLiveState {
   bag: ShuffleBag<{ palabra: string; categoria: string }>;
-  round: ImpostorRound | null;
-  roleByPlayer: Map<string, ImpostorRole>;
-  phase: 'lobby' | 'roles-revealed' | 'voting' | 'reveal';
+  game: ImpostorGameState | null;
+  phase: 'lobby' | 'roles-revealed' | 'voting' | 'discussion' | 'reveal';
 }
 
 export interface TriviaAnswer {

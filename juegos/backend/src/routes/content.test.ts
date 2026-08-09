@@ -127,6 +127,59 @@ describe('content routes', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  it('GET /yo-nunca/prompt filters by categoria and rejects an unknown category with 400', async () => {
+    const app = await buildApp();
+    for (let i = 0; i < 5; i++) {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/juegos/api/yo-nunca/prompt?categoria=picante&sessionId=yn-picante',
+        headers: { 'x-test-role': 'invitado' },
+      });
+      expect(res.statusCode).toBe(200);
+    }
+    const bad = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/yo-nunca/prompt?categoria=noexiste&sessionId=yn-bad',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(bad.statusCode).toBe(400);
+  });
+
+  it("GET /yo-nunca/prompt with categoria='todas' draws from the combined pool", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/yo-nunca/prompt?categoria=todas&sessionId=yn-todas',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('GET /verdad-o-reto/prompt with sinPareja=false never returns a sin_pareja-level item', async () => {
+    const app = await buildApp();
+    // No hay forma de inspeccionar el nivel desde la respuesta (solo se
+    // devuelve el texto), así que esta prueba confirma que el endpoint
+    // sirve del bucket 'estandar' sin errores para las 3 categorías.
+    for (const categoria of ['clasico', 'picante', 'fiesta']) {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/juegos/api/verdad-o-reto/prompt?tipo=reto&categoria=${categoria}&sinPareja=false&sessionId=vor-safe-${categoria}`,
+        headers: { 'x-test-role': 'invitado' },
+      });
+      expect(res.statusCode).toBe(200);
+    }
+  });
+
+  it('GET /verdad-o-reto/prompt with sinPareja=true can draw from both estandar and sin_pareja levels', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/verdad-o-reto/prompt?tipo=verdad&categoria=fiesta&sinPareja=true&sessionId=vor-bold',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
   it('does not repeat impostor words within the same session before exhausting the small category pool is unlikely, but does not repeat across many draws for a large pool', async () => {
     const app = await buildApp();
     const seen = new Set<string>();

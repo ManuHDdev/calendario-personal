@@ -25,15 +25,21 @@ export function getImpostorWord(sessionId: string, categoria?: string): Promise<
   return authFetch(`/impostor/word?${params}`).then((r) => r.json());
 }
 
-export function getYoNuncaPrompt(sessionId: string): Promise<{ prompt: string }> {
-  return authFetch(`/yo-nunca/prompt?sessionId=${encodeURIComponent(sessionId)}`).then((r) => r.json());
+export function getYoNuncaPrompt(sessionId: string, categoria?: string): Promise<{ prompt: string }> {
+  const params = new URLSearchParams({ sessionId });
+  if (categoria) params.set('categoria', categoria);
+  return authFetch(`/yo-nunca/prompt?${params}`).then((r) => r.json());
 }
 
 export function getVerdadORetoPrompt(
   sessionId: string,
   tipo: 'verdad' | 'reto',
+  categoria?: string,
+  sinPareja?: boolean,
 ): Promise<{ prompt: string; tipo: string }> {
   const params = new URLSearchParams({ sessionId, tipo });
+  if (categoria) params.set('categoria', categoria);
+  if (sinPareja) params.set('sinPareja', 'true');
   return authFetch(`/verdad-o-reto/prompt?${params}`).then((r) => r.json());
 }
 
