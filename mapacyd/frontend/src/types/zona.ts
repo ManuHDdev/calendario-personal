@@ -2,8 +2,9 @@ export interface HorarioZona {
   id: string;
   zona_id: string;
   tipo_dia: 'LMXJV' | 'SABADO' | 'DOMINGO';
-  hora_inicio: string;  // "HH:MM"
-  hora_fin: string;     // "HH:MM"
+  hora_inicio: string | null;  // "HH:MM", null cuando sin_restriccion = true
+  hora_fin: string | null;     // "HH:MM", null cuando sin_restriccion = true
+  sin_restriccion: boolean;
   activo: boolean;
 }
 

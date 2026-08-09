@@ -26,15 +26,18 @@ function getTipoDia(fecha: Date): 'LMXJV' | 'SABADO' | 'DOMINGO' {
 
 export function calcularEstado(horarios: HorarioZona[], ahora: Date): EstadoZona {
   const tipoDia = getTipoDia(ahora);
-  const franjas = horarios.filter(h => h.tipo_dia === tipoDia && h.activo);
+  const entradas = horarios.filter(h => h.tipo_dia === tipoDia && h.activo);
 
-  if (franjas.length === 0) return 'sin-horario';
+  if (entradas.length === 0) return 'sin-horario';
+
+  // Una entrada sin_restriccion cubre todo el día — no hace falta comparar horas.
+  if (entradas.some(h => h.sin_restriccion)) return 'libre';
 
   const horaActual =
     `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
 
-  for (const franja of franjas) {
-    if (horaActual >= franja.hora_inicio && horaActual < franja.hora_fin) {
+  for (const franja of entradas) {
+    if (franja.hora_inicio && franja.hora_fin && horaActual >= franja.hora_inicio && horaActual < franja.hora_fin) {
       return 'restringida';
     }
   }
@@ -85,15 +88,23 @@ function popupMapsLinkHtml(zona: ZonaCyd): string {
   `;
 }
 
-function buildPopupHtml(zona: ZonaCyd, estado: EstadoZona, isAdmin: boolean): string {
-  const horarioLines = TIPOS_DIA.map(tipo => {
-    const franjas = zona.horarios.filter(h => h.tipo_dia === tipo && h.activo);
-    if (franjas.length === 0) {
-      return `<div style="color:#9ca3af;font-size:12px">${LABEL_DIA[tipo]}: (sin restricción)</div>`;
+function buildHorarioLines(zona: ZonaCyd): string {
+  return TIPOS_DIA.map(tipo => {
+    const entradas = zona.horarios.filter(h => h.tipo_dia === tipo && h.activo);
+    if (entradas.length === 0) {
+      return `<div style="color:#9ca3af;font-size:12px">${LABEL_DIA[tipo]}: (sin configurar)</div>`;
     }
-    const rangos = franjas.map(f => `${f.hora_inicio}-${f.hora_fin}`).join(' · ');
+    const sinRestriccion = entradas.some(h => h.sin_restriccion);
+    if (sinRestriccion) {
+      return `<div style="font-size:12px"><b style="color:#16a34a">${LABEL_DIA[tipo]}:</b> <span style="color:#16a34a">Sin restricciones</span></div>`;
+    }
+    const rangos = entradas.map(f => `${f.hora_inicio}-${f.hora_fin}`).join(' · ');
     return `<div style="font-size:12px"><b>${LABEL_DIA[tipo]}:</b> ${rangos}</div>`;
   }).join('');
+}
+
+function buildPopupHtml(zona: ZonaCyd, estado: EstadoZona, isAdmin: boolean): string {
+  const horarioLines = buildHorarioLines(zona);
 
   const estadoIcon  = estado === 'restringida' ? '🔴' : estado === 'libre' ? '🟢' : '⚫';
   const estadoLabel = estado === 'restringida' ? 'Zona restringida ahora'
@@ -122,8 +133,9 @@ function buildPopupHtmlAparcamiento(zona: ZonaCyd, isAdmin: boolean): string {
     <div style="font-family:system-ui,sans-serif;min-width:160px;line-height:1.5">
       <div style="font-weight:600;font-size:14px;margin-bottom:4px">🅿️ ${zona.nombre}</div>
       ${zona.descripcion
-        ? `<div style="font-size:12px;color:#9ca3af">${zona.descripcion}</div>`
+        ? `<div style="font-size:12px;color:#9ca3af;margin-bottom:6px">${zona.descripcion}</div>`
         : ''}
+      <div style="margin-bottom:8px">${buildHorarioLines(zona)}</div>
       ${popupMapsLinkHtml(zona)}
       ${isAdmin ? popupHorarioBtnHtml : ''}
       ${isAdmin ? popupEditBtnHtml : ''}
