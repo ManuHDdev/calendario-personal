@@ -8,6 +8,7 @@ import { useZonas } from '../hooks/useZonas';
 import { usePreferenciaCiudad } from '../hooks/usePreferenciaCiudad';
 import { AdminPanel } from './AdminPanel';
 import { ZonaModal } from './ZonaModal';
+import { HorarioPanel } from './HorarioPanel';
 import { PreferenciaCiudad } from './PreferenciaCiudad';
 import AppLauncher from './AppLauncher';
 import './MapaView.css';
@@ -50,9 +51,17 @@ const LABEL_DIA: Record<typeof TIPOS_DIA[number], string> = {
   DOMINGO: 'Domingo',
 };
 
+const popupHorarioBtnHtml = `
+  <button class="mapa-popup-horarios" style="
+    margin-top:10px;width:100%;background:none;border:1px solid #0071e3;
+    border-radius:6px;padding:5px 10px;font-size:12px;font-family:system-ui,sans-serif;
+    color:#0071e3;cursor:pointer;
+  ">Horarios</button>
+`;
+
 const popupEditBtnHtml = `
   <button class="mapa-popup-edit" style="
-    margin-top:10px;width:100%;background:none;border:1px solid #0071e3;
+    margin-top:6px;width:100%;background:none;border:1px solid #0071e3;
     border-radius:6px;padding:5px 10px;font-size:12px;font-family:system-ui,sans-serif;
     color:#0071e3;cursor:pointer;
   ">Editar</button>
@@ -101,6 +110,7 @@ function buildPopupHtml(zona: ZonaCyd, estado: EstadoZona, isAdmin: boolean): st
       <div style="margin-bottom:8px">${horarioLines}</div>
       <div style="font-size:13px;font-weight:500;color:${estadoColor}">${estadoIcon} ${estadoLabel}</div>
       ${popupMapsLinkHtml(zona)}
+      ${isAdmin ? popupHorarioBtnHtml : ''}
       ${isAdmin ? popupEditBtnHtml : ''}
       ${isAdmin ? popupDeleteBtnHtml : ''}
     </div>
@@ -115,6 +125,7 @@ function buildPopupHtmlAparcamiento(zona: ZonaCyd, isAdmin: boolean): string {
         ? `<div style="font-size:12px;color:#9ca3af">${zona.descripcion}</div>`
         : ''}
       ${popupMapsLinkHtml(zona)}
+      ${isAdmin ? popupHorarioBtnHtml : ''}
       ${isAdmin ? popupEditBtnHtml : ''}
       ${isAdmin ? popupDeleteBtnHtml : ''}
     </div>
@@ -137,6 +148,8 @@ export function MapaView() {
   const [errorEliminarPopup, setErrorEliminarPopup] = useState<string | null>(null);
   // Editar zona directamente desde el popup del mapa
   const [zonaEditarPopup, setZonaEditarPopup] = useState<ZonaCyd | null>(null);
+  // Gestionar horarios directamente desde el popup del mapa
+  const [zonaHorariosPopup, setZonaHorariosPopup] = useState<ZonaCyd | null>(null);
 
   const { zonas, loading, error, refetch } = useZonas(ciudadFiltro);
   const { preferencia } = usePreferenciaCiudad();
@@ -196,6 +209,11 @@ export function MapaView() {
       if (isAdmin) {
         marker.on('popupopen', () => {
           const el = marker.getPopup()?.getElement();
+          const btnHorarios = el?.querySelector<HTMLButtonElement>('.mapa-popup-horarios');
+          btnHorarios?.addEventListener('click', () => {
+            marker.closePopup();
+            setZonaHorariosPopup(zona);
+          });
           const btnEdit = el?.querySelector<HTMLButtonElement>('.mapa-popup-edit');
           btnEdit?.addEventListener('click', () => {
             marker.closePopup();
@@ -327,6 +345,16 @@ export function MapaView() {
           longitudInicial={zonaEditarPopup.longitud}
           onClose={() => setZonaEditarPopup(null)}
           onSuccess={() => { setZonaEditarPopup(null); void refetch(); }}
+        />
+      )}
+
+      {/* Gestionar horarios directamente desde el popup del mapa */}
+      {zonaHorariosPopup && (
+        <HorarioPanel
+          zona={zonaHorariosPopup}
+          token={token ?? ''}
+          onClose={() => setZonaHorariosPopup(null)}
+          onSuccess={() => void refetch()}
         />
       )}
 
