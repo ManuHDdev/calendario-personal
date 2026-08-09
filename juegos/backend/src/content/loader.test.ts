@@ -18,25 +18,27 @@ describe('loadContentBanks', () => {
     }
   });
 
-  it('yo-nunca meets the minimum pool size (>=240) with >=80 per categoria', () => {
-    expect(contentBanks.yoNuncaPrompts.length).toBeGreaterThanOrEqual(240);
-    for (const categoria of ['clasico', 'picante', 'fiesta'] as const) {
-      const count = contentBanks.yoNuncaPrompts.filter((p) => p.categoria === categoria).length;
-      expect(count).toBeGreaterThanOrEqual(80);
+  it('yo-nunca meets the minimum pool size (>=180) with >=30 per dureza x nivel bucket', () => {
+    expect(contentBanks.yoNuncaPrompts.length).toBeGreaterThanOrEqual(180);
+    for (const dureza of ['suave', 'media', 'fuerte'] as const) {
+      for (const nivel of ['estandar', 'sin_pareja'] as const) {
+        const count = contentBanks.yoNuncaPrompts.filter((p) => p.dureza === dureza && p.nivel === nivel).length;
+        expect(count).toBeGreaterThanOrEqual(30);
+      }
     }
   });
 
-  it('verdad-o-reto meets the minimum pool size (>=180) with >=15 per categoria x tipo x nivel bucket', () => {
+  it('verdad-o-reto meets the minimum pool size (>=180) with >=15 per dureza x tipo x nivel bucket', () => {
     expect(contentBanks.verdadORetoPrompts.length).toBeGreaterThanOrEqual(180);
     const verdad = contentBanks.verdadORetoPrompts.filter((p) => p.tipo === 'verdad');
     const reto = contentBanks.verdadORetoPrompts.filter((p) => p.tipo === 'reto');
     expect(verdad.length).toBeGreaterThan(0);
     expect(reto.length).toBeGreaterThan(0);
-    for (const categoria of ['clasico', 'picante', 'fiesta'] as const) {
+    for (const dureza of ['suave', 'media', 'fuerte'] as const) {
       for (const tipo of ['verdad', 'reto'] as const) {
         for (const nivel of ['estandar', 'sin_pareja'] as const) {
           const count = contentBanks.verdadORetoPrompts.filter(
-            (p) => p.categoria === categoria && p.tipo === tipo && p.nivel === nivel,
+            (p) => p.dureza === dureza && p.tipo === tipo && p.nivel === nivel,
           ).length;
           expect(count).toBeGreaterThanOrEqual(15);
         }
