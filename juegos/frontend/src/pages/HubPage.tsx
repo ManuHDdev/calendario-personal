@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import AppLauncher from '../components/AppLauncher';
+import ThemeToggle from '../components/ThemeToggle';
 import './HubPage.css';
 
 const PASS_AND_PLAY = [
@@ -18,7 +19,10 @@ export default function HubPage() {
     <div className="juegos-page">
       <div className="juegos-header">
         <h1>🎉 Juegos</h1>
-        <AppLauncher />
+        <div className="juegos-header-right">
+          <ThemeToggle />
+          <AppLauncher />
+        </div>
       </div>
 
       <section className="juegos-seccion">
