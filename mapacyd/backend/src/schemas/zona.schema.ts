@@ -13,14 +13,20 @@ export const updateZonaSchema = createZonaSchema.partial();
 
 // Objeto base sin refine para poder aplicar .omit() / .partial() en update
 const horarioBaseSchema = z.object({
-  tipo_dia:    z.enum(['LMXJV', 'SABADO', 'DOMINGO']),
-  hora_inicio: z.string().regex(/^\d{2}:\d{2}$/, 'Formato HH:MM requerido'),
-  hora_fin:    z.string().regex(/^\d{2}:\d{2}$/, 'Formato HH:MM requerido'),
+  tipo_dia:        z.enum(['LMXJV', 'SABADO', 'DOMINGO']),
+  hora_inicio:     z.string().regex(/^\d{2}:\d{2}$/, 'Formato HH:MM requerido').optional(),
+  hora_fin:        z.string().regex(/^\d{2}:\d{2}$/, 'Formato HH:MM requerido').optional(),
+  sin_restriccion: z.boolean().default(false),
 });
 
 export const createHorarioSchema = horarioBaseSchema.refine(
-  data => data.hora_fin > data.hora_inicio,
-  { message: 'hora_fin debe ser mayor que hora_inicio', path: ['hora_fin'] }
+  data => {
+    if (data.sin_restriccion) return data.hora_inicio === undefined && data.hora_fin === undefined;
+    return data.hora_inicio !== undefined && data.hora_fin !== undefined && data.hora_fin > data.hora_inicio;
+  },
+  data => data.sin_restriccion
+    ? { message: 'No se pueden indicar hora_inicio/hora_fin cuando sin_restriccion es true', path: ['sin_restriccion'] }
+    : { message: 'hora_inicio y hora_fin son obligatorios y hora_fin debe ser mayor que hora_inicio', path: ['hora_fin'] }
 );
 
 export const updateHorarioSchema = horarioBaseSchema
@@ -28,7 +34,24 @@ export const updateHorarioSchema = horarioBaseSchema
   .partial()
   .extend({ tipo_dia: z.enum(['LMXJV', 'SABADO', 'DOMINGO']).optional() })
   .refine(
-    data => !data.hora_inicio || !data.hora_fin || data.hora_fin > data.hora_inicio,
+    data => {
+      // sin_restriccion === true en el body: no deben venir horas
+      if (data.sin_restriccion === true) return data.hora_inicio === undefined && data.hora_fin === undefined;
+      return true;
+    },
+    { message: 'No se pueden indicar hora_inicio/hora_fin cuando sin_restriccion es true', path: ['sin_restriccion'] }
+  )
+  .refine(
+    data => {
+      // Si se está pasando a franja normal (explícita o implícitamente vía horas)
+      // sin dar ambas horas, no hay suficiente información — se valida contra el
+      // registro existente más abajo en la ruta; aquí solo se valida el par que
+      // llega junto en el mismo body.
+      if (data.hora_inicio !== undefined && data.hora_fin !== undefined) {
+        return data.hora_fin > data.hora_inicio;
+      }
+      return true;
+    },
     { message: 'hora_fin debe ser mayor que hora_inicio', path: ['hora_fin'] }
   );
 

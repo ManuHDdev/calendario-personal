@@ -69,12 +69,13 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
   );
 
   // Estado del formulario
-  const [tipoDia,     setTipoDia]     = useState<TipoDia>('LMXJV');
-  const [horaInicio,  setHoraInicio]  = useState('');
-  const [horaFin,     setHoraFin]     = useState('');
-  const [editandoId,  setEditandoId]  = useState<string | null>(null);
-  const [errorForm,   setErrorForm]   = useState<string | null>(null);
-  const [loadingForm, setLoadingForm] = useState(false);
+  const [tipoDia,        setTipoDia]        = useState<TipoDia>('LMXJV');
+  const [horaInicio,     setHoraInicio]     = useState('');
+  const [horaFin,        setHoraFin]        = useState('');
+  const [sinRestriccion, setSinRestriccion] = useState(false);
+  const [editandoId,     setEditandoId]     = useState<string | null>(null);
+  const [errorForm,      setErrorForm]      = useState<string | null>(null);
+  const [loadingForm,    setLoadingForm]    = useState(false);
 
   // Estado de eliminación
   const [horarioAEliminar, setHorarioAEliminar] = useState<HorarioZona | null>(null);
@@ -91,6 +92,7 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
     setTipoDia('LMXJV');
     setHoraInicio('');
     setHoraFin('');
+    setSinRestriccion(false);
     setEditandoId(null);
     setErrorForm(null);
   };
@@ -98,30 +100,35 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
   const handleEditar = (h: HorarioZona) => {
     setEditandoId(h.id);
     setTipoDia(h.tipo_dia);
-    setHoraInicio(h.hora_inicio);
-    setHoraFin(h.hora_fin);
+    setHoraInicio(h.hora_inicio ?? '');
+    setHoraFin(h.hora_fin ?? '');
+    setSinRestriccion(h.sin_restriccion);
     setErrorForm(null);
   };
 
-  const isFormValid = Boolean(horaInicio && horaFin && horaFin > horaInicio);
+  const isFormValid = sinRestriccion || Boolean(horaInicio && horaFin && horaFin > horaInicio);
 
   // ── Submit añadir / editar ─────────────────────────────────────────────────
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!horaInicio || !horaFin) {
-      setErrorForm('Hora de inicio y fin son obligatorias');
-      return;
-    }
-    if (horaFin <= horaInicio) {
-      setErrorForm('hora_fin debe ser mayor que hora_inicio');
-      return;
+    if (!sinRestriccion) {
+      if (!horaInicio || !horaFin) {
+        setErrorForm('Hora de inicio y fin son obligatorias');
+        return;
+      }
+      if (horaFin <= horaInicio) {
+        setErrorForm('hora_fin debe ser mayor que hora_inicio');
+        return;
+      }
     }
     setLoadingForm(true);
     setErrorForm(null);
     const API = import.meta.env.BASE_URL + 'api';
     try {
-      const body = { tipo_dia: tipoDia, hora_inicio: horaInicio, hora_fin: horaFin };
+      const body = sinRestriccion
+        ? { tipo_dia: tipoDia, sin_restriccion: true }
+        : { tipo_dia: tipoDia, hora_inicio: horaInicio, hora_fin: horaFin, sin_restriccion: false };
       const url    = editandoId
         ? `${API}/zonas/${zona.id}/horarios/${editandoId}`
         : `${API}/zonas/${zona.id}/horarios`;
@@ -211,24 +218,55 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
             </button>
           </div>
 
-          {/* Franjas agrupadas por tipo_dia */}
-          {horarios.length === 0 ? (
-            <div style={{ fontSize: 13, color: '#8e8e93', padding: '12px 0', marginBottom: 8 }}>
-              Sin franjas horarias definidas
-            </div>
-          ) : (
-            TIPOS.map(tipo => {
-              const franjas = horarios.filter(h => h.tipo_dia === tipo);
-              if (franjas.length === 0) return null;
-              return (
-                <div key={tipo} style={{ marginBottom: 16 }}>
-                  <div style={{
-                    fontSize: 11, fontWeight: 600, color: '#8e8e93',
-                    textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6,
-                  }}>
-                    {LABEL_TIPO[tipo]}
+          {/* Franjas agrupadas por tipo_dia — los tres días siempre se muestran,
+              incluso sin ninguna franja, para distinguir "sin restricción" de
+              "sin configurar" (antes ambos casos se veían igual: vacío). */}
+          {TIPOS.map(tipo => {
+            const entradas = horarios.filter(h => h.tipo_dia === tipo);
+            const entradaSinRestriccion = entradas.find(h => h.sin_restriccion);
+            const franjas = entradas.filter(h => !h.sin_restriccion);
+            return (
+              <div key={tipo} style={{ marginBottom: 16 }}>
+                <div style={{
+                  fontSize: 11, fontWeight: 600, color: '#8e8e93',
+                  textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6,
+                }}>
+                  {LABEL_TIPO[tipo]}
+                </div>
+                {entradaSinRestriccion ? (
+                  <div
+                    style={{
+                      display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '7px 10px',
+                      background: '#f0fdf4',
+                      borderRadius: 6, marginBottom: 2,
+                    }}
+                  >
+                    <span style={{ fontSize: 13, color: '#16a34a', fontWeight: 500 }}>
+                      Sin restricciones
+                    </span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        onClick={() => handleEditar(entradaSinRestriccion)}
+                        onMouseEnter={() => setHoveredBtn(`${entradaSinRestriccion.id}:editar`)}
+                        onMouseLeave={() => setHoveredBtn(null)}
+                        style={hoveredBtn === `${entradaSinRestriccion.id}:editar` ? { ...rowBtnAction, ...rowBtnActionHover } : rowBtnAction}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => { setErrorEliminar(null); setHorarioAEliminar(entradaSinRestriccion); }}
+                        onMouseEnter={() => setHoveredBtn(`${entradaSinRestriccion.id}:eliminar`)}
+                        onMouseLeave={() => setHoveredBtn(null)}
+                        style={hoveredBtn === `${entradaSinRestriccion.id}:eliminar` ? { ...rowBtnDanger, ...rowBtnDangerHover } : rowBtnDanger}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </div>
-                  {franjas.map((h, i) => (
+                ) : franjas.length > 0 ? (
+                  franjas.map((h, i) => (
                     <div
                       key={h.id}
                       style={{
@@ -261,11 +299,15 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              );
-            })
-          )}
+                  ))
+                ) : (
+                  <div style={{ fontSize: 13, color: '#8e8e93', padding: '7px 10px' }}>
+                    Sin configurar
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {/* Separador */}
           <div style={{ borderTop: '1px solid #f0f0f0', margin: '16px 0' }} />
@@ -295,8 +337,9 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
                   type="time"
                   value={horaInicio}
                   onChange={e => setHoraInicio(e.target.value)}
-                  required
-                  style={inputStyle}
+                  required={!sinRestriccion}
+                  disabled={sinRestriccion}
+                  style={sinRestriccion ? { ...inputStyle, background: '#f5f5f5', color: '#b0b0b5' } : inputStyle}
                 />
               </div>
               <div style={{ flex: '1 1 100px' }}>
@@ -305,11 +348,21 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
                   type="time"
                   value={horaFin}
                   onChange={e => setHoraFin(e.target.value)}
-                  required
-                  style={inputStyle}
+                  required={!sinRestriccion}
+                  disabled={sinRestriccion}
+                  style={sinRestriccion ? { ...inputStyle, background: '#f5f5f5', color: '#b0b0b5' } : inputStyle}
                 />
               </div>
             </div>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={sinRestriccion}
+                onChange={e => setSinRestriccion(e.target.checked)}
+              />
+              <span style={{ fontSize: 13, color: '#1c1c1e' }}>Sin restricciones todo el día</span>
+            </label>
 
             {errorForm && (
               <div style={{ color: '#dc2626', fontSize: 12, marginBottom: 10 }}>
@@ -379,7 +432,9 @@ export function HorarioPanel({ zona, token, onClose, onSuccess }: HorarioPanelPr
               ¿Eliminar{' '}
               <strong>
                 {LABEL_TIPO[horarioAEliminar.tipo_dia]}{' '}
-                {horarioAEliminar.hora_inicio}–{horarioAEliminar.hora_fin}
+                {horarioAEliminar.sin_restriccion
+                  ? 'Sin restricciones'
+                  : `${horarioAEliminar.hora_inicio}–${horarioAEliminar.hora_fin}`}
               </strong>?{' '}
               Esta acción no se puede deshacer.
             </div>

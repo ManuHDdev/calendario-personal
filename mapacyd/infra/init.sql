@@ -26,14 +26,18 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 
 -- Tabla de franjas horarias por zona
 CREATE TABLE IF NOT EXISTS horario_zona (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    zona_id     UUID            NOT NULL REFERENCES zona_cyd(id) ON DELETE CASCADE,
-    tipo_dia    VARCHAR(10)     NOT NULL CHECK (tipo_dia IN ('LMXJV', 'SABADO', 'DOMINGO')),
-    hora_inicio TIME            NOT NULL,
-    hora_fin    TIME            NOT NULL,
-    activo      BOOLEAN         NOT NULL DEFAULT TRUE,
-    deleted_at  TIMESTAMP,
-    CONSTRAINT hora_fin_mayor_que_inicio CHECK (hora_fin > hora_inicio)
+    id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
+    zona_id         UUID            NOT NULL REFERENCES zona_cyd(id) ON DELETE CASCADE,
+    tipo_dia        VARCHAR(10)     NOT NULL CHECK (tipo_dia IN ('LMXJV', 'SABADO', 'DOMINGO')),
+    hora_inicio     TIME,
+    hora_fin        TIME,
+    sin_restriccion BOOLEAN         NOT NULL DEFAULT FALSE,
+    activo          BOOLEAN         NOT NULL DEFAULT TRUE,
+    deleted_at      TIMESTAMP,
+    CONSTRAINT horario_valido CHECK (
+      (sin_restriccion = TRUE  AND hora_inicio IS NULL AND hora_fin IS NULL) OR
+      (sin_restriccion = FALSE AND hora_inicio IS NOT NULL AND hora_fin IS NOT NULL AND hora_fin > hora_inicio)
+    )
 );
 
 -- Trigger para updated_at automático
