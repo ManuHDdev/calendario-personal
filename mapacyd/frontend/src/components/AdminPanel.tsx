@@ -229,21 +229,19 @@ export function AdminPanel({ onClose, onActivarModoPin, onZonaCreada }: AdminPan
                     </td>
                     <td style={{ ...S.tdBase, color: '#636366' }}>{zona.ciudad}</td>
                     <td style={{ ...S.tdBase, color: '#636366', textAlign: 'center' }}>
-                      {zona.tipo === 'aparcamiento' ? '—' : nHorarios}
+                      {nHorarios}
                     </td>
                     <td style={S.tdBase}>
                       <div style={S.actionsGroup}>
-                        {zona.tipo !== 'aparcamiento' && (
-                          <button
-                            style={hoveredBtn === `${zona.id}:horarios` ? { ...S.btnAction, ...S.btnActionHover } : S.btnAction}
-                            onClick={() => setZonaHorarios(zona)}
-                            onMouseEnter={() => setHoveredBtn(`${zona.id}:horarios`)}
-                            onMouseLeave={() => setHoveredBtn(null)}
-                            title="Gestionar horarios"
-                          >
-                            Horarios
-                          </button>
-                        )}
+                        <button
+                          style={hoveredBtn === `${zona.id}:horarios` ? { ...S.btnAction, ...S.btnActionHover } : S.btnAction}
+                          onClick={() => setZonaHorarios(zona)}
+                          onMouseEnter={() => setHoveredBtn(`${zona.id}:horarios`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          title="Gestionar horarios"
+                        >
+                          Horarios
+                        </button>
                         <button
                           style={hoveredBtn === `${zona.id}:editar` ? { ...S.btnAction, ...S.btnActionHover } : S.btnAction}
                           onClick={() => setZonaEditar(zona)}
