@@ -3,6 +3,11 @@ import impostorWordsRaw from './impostor-words.json';
 import triviaQuestionsRaw from './trivia-questions.json';
 import yoNuncaRaw from './yo-nunca.json';
 import verdadORetoRaw from './verdad-o-reto.json';
+import bombPartySilabasRaw from './bomb-party-silabas.json';
+import bombPartyCategoriasRaw from './bomb-party-categorias.json';
+import quienEsMasProbableRaw from './quien-es-mas-probable.json';
+import diezDeDiezCualidadesRaw from './diez-de-diez-cualidades.json';
+import diezDeDiezPerosRaw from './diez-de-diez-peros.json';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Carga y valida los cuatro bancos de contenido estático al arrancar el
@@ -40,6 +45,26 @@ export interface VerdadORetoPrompt {
   nivel: Nivel;
 }
 
+// ── Batch A (add-nine-party-games): Bomb Party, ¿Quién es más probable?, 10/10 ──
+
+/** Dureza propia de ¿Quién es más probable? — no reutiliza el `Dureza` de
+ * Yo Nunca/Verdad o Reto (`suave/media/fuerte`), ver design.md. */
+export type QuienEsMasProbableDureza = 'familiar' | 'fiesta' | 'subido_de_tono';
+
+export interface QuienEsMasProbablePrompt {
+  texto: string;
+  dureza: QuienEsMasProbableDureza;
+}
+
+/** Intensidad propia de 10/10 — solo dos niveles, sin "mezcla" (design.md
+ * "10/10: ... both drawn from the same selected intensity"). */
+export type DiezDeDiezIntensidad = 'suave' | 'picante';
+
+export interface DiezDeDiezItem {
+  texto: string;
+  intensidad: DiezDeDiezIntensidad;
+}
+
 const impostorWordSchema = z.object({
   palabra: z.string().min(1),
   categoria: z.string().min(1),
@@ -74,6 +99,27 @@ const verdadORetoPromptSchema = z.object({
 });
 const verdadORetoBankSchema = z.object({ prompts: z.array(verdadORetoPromptSchema) });
 
+const bombPartySilabaSchema = z.string().min(1);
+const bombPartySilabasBankSchema = z.object({ silabas: z.array(bombPartySilabaSchema) });
+
+const bombPartyCategoriaSchema = z.string().min(1);
+const bombPartyCategoriasBankSchema = z.object({ categorias: z.array(bombPartyCategoriaSchema) });
+
+const quienEsMasProbableDurezaEnum = z.enum(['familiar', 'fiesta', 'subido_de_tono']);
+const quienEsMasProbablePromptSchema = z.object({
+  texto: z.string().min(1),
+  dureza: quienEsMasProbableDurezaEnum,
+});
+const quienEsMasProbableBankSchema = z.object({ prompts: z.array(quienEsMasProbablePromptSchema) });
+
+const diezDeDiezIntensidadEnum = z.enum(['suave', 'picante']);
+const diezDeDiezItemSchema = z.object({
+  texto: z.string().min(1),
+  intensidad: diezDeDiezIntensidadEnum,
+});
+const diezDeDiezCualidadesBankSchema = z.object({ cualidades: z.array(diezDeDiezItemSchema) });
+const diezDeDiezPerosBankSchema = z.object({ peros: z.array(diezDeDiezItemSchema) });
+
 const MIN_IMPOSTOR_WORDS = 300;
 const MIN_TRIVIA_QUESTIONS = 500;
 const MIN_YO_NUNCA_PROMPTS = 180;
@@ -84,12 +130,26 @@ const DUREZAS: Dureza[] = ['suave', 'media', 'fuerte'];
 const TIPOS: VerdadORetoTipo[] = ['verdad', 'reto'];
 const NIVELES: Nivel[] = ['estandar', 'sin_pareja'];
 
+const MIN_BOMB_PARTY_SILABAS = 60;
+const MIN_BOMB_PARTY_CATEGORIAS = 20;
+const MIN_QUIEN_ES_MAS_PROBABLE_PROMPTS = 90;
+const MIN_QUIEN_ES_MAS_PROBABLE_PER_DUREZA = 30;
+const QUIEN_ES_MAS_PROBABLE_DUREZAS: QuienEsMasProbableDureza[] = ['familiar', 'fiesta', 'subido_de_tono'];
+const MIN_DIEZ_DE_DIEZ_ITEMS = 60;
+const MIN_DIEZ_DE_DIEZ_PER_INTENSIDAD = 30;
+const DIEZ_DE_DIEZ_INTENSIDADES: DiezDeDiezIntensidad[] = ['suave', 'picante'];
+
 export interface ContentBanks {
   impostorWords: ImpostorWord[];
   triviaQuestions: TriviaQuestion[];
   triviaCategories: string[];
   yoNuncaPrompts: YoNuncaPrompt[];
   verdadORetoPrompts: VerdadORetoPrompt[];
+  bombPartySilabas: string[];
+  bombPartyCategorias: string[];
+  quienEsMasProbablePrompts: QuienEsMasProbablePrompt[];
+  diezDeDiezCualidades: DiezDeDiezItem[];
+  diezDeDiezPeros: DiezDeDiezItem[];
 }
 
 export function loadContentBanks(): ContentBanks {
@@ -145,6 +205,62 @@ export function loadContentBanks(): ContentBanks {
     }
   }
 
+  const bombPartySilabas = bombPartySilabasBankSchema.parse(bombPartySilabasRaw);
+  if (bombPartySilabas.silabas.length < MIN_BOMB_PARTY_SILABAS) {
+    throw new Error(
+      `bomb-party-silabas.json: se requieren al menos ${MIN_BOMB_PARTY_SILABAS} sílabas, hay ${bombPartySilabas.silabas.length}`,
+    );
+  }
+
+  const bombPartyCategorias = bombPartyCategoriasBankSchema.parse(bombPartyCategoriasRaw);
+  if (bombPartyCategorias.categorias.length < MIN_BOMB_PARTY_CATEGORIAS) {
+    throw new Error(
+      `bomb-party-categorias.json: se requieren al menos ${MIN_BOMB_PARTY_CATEGORIAS} categorías, hay ${bombPartyCategorias.categorias.length}`,
+    );
+  }
+
+  const quienEsMasProbable = quienEsMasProbableBankSchema.parse(quienEsMasProbableRaw);
+  if (quienEsMasProbable.prompts.length < MIN_QUIEN_ES_MAS_PROBABLE_PROMPTS) {
+    throw new Error(
+      `quien-es-mas-probable.json: se requieren al menos ${MIN_QUIEN_ES_MAS_PROBABLE_PROMPTS} prompts, hay ${quienEsMasProbable.prompts.length}`,
+    );
+  }
+  for (const dureza of QUIEN_ES_MAS_PROBABLE_DUREZAS) {
+    const count = quienEsMasProbable.prompts.filter((p) => p.dureza === dureza).length;
+    if (count < MIN_QUIEN_ES_MAS_PROBABLE_PER_DUREZA) {
+      throw new Error(
+        `quien-es-mas-probable.json: la dureza '${dureza}' requiere al menos ${MIN_QUIEN_ES_MAS_PROBABLE_PER_DUREZA} prompts, hay ${count}`,
+      );
+    }
+  }
+
+  const diezDeDiezCualidades = diezDeDiezCualidadesBankSchema.parse(diezDeDiezCualidadesRaw);
+  if (diezDeDiezCualidades.cualidades.length < MIN_DIEZ_DE_DIEZ_ITEMS) {
+    throw new Error(
+      `diez-de-diez-cualidades.json: se requieren al menos ${MIN_DIEZ_DE_DIEZ_ITEMS} cualidades, hay ${diezDeDiezCualidades.cualidades.length}`,
+    );
+  }
+  const diezDeDiezPeros = diezDeDiezPerosBankSchema.parse(diezDeDiezPerosRaw);
+  if (diezDeDiezPeros.peros.length < MIN_DIEZ_DE_DIEZ_ITEMS) {
+    throw new Error(
+      `diez-de-diez-peros.json: se requieren al menos ${MIN_DIEZ_DE_DIEZ_ITEMS} peros, hay ${diezDeDiezPeros.peros.length}`,
+    );
+  }
+  for (const intensidad of DIEZ_DE_DIEZ_INTENSIDADES) {
+    const cualidadesCount = diezDeDiezCualidades.cualidades.filter((c) => c.intensidad === intensidad).length;
+    if (cualidadesCount < MIN_DIEZ_DE_DIEZ_PER_INTENSIDAD) {
+      throw new Error(
+        `diez-de-diez-cualidades.json: la intensidad '${intensidad}' requiere al menos ${MIN_DIEZ_DE_DIEZ_PER_INTENSIDAD} cualidades, hay ${cualidadesCount}`,
+      );
+    }
+    const perosCount = diezDeDiezPeros.peros.filter((p) => p.intensidad === intensidad).length;
+    if (perosCount < MIN_DIEZ_DE_DIEZ_PER_INTENSIDAD) {
+      throw new Error(
+        `diez-de-diez-peros.json: la intensidad '${intensidad}' requiere al menos ${MIN_DIEZ_DE_DIEZ_PER_INTENSIDAD} peros, hay ${perosCount}`,
+      );
+    }
+  }
+
   return {
     impostorWords: impostor.words,
     triviaQuestions: trivia.questions,
@@ -154,6 +270,11 @@ export function loadContentBanks(): ContentBanks {
     triviaCategories: [...new Set(trivia.questions.map((question) => question.categoria))].sort(),
     yoNuncaPrompts: yoNunca.prompts,
     verdadORetoPrompts: verdadOReto.prompts,
+    bombPartySilabas: bombPartySilabas.silabas,
+    bombPartyCategorias: bombPartyCategorias.categorias,
+    quienEsMasProbablePrompts: quienEsMasProbable.prompts,
+    diezDeDiezCualidades: diezDeDiezCualidades.cualidades,
+    diezDeDiezPeros: diezDeDiezPeros.peros,
   };
 }
 

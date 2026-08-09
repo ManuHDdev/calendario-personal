@@ -16,6 +16,11 @@ interface PassAndPlaySession {
   impostorBags: Map<string, ShuffleBag<{ palabra: string; categoria: string }>>;
   yoNuncaBags: Map<string, ShuffleBag<string>>;
   verdadORetoBags: Map<string, ShuffleBag<string>>;
+  bombPartySilabaBags: Map<string, ShuffleBag<string>>;
+  bombPartyCategoriaBags: Map<string, ShuffleBag<string>>;
+  quienEsMasProbableBags: Map<string, ShuffleBag<string>>;
+  diezDeDiezCualidadBags: Map<string, ShuffleBag<string>>;
+  diezDeDiezPeroBags: Map<string, ShuffleBag<string>>;
   lastUsed: number;
 }
 
@@ -37,6 +42,11 @@ function getOrCreateSession(sessionId: string): PassAndPlaySession {
       impostorBags: new Map(),
       yoNuncaBags: new Map(),
       verdadORetoBags: new Map(),
+      bombPartySilabaBags: new Map(),
+      bombPartyCategoriaBags: new Map(),
+      quienEsMasProbableBags: new Map(),
+      diezDeDiezCualidadBags: new Map(),
+      diezDeDiezPeroBags: new Map(),
       lastUsed: Date.now(),
     };
     sessions.set(sessionId, session);
@@ -101,6 +111,74 @@ function getVerdadORetoBag(
     if (pool.length === 0) return null;
     bag = createShuffleBag(pool);
     session.verdadORetoBags.set(key, bag);
+  }
+  return bag;
+}
+
+// ── Batch A (add-nine-party-games): Bomb Party, ¿Quién es más probable?, 10/10 ──
+// Mismo mecanismo de bolsa-de-barajado-por-sesión-y-filtro que arriba.
+
+function getBombPartySilabaBag(session: PassAndPlaySession) {
+  const key = '__silabas__';
+  let bag = session.bombPartySilabaBags.get(key);
+  if (!bag) {
+    bag = createShuffleBag(contentBanks.bombPartySilabas);
+    session.bombPartySilabaBags.set(key, bag);
+  }
+  return bag;
+}
+
+function getBombPartyCategoriaBag(session: PassAndPlaySession) {
+  const key = '__categorias__';
+  let bag = session.bombPartyCategoriaBags.get(key);
+  if (!bag) {
+    bag = createShuffleBag(contentBanks.bombPartyCategorias);
+    session.bombPartyCategoriaBags.set(key, bag);
+  }
+  return bag;
+}
+
+/** dureza propia de ¿Quién es más probable? (`familiar/fiesta/subido_de_tono`),
+ * `mezcla` (o ausente) combina las tres — mismo patrón que Yo Nunca/Verdad o
+ * Reto pero con su propia taxonomía (ver design.md). */
+function getQuienEsMasProbableBag(session: PassAndPlaySession, dureza: string | undefined) {
+  const key = dureza ?? '__mezcla__';
+  let bag = session.quienEsMasProbableBags.get(key);
+  if (!bag) {
+    const pool = contentBanks.quienEsMasProbablePrompts
+      .filter((p) => !dureza || p.dureza === dureza)
+      .map((p) => p.texto);
+    if (pool.length === 0) return null;
+    bag = createShuffleBag(pool);
+    session.quienEsMasProbableBags.set(key, bag);
+  }
+  return bag;
+}
+
+/** 10/10: dos bolsas independientes (cualidad/pero) filtradas por la MISMA
+ * intensidad — ver design.md "both drawn from the same selected intensity". */
+function getDiezDeDiezCualidadBag(session: PassAndPlaySession, intensidad: string) {
+  let bag = session.diezDeDiezCualidadBags.get(intensidad);
+  if (!bag) {
+    const pool = contentBanks.diezDeDiezCualidades
+      .filter((c) => c.intensidad === intensidad)
+      .map((c) => c.texto);
+    if (pool.length === 0) return null;
+    bag = createShuffleBag(pool);
+    session.diezDeDiezCualidadBags.set(intensidad, bag);
+  }
+  return bag;
+}
+
+function getDiezDeDiezPeroBag(session: PassAndPlaySession, intensidad: string) {
+  let bag = session.diezDeDiezPeroBags.get(intensidad);
+  if (!bag) {
+    const pool = contentBanks.diezDeDiezPeros
+      .filter((p) => p.intensidad === intensidad)
+      .map((p) => p.texto);
+    if (pool.length === 0) return null;
+    bag = createShuffleBag(pool);
+    session.diezDeDiezPeroBags.set(intensidad, bag);
   }
   return bag;
 }
@@ -178,6 +256,59 @@ export async function contentRoutes(app: FastifyInstance): Promise<void> {
       }
       const prompt = bag.draw();
       return reply.send({ prompt, tipo });
+    },
+  );
+
+  // GET /juegos/api/bomb-party/silaba?modo=silaba|categoria&sessionId=
+  app.get<{ Querystring: { modo?: string; sessionId?: string } }>(
+    '/juegos/api/bomb-party/silaba',
+    { preHandler: requireAuthenticated },
+    async (request, reply: FastifyReply) => {
+      const modo = request.query.modo ?? 'silaba';
+      if (modo !== 'silaba' && modo !== 'categoria') {
+        return reply.code(400).send({ error: 'Bad Request', message: "modo debe ser 'silaba' o 'categoria'" });
+      }
+      const session = getOrCreateSession(getSessionId(request));
+      const bag = modo === 'silaba' ? getBombPartySilabaBag(session) : getBombPartyCategoriaBag(session);
+      const texto = bag.draw();
+      return reply.send({ texto, modo });
+    },
+  );
+
+  // GET /juegos/api/quien-es-mas-probable/prompt?dureza=&sessionId=
+  app.get<{ Querystring: { dureza?: string; sessionId?: string } }>(
+    '/juegos/api/quien-es-mas-probable/prompt',
+    { preHandler: requireAuthenticated },
+    async (request, reply: FastifyReply) => {
+      const dureza = normalizeDureza(request.query.dureza);
+      const session = getOrCreateSession(getSessionId(request));
+      const bag = getQuienEsMasProbableBag(session, dureza);
+      if (!bag) {
+        return reply.code(400).send({ error: 'Bad Request', message: `Dureza desconocida: ${dureza}` });
+      }
+      const prompt = bag.draw();
+      return reply.send({ prompt });
+    },
+  );
+
+  // GET /juegos/api/diez-de-diez/ronda?intensidad=suave|picante&sessionId=
+  app.get<{ Querystring: { intensidad?: string; sessionId?: string } }>(
+    '/juegos/api/diez-de-diez/ronda',
+    { preHandler: requireAuthenticated },
+    async (request, reply: FastifyReply) => {
+      const { intensidad } = request.query;
+      if (intensidad !== 'suave' && intensidad !== 'picante') {
+        return reply.code(400).send({ error: 'Bad Request', message: "intensidad debe ser 'suave' o 'picante'" });
+      }
+      const session = getOrCreateSession(getSessionId(request));
+      const cualidadBag = getDiezDeDiezCualidadBag(session, intensidad);
+      const peroBag = getDiezDeDiezPeroBag(session, intensidad);
+      if (!cualidadBag || !peroBag) {
+        return reply.code(400).send({ error: 'Bad Request', message: `Intensidad desconocida: ${intensidad}` });
+      }
+      const cualidad = cualidadBag.draw();
+      const pero = peroBag.draw();
+      return reply.send({ cualidad, pero, intensidad });
     },
   );
 }
