@@ -269,7 +269,7 @@
   }
 
   &--hoy {
-    background: #eff6ff;
+    background: var(--color-accent-tint);
 
     .celda__numero {
       background: var(--color-accent);
