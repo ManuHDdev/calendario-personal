@@ -2,10 +2,11 @@ import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Auth } from '../../../core/services/auth';
 import { AppLauncher } from '../app-launcher/app-launcher';
+import { ThemeToggle } from '../theme-toggle/theme-toggle';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, AppLauncher],
+  imports: [RouterLink, AppLauncher, ThemeToggle],
   templateUrl: './navbar.html',
   styleUrl: './navbar.scss'
 })
