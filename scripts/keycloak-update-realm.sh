@@ -147,13 +147,18 @@ CLIENT_ID=$(node -e "const a=JSON.parse(process.argv[1]); process.stdout.write(a
 
 [ -z "$CLIENT_ID" ] && err "Cliente 'calendario-frontend' no encontrado en el realm '$REALM'"
 
-if [[ "$HOST" == *"localhost"* ]]; then
-  REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*","http://localhost:5180/*","http://localhost:5181/*"]'
-  WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179","http://localhost:5180","http://localhost:5181"]'
-else
-  REDIRECT_URIS='["https://elbunkerdelingeniero.duckdns.org/*"]'
-  WEB_ORIGINS='["https://elbunkerdelingeniero.duckdns.org"]'
-fi
+# IMPORTANTE: la lista SIEMPRE incluye tanto los puertos locales como el
+# dominio de producción, sin importar contra qué $HOST se esté llamando a la
+# Admin API. Antes esto se decidía mirando si "$HOST" contenía "localhost",
+# pero en producción el script también se invoca con
+# http://localhost:8080 (desde dentro del propio VPS, contra el puerto
+# publicado del contenedor de Keycloak) — con la rama anterior, ese uso
+# documentado en CLAUDE.md sobrescribía los redirect URIs de producción con
+# la lista de solo-desarrollo, rompiendo el login de todas las apps. Al no
+# haber distinción de entorno, unificar la lista es la forma segura de
+# evitar esa clase de bug sin depender de cómo se invoque el script.
+REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*","http://localhost:5180/*","http://localhost:5181/*","https://elbunkerdelingeniero.duckdns.org/*"]'
+WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179","http://localhost:5180","http://localhost:5181","https://elbunkerdelingeniero.duckdns.org"]'
 
 # Obtener la configuración actual del cliente y parchearla
 CLIENT_JSON=$(curl -sf \
