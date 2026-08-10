@@ -12,7 +12,7 @@ interface AppDef {
 const APPS: AppDef[] = [
   { id: 'calendario', nombre: 'Calendario', color: '#0071e3', roles: ['admin'] },
   { id: 'storage',    nombre: 'Storage',    color: '#5e5ce6', roles: ['admin', 'familia'] },
-  { id: 'mapacyd',    nombre: 'MapaCYD',    color: '#30d158', roles: ['admin', 'familia', 'mapacyd_admin'] },
+  { id: 'mapacyd',    nombre: 'MapaCYD',    color: '#30d158', roles: ['admin', 'familia', 'mapacyd_admin', 'mapacyd_invitado'] },
   { id: 'panel',      nombre: 'Panel',      color: '#ff9f0a', roles: null },
   { id: 'ytdl',       nombre: 'Ytdl',       color: '#ff375f', roles: null },
   { id: 'gastos',     nombre: 'Gastos',     color: '#ffd60a', roles: ['admin'] },

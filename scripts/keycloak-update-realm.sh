@@ -3,8 +3,8 @@
 # keycloak-update-realm.sh
 #
 # Actualiza el realm "calendario" en Keycloak con los roles correctos
-# (admin / familia / invitado / paraisos_admin / mapacyd_admin) y asigna los
-# roles admin, paraisos_admin y mapacyd_admin al usuario "propietario".
+# (admin / familia / invitado / paraisos_admin / mapacyd_admin / mapacyd_invitado)
+# y asigna los roles admin, paraisos_admin y mapacyd_admin al usuario "propietario".
 #
 # Uso:
 #   bash scripts/keycloak-update-realm.sh [host] [admin_user] [admin_password]
@@ -49,7 +49,7 @@ TOKEN=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).access_token)"
 ok "Token de admin obtenido"
 
 # ── 2. Crear roles si no existen ──────────────────────────────────────────────
-for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin; do
+for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin mapacyd_invitado; do
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     "$HOST/admin/realms/$REALM/roles" \
     -H "Authorization: Bearer $TOKEN" \
@@ -189,7 +189,7 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Realm actualizado correctamente ✓${NC}"
 echo -e "${GREEN}════════════════════════════════════════${NC}"
 echo ""
-echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin"
+echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, mapacyd_invitado"
 echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin"
 echo "  Redirect URIs actualizadas para todos los puertos locales"
 echo ""

@@ -26,7 +26,7 @@ keycloak
       (keycloak.tokenParsed as { realm_access?: { roles?: string[] } })
         ?.realm_access?.roles ?? [];
 
-    const canViewMap = roles.includes('admin') || roles.includes('familia');
+    const canViewMap = roles.includes('admin') || roles.includes('familia') || roles.includes('mapacyd_admin') || roles.includes('mapacyd_invitado');
 
     if (!canViewMap) {
       root.render(

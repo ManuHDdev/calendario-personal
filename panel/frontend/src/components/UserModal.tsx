@@ -3,7 +3,7 @@ import type { UserOut, UserFormData } from '../types';
 import PasswordInput from './PasswordInput';
 import './UserModal.css';
 
-const ALL_ROLES = ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin'];
+const ALL_ROLES = ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'mapacyd_invitado'];
 
 interface Props {
   user: UserOut | null; // null = crear
@@ -57,6 +57,7 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
     invitado: 'Invitado',
     paraisos_admin: 'Admin Paraísos',
     mapacyd_admin: 'Admin MapaCYD',
+    mapacyd_invitado: 'Invitado MapaCYD',
   };
   const roleColors: Record<string, string> = {
     admin: '#0071e3',
@@ -64,6 +65,7 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
     invitado: '#aeaeb2',
     paraisos_admin: '#00c7be',
     mapacyd_admin: '#30d158',
+    mapacyd_invitado: '#8fd9a8',
   };
 
   return (

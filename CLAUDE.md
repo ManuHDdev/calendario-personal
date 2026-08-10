@@ -105,7 +105,7 @@ Calendario/mapacyd/ dentro del monorepo elbunkerdelingeniero.
 
 ### Roles
 - admin o mapacyd_admin → gestión completa (POST/PUT/DELETE zonas y horarios)
-- familia → solo consulta (GET /api/zonas)
+- familia o mapacyd_invitado → solo consulta (GET /api/zonas)
 - invitado → sin acceso a mapacyd
 
 ### Reglas obligatorias
@@ -462,16 +462,17 @@ Calendario/watchlist/ dentro del monorepo elbunkerdelingeniero.
 
 ## Sistema de roles (OBLIGATORIO conocer)
 
-Los cinco roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`.
+Los seis roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`, `mapacyd_invitado`.
 Cualquier código que filtre por rol DEBE usar exactamente estos nombres.
 
-| Rol             | Acceso                                                       |
-|-----------------|----------------------------------------------------------------|
-| admin           | Todas las apps + gestión completa                               |
-| familia         | Storage (lectura), MapaCYD (lectura), Juegos (completo)         |
-| invitado        | Juegos (completo) — sin acceso a ninguna otra app                |
-| paraisos_admin  | Gestión de spots en Paraísos (CRUD)                             |
-| mapacyd_admin   | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
+| Rol              | Acceso                                                          |
+|------------------|------------------------------------------------------------------|
+| admin            | Todas las apps + gestión completa                               |
+| familia          | Storage (lectura), MapaCYD (lectura), Juegos (completo)         |
+| invitado         | Juegos (completo) — sin acceso a ninguna otra app                |
+| paraisos_admin   | Gestión de spots en Paraísos (CRUD)                             |
+| mapacyd_admin    | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
+| mapacyd_invitado | Consulta de zonas y horarios en MapaCYD (solo lectura)          |
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
@@ -486,6 +487,9 @@ gestionar una subapp concreta sin tener acceso `admin` global. Un usuario con
 `paraisos_admin` puede crear, editar y borrar spots en Paraísos; con
 `mapacyd_admin` puede gestionar zonas y horarios en MapaCYD. Ambos roles se
 asignan automáticamente al usuario `propietario` por el script de realm.
+`mapacyd_invitado` es igualmente un rol delegado, pero de solo lectura (acceso
+de consulta a zonas y horarios en MapaCYD sin poder gestionarlos) — a
+diferencia de los roles `_admin`, no se asigna automáticamente a `propietario`.
 
 El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin` y `mapacyd_admin`.
 
