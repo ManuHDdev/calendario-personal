@@ -324,6 +324,86 @@ describe('content routes', () => {
     expect(bad.statusCode).toBe(400);
   });
 
+  // ── Batch B (add-nine-party-games): Tabú, Mímica ──
+
+  it('GET /tabu/cartas returns a shuffled batch of cards, each with 4-5 forbidden words', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/tabu/cartas',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(Array.isArray(body.cartas)).toBe(true);
+    expect(body.cartas.length).toBeGreaterThanOrEqual(80);
+    for (const carta of body.cartas) {
+      expect(carta.prohibidas.length).toBeGreaterThanOrEqual(4);
+      expect(carta.prohibidas.length).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it('GET /tabu/cartas filters by categoria and only returns cards from that category', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/tabu/cartas?categoria=comida',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    for (const carta of body.cartas) {
+      expect(carta.categoria).toBe('comida');
+    }
+  });
+
+  it('GET /tabu/cartas rejects an unknown category with 400', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/tabu/cartas?categoria=noexiste',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('GET /mimica/cartas returns a shuffled batch of items', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/mimica/cartas',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(Array.isArray(body.items)).toBe(true);
+    expect(body.items.length).toBeGreaterThanOrEqual(80);
+  });
+
+  it('GET /mimica/cartas filters by categoria and only returns items from that category', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/mimica/cartas?categoria=animal',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    for (const item of body.items) {
+      expect(item.categoria).toBe('animal');
+    }
+  });
+
+  it('GET /mimica/cartas rejects an unknown category with 400', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/mimica/cartas?categoria=noexiste',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
   it('does not repeat impostor words within the same session before exhausting the small category pool is unlikely, but does not repeat across many draws for a large pool', async () => {
     const app = await buildApp();
     const seen = new Set<string>();

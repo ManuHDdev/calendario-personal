@@ -8,6 +8,8 @@ import bombPartyCategoriasRaw from './bomb-party-categorias.json';
 import quienEsMasProbableRaw from './quien-es-mas-probable.json';
 import diezDeDiezCualidadesRaw from './diez-de-diez-cualidades.json';
 import diezDeDiezPerosRaw from './diez-de-diez-peros.json';
+import tabuCartasRaw from './tabu-cartas.json';
+import mimicaCartasRaw from './mimica-cartas.json';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Carga y valida los cuatro bancos de contenido estático al arrancar el
@@ -65,6 +67,21 @@ export interface DiezDeDiezItem {
   intensidad: DiezDeDiezIntensidad;
 }
 
+// Tabú y Mímica: team play en un único dispositivo compartido (ver
+// design.md "Decisions — team play, shared device"). No necesitan un
+// shuffle-bag por sesión como el resto de bancos: content.ts sirve un lote
+// ya barajado (ver "content.ts").
+export interface TabuCarta {
+  palabra: string;
+  prohibidas: string[];
+  categoria: string;
+}
+
+export interface MimicaItem {
+  texto: string;
+  categoria: string;
+}
+
 const impostorWordSchema = z.object({
   palabra: z.string().min(1),
   categoria: z.string().min(1),
@@ -120,12 +137,29 @@ const diezDeDiezItemSchema = z.object({
 const diezDeDiezCualidadesBankSchema = z.object({ cualidades: z.array(diezDeDiezItemSchema) });
 const diezDeDiezPerosBankSchema = z.object({ peros: z.array(diezDeDiezItemSchema) });
 
+// Tabú exige exactamente 4 o 5 palabras prohibidas por carta (ver
+// specs/juegos/spec.md "Tabú team turns").
+const tabuCartaSchema = z.object({
+  palabra: z.string().min(1),
+  prohibidas: z.array(z.string().min(1)).min(4).max(5),
+  categoria: z.string().min(1),
+});
+const tabuBankSchema = z.object({ cartas: z.array(tabuCartaSchema) });
+
+const mimicaItemSchema = z.object({
+  texto: z.string().min(1),
+  categoria: z.string().min(1),
+});
+const mimicaBankSchema = z.object({ items: z.array(mimicaItemSchema) });
+
 const MIN_IMPOSTOR_WORDS = 300;
 const MIN_TRIVIA_QUESTIONS = 500;
 const MIN_YO_NUNCA_PROMPTS = 180;
 const MIN_YO_NUNCA_PER_BUCKET = 30;
 const MIN_VERDAD_O_RETO_PROMPTS = 180;
 const MIN_VERDAD_O_RETO_PER_BUCKET = 15;
+const MIN_TABU_CARTAS = 80;
+const MIN_MIMICA_ITEMS = 80;
 const DUREZAS: Dureza[] = ['suave', 'media', 'fuerte'];
 const TIPOS: VerdadORetoTipo[] = ['verdad', 'reto'];
 const NIVELES: Nivel[] = ['estandar', 'sin_pareja'];
@@ -150,6 +184,10 @@ export interface ContentBanks {
   quienEsMasProbablePrompts: QuienEsMasProbablePrompt[];
   diezDeDiezCualidades: DiezDeDiezItem[];
   diezDeDiezPeros: DiezDeDiezItem[];
+  tabuCartas: TabuCarta[];
+  tabuCategories: string[];
+  mimicaItems: MimicaItem[];
+  mimicaCategories: string[];
 }
 
 export function loadContentBanks(): ContentBanks {
@@ -261,6 +299,27 @@ export function loadContentBanks(): ContentBanks {
     }
   }
 
+  const tabu = tabuBankSchema.parse(tabuCartasRaw);
+  if (tabu.cartas.length < MIN_TABU_CARTAS) {
+    throw new Error(
+      `tabu-cartas.json: se requieren al menos ${MIN_TABU_CARTAS} cartas, hay ${tabu.cartas.length}`,
+    );
+  }
+  for (const carta of tabu.cartas) {
+    if (carta.prohibidas.length < 4 || carta.prohibidas.length > 5) {
+      throw new Error(
+        `tabu-cartas.json: la carta '${carta.palabra}' debe tener 4 o 5 palabras prohibidas, tiene ${carta.prohibidas.length}`,
+      );
+    }
+  }
+
+  const mimica = mimicaBankSchema.parse(mimicaCartasRaw);
+  if (mimica.items.length < MIN_MIMICA_ITEMS) {
+    throw new Error(
+      `mimica-cartas.json: se requieren al menos ${MIN_MIMICA_ITEMS} items, hay ${mimica.items.length}`,
+    );
+  }
+
   return {
     impostorWords: impostor.words,
     triviaQuestions: trivia.questions,
@@ -275,6 +334,10 @@ export function loadContentBanks(): ContentBanks {
     quienEsMasProbablePrompts: quienEsMasProbable.prompts,
     diezDeDiezCualidades: diezDeDiezCualidades.cualidades,
     diezDeDiezPeros: diezDeDiezPeros.peros,
+    tabuCartas: tabu.cartas,
+    tabuCategories: [...new Set(tabu.cartas.map((c) => c.categoria))].sort(),
+    mimicaItems: mimica.items,
+    mimicaCategories: [...new Set(mimica.items.map((i) => i.categoria))].sort(),
   };
 }
 
