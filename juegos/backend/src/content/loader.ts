@@ -3,6 +3,7 @@ import impostorWordsRaw from './impostor-words.json';
 import triviaQuestionsRaw from './trivia-questions.json';
 import yoNuncaRaw from './yo-nunca.json';
 import verdadORetoRaw from './verdad-o-reto.json';
+import respuestasFalsasRaw from './respuestas-falsas-preguntas.json';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Carga y valida los cuatro bancos de contenido estático al arrancar el
@@ -40,6 +41,13 @@ export interface VerdadORetoPrompt {
   nivel: Nivel;
 }
 
+/** Banco de Respuestas falsas (ver specs/juegos/spec.md "Respuestas falsas
+ * scoring"): respuestaReal NUNCA se envía a ningún cliente hasta el reveal. */
+export interface RespuestaFalsaPregunta {
+  pregunta: string;
+  respuestaReal: string;
+}
+
 const impostorWordSchema = z.object({
   palabra: z.string().min(1),
   categoria: z.string().min(1),
@@ -74,12 +82,19 @@ const verdadORetoPromptSchema = z.object({
 });
 const verdadORetoBankSchema = z.object({ prompts: z.array(verdadORetoPromptSchema) });
 
+const respuestaFalsaPreguntaSchema = z.object({
+  pregunta: z.string().min(1),
+  respuestaReal: z.string().min(1),
+});
+const respuestasFalsasBankSchema = z.object({ preguntas: z.array(respuestaFalsaPreguntaSchema) });
+
 const MIN_IMPOSTOR_WORDS = 300;
 const MIN_TRIVIA_QUESTIONS = 500;
 const MIN_YO_NUNCA_PROMPTS = 180;
 const MIN_YO_NUNCA_PER_BUCKET = 30;
 const MIN_VERDAD_O_RETO_PROMPTS = 180;
 const MIN_VERDAD_O_RETO_PER_BUCKET = 15;
+const MIN_RESPUESTAS_FALSAS_PREGUNTAS = 60;
 const DUREZAS: Dureza[] = ['suave', 'media', 'fuerte'];
 const TIPOS: VerdadORetoTipo[] = ['verdad', 'reto'];
 const NIVELES: Nivel[] = ['estandar', 'sin_pareja'];
@@ -90,6 +105,7 @@ export interface ContentBanks {
   triviaCategories: string[];
   yoNuncaPrompts: YoNuncaPrompt[];
   verdadORetoPrompts: VerdadORetoPrompt[];
+  respuestasFalsasPreguntas: RespuestaFalsaPregunta[];
 }
 
 export function loadContentBanks(): ContentBanks {
@@ -145,6 +161,13 @@ export function loadContentBanks(): ContentBanks {
     }
   }
 
+  const respuestasFalsas = respuestasFalsasBankSchema.parse(respuestasFalsasRaw);
+  if (respuestasFalsas.preguntas.length < MIN_RESPUESTAS_FALSAS_PREGUNTAS) {
+    throw new Error(
+      `respuestas-falsas-preguntas.json: se requieren al menos ${MIN_RESPUESTAS_FALSAS_PREGUNTAS} preguntas, hay ${respuestasFalsas.preguntas.length}`,
+    );
+  }
+
   return {
     impostorWords: impostor.words,
     triviaQuestions: trivia.questions,
@@ -154,6 +177,7 @@ export function loadContentBanks(): ContentBanks {
     triviaCategories: [...new Set(trivia.questions.map((question) => question.categoria))].sort(),
     yoNuncaPrompts: yoNunca.prompts,
     verdadORetoPrompts: verdadOReto.prompts,
+    respuestasFalsasPreguntas: respuestasFalsas.preguntas,
   };
 }
 

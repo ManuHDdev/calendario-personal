@@ -1,5 +1,6 @@
 import { createShuffleBag } from '../services/shuffleBag';
 import { contentBanks } from '../content/loader';
+import { STOP_DEFAULT_CATEGORIES, STOP_DEFAULT_EXCLUDED_LETTERS } from './types';
 import type { GameType, Player, RoomSocket, RoomState } from './types';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -51,7 +52,7 @@ export function createRoom(
       game: null,
       phase: 'lobby',
     };
-  } else {
+  } else if (gameType === 'trivia-live') {
     // Sala de Trivia en vivo escogida por categoría (o el pool completo si se
     // omite/`todas`) — ver design.md "Category chosen at room creation, not
     // mid-game". La validación de categoría desconocida vive en
@@ -69,6 +70,32 @@ export function createRoom(
       answers: new Map(),
       scores: new Map(),
       questionsAsked: 0,
+    };
+  } else if (gameType === 'respuestas-falsas-live') {
+    // Ver design.md "Respuestas falsas" y specs/juegos/spec.md "Respuestas
+    // falsas scoring".
+    room.respuestasFalsas = {
+      bag: createShuffleBag(contentBanks.respuestasFalsasPreguntas),
+      phase: 'lobby',
+      currentQuestion: null,
+      submissions: new Map(),
+      options: null,
+      votes: new Map(),
+      scores: new Map(),
+      questionsAsked: 0,
+    };
+  } else if (gameType === 'stop-live') {
+    // Ver design.md "Stop / Basta" y specs/juegos/spec.md "Stop round
+    // resolution and scoring".
+    room.stop = {
+      categories: [...STOP_DEFAULT_CATEGORIES],
+      excludedLetters: [...STOP_DEFAULT_EXCLUDED_LETTERS],
+      phase: 'lobby',
+      letter: null,
+      submissions: new Map(),
+      stoppedBy: null,
+      scores: new Map(),
+      roundsPlayed: 0,
     };
   }
 

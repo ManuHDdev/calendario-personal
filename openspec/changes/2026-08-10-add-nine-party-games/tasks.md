@@ -19,14 +19,14 @@ Implementation is split into 5 independent batches by play-pattern/complexity (s
 
 ## Batch C — Multi-device rooms: Respuestas falsas, Stop
 
-- [ ] C.1 Content bank: `respuestas-falsas-preguntas.json` (≥60 `{pregunta, respuestaReal}` pairs)
-- [ ] C.2 `rooms/types.ts`: extend `GameType` with `'respuestas-falsas-live' | 'stop-live'`; add `room.respuestasFalsas?`/`room.stop?` optional state (own namespace, don't touch `room.trivia`/`room.impostor`)
-- [ ] C.3 `games/respuestasFalsasLive.ts`: submit-fake-answer → shuffle+broadcast → vote (self-vote rejected) → reveal+score, per spec.md
-- [ ] C.4 `games/stopLive.ts`: start-round (random letter, category list) → per-category submissions → first "¡Stop!" ends the round for everyone → automatic 10/5/0 scoring, per spec.md
-- [ ] C.5 `ws.route.ts`/`rooms.route.ts`: wire the two new message types into the existing dispatch-by-`gameType` pattern
-- [ ] C.6 Unit tests: self-vote rejection, fooled-player scoring math (Respuestas falsas); stop-cutoff timing, duplicate-vs-unique scoring (Stop)
-- [ ] C.7 Frontend: `juegos/frontend/src/games/live/RespuestasFalsasLive.tsx`, `juegos/frontend/src/games/live/StopLive.tsx`, room-creation category/config options in `RoomLobby.tsx`
-- [ ] C.8 `HubPage.tsx`: add both under "En vivo"
+- [x] C.1 Content bank: `respuestas-falsas-preguntas.json` (≥60 `{pregunta, respuestaReal}` pairs)
+- [x] C.2 `rooms/types.ts`: extend `GameType` with `'respuestas-falsas-live' | 'stop-live'`; add `room.respuestasFalsas?`/`room.stop?` optional state (own namespace, don't touch `room.trivia`/`room.impostor`)
+- [x] C.3 `games/respuestasFalsasLive.ts`: submit-fake-answer → shuffle+broadcast → vote (self-vote rejected) → reveal+score, per spec.md
+- [x] C.4 `games/stopLive.ts`: start-round (random letter, category list) → per-category submissions → first "¡Stop!" ends the round for everyone → automatic 10/5/0 scoring, per spec.md
+- [x] C.5 `ws.route.ts`/`rooms.route.ts`: wire the two new message types into the existing dispatch-by-`gameType` pattern
+- [x] C.6 Unit tests: self-vote rejection, fooled-player scoring math (Respuestas falsas); stop-cutoff timing, duplicate-vs-unique scoring (Stop)
+- [x] C.7 Frontend: `juegos/frontend/src/games/live/RespuestasFalsasLive.tsx`, `juegos/frontend/src/games/live/StopLive.tsx`, room-creation category/config options in `RoomLobby.tsx`
+- [x] C.8 `HubPage.tsx`: add both under "En vivo"
 
 ## Batch D — Coup (multi-device room, standalone)
 
