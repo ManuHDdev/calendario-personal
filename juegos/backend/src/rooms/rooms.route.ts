@@ -11,9 +11,12 @@ const createRoomSchema = z.object({
     'respuestas-falsas-live',
     'stop-live',
     'coup-live',
+    'hombre-lobo-live',
   ]),
   // Solo se usa/valida cuando gameType === 'trivia-live' — ver spec.md "Live
-  // room creation and join". Ignorado (no-op) para el resto de gameTypes.
+  // room creation and join". Ignorado (no-op) para el resto de gameTypes
+  // (hombre-lobo-live configura su ratio lobo/jugadores en el mensaje WS
+  // 'start-game', no en la creación de la sala).
   categoria: z.string().min(1).optional(),
 });
 

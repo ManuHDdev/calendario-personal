@@ -15,6 +15,7 @@ import DiezDeDiez from './games/diezdediez/DiezDeDiez';
 import RespuestasFalsasLive from './games/live/RespuestasFalsasLive';
 import StopLive from './games/live/StopLive';
 import CoupLive from './games/live/CoupLive';
+import HombreLoboLive from './games/live/HombreLoboLive';
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/live/respuestas-falsas/:code" element={<RespuestasFalsasLive />} />
           <Route path="/live/stop/:code" element={<StopLive />} />
           <Route path="/live/coup/:code" element={<CoupLive />} />
+          <Route path="/live/hombre-lobo/:code" element={<HombreLoboLive />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

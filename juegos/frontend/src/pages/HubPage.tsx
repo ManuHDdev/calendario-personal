@@ -23,6 +23,7 @@ const EN_VIVO = [
   { gameType: 'respuestas-falsas-live' as const, icon: '🤥', title: 'Respuestas falsas', desc: 'Engaña al resto con tu mentira.' },
   { gameType: 'stop-live' as const, icon: '✋', title: 'Stop / Basta', desc: 'Rellena rápido antes de que alguien grite ¡Stop!' },
   { gameType: 'coup-live' as const, icon: '🗡️', title: 'Coup', desc: 'Farol, monedas y traición.' },
+  { gameType: 'hombre-lobo-live' as const, icon: '🐺', title: 'Hombre Lobo', desc: 'La app narra, vosotros jugáis.' },
 ];
 
 export default function HubPage() {
