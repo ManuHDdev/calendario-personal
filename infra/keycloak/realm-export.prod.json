@@ -45,6 +45,13 @@
         "composite": false,
         "clientRole": false,
         "containerId": "calendario"
+      },
+      {
+        "name": "mapacyd_invitado",
+        "description": "Invitado de MapaCYD — solo consulta de zonas y horarios, sin gestión",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
       }
     ],
     "client": {

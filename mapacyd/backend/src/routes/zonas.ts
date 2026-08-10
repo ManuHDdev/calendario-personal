@@ -28,7 +28,7 @@ export async function zonasRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/zonas?ciudad=X
   app.get<{ Querystring: { ciudad?: string } }>(
     '/zonas',
-    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_admin']) },
+    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_admin', 'mapacyd_invitado']) },
     async (request, reply: FastifyReply) => {
       try {
         const { ciudad } = request.query;
@@ -53,7 +53,7 @@ export async function zonasRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/zonas/:id
   app.get<{ Params: { id: string } }>(
     '/zonas/:id',
-    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_admin']) },
+    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_admin', 'mapacyd_invitado']) },
     async (request, reply: FastifyReply) => {
       try {
         const { id } = request.params;

@@ -11,7 +11,7 @@ export async function preferencesRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/preferences — ciudad preferida del usuario autenticado
   app.get(
     '/preferences',
-    { preHandler: authMiddleware(['admin', 'familia']) },
+    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_invitado']) },
     async (request, reply: FastifyReply) => {
       try {
         const userId = request.user!.sub as string;
@@ -33,7 +33,7 @@ export async function preferencesRoutes(app: FastifyInstance): Promise<void> {
   // PUT /api/preferences — cambia la ciudad preferida (geocodificada)
   app.put(
     '/preferences',
-    { preHandler: authMiddleware(['admin', 'familia']) },
+    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_invitado']) },
     async (request, reply: FastifyReply) => {
       const parsed = setPreferenciaSchema.safeParse(request.body);
       if (!parsed.success) {
