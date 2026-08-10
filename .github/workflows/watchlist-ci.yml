@@ -24,7 +24,7 @@ jobs:
 
       - name: Install & build
         working-directory: watchlist/backend
-        run: npm ci && npm run build
+        run: npm install && npm run build
 
       - name: Test
         working-directory: watchlist/backend
