@@ -422,6 +422,44 @@ Estado en memoria (`Map<roomCode, RoomState>`), sin Redis ni pub/sub — coheren
 
 ---
 
+## Watchlist — Películas, series y libros pendientes
+
+### Ubicación
+Calendario/watchlist/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/, storage/, mapacyd/, ytdl/, gastos/, ofertas/, paraisos/ y juegos/)
+- Frontend: React + Vite + TypeScript
+- Base de datos: PostgreSQL 15, propia (`watchlist`), tabla `item`
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón)
+- Búsqueda externa: TMDB (themoviedb.org) para películas/series, Google Books para libros — autocompletado de título, poster y sinopsis al añadir un ítem
+- Validaciones: Zod en todos los endpoints que reciben body
+- Sin ORM — queries directas con el cliente pg
+
+### Roles
+Único rol con acceso: `admin` (el propietario es el único usuario). `familia` e `invitado` no tienen acceso a Watchlist, ni a la API ni al AppLauncher.
+
+### Rutas (`/watchlist/api/*`)
+- `GET /items` — listado, filtros `tipo`/`estado`, siempre `activo=true`
+- `POST /items` — alta (desde resultado de búsqueda o manual)
+- `PATCH /items/:id` — edición de campos y/o cambio de estado
+- `DELETE /items/:id` — borrado lógico (`activo=false`, `deleted_at=now()`)
+- `GET /search/movies?q=` — autocompletado de películas vía TMDB
+- `GET /search/tv?q=` — autocompletado de series vía TMDB
+- `GET /search/books?q=` — autocompletado de libros vía Google Books
+- `GET /health`
+
+### Variables de entorno del backend
+`WATCHLIST_DB_HOST`, `WATCHLIST_DB_NAME`, `WATCHLIST_DB_USER`, `WATCHLIST_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3009), `TMDB_API_KEY` (gratuito, themoviedb.org), `GOOGLE_BOOKS_API_KEY` (gratuito, Google Cloud Console). Si alguna de las dos claves falta, el endpoint de búsqueda correspondiente devuelve 503 en vez de romper el arranque del backend.
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/watchlist-backend:latest`, `ghcr.io/manuhddev/watchlist-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los cinco roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`.
@@ -490,15 +528,17 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Ofertas            | :5178    | :3006   |
 | Paraísos           | :5179    | :3007   |
 | Juegos             | :5180    | :3008   |
+| Watchlist          | :5181    | :3009   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
 | PostgreSQL (gastos) | :5435  | —       |
 | PostgreSQL (ofertas)| :5436  | —       |
 | PostgreSQL (paraisos)| :5437 | —       |
+| PostgreSQL (watchlist)| :5438| —       |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
-- **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend` y `ytdl/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 8 Dockerfiles y 8 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 9 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 9 Dockerfiles y 9 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 10 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.

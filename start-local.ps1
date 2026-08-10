@@ -24,6 +24,8 @@
 #   paraisos frontend   →  :5179
 #   juegos backend      →  :3008
 #   juegos frontend     →  :5180
+#   watchlist backend   →  :3009
+#   watchlist frontend  →  :5181
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -48,6 +50,7 @@ function Cleanup {
   warn "  cd gastos\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd ofertas\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd paraisos\infra; docker compose -f docker-compose.local.yml down"
+  warn "  cd watchlist\infra; docker compose -f docker-compose.local.yml down"
 }
 
 # Registrar cleanup al salir
@@ -104,6 +107,10 @@ docker compose -f docker-compose.local.yml up -d
 
 info "PostgreSQL (paraisos :5437)..."
 Set-Location (Join-Path $SCRIPT_DIR "paraisos\infra")
+docker compose -f docker-compose.local.yml up -d
+
+info "PostgreSQL (watchlist :5438)..."
+Set-Location (Join-Path $SCRIPT_DIR "watchlist\infra")
 docker compose -f docker-compose.local.yml up -d
 
 Set-Location $SCRIPT_DIR
@@ -168,6 +175,18 @@ do {
   Write-Host -NoNewline "."; Start-Sleep -Seconds 2
 } while ($true)
 Write-Host ""; info "  ✓ PostgreSQL (paraisos) listo."
+
+# ── 5e. Esperar a PostgreSQL (watchlist) ────────────────────────────────────
+info "PostgreSQL watchlist..."
+$retries = 30
+do {
+  $r = docker compose -f "$SCRIPT_DIR\watchlist\infra\docker-compose.local.yml" exec -T watchlist-db pg_isready -U watchlist -d watchlist 2>$null
+  if ($LASTEXITCODE -eq 0) { break }
+  $retries--
+  if ($retries -le 0) { err "PostgreSQL (watchlist) no arrancó." }
+  Write-Host -NoNewline "."; Start-Sleep -Seconds 2
+} while ($true)
+Write-Host ""; info "  ✓ PostgreSQL (watchlist) listo."
 
 # ── 6. Esperar a Keycloak ────────────────────────────────────────────────────
 info "Keycloak (puede tardar ~30s la primera vez)..."
@@ -258,6 +277,17 @@ StartBackground "paraisos-backend  :3007" "paraisos-backend.log" `
      PARAISOS_IMAGES_PATH=(Join-Path $SCRIPT_DIR "paraisos\backend\data\images");
      ORS_API_KEY=$env:ORS_API_KEY }
 
+# Watchlist backend
+EnsureDeps (Join-Path $SCRIPT_DIR "watchlist\backend")
+StartBackground "watchlist-backend :3009" "watchlist-backend.log" `
+  (Join-Path $SCRIPT_DIR "watchlist\backend") `
+  "npm run dev" `
+  @{ PORT="3009"; WATCHLIST_DB_HOST="localhost"; WATCHLIST_DB_PORT="5438";
+     WATCHLIST_DB_NAME="watchlist"; WATCHLIST_DB_USER="watchlist"; WATCHLIST_DB_PASSWORD="watchlist123";
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5181";
+     TMDB_API_KEY=$env:TMDB_API_KEY; GOOGLE_BOOKS_API_KEY=$env:GOOGLE_BOOKS_API_KEY }
+
 # Juegos backend
 EnsureDeps (Join-Path $SCRIPT_DIR "juegos\backend")
 StartBackground "juegos-backend    :3008" "juegos-backend.log" `
@@ -305,6 +335,10 @@ StartBackground "paraisos-frontend  :5179" "paraisos-frontend.log" `
 EnsureDeps (Join-Path $SCRIPT_DIR "juegos\frontend")
 StartBackground "juegos-frontend    :5180" "juegos-frontend.log" `
   (Join-Path $SCRIPT_DIR "juegos\frontend") "npm run dev"
+
+EnsureDeps (Join-Path $SCRIPT_DIR "watchlist\frontend")
+StartBackground "watchlist-frontend :5181" "watchlist-frontend.log" `
+  (Join-Path $SCRIPT_DIR "watchlist\frontend") "npm run dev"
 
 EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
 StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
@@ -360,6 +394,11 @@ Write-Host ""
 Write-Host "  Juegos" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5180/juegos/"
 Write-Host "    Backend health   ->  http://localhost:3008/juegos/api/health"
+Write-Host ""
+Write-Host "  Watchlist" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5181/watchlist/"
+Write-Host "    Backend health   ->  http://localhost:3009/watchlist/api/health"
+Write-Host "    Búsqueda TMDB/Google Books deshabilitada hasta configurar TMDB_API_KEY/GOOGLE_BOOKS_API_KEY" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow

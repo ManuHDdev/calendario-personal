@@ -25,6 +25,8 @@
 #   paraisos frontend   →  :5179
 #   juegos backend      →  :3008
 #   juegos frontend     →  :5180
+#   watchlist backend   →  :3009
+#   watchlist frontend  →  :5181
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -64,6 +66,7 @@ cleanup() {
   warn "  cd gastos/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd ofertas/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd paraisos/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd watchlist/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -134,6 +137,9 @@ info "PostgreSQL (ofertas :5436)..."
 info "PostgreSQL (paraisos :5437)..."
 (cd "$SCRIPT_DIR/paraisos/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (watchlist :5438)..."
+(cd "$SCRIPT_DIR/watchlist/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -166,6 +172,12 @@ wait_for_container \
   "PostgreSQL paraisos" \
   "paraisos-db-local" \
   "docker exec paraisos-db-local pg_isready -U paraisos -d paraisos" \
+  30
+
+wait_for_container \
+  "PostgreSQL watchlist" \
+  "watchlist-db-local" \
+  "docker exec watchlist-db-local pg_isready -U watchlist -d watchlist" \
   30
 
 wait_for_container \
@@ -272,6 +284,20 @@ start_bg "juegos-backend    :3008" "juegos-backend.log" "$SCRIPT_DIR/juegos/back
       CORS_ORIGIN="http://localhost:5180" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/watchlist/backend"
+start_bg "watchlist-backend  :3009" "watchlist-backend.log" "$SCRIPT_DIR/watchlist/backend" \
+  env PORT=3009 \
+      WATCHLIST_DB_HOST="localhost" \
+      WATCHLIST_DB_PORT="5438" \
+      WATCHLIST_DB_NAME="watchlist" \
+      WATCHLIST_DB_USER="watchlist" \
+      WATCHLIST_DB_PASSWORD="watchlist123" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5181" \
+      TMDB_API_KEY="${TMDB_API_KEY:-}" \
+      GOOGLE_BOOKS_API_KEY="${GOOGLE_BOOKS_API_KEY:-}" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -308,6 +334,10 @@ start_bg "paraisos-frontend  :5179" "paraisos-frontend.log" "$SCRIPT_DIR/paraiso
 
 ensure_deps "$SCRIPT_DIR/juegos/frontend"
 start_bg "juegos-frontend    :5180" "juegos-frontend.log" "$SCRIPT_DIR/juegos/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/watchlist/frontend"
+start_bg "watchlist-frontend :5181" "watchlist-frontend.log" "$SCRIPT_DIR/watchlist/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -363,6 +393,11 @@ echo ""
 echo -e "  ${CYAN}Juegos${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5180/juegos/${NC}"
 echo -e "    Backend health   →  http://localhost:3008/juegos/api/health"
+echo ""
+echo -e "  ${CYAN}Watchlist${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5181/watchlist/${NC}"
+echo -e "    Backend health   →  http://localhost:3009/watchlist/api/health"
+echo -e "    ${YELLOW}ℹ  Búsqueda TMDB/Google Books deshabilitada hasta configurar TMDB_API_KEY/GOOGLE_BOOKS_API_KEY${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

@@ -1,0 +1,62 @@
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  watchlist-db:
+    image: postgres:15
+    container_name: watchlist-db
+    environment:
+      POSTGRES_DB:       ${WATCHLIST_DB_NAME}
+      POSTGRES_USER:     ${WATCHLIST_DB_USER}
+      POSTGRES_PASSWORD: ${WATCHLIST_DB_PASSWORD}
+    volumes:
+      - watchlist_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${WATCHLIST_DB_USER} -d ${WATCHLIST_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calendario-net
+
+  watchlist-backend:
+    image: ghcr.io/manuhddev/watchlist-backend:latest
+    container_name: watchlist-backend
+    environment:
+      PORT:                   3009
+      WATCHLIST_DB_HOST:      watchlist-db
+      WATCHLIST_DB_NAME:      ${WATCHLIST_DB_NAME}
+      WATCHLIST_DB_USER:      ${WATCHLIST_DB_USER}
+      WATCHLIST_DB_PASSWORD:  ${WATCHLIST_DB_PASSWORD}
+      KEYCLOAK_CERTS_URL:     ${KEYCLOAK_CERTS_URL}
+      CORS_ORIGIN:            ${CORS_ORIGIN}
+      TMDB_API_KEY:           ${TMDB_API_KEY}
+      GOOGLE_BOOKS_API_KEY:   ${GOOGLE_BOOKS_API_KEY}
+      NODE_ENV:               production
+    depends_on:
+      watchlist-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3009/watchlist/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - calendario-net
+
+  watchlist-frontend:
+    image: ghcr.io/manuhddev/watchlist-frontend:latest
+    container_name: watchlist-frontend
+    depends_on:
+      - watchlist-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+volumes:
+  watchlist_pgdata:
