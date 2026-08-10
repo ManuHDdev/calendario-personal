@@ -5,6 +5,15 @@ import { getRoom, joinOrReconnect, markDisconnected, touchRoom } from './roomSto
 import type { RoomState } from './types';
 import { handleStartRound, handleVote, handleResolveRound } from '../games/impostorLive';
 import { handleStartQuestion, handleAnswer, closeQuestion } from '../games/triviaLive';
+import {
+  handleStartGame as handleHombreLoboStartGame,
+  handleLoboVote,
+  handleVidenteSee,
+  handleBrujaAction,
+  handleAdvancePhase,
+  handleDayVote,
+  handleCazadorRevenge,
+} from '../games/hombreLoboLive';
 
 // ─────────────────────────────────────────────────────────────────────────
 // GET /juegos/api/ws?token=&room= — ver spec.md "Live room creation and
@@ -114,6 +123,34 @@ function dispatch(room: RoomState, userId: string, message: { type?: string; [ke
         return handleVote(room, userId, String(message.votedForId ?? ''));
       case 'resolve-round':
         return handleResolveRound(room, userId);
+      default:
+        return { error: `Tipo de mensaje desconocido: ${message.type}` };
+    }
+  }
+
+  if (room.gameType === 'hombre-lobo-live') {
+    switch (message.type) {
+      case 'start-game':
+        return handleHombreLoboStartGame(
+          room,
+          userId,
+          message.playersPerLobo !== undefined ? Number(message.playersPerLobo) : undefined,
+        );
+      case 'lobo-vote':
+        return handleLoboVote(room, userId, String(message.targetId ?? ''));
+      case 'vidente-see':
+        return handleVidenteSee(room, userId, String(message.targetId ?? ''));
+      case 'bruja-action':
+        return handleBrujaAction(room, userId, {
+          heal: message.heal === true,
+          killTargetId: typeof message.killTargetId === 'string' ? message.killTargetId : undefined,
+        });
+      case 'advance-phase':
+        return handleAdvancePhase(room, userId);
+      case 'day-vote':
+        return handleDayVote(room, userId, String(message.targetId ?? ''));
+      case 'cazador-revenge':
+        return handleCazadorRevenge(room, userId, String(message.targetId ?? ''));
       default:
         return { error: `Tipo de mensaje desconocido: ${message.type}` };
     }

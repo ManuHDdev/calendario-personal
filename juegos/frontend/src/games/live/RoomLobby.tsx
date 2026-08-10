@@ -6,6 +6,7 @@ import '../shared.css';
 const GAME_LABEL: Record<GameType, string> = {
   'impostor-live': '📱 El Impostor en vivo',
   'trivia-live': '🧠 Trivia en vivo',
+  'hombre-lobo-live': '🐺 Hombre Lobo',
 };
 
 // Mismo listado que `contentBanks.triviaCategories` en el backend (derivado
@@ -44,7 +45,7 @@ export default function RoomLobby() {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
 
-  const path = gameType === 'impostor-live' ? 'impostor' : 'trivia';
+  const path = gameType === 'impostor-live' ? 'impostor' : gameType === 'trivia-live' ? 'trivia' : 'hombre-lobo';
 
   async function handleCreate() {
     setError('');

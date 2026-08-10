@@ -12,6 +12,7 @@ const PASS_AND_PLAY = [
 const EN_VIVO = [
   { gameType: 'impostor-live' as const, icon: '📱', title: 'El Impostor en vivo', desc: 'Cada uno con su móvil.' },
   { gameType: 'trivia-live' as const, icon: '🧠', title: 'Trivia en vivo', desc: 'Preguntas contrarreloj.' },
+  { gameType: 'hombre-lobo-live' as const, icon: '🐺', title: 'Hombre Lobo', desc: 'La app narra, vosotros jugáis.' },
 ];
 
 export default function HubPage() {

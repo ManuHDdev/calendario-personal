@@ -38,11 +38,11 @@ Implementation is split into 5 independent batches by play-pattern/complexity (s
 
 ## Batch E — Hombre Lobo (multi-device room, standalone)
 
-- [ ] E.1 `rooms/types.ts`: `GameType` gains `'hombre-lobo-live'`; `room.hombreLobo?: HombreLoboState` (per-player role, alive/dead, current `phase`, night-action collection, day votes, death log)
-- [ ] E.2 `games/hombreLoboLive.ts`: phase state machine per design.md (`noche-lobos → noche-vidente → noche-bruja → resolucion-noche → dia-debate → dia-votacion → resolucion-dia → repeat|fin`); role assignment scaled to player count (~1 lobo/3-4 players, configurable override); private per-role prompts via `whisper` delivery (reuse the exact mechanism `impostorLive.ts` uses to hide the word from the impostor); Cazador revenge-kill interrupt; win-condition check after every elimination
-- [ ] E.3 Unit tests: role assignment scaling; private prompts never leak to other sockets; Cazador interrupt fires on both night and day elimination; both win conditions trigger at the correct threshold
-- [ ] E.4 Frontend: `juegos/frontend/src/games/live/HombreLoboLive.tsx` — role reveal (private), night-phase "algunos jugadores están actuando..." holding screen for non-acting players, private action prompts for acting roles, day debate timer + voting UI, death log, always-reachable "?" rules reference (one card per role) and death log
-- [ ] E.5 `HubPage.tsx`: add under "En vivo"
+- [x] E.1 `rooms/types.ts`: `GameType` gains `'hombre-lobo-live'`; `room.hombreLobo?: HombreLoboState` (per-player role, alive/dead, current `phase`, night-action collection, day votes, death log)
+- [x] E.2 `games/hombreLoboLive.ts`: phase state machine per design.md (`noche-lobos → noche-vidente → noche-bruja → resolucion-noche → dia-debate → dia-votacion → resolucion-dia → repeat|fin`); role assignment scaled to player count (~1 lobo/3-4 players, configurable override); private per-role prompts via `whisper`-equivalent (`toPlayer` map) delivery (reuse the exact mechanism `impostorLive.ts` uses to hide the word from the impostor); Cazador revenge-kill interrupt; win-condition check after every elimination
+- [x] E.3 Unit tests: role assignment scaling; private prompts never leak to other sockets; Cazador interrupt fires on both night and day elimination; both win conditions trigger at the correct threshold
+- [x] E.4 Frontend: `juegos/frontend/src/games/live/HombreLoboLive.tsx` — role reveal (private), night-phase "algunos jugadores están actuando..." holding screen for non-acting players, private action prompts for acting roles, day debate timer + voting UI, death log, always-reachable "?" rules reference (one card per role) and death log
+- [x] E.5 `HubPage.tsx`: add under "En vivo"
 
 ## Verification (per batch, before merging)
 

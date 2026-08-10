@@ -1,5 +1,6 @@
 import { createShuffleBag } from '../services/shuffleBag';
 import { contentBanks } from '../content/loader';
+import { createLobbyState as createHombreLoboLobbyState } from '../games/hombreLoboLive';
 import type { GameType, Player, RoomSocket, RoomState } from './types';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -51,6 +52,8 @@ export function createRoom(
       game: null,
       phase: 'lobby',
     };
+  } else if (gameType === 'hombre-lobo-live') {
+    room.hombreLobo = createHombreLoboLobbyState();
   } else {
     // Sala de Trivia en vivo escogida por categoría (o el pool completo si se
     // omite/`todas`) — ver design.md "Category chosen at room creation, not

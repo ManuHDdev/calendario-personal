@@ -48,7 +48,7 @@ export function getVerdadORetoPrompt(
   return authFetch(`/verdad-o-reto/prompt?${params}`).then((r) => r.json());
 }
 
-export type GameType = 'impostor-live' | 'trivia-live';
+export type GameType = 'impostor-live' | 'trivia-live' | 'hombre-lobo-live';
 
 export function createRoom(
   gameType: GameType,
