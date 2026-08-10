@@ -5,6 +5,16 @@ import { getRoom, joinOrReconnect, markDisconnected, touchRoom } from './roomSto
 import type { RoomState } from './types';
 import { handleStartRound, handleVote, handleResolveRound } from '../games/impostorLive';
 import { handleStartQuestion, handleAnswer, closeQuestion } from '../games/triviaLive';
+import {
+  handleStartGame as handleCoupStartGame,
+  handleDeclareAction as handleCoupDeclareAction,
+  handlePass as handleCoupPass,
+  handleChallenge as handleCoupChallenge,
+  handleBlock as handleCoupBlock,
+  handleExchangeSelect as handleCoupExchangeSelect,
+  type DeclareActionPayload,
+} from '../games/coupLive';
+import type { CoupActionType, CoupCharacter } from './types';
 
 // ─────────────────────────────────────────────────────────────────────────
 // GET /juegos/api/ws?token=&room= — ver spec.md "Live room creation and
@@ -114,6 +124,30 @@ function dispatch(room: RoomState, userId: string, message: { type?: string; [ke
         return handleVote(room, userId, String(message.votedForId ?? ''));
       case 'resolve-round':
         return handleResolveRound(room, userId);
+      default:
+        return { error: `Tipo de mensaje desconocido: ${message.type}` };
+    }
+  }
+
+  if (room.gameType === 'coup-live') {
+    switch (message.type) {
+      case 'start-game':
+        return handleCoupStartGame(room, userId);
+      case 'declare-action': {
+        const payload: DeclareActionPayload = {
+          actionType: message.actionType as CoupActionType,
+          targetId: message.targetId ? String(message.targetId) : undefined,
+        };
+        return handleCoupDeclareAction(room, userId, payload);
+      }
+      case 'pass':
+        return handleCoupPass(room, userId);
+      case 'challenge':
+        return handleCoupChallenge(room, userId);
+      case 'block':
+        return handleCoupBlock(room, userId, message.claimedCharacter as CoupCharacter);
+      case 'exchange-select':
+        return handleCoupExchangeSelect(room, userId, (message.keep as CoupCharacter[]) ?? []);
       default:
         return { error: `Tipo de mensaje desconocido: ${message.type}` };
     }

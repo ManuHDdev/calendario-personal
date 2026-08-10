@@ -30,11 +30,11 @@ Implementation is split into 5 independent batches by play-pattern/complexity (s
 
 ## Batch D — Coup (multi-device room, standalone)
 
-- [ ] D.1 `rooms/types.ts`: `GameType` gains `'coup-live'`; `room.coup?: CoupState` (hidden per-player influence cards, coins, court deck, `pendingAction`)
-- [ ] D.2 `games/coupLive.ts`: full action/challenge/block/resolution state machine per design.md's `pendingAction` model and spec.md's scenarios — income/foreign-aid/coup as unconditional actions; Duke/Assassin/Captain/Ambassador as claimed actions with their specific counters; challenge resolution (reshuffle+redraw on a true claim, influence loss on a false one); elimination at zero influence; win at one player remaining
-- [ ] D.3 Unit tests: every action/challenge/block combination from the owner's spec resolves correctly (this is the highest-value test coverage in the whole batch — Coup's rules are unforgiving of off-by-one mistakes)
-- [ ] D.4 Frontend: `juegos/frontend/src/games/live/CoupLive.tsx` — private hand view, action declaration, challenge/block response window with a visible timer, elimination/winner screens, and an always-reachable "?" rules reference (character actions + their counters)
-- [ ] D.5 `HubPage.tsx`: add under "En vivo"
+- [x] D.1 `rooms/types.ts`: `GameType` gains `'coup-live'`; `room.coup?: CoupState` (hidden per-player influence cards, coins, court deck, `pendingAction`)
+- [x] D.2 `games/coupLive.ts`: full action/challenge/block/resolution state machine per design.md's `pendingAction` model and spec.md's scenarios — income/foreign-aid/coup as unconditional actions; Duke/Assassin/Captain/Ambassador as claimed actions with their specific counters; challenge resolution (reshuffle+redraw on a true claim, influence loss on a false one); elimination at zero influence; win at one player remaining
+- [x] D.3 Unit tests: every action/challenge/block combination from the owner's spec resolves correctly (this is the highest-value test coverage in the whole batch — Coup's rules are unforgiving of off-by-one mistakes)
+- [x] D.4 Frontend: `juegos/frontend/src/games/live/CoupLive.tsx` — private hand view, action declaration, challenge/block response window with a visible timer, elimination/winner screens, and an always-reachable "?" rules reference (character actions + their counters)
+- [x] D.5 `HubPage.tsx`: add under "En vivo"
 
 ## Batch E — Hombre Lobo (multi-device room, standalone)
 

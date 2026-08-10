@@ -5,7 +5,7 @@ import { contentBanks } from '../content/loader';
 import { createRoom } from './roomStore';
 
 const createRoomSchema = z.object({
-  gameType: z.enum(['impostor-live', 'trivia-live']),
+  gameType: z.enum(['impostor-live', 'trivia-live', 'coup-live']),
   // Solo se usa/valida cuando gameType === 'trivia-live' — ver spec.md "Live
   // room creation and join". Ignorado (no-op) para impostor-live.
   categoria: z.string().min(1).optional(),

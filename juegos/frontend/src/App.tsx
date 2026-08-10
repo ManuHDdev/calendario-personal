@@ -7,6 +7,7 @@ import VerdadOReto from './games/verdadoreto/VerdadOReto';
 import RoomLobby from './games/live/RoomLobby';
 import ImpostorLive from './games/live/ImpostorLive';
 import TriviaLive from './games/live/TriviaLive';
+import CoupLive from './games/live/CoupLive';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/live" element={<RoomLobby />} />
           <Route path="/live/impostor/:code" element={<ImpostorLive />} />
           <Route path="/live/trivia/:code" element={<TriviaLive />} />
+          <Route path="/live/coup/:code" element={<CoupLive />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
