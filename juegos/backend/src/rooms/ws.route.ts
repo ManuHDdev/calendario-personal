@@ -5,6 +5,18 @@ import { getRoom, joinOrReconnect, markDisconnected, touchRoom } from './roomSto
 import type { RoomState } from './types';
 import { handleStartRound, handleVote, handleResolveRound } from '../games/impostorLive';
 import { handleStartQuestion, handleAnswer, closeQuestion } from '../games/triviaLive';
+import {
+  handleStartQuestion as handleRfStartQuestion,
+  handleSubmitAnswer as handleRfSubmitAnswer,
+  handleForceVoting as handleRfForceVoting,
+  handleVote as handleRfVote,
+  handleForceReveal as handleRfForceReveal,
+} from '../games/respuestasFalsasLive';
+import {
+  handleStartRound as handleStopStartRound,
+  handleSubmit as handleStopSubmit,
+  handleStop,
+} from '../games/stopLive';
 
 // ─────────────────────────────────────────────────────────────────────────
 // GET /juegos/api/ws?token=&room= — ver spec.md "Live room creation and
@@ -119,14 +131,44 @@ function dispatch(room: RoomState, userId: string, message: { type?: string; [ke
     }
   }
 
-  // trivia-live
+  if (room.gameType === 'trivia-live') {
+    switch (message.type) {
+      case 'start-question':
+        return handleStartQuestion(room, userId);
+      case 'answer':
+        return handleAnswer(room, userId, String(message.answer ?? ''));
+      case 'close-question':
+        return closeQuestion(room);
+      default:
+        return { error: `Tipo de mensaje desconocido: ${message.type}` };
+    }
+  }
+
+  if (room.gameType === 'respuestas-falsas-live') {
+    switch (message.type) {
+      case 'start-question':
+        return handleRfStartQuestion(room, userId);
+      case 'submit-answer':
+        return handleRfSubmitAnswer(room, userId, String(message.answer ?? ''));
+      case 'force-voting':
+        return handleRfForceVoting(room, userId);
+      case 'vote':
+        return handleRfVote(room, userId, String(message.optionId ?? ''));
+      case 'force-reveal':
+        return handleRfForceReveal(room, userId);
+      default:
+        return { error: `Tipo de mensaje desconocido: ${message.type}` };
+    }
+  }
+
+  // stop-live
   switch (message.type) {
-    case 'start-question':
-      return handleStartQuestion(room, userId);
-    case 'answer':
-      return handleAnswer(room, userId, String(message.answer ?? ''));
-    case 'close-question':
-      return closeQuestion(room);
+    case 'start-round':
+      return handleStopStartRound(room, userId);
+    case 'submit':
+      return handleStopSubmit(room, userId, String(message.category ?? ''), String(message.value ?? ''));
+    case 'stop':
+      return handleStop(room, userId);
     default:
       return { error: `Tipo de mensaje desconocido: ${message.type}` };
   }

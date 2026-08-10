@@ -12,6 +12,8 @@ import TriviaLive from './games/live/TriviaLive';
 import BombParty from './games/bombparty/BombParty';
 import QuienEsMasProbable from './games/quienesmasprobable/QuienEsMasProbable';
 import DiezDeDiez from './games/diezdediez/DiezDeDiez';
+import RespuestasFalsasLive from './games/live/RespuestasFalsasLive';
+import StopLive from './games/live/StopLive';
 
 export default function App() {
   return (
@@ -30,6 +32,8 @@ export default function App() {
           <Route path="/live" element={<RoomLobby />} />
           <Route path="/live/impostor/:code" element={<ImpostorLive />} />
           <Route path="/live/trivia/:code" element={<TriviaLive />} />
+          <Route path="/live/respuestas-falsas/:code" element={<RespuestasFalsasLive />} />
+          <Route path="/live/stop/:code" element={<StopLive />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

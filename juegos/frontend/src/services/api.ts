@@ -100,7 +100,7 @@ export function getMimicaCartas(categoria?: string): Promise<{ items: MimicaItem
   return authFetch(`/mimica/cartas${qs ? `?${qs}` : ''}`).then((r) => r.json());
 }
 
-export type GameType = 'impostor-live' | 'trivia-live';
+export type GameType = 'impostor-live' | 'trivia-live' | 'respuestas-falsas-live' | 'stop-live';
 
 export function createRoom(
   gameType: GameType,
@@ -108,7 +108,7 @@ export function createRoom(
 ): Promise<{ roomCode: string; gameType: GameType; hostId: string }> {
   const body: { gameType: GameType; categoria?: string } = { gameType };
   // `categoria` solo tiene sentido para trivia-live — ver rooms.route.ts,
-  // que la ignora/no-op para impostor-live.
+  // que la ignora/no-op para el resto de gameTypes.
   if (gameType === 'trivia-live' && categoria) body.categoria = categoria;
   return authFetch('/rooms', { method: 'POST', body: JSON.stringify(body) }).then((r) => r.json());
 }

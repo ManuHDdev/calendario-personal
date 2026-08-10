@@ -10,6 +10,7 @@ import diezDeDiezCualidadesRaw from './diez-de-diez-cualidades.json';
 import diezDeDiezPerosRaw from './diez-de-diez-peros.json';
 import tabuCartasRaw from './tabu-cartas.json';
 import mimicaCartasRaw from './mimica-cartas.json';
+import respuestasFalsasRaw from './respuestas-falsas-preguntas.json';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Carga y valida los cuatro bancos de contenido estático al arrancar el
@@ -82,6 +83,13 @@ export interface MimicaItem {
   categoria: string;
 }
 
+/** Banco de Respuestas falsas (ver specs/juegos/spec.md "Respuestas falsas
+ * scoring"): respuestaReal NUNCA se envía a ningún cliente hasta el reveal. */
+export interface RespuestaFalsaPregunta {
+  pregunta: string;
+  respuestaReal: string;
+}
+
 const impostorWordSchema = z.object({
   palabra: z.string().min(1),
   categoria: z.string().min(1),
@@ -151,6 +159,11 @@ const mimicaItemSchema = z.object({
   categoria: z.string().min(1),
 });
 const mimicaBankSchema = z.object({ items: z.array(mimicaItemSchema) });
+const respuestaFalsaPreguntaSchema = z.object({
+  pregunta: z.string().min(1),
+  respuestaReal: z.string().min(1),
+});
+const respuestasFalsasBankSchema = z.object({ preguntas: z.array(respuestaFalsaPreguntaSchema) });
 
 const MIN_IMPOSTOR_WORDS = 300;
 const MIN_TRIVIA_QUESTIONS = 500;
@@ -160,6 +173,7 @@ const MIN_VERDAD_O_RETO_PROMPTS = 180;
 const MIN_VERDAD_O_RETO_PER_BUCKET = 15;
 const MIN_TABU_CARTAS = 80;
 const MIN_MIMICA_ITEMS = 80;
+const MIN_RESPUESTAS_FALSAS_PREGUNTAS = 60;
 const DUREZAS: Dureza[] = ['suave', 'media', 'fuerte'];
 const TIPOS: VerdadORetoTipo[] = ['verdad', 'reto'];
 const NIVELES: Nivel[] = ['estandar', 'sin_pareja'];
@@ -188,6 +202,7 @@ export interface ContentBanks {
   tabuCategories: string[];
   mimicaItems: MimicaItem[];
   mimicaCategories: string[];
+  respuestasFalsasPreguntas: RespuestaFalsaPregunta[];
 }
 
 export function loadContentBanks(): ContentBanks {
@@ -320,6 +335,13 @@ export function loadContentBanks(): ContentBanks {
     );
   }
 
+  const respuestasFalsas = respuestasFalsasBankSchema.parse(respuestasFalsasRaw);
+  if (respuestasFalsas.preguntas.length < MIN_RESPUESTAS_FALSAS_PREGUNTAS) {
+    throw new Error(
+      `respuestas-falsas-preguntas.json: se requieren al menos ${MIN_RESPUESTAS_FALSAS_PREGUNTAS} preguntas, hay ${respuestasFalsas.preguntas.length}`,
+    );
+  }
+
   return {
     impostorWords: impostor.words,
     triviaQuestions: trivia.questions,
@@ -338,6 +360,7 @@ export function loadContentBanks(): ContentBanks {
     tabuCategories: [...new Set(tabu.cartas.map((c) => c.categoria))].sort(),
     mimicaItems: mimica.items,
     mimicaCategories: [...new Set(mimica.items.map((i) => i.categoria))].sort(),
+    respuestasFalsasPreguntas: respuestasFalsas.preguntas,
   };
 }
 

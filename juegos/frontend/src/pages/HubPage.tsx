@@ -20,6 +20,8 @@ const EQUIPOS_UN_MOVIL = [
 const EN_VIVO = [
   { gameType: 'impostor-live' as const, icon: '📱', title: 'El Impostor en vivo', desc: 'Cada uno con su móvil.' },
   { gameType: 'trivia-live' as const, icon: '🧠', title: 'Trivia en vivo', desc: 'Preguntas contrarreloj.' },
+  { gameType: 'respuestas-falsas-live' as const, icon: '🤥', title: 'Respuestas falsas', desc: 'Engaña al resto con tu mentira.' },
+  { gameType: 'stop-live' as const, icon: '✋', title: 'Stop / Basta', desc: 'Rellena rápido antes de que alguien grite ¡Stop!' },
 ];
 
 export default function HubPage() {
