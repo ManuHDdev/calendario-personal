@@ -100,7 +100,7 @@ export function getMimicaCartas(categoria?: string): Promise<{ items: MimicaItem
   return authFetch(`/mimica/cartas${qs ? `?${qs}` : ''}`).then((r) => r.json());
 }
 
-export type GameType = 'impostor-live' | 'trivia-live' | 'respuestas-falsas-live' | 'stop-live';
+export type GameType = 'impostor-live' | 'trivia-live' | 'respuestas-falsas-live' | 'stop-live' | 'coup-live';
 
 export function createRoom(
   gameType: GameType,

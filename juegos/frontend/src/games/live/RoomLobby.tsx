@@ -8,6 +8,7 @@ const GAME_LABEL: Record<GameType, string> = {
   'trivia-live': '🧠 Trivia en vivo',
   'respuestas-falsas-live': '🤥 Respuestas falsas',
   'stop-live': '✋ Stop / Basta',
+  'coup-live': '🗡️ Coup',
 };
 
 // Mismo listado que `contentBanks.triviaCategories` en el backend (derivado
@@ -51,6 +52,7 @@ export default function RoomLobby() {
     'trivia-live': 'trivia',
     'respuestas-falsas-live': 'respuestas-falsas',
     'stop-live': 'stop',
+    'coup-live': 'coup',
   };
   const path = ROOM_PATH[gameType];
 

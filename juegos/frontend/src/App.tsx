@@ -14,6 +14,7 @@ import QuienEsMasProbable from './games/quienesmasprobable/QuienEsMasProbable';
 import DiezDeDiez from './games/diezdediez/DiezDeDiez';
 import RespuestasFalsasLive from './games/live/RespuestasFalsasLive';
 import StopLive from './games/live/StopLive';
+import CoupLive from './games/live/CoupLive';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/live/trivia/:code" element={<TriviaLive />} />
           <Route path="/live/respuestas-falsas/:code" element={<RespuestasFalsasLive />} />
           <Route path="/live/stop/:code" element={<StopLive />} />
+          <Route path="/live/coup/:code" element={<CoupLive />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

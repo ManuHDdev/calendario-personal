@@ -22,6 +22,7 @@ const EN_VIVO = [
   { gameType: 'trivia-live' as const, icon: '🧠', title: 'Trivia en vivo', desc: 'Preguntas contrarreloj.' },
   { gameType: 'respuestas-falsas-live' as const, icon: '🤥', title: 'Respuestas falsas', desc: 'Engaña al resto con tu mentira.' },
   { gameType: 'stop-live' as const, icon: '✋', title: 'Stop / Basta', desc: 'Rellena rápido antes de que alguien grite ¡Stop!' },
+  { gameType: 'coup-live' as const, icon: '🗡️', title: 'Coup', desc: 'Farol, monedas y traición.' },
 ];
 
 export default function HubPage() {

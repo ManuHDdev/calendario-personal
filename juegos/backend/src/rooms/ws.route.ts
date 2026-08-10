@@ -17,6 +17,16 @@ import {
   handleSubmit as handleStopSubmit,
   handleStop,
 } from '../games/stopLive';
+import {
+  handleStartGame as handleCoupStartGame,
+  handleDeclareAction as handleCoupDeclareAction,
+  handlePass as handleCoupPass,
+  handleChallenge as handleCoupChallenge,
+  handleBlock as handleCoupBlock,
+  handleExchangeSelect as handleCoupExchangeSelect,
+  type DeclareActionPayload,
+} from '../games/coupLive';
+import type { CoupActionType, CoupCharacter } from './types';
 
 // ─────────────────────────────────────────────────────────────────────────
 // GET /juegos/api/ws?token=&room= — ver spec.md "Live room creation and
@@ -139,6 +149,30 @@ function dispatch(room: RoomState, userId: string, message: { type?: string; [ke
         return handleAnswer(room, userId, String(message.answer ?? ''));
       case 'close-question':
         return closeQuestion(room);
+      default:
+        return { error: `Tipo de mensaje desconocido: ${message.type}` };
+    }
+  }
+
+  if (room.gameType === 'coup-live') {
+    switch (message.type) {
+      case 'start-game':
+        return handleCoupStartGame(room, userId);
+      case 'declare-action': {
+        const payload: DeclareActionPayload = {
+          actionType: message.actionType as CoupActionType,
+          targetId: message.targetId ? String(message.targetId) : undefined,
+        };
+        return handleCoupDeclareAction(room, userId, payload);
+      }
+      case 'pass':
+        return handleCoupPass(room, userId);
+      case 'challenge':
+        return handleCoupChallenge(room, userId);
+      case 'block':
+        return handleCoupBlock(room, userId, message.claimedCharacter as CoupCharacter);
+      case 'exchange-select':
+        return handleCoupExchangeSelect(room, userId, (message.keep as CoupCharacter[]) ?? []);
       default:
         return { error: `Tipo de mensaje desconocido: ${message.type}` };
     }

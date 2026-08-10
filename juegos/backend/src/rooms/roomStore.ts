@@ -97,6 +97,22 @@ export function createRoom(
       scores: new Map(),
       roundsPlayed: 0,
     };
+  } else if (gameType === 'coup-live') {
+    // La partida de Coup en sí (reparto de cartas, mazo) no arranca hasta
+    // que el host la inicia explícitamente (handleStartGame en
+    // games/coupLive.ts) — aquí solo se deja la sala en fase 'lobby', igual
+    // que impostor-live con `game: null` hasta el primer 'start-round'.
+    room.coup = {
+      phase: 'lobby',
+      players: [],
+      playerState: new Map(),
+      eliminated: new Set(),
+      deck: [],
+      turnIndex: 0,
+      pendingAction: null,
+      pendingExchange: null,
+      winnerId: null,
+    };
   }
 
   room.players.set(hostId, {
