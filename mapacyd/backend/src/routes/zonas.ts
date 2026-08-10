@@ -13,6 +13,7 @@ const BASE_QUERY = `
           'tipo_dia', h.tipo_dia,
           'hora_inicio', to_char(h.hora_inicio, 'HH24:MI'),
           'hora_fin', to_char(h.hora_fin, 'HH24:MI'),
+          'sin_restriccion', h.sin_restriccion,
           'activo', h.activo
         ) ORDER BY h.tipo_dia, h.hora_inicio
       ) FILTER (WHERE h.id IS NOT NULL AND h.activo = true),
