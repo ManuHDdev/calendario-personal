@@ -1,0 +1,60 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { searchBooks, MissingApiKeyError } from './googleBooks';
+
+describe('googleBooks searchBooks', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it('throws MissingApiKeyError when GOOGLE_BOOKS_API_KEY is unset', async () => {
+    vi.stubEnv('GOOGLE_BOOKS_API_KEY', '');
+    await expect(searchBooks('dune')).rejects.toBeInstanceOf(MissingApiKeyError);
+  });
+
+  it('maps a successful Google Books response to the internal DTO shape', async () => {
+    vi.stubEnv('GOOGLE_BOOKS_API_KEY', 'fake-key');
+    const fixture = {
+      items: [
+        {
+          id: 'abc123',
+          volumeInfo: {
+            title: 'Dune',
+            authors: ['Frank Herbert'],
+            description: 'Una novela de ciencia ficción.',
+            imageLinks: { thumbnail: 'https://books.google.com/thumb.jpg' },
+          },
+        },
+        {
+          id: 'def456',
+          volumeInfo: {
+            title: 'Sin autor',
+          },
+        },
+      ],
+    };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => fixture,
+    }) as unknown as typeof fetch;
+
+    const results = await searchBooks('dune');
+
+    expect(results).toEqual([
+      {
+        external_id: 'abc123',
+        titulo: 'Dune',
+        autor: 'Frank Herbert',
+        poster_url: 'https://books.google.com/thumb.jpg',
+        sinopsis: 'Una novela de ciencia ficción.',
+      },
+      {
+        external_id: 'def456',
+        titulo: 'Sin autor',
+        autor: null,
+        poster_url: null,
+        sinopsis: null,
+      },
+    ]);
+  });
+});
