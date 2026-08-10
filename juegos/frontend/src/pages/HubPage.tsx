@@ -7,6 +7,9 @@ const PASS_AND_PLAY = [
   { to: '/impostor', icon: '🕵️', title: 'El Impostor', desc: 'Uno de vosotros no tiene la palabra.' },
   { to: '/yo-nunca', icon: '🙈', title: 'Yo Nunca', desc: 'Confesiones alrededor de la mesa.' },
   { to: '/verdad-o-reto', icon: '🎲', title: 'Verdad o Reto', desc: 'Clásico, sin excusas.' },
+  { to: '/bomb-party', icon: '💣', title: 'Bomb Party', desc: 'Di una palabra antes de que explote.' },
+  { to: '/quien-es-mas-probable', icon: '🙋', title: '¿Quién es más probable?', desc: 'Señalad con la mano al ganador.' },
+  { to: '/diez-de-diez', icon: '🔟', title: '10/10', desc: 'Una cualidad... y un pero.' },
 ];
 
 const EN_VIVO = [

@@ -7,6 +7,9 @@ import VerdadOReto from './games/verdadoreto/VerdadOReto';
 import RoomLobby from './games/live/RoomLobby';
 import ImpostorLive from './games/live/ImpostorLive';
 import TriviaLive from './games/live/TriviaLive';
+import BombParty from './games/bombparty/BombParty';
+import QuienEsMasProbable from './games/quienesmasprobable/QuienEsMasProbable';
+import DiezDeDiez from './games/diezdediez/DiezDeDiez';
 
 export default function App() {
   return (
@@ -17,6 +20,9 @@ export default function App() {
           <Route path="/impostor" element={<PassAndPlayImpostor />} />
           <Route path="/yo-nunca" element={<YoNunca />} />
           <Route path="/verdad-o-reto" element={<VerdadOReto />} />
+          <Route path="/bomb-party" element={<BombParty />} />
+          <Route path="/quien-es-mas-probable" element={<QuienEsMasProbable />} />
+          <Route path="/diez-de-diez" element={<DiezDeDiez />} />
           <Route path="/live" element={<RoomLobby />} />
           <Route path="/live/impostor/:code" element={<ImpostorLive />} />
           <Route path="/live/trivia/:code" element={<TriviaLive />} />

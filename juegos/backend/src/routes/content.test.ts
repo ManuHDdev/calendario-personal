@@ -212,6 +212,118 @@ describe('content routes', () => {
     expect(res.statusCode).toBe(200);
   });
 
+  // ── Batch A (add-nine-party-games): Bomb Party, ¿Quién es más probable?, 10/10 ──
+
+  it('GET /bomb-party/silaba returns a syllable by default (modo=silaba)', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/bomb-party/silaba?sessionId=bp1',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(typeof body.texto).toBe('string');
+    expect(body.modo).toBe('silaba');
+  });
+
+  it('GET /bomb-party/silaba?modo=categoria draws from the categories bank', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/bomb-party/silaba?modo=categoria&sessionId=bp2',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().modo).toBe('categoria');
+  });
+
+  it('GET /bomb-party/silaba rejects an unknown modo with 400', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/bomb-party/silaba?modo=noexiste&sessionId=bp3',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('GET /quien-es-mas-probable/prompt returns a prompt string', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/quien-es-mas-probable/prompt?sessionId=qmp1',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(typeof res.json().prompt).toBe('string');
+  });
+
+  it('GET /quien-es-mas-probable/prompt filters by dureza', async () => {
+    const app = await buildApp();
+    for (let i = 0; i < 5; i++) {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/juegos/api/quien-es-mas-probable/prompt?dureza=subido_de_tono&sessionId=qmp2',
+        headers: { 'x-test-role': 'invitado' },
+      });
+      expect(res.statusCode).toBe(200);
+    }
+  });
+
+  it('GET /quien-es-mas-probable/prompt rejects an unknown dureza with 400', async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/quien-es-mas-probable/prompt?dureza=noexiste&sessionId=qmp3',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("GET /quien-es-mas-probable/prompt with dureza='mezcla' draws from the combined pool", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/quien-es-mas-probable/prompt?dureza=mezcla&sessionId=qmp4',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('GET /diez-de-diez/ronda returns a combined cualidad+pero for a valid intensidad', async () => {
+    const app = await buildApp();
+    for (const intensidad of ['suave', 'picante']) {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/juegos/api/diez-de-diez/ronda?intensidad=${intensidad}&sessionId=ddd-${intensidad}`,
+        headers: { 'x-test-role': 'invitado' },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(typeof body.cualidad).toBe('string');
+      expect(typeof body.pero).toBe('string');
+      expect(body.intensidad).toBe(intensidad);
+    }
+  });
+
+  it('GET /diez-de-diez/ronda rejects a missing/unknown intensidad with 400', async () => {
+    const app = await buildApp();
+    const missing = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/diez-de-diez/ronda?sessionId=ddd-missing',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(missing.statusCode).toBe(400);
+
+    const bad = await app.inject({
+      method: 'GET',
+      url: '/juegos/api/diez-de-diez/ronda?intensidad=noexiste&sessionId=ddd-bad',
+      headers: { 'x-test-role': 'invitado' },
+    });
+    expect(bad.statusCode).toBe(400);
+  });
+
   it('does not repeat impostor words within the same session before exhausting the small category pool is unlikely, but does not repeat across many draws for a large pool', async () => {
     const app = await buildApp();
     const seen = new Set<string>();

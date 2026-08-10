@@ -1,0 +1,24 @@
+{
+  "silabas": [
+    "MA", "ME", "MI", "MO", "MU",
+    "PA", "PE", "PI", "PO", "PU",
+    "TA", "TE", "TI", "TO", "TU",
+    "SA", "SE", "SI", "SO", "SU",
+    "RA", "RE", "RI", "RO", "RU",
+    "LA", "LE", "LI", "LO", "LU",
+    "CA", "QUE", "QUI", "CO", "CU",
+    "BA", "BE", "BI", "BO", "BU",
+    "DA", "DE", "DI", "DO", "DU",
+    "GA", "GUE", "GUI", "GO", "GU",
+    "NA", "NE", "NI", "NO", "NU",
+    "FA", "FE", "FI", "FO", "FU",
+    "JA", "JE", "JI", "JO", "JU",
+    "VA", "VE", "VI", "VO", "VU",
+    "TRA", "TRE", "TRI", "TRO", "TRU",
+    "PLA", "PLE", "PLI", "PLO", "PLU",
+    "BLA", "BLE", "BLI", "BLO", "BLU",
+    "CRA", "CRE", "CRI", "CRO", "CRU",
+    "GRA", "GRE", "GRI", "GRO", "GRU",
+    "FLA", "FLE", "FLI", "FLO", "FLU"
+  ]
+}

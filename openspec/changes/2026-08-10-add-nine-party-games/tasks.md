@@ -2,12 +2,12 @@ Implementation is split into 5 independent batches by play-pattern/complexity (s
 
 ## Batch A — Pass-and-play: Bomb Party, ¿Quién es más probable?, 10/10
 
-- [ ] A.1 Content banks: `bomb-party-silabas.json` (≥60 syllables), `bomb-party-categorias.json` (≥20 categories), `quien-es-mas-probable.json` (≥90 prompts across familiar/fiesta/subido_de_tono, ≥30 each), `diez-de-diez-cualidades.json` + `diez-de-diez-peros.json` (≥30 each per suave/picante, ≥60 each total)
-- [ ] A.2 `loader.ts`: load/validate all four new banks, volume-minimum gates
-- [ ] A.3 `content.ts`: `GET /juegos/api/bomb-party/silaba?modo=silaba|categoria&sessionId=`, `GET /juegos/api/quien-es-mas-probable/prompt?dureza=&sessionId=`, `GET /juegos/api/diez-de-diez/ronda?intensidad=&sessionId=` — reuse the exact per-filter shuffle-bag pattern already in this file
-- [ ] A.4 Unit tests for the three new endpoints (category/intensity scoping, unknown-value 400)
-- [ ] A.5 Frontend: `juegos/frontend/src/games/bombparty/BombParty.tsx` (name+lives+timer-range setup, hidden-timer round loop, elimination, winner screen), `juegos/frontend/src/games/quienesmasprobable/QuienEsMasProbable.tsx` (name setup, prompt+tally loop, running scoreboard, end summary), `juegos/frontend/src/games/diezdediez/DiezDeDiez.tsx` (intensity setup, combined-prompt loop, optional sí/no tally)
-- [ ] A.6 `HubPage.tsx`: add all three under "Un móvil"
+- [x] A.1 Content banks: `bomb-party-silabas.json` (≥60 syllables), `bomb-party-categorias.json` (≥20 categories), `quien-es-mas-probable.json` (≥90 prompts across familiar/fiesta/subido_de_tono, ≥30 each), `diez-de-diez-cualidades.json` + `diez-de-diez-peros.json` (≥30 each per suave/picante, ≥60 each total)
+- [x] A.2 `loader.ts`: load/validate all four new banks, volume-minimum gates
+- [x] A.3 `content.ts`: `GET /juegos/api/bomb-party/silaba?modo=silaba|categoria&sessionId=`, `GET /juegos/api/quien-es-mas-probable/prompt?dureza=&sessionId=`, `GET /juegos/api/diez-de-diez/ronda?intensidad=&sessionId=` — reuse the exact per-filter shuffle-bag pattern already in this file
+- [x] A.4 Unit tests for the three new endpoints (category/intensity scoping, unknown-value 400)
+- [x] A.5 Frontend: `juegos/frontend/src/games/bombparty/BombParty.tsx` (name+lives+timer-range setup, hidden-timer round loop, elimination, winner screen), `juegos/frontend/src/games/quienesmasprobable/QuienEsMasProbable.tsx` (name setup, prompt+tally loop, running scoreboard, end summary), `juegos/frontend/src/games/diezdediez/DiezDeDiez.tsx` (intensity setup, combined-prompt loop, optional sí/no tally)
+- [x] A.6 `HubPage.tsx`: add all three under "Un móvil"
 
 ## Batch B — Team play: Tabú, Mímica
 

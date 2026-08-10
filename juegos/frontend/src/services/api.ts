@@ -48,6 +48,33 @@ export function getVerdadORetoPrompt(
   return authFetch(`/verdad-o-reto/prompt?${params}`).then((r) => r.json());
 }
 
+// ── Batch A (add-nine-party-games): Bomb Party, ¿Quién es más probable?, 10/10 ──
+
+export function getBombPartyTerm(
+  sessionId: string,
+  modo: 'silaba' | 'categoria' = 'silaba',
+): Promise<{ texto: string; modo: string }> {
+  const params = new URLSearchParams({ sessionId, modo });
+  return authFetch(`/bomb-party/silaba?${params}`).then((r) => r.json());
+}
+
+export function getQuienEsMasProbablePrompt(
+  sessionId: string,
+  dureza?: string,
+): Promise<{ prompt: string }> {
+  const params = new URLSearchParams({ sessionId });
+  if (dureza) params.set('dureza', dureza);
+  return authFetch(`/quien-es-mas-probable/prompt?${params}`).then((r) => r.json());
+}
+
+export function getDiezDeDiezRonda(
+  sessionId: string,
+  intensidad: 'suave' | 'picante',
+): Promise<{ cualidad: string; pero: string; intensidad: string }> {
+  const params = new URLSearchParams({ sessionId, intensidad });
+  return authFetch(`/diez-de-diez/ronda?${params}`).then((r) => r.json());
+}
+
 export type GameType = 'impostor-live' | 'trivia-live';
 
 export function createRoom(
