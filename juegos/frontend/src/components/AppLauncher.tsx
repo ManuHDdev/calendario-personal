@@ -23,6 +23,7 @@ const APPS: AppDef[] = [
   // que son públicas sin sesión. Aquí sí se exige login, pero ningún rol
   // concreto (ver design.md "Access guard: any valid role").
   { id: 'juegos',     nombre: 'Juegos',     color: '#ff453a', roles: ['admin', 'familia', 'invitado'] },
+  { id: 'watchlist',  nombre: 'Watchlist',  color: '#64d2ff', roles: ['admin'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -37,6 +38,7 @@ function getUrls(): Record<string, string> {
     ofertas:    local ? 'http://localhost:5178/ofertas/' : '/ofertas/',
     paraisos:   local ? 'http://localhost:5179/paraisos/' : '/paraisos/',
     juegos:     local ? 'http://localhost:5180/juegos/'  : '/juegos/',
+    watchlist:  local ? 'http://localhost:5181/watchlist/' : '/watchlist/',
   };
 }
 
@@ -110,6 +112,12 @@ function AppIcon({ id }: { id: string }) {
           <line x1="4.5" y1="12" x2="7.5" y2="12"/>
           <circle cx="16" cy="10.5" r="1" fill="white" stroke="none"/>
           <circle cx="18" cy="13" r="1" fill="white" stroke="none"/>
+        </svg>
+      );
+    case 'watchlist':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/>
         </svg>
       );
     default:

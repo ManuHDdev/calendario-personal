@@ -22,6 +22,7 @@ function appUrls(): Record<string, string> {
     ofertas:    local ? 'http://localhost:5178/ofertas/'  : '/ofertas/',
     paraisos:   local ? 'http://localhost:5179/paraisos/' : '/paraisos/',
     juegos:     local ? 'http://localhost:5180/juegos/'   : '/juegos/',
+    watchlist:  local ? 'http://localhost:5181/watchlist/' : '/watchlist/',
   };
 }
 
@@ -51,6 +52,7 @@ export class AppLauncher {
     // que son públicas sin sesión. Aquí sí se exige login, pero ningún rol
     // concreto (ver design.md "Access guard: any valid role").
     { id: 'juegos',     nombre: 'Juegos',     color: '#ff453a', roles: ['admin','familia','invitado'], url: '' },
+    { id: 'watchlist',  nombre: 'Watchlist',  color: '#64d2ff', roles: ['admin'],           url: '' },
   ];
 
   get apps(): App[] {

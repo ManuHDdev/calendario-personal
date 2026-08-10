@@ -148,8 +148,8 @@ CLIENT_ID=$(node -e "const a=JSON.parse(process.argv[1]); process.stdout.write(a
 [ -z "$CLIENT_ID" ] && err "Cliente 'calendario-frontend' no encontrado en el realm '$REALM'"
 
 if [[ "$HOST" == *"localhost"* ]]; then
-  REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*"]'
-  WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179"]'
+  REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*","http://localhost:5180/*","http://localhost:5181/*"]'
+  WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179","http://localhost:5180","http://localhost:5181"]'
 else
   REDIRECT_URIS='["https://elbunkerdelingeniero.duckdns.org/*"]'
   WEB_ORIGINS='["https://elbunkerdelingeniero.duckdns.org"]'
