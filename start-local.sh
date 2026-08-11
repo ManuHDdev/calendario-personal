@@ -27,6 +27,8 @@
 #   juegos frontend     →  :5180
 #   watchlist backend   →  :3009
 #   watchlist frontend  →  :5181
+#   reparto backend     →  :3010
+#   reparto frontend    →  :5182
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -67,6 +69,7 @@ cleanup() {
   warn "  cd ofertas/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd paraisos/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd watchlist/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd reparto/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -140,6 +143,9 @@ info "PostgreSQL (paraisos :5437)..."
 info "PostgreSQL (watchlist :5438)..."
 (cd "$SCRIPT_DIR/watchlist/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (reparto :5439)..."
+(cd "$SCRIPT_DIR/reparto/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -178,6 +184,12 @@ wait_for_container \
   "PostgreSQL watchlist" \
   "watchlist-db-local" \
   "docker exec watchlist-db-local pg_isready -U watchlist -d watchlist" \
+  30
+
+wait_for_container \
+  "PostgreSQL reparto" \
+  "reparto-db-local" \
+  "docker exec reparto-db-local pg_isready -U reparto -d reparto" \
   30
 
 wait_for_container \
@@ -298,6 +310,19 @@ start_bg "watchlist-backend  :3009" "watchlist-backend.log" "$SCRIPT_DIR/watchli
       GOOGLE_BOOKS_API_KEY="${GOOGLE_BOOKS_API_KEY:-}" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/reparto/backend"
+start_bg "reparto-backend    :3010" "reparto-backend.log" "$SCRIPT_DIR/reparto/backend" \
+  env PORT=3010 \
+      REPARTO_DB_HOST="localhost" \
+      REPARTO_DB_PORT="5439" \
+      REPARTO_DB_NAME="reparto" \
+      REPARTO_DB_USER="reparto" \
+      REPARTO_DB_PASSWORD="reparto123" \
+      REPARTO_GROUP_TOKEN_SECRET="${REPARTO_GROUP_TOKEN_SECRET:-local-dev-reparto-secret}" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5182" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -338,6 +363,10 @@ start_bg "juegos-frontend    :5180" "juegos-frontend.log" "$SCRIPT_DIR/juegos/fr
 
 ensure_deps "$SCRIPT_DIR/watchlist/frontend"
 start_bg "watchlist-frontend :5181" "watchlist-frontend.log" "$SCRIPT_DIR/watchlist/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/reparto/frontend"
+start_bg "reparto-frontend   :5182" "reparto-frontend.log" "$SCRIPT_DIR/reparto/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -398,6 +427,11 @@ echo -e "  ${CYAN}Watchlist${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5181/watchlist/${NC}"
 echo -e "    Backend health   →  http://localhost:3009/watchlist/api/health"
 echo -e "    ${YELLOW}ℹ  Búsqueda TMDB/Google Books deshabilitada hasta configurar TMDB_API_KEY/GOOGLE_BOOKS_API_KEY${NC}"
+echo ""
+echo -e "  ${CYAN}Reparto${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5182/reparto/${NC}"
+echo -e "    Backend health   →  http://localhost:3010/reparto/api/health"
+echo -e "    ${YELLOW}ℹ  REPARTO_GROUP_TOKEN_SECRET de desarrollo por defecto: local-dev-reparto-secret (sobrescribible con la env var)${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

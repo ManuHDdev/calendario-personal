@@ -1,0 +1,29 @@
+.group-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-list-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  color: var(--text-primary);
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.group-list-item:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-tertiary);
+}
+
+.group-list-name {
+  font-size: 14px;
+  font-weight: 600;
+}

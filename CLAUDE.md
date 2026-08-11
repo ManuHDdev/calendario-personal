@@ -460,18 +460,67 @@ Calendario/watchlist/ dentro del monorepo elbunkerdelingeniero.
 
 ---
 
+## Reparto — Gastos de grupo compartido (estilo Tricount)
+
+### Ubicación
+Calendario/reparto/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/, storage/, mapacyd/, ytdl/, gastos/, ofertas/, paraisos/, juegos/ y watchlist/)
+- Frontend: React + Vite + TypeScript
+- Base de datos: PostgreSQL 15, propia (`reparto`), tablas `group`, `group_member`, `expense`, `expense_split`
+- Autenticación: **dos mecanismos independientes, para dos audiencias distintas** (mismo patrón que `ofertas`, adaptado de "un token global" a "un token por grupo"):
+  - Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón que el resto de subapps), para el gestor de grupos.
+  - Token de sesión de grupo (JWT propio, firmado con `REPARTO_GROUP_TOKEN_SECRET`, obtenido al resolver el `access_token` de un enlace de grupo) para miembros sin cuenta Keycloak — ver `reparto/README.md` para el detalle completo del flujo.
+  - Las rutas de gastos/miembros/balances aceptan cualquiera de los dos (`authOrGroupToken`), cada uno acotado a su alcance (Keycloak: todo el sistema para el gestor; token de grupo: únicamente ese `groupId`).
+- Validaciones: Zod en todos los endpoints que reciben body
+- Sin ORM — queries directas con el cliente pg
+
+### Roles
+- `admin` o `reparto_admin` → gestión completa (crear/borrar grupos, gestionar miembros, regenerar enlace)
+- `reparto_invitado` → solo consulta (ver todos los grupos del sistema, sin crear/editar)
+- Miembro sin cuenta (vía enlace de grupo) → lectura/escritura de gastos y miembros de ESE grupo únicamente, nunca borra el grupo ni expulsa miembros
+
+### Rutas (`/reparto/api/*`)
+- `POST /groups` — alta de grupo (gestor Keycloak), genera `access_token`
+- `GET /groups` — listado de grupos del sistema (gestor Keycloak)
+- `GET /groups/:id` — detalle de grupo (gestor Keycloak o token de grupo válido para ese id)
+- `DELETE /groups/:id` — soft delete (solo gestor Keycloak)
+- `POST /groups/by-token` — resuelve un `access_token` de enlace a una sesión de grupo (público, sin JWT)
+- `POST /groups/:id/rotate-token` — regenera el `access_token`, invalida el enlace anterior (solo gestor Keycloak)
+- `POST/GET/PATCH/DELETE /groups/:id/members[/:memberId]` — miembros por nombre libre (gestor Keycloak o token de grupo; expulsar miembro solo gestor)
+- `POST/GET/PATCH/DELETE /groups/:id/expenses[/:expenseId]` — gastos con `split_type` `equal`/`exact`/`percentage` (gestor Keycloak o token de grupo)
+- `GET /groups/:id/categories` — categorías usadas en el grupo (autocompletado)
+- `GET /groups/:id/balances` — balance neto por miembro
+- `GET /groups/:id/settlement` — transferencias sugeridas (algoritmo greedy `simplifyDebts`)
+- `GET /health`
+
+### Variables de entorno del backend
+`REPARTO_DB_HOST`, `REPARTO_DB_NAME`, `REPARTO_DB_USER`, `REPARTO_DB_PASSWORD`, `REPARTO_GROUP_TOKEN_SECRET` (obligatorio, firma los tokens de sesión de grupo — nunca reutiliza el secreto de Keycloak), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3010)
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/reparto-backend:latest`, `ghcr.io/manuhddev/reparto-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
-Los cinco roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`.
-Cualquier código que filtre por rol DEBE usar exactamente estos nombres.
+Los siete roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
+`reparto_admin`, `reparto_invitado`. Cualquier código que filtre por rol DEBE usar exactamente estos
+nombres.
 
-| Rol             | Acceso                                                       |
-|-----------------|----------------------------------------------------------------|
-| admin           | Todas las apps + gestión completa                               |
-| familia         | Storage (lectura), MapaCYD (lectura), Juegos (completo)         |
-| invitado        | Juegos (completo) — sin acceso a ninguna otra app                |
-| paraisos_admin  | Gestión de spots en Paraísos (CRUD)                             |
-| mapacyd_admin   | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
+| Rol               | Acceso                                                       |
+|-------------------|----------------------------------------------------------------|
+| admin             | Todas las apps + gestión completa                               |
+| familia           | Storage (lectura), MapaCYD (lectura), Juegos (completo)         |
+| invitado          | Juegos (completo) — sin acceso a ninguna otra app                |
+| paraisos_admin    | Gestión de spots en Paraísos (CRUD)                             |
+| mapacyd_admin     | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
+| reparto_admin     | Gestión completa de grupos de gasto compartido en Reparto (CRUD) |
+| reparto_invitado  | Consulta de todos los grupos de Reparto (solo lectura, sin crear/editar) |
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
@@ -479,15 +528,25 @@ Ofertas y Calendario solo son accesibles para `admin` (uso exclusivo del
 propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
 llamar a su API. Juegos es la única excepción a ese último punto: es la primera
 subapp visible y utilizable por los tres roles por igual (ver sección "Juegos"
-arriba).
+arriba). Reparto añade un matiz más: es accesible para `admin` y, además,
+delegable vía `reparto_admin` (gestión completa) y `reparto_invitado` (solo
+consulta) — sin necesitar acceso `admin` global, igual que ya ocurría con
+Paraísos y MapaCYD.
 
-Los roles `paraisos_admin` y `mapacyd_admin` son roles delegados: permiten
-gestionar una subapp concreta sin tener acceso `admin` global. Un usuario con
-`paraisos_admin` puede crear, editar y borrar spots en Paraísos; con
-`mapacyd_admin` puede gestionar zonas y horarios en MapaCYD. Ambos roles se
-asignan automáticamente al usuario `propietario` por el script de realm.
+Los roles `paraisos_admin`, `mapacyd_admin` y `reparto_admin` son roles
+delegados: permiten gestionar una subapp concreta sin tener acceso `admin`
+global. Un usuario con `paraisos_admin` puede crear, editar y borrar spots en
+Paraísos; con `mapacyd_admin` puede gestionar zonas y horarios en MapaCYD; con
+`reparto_admin` puede crear y administrar grupos de gasto compartido en
+Reparto. Los tres se asignan automáticamente al usuario `propietario` por el
+script de realm. `reparto_invitado` es el primer caso real de la convención
+`<app>_invitado` (documentada en memoria pero nunca aplicada a una subapp
+hasta ahora — no existe ningún `mapacyd_invitado` ni equivalente en este
+repositorio): da solo lectura y, como toda esa convención, se crea en el
+realm pero **no se asigna a nadie automáticamente** — es delegable
+manualmente desde Panel cuando haga falta.
 
-El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin` y `mapacyd_admin`.
+El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin` y `reparto_admin`.
 
 ## Keycloak — configuración y despliegue
 
@@ -529,6 +588,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Paraísos           | :5179    | :3007   |
 | Juegos             | :5180    | :3008   |
 | Watchlist          | :5181    | :3009   |
+| Reparto            | :5182    | :3010   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -536,9 +596,10 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | PostgreSQL (ofertas)| :5436  | —       |
 | PostgreSQL (paraisos)| :5437 | —       |
 | PostgreSQL (watchlist)| :5438| —       |
+| PostgreSQL (reparto)| :5439  | —       |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 9 Dockerfiles y 9 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 10 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 10 Dockerfiles y 10 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 11 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.

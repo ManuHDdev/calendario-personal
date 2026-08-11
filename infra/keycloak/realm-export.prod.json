@@ -45,6 +45,20 @@
         "composite": false,
         "clientRole": false,
         "containerId": "calendario"
+      },
+      {
+        "name": "reparto_admin",
+        "description": "Administrador de Reparto — gestión completa de grupos de gasto compartido",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
+      },
+      {
+        "name": "reparto_invitado",
+        "description": "Invitado de Reparto — solo consulta de grupos",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
       }
     ],
     "client": {
