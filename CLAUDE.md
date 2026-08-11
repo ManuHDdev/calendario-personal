@@ -105,7 +105,7 @@ Calendario/mapacyd/ dentro del monorepo elbunkerdelingeniero.
 
 ### Roles
 - admin o mapacyd_admin → gestión completa (POST/PUT/DELETE zonas y horarios)
-- familia → solo consulta (GET /api/zonas)
+- familia o mapacyd_invitado → solo consulta (GET /api/zonas)
 - invitado → sin acceso a mapacyd
 
 ### Reglas obligatorias
@@ -508,9 +508,9 @@ Calendario/reparto/ dentro del monorepo elbunkerdelingeniero.
 
 ## Sistema de roles (OBLIGATORIO conocer)
 
-Los siete roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
-`reparto_admin`, `reparto_invitado`. Cualquier código que filtre por rol DEBE usar exactamente estos
-nombres.
+Los ocho roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
+`mapacyd_invitado`, `reparto_admin`, `reparto_invitado`. Cualquier código que filtre por rol DEBE usar
+exactamente estos nombres.
 
 | Rol               | Acceso                                                       |
 |-------------------|----------------------------------------------------------------|
@@ -519,6 +519,7 @@ nombres.
 | invitado          | Juegos (completo) — sin acceso a ninguna otra app                |
 | paraisos_admin    | Gestión de spots en Paraísos (CRUD)                             |
 | mapacyd_admin     | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
+| mapacyd_invitado  | Consulta de zonas y horarios en MapaCYD (solo lectura)          |
 | reparto_admin     | Gestión completa de grupos de gasto compartido en Reparto (CRUD) |
 | reparto_invitado  | Consulta de todos los grupos de Reparto (solo lectura, sin crear/editar) |
 
@@ -539,11 +540,14 @@ global. Un usuario con `paraisos_admin` puede crear, editar y borrar spots en
 Paraísos; con `mapacyd_admin` puede gestionar zonas y horarios en MapaCYD; con
 `reparto_admin` puede crear y administrar grupos de gasto compartido en
 Reparto. Los tres se asignan automáticamente al usuario `propietario` por el
-script de realm. `reparto_invitado` es el primer caso real de la convención
-`<app>_invitado` (documentada en memoria pero nunca aplicada a una subapp
-hasta ahora — no existe ningún `mapacyd_invitado` ni equivalente en este
-repositorio): da solo lectura y, como toda esa convención, se crea en el
-realm pero **no se asigna a nadie automáticamente** — es delegable
+script de realm.
+
+`mapacyd_invitado` y `reparto_invitado` son roles delegados de solo lectura
+(consulta sin poder gestionar) — `mapacyd_invitado` fue el primer caso real de
+la convención `<app>_invitado` (documentada en memoria pero no aplicada a
+ninguna subapp hasta entonces); `reparto_invitado` es el segundo. A diferencia
+de los roles `_admin`, ninguno de los dos se asigna automáticamente a
+`propietario` — ambos se crean en el realm pero quedan sin asignar, delegables
 manualmente desde Panel cuando haga falta.
 
 El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin` y `reparto_admin`.

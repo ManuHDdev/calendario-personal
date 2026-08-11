@@ -13,6 +13,7 @@ const BASE_QUERY = `
           'tipo_dia', h.tipo_dia,
           'hora_inicio', to_char(h.hora_inicio, 'HH24:MI'),
           'hora_fin', to_char(h.hora_fin, 'HH24:MI'),
+          'sin_restriccion', h.sin_restriccion,
           'activo', h.activo
         ) ORDER BY h.tipo_dia, h.hora_inicio
       ) FILTER (WHERE h.id IS NOT NULL AND h.activo = true),
@@ -27,7 +28,7 @@ export async function zonasRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/zonas?ciudad=X
   app.get<{ Querystring: { ciudad?: string } }>(
     '/zonas',
-    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_admin']) },
+    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_admin', 'mapacyd_invitado']) },
     async (request, reply: FastifyReply) => {
       try {
         const { ciudad } = request.query;
@@ -52,7 +53,7 @@ export async function zonasRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/zonas/:id
   app.get<{ Params: { id: string } }>(
     '/zonas/:id',
-    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_admin']) },
+    { preHandler: authMiddleware(['admin', 'familia', 'mapacyd_admin', 'mapacyd_invitado']) },
     async (request, reply: FastifyReply) => {
       try {
         const { id } = request.params;

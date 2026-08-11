@@ -3,7 +3,7 @@ import type { UserOut, UserFormData } from '../types';
 import PasswordInput from './PasswordInput';
 import './UserModal.css';
 
-const ALL_ROLES = ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'reparto_admin', 'reparto_invitado'];
+const ALL_ROLES = ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'mapacyd_invitado', 'reparto_admin', 'reparto_invitado'];
 
 interface Props {
   user: UserOut | null; // null = crear
@@ -57,6 +57,7 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
     invitado: 'Invitado',
     paraisos_admin: 'Admin Paraísos',
     mapacyd_admin: 'Admin MapaCYD',
+    mapacyd_invitado: 'Invitado MapaCYD',
     reparto_admin: 'Admin Reparto',
     reparto_invitado: 'Invitado Reparto',
   };
@@ -66,8 +67,9 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
     invitado: '#aeaeb2',
     paraisos_admin: '#00c7be',
     mapacyd_admin: '#30d158',
+    mapacyd_invitado: '#8fd9a8',
     reparto_admin: '#a2845e',
-    reparto_invitado: '#a2845e',
+    reparto_invitado: '#c7ab8c',
   };
 
   return (

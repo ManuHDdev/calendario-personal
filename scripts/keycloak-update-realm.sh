@@ -3,11 +3,11 @@
 # keycloak-update-realm.sh
 #
 # Actualiza el realm "calendario" en Keycloak con los roles correctos
-# (admin / familia / invitado / paraisos_admin / mapacyd_admin / reparto_admin /
-# reparto_invitado) y asigna los roles admin, paraisos_admin, mapacyd_admin y
-# reparto_admin al usuario "propietario". reparto_invitado se crea pero NO se
-# asigna a nadie automáticamente — existe para asignarse desde Panel (misma
-# convención documentada para el resto de roles "_invitado").
+# (admin / familia / invitado / paraisos_admin / mapacyd_admin / mapacyd_invitado /
+# reparto_admin / reparto_invitado) y asigna los roles admin, paraisos_admin,
+# mapacyd_admin y reparto_admin al usuario "propietario". mapacyd_invitado y
+# reparto_invitado se crean pero NO se asignan a nadie automáticamente — existen
+# para asignarse desde Panel (convención documentada para roles "_invitado").
 #
 # Uso:
 #   bash scripts/keycloak-update-realm.sh [host] [admin_user] [admin_password]
@@ -52,7 +52,7 @@ TOKEN=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).access_token)"
 ok "Token de admin obtenido"
 
 # ── 2. Crear roles si no existen ──────────────────────────────────────────────
-for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin reparto_admin reparto_invitado; do
+for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin mapacyd_invitado reparto_admin reparto_invitado; do
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     "$HOST/admin/realms/$REALM/roles" \
     -H "Authorization: Bearer $TOKEN" \
@@ -216,7 +216,7 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Realm actualizado correctamente ✓${NC}"
 echo -e "${GREEN}════════════════════════════════════════${NC}"
 echo ""
-echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, reparto_admin, reparto_invitado"
+echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, mapacyd_invitado, reparto_admin, reparto_invitado"
 echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin, reparto_admin"
 echo "  Redirect URIs actualizadas para todos los puertos locales"
 echo ""

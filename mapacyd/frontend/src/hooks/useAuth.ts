@@ -20,7 +20,7 @@ export function useAuth(): AuthState {
         ?.realm_access?.roles ?? [];
     const isAdmin   = roles.includes('admin') || roles.includes('mapacyd_admin');
     const isFamilia = roles.includes('familia');
-    const canViewMap = isAdmin || isFamilia;
+    const canViewMap = isAdmin || isFamilia || roles.includes('mapacyd_invitado');
 
     return { isAuthenticated, token, roles, isAdmin, isFamilia, canViewMap, keycloak };
   }, [keycloak.token]);

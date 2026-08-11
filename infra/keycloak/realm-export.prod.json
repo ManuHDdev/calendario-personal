@@ -47,6 +47,13 @@
         "containerId": "calendario"
       },
       {
+        "name": "mapacyd_invitado",
+        "description": "Invitado de MapaCYD — solo consulta de zonas y horarios, sin gestión",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
+      },
+      {
         "name": "reparto_admin",
         "description": "Administrador de Reparto — gestión completa de grupos de gasto compartido",
         "composite": false,
