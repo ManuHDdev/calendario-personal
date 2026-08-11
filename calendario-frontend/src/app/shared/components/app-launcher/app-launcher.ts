@@ -23,6 +23,7 @@ function appUrls(): Record<string, string> {
     paraisos:   local ? 'http://localhost:5179/paraisos/' : '/paraisos/',
     juegos:     local ? 'http://localhost:5180/juegos/'   : '/juegos/',
     watchlist:  local ? 'http://localhost:5181/watchlist/' : '/watchlist/',
+    reparto:    local ? 'http://localhost:5182/reparto/'   : '/reparto/',
   };
 }
 
@@ -53,6 +54,7 @@ export class AppLauncher {
     // concreto (ver design.md "Access guard: any valid role").
     { id: 'juegos',     nombre: 'Juegos',     color: '#ff453a', roles: ['admin','familia','invitado'], url: '' },
     { id: 'watchlist',  nombre: 'Watchlist',  color: '#64d2ff', roles: ['admin'],           url: '' },
+    { id: 'reparto',    nombre: 'Reparto',    color: '#a2845e', roles: ['admin','reparto_admin','reparto_invitado'], url: '' },
   ];
 
   get apps(): App[] {

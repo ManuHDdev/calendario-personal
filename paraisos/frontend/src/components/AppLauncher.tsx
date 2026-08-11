@@ -24,6 +24,7 @@ const APPS: AppDef[] = [
   // concreto (ver design.md "Access guard: any valid role").
   { id: 'juegos',     nombre: 'Juegos',     color: '#ff453a', roles: ['admin', 'familia', 'invitado'] },
   { id: 'watchlist',  nombre: 'Watchlist',  color: '#64d2ff', roles: ['admin'] },
+  { id: 'reparto',    nombre: 'Reparto',    color: '#a2845e', roles: ['admin', 'reparto_admin', 'reparto_invitado'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -39,6 +40,7 @@ function getUrls(): Record<string, string> {
     paraisos:   local ? 'http://localhost:5179/paraisos/' : '/paraisos/',
     juegos:     local ? 'http://localhost:5180/juegos/'  : '/juegos/',
     watchlist:  local ? 'http://localhost:5181/watchlist/' : '/watchlist/',
+    reparto:    local ? 'http://localhost:5182/reparto/'   : '/reparto/',
   };
 }
 
@@ -118,6 +120,15 @@ function AppIcon({ id }: { id: string }) {
       return (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
           <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/>
+        </svg>
+      );
+    case 'reparto':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <circle cx="12" cy="12" r="9"/>
+          <line x1="12" y1="12" x2="12" y2="3"/>
+          <line x1="12" y1="12" x2="19.36" y2="16.5"/>
+          <line x1="12" y1="12" x2="4.64" y2="16.5"/>
         </svg>
       );
     default:

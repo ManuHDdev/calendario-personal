@@ -1,0 +1,260 @@
+/* ── Tabs ────────────────────────────────────────────────── */
+.group-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 24px 0;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+}
+
+.group-tab {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.group-tab:hover { color: var(--text-primary); }
+
+.group-tab--active {
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-bottom-color: var(--bg-primary);
+  margin-bottom: -1px;
+}
+
+/* ── Reparto por participante ────────────────────────────── */
+.split-participants {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.split-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.split-row--off { opacity: 0.5; }
+
+.split-row-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.split-row-input {
+  width: 100px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.split-total {
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.split-total--ok { color: var(--success); }
+.split-total--off { color: var(--danger); }
+
+/* ── Gastos (cards) ──────────────────────────────────────── */
+.expense-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expense-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expense-card-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.expense-card-desc {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.expense-card-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.expense-amount {
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.expense-card-splits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.split-chip {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.expense-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Balances ────────────────────────────────────────────── */
+.balances-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.balance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+
+.balance-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.balance-amount { font-size: 13px; font-weight: 600; }
+.balance-amount--owed { color: var(--success); }
+.balance-amount--owes { color: var(--danger); }
+.balance-amount--zero { color: var(--text-tertiary); }
+
+.settlement-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settlement-row {
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+
+/* ── Miembros ────────────────────────────────────────────── */
+.member-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+}
+
+.member-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.member-rename-input {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ── Compartir grupo ─────────────────────────────────────── */
+.share-panel {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.share-link-row {
+  display: flex;
+  gap: 8px;
+}
+
+.share-link-input {
+  flex: 1;
+  padding: 9px 12px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.share-rotate-confirm {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.share-rotate-confirm p {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .group-tabs { padding: 8px 16px 0; }
+}

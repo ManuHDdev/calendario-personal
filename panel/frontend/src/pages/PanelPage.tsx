@@ -15,6 +15,8 @@ const ROLE_LABEL: Record<string, string> = {
   paraisos_admin: 'Admin Paraísos',
   mapacyd_admin: 'Admin MapaCYD',
   mapacyd_invitado: 'Invitado MapaCYD',
+  reparto_admin: 'Admin Reparto',
+  reparto_invitado: 'Invitado Reparto',
 };
 const ROLE_COLOR: Record<string, string> = {
   admin: '#0071e3',
@@ -23,6 +25,8 @@ const ROLE_COLOR: Record<string, string> = {
   paraisos_admin: '#00c7be',
   mapacyd_admin: '#30d158',
   mapacyd_invitado: '#8fd9a8',
+  reparto_admin: '#a2845e',
+  reparto_invitado: '#c7ab8c',
 };
 
 export default function PanelPage() {
@@ -144,13 +148,13 @@ export default function PanelPage() {
                       <td className="user-email">{u.email || <span className="no-data">—</span>}</td>
                       <td>
                         <div className="role-badges">
-                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin','mapacyd_invitado'].includes(r)).map((r) => (
+                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin','mapacyd_invitado','reparto_admin','reparto_invitado'].includes(r)).map((r) => (
                             <span key={r} className="role-badge"
                               style={{ '--role-color': ROLE_COLOR[r] ?? '#aeaeb2' } as React.CSSProperties}>
                               {ROLE_LABEL[r] ?? r}
                             </span>
                           ))}
-                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin','mapacyd_invitado'].includes(r)).length === 0 && (
+                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin','mapacyd_invitado','reparto_admin','reparto_invitado'].includes(r)).length === 0 && (
                             <span className="no-data">Sin rol</span>
                           )}
                         </div>

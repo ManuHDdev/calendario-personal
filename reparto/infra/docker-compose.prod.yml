@@ -1,0 +1,61 @@
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  reparto-db:
+    image: postgres:15
+    container_name: reparto-db
+    environment:
+      POSTGRES_DB:       ${REPARTO_DB_NAME}
+      POSTGRES_USER:     ${REPARTO_DB_USER}
+      POSTGRES_PASSWORD: ${REPARTO_DB_PASSWORD}
+    volumes:
+      - reparto_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${REPARTO_DB_USER} -d ${REPARTO_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calendario-net
+
+  reparto-backend:
+    image: ghcr.io/manuhddev/reparto-backend:latest
+    container_name: reparto-backend
+    environment:
+      PORT:                       3010
+      REPARTO_DB_HOST:            reparto-db
+      REPARTO_DB_NAME:            ${REPARTO_DB_NAME}
+      REPARTO_DB_USER:            ${REPARTO_DB_USER}
+      REPARTO_DB_PASSWORD:        ${REPARTO_DB_PASSWORD}
+      REPARTO_GROUP_TOKEN_SECRET: ${REPARTO_GROUP_TOKEN_SECRET}
+      KEYCLOAK_CERTS_URL:         ${KEYCLOAK_CERTS_URL}
+      CORS_ORIGIN:                ${CORS_ORIGIN}
+      NODE_ENV:                   production
+    depends_on:
+      reparto-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3010/reparto/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - calendario-net
+
+  reparto-frontend:
+    image: ghcr.io/manuhddev/reparto-frontend:latest
+    container_name: reparto-frontend
+    depends_on:
+      - reparto-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+volumes:
+  reparto_pgdata:

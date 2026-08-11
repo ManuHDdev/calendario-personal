@@ -1,0 +1,194 @@
+/* Layout compartido entre GroupsListPage y GroupPage (header/main/secciones/
+   formularios/botón primario) — mismo patrón que gastos/GastosPage.css,
+   importado una única vez desde main.tsx para no duplicarlo por página. */
+
+/* ── Layout ──────────────────────────────────────────────── */
+.reparto-layout {
+  min-height: 100vh;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.reparto-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.reparto-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reparto-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.reparto-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reparto-username {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+.reparto-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease, color 150ms ease;
+}
+.reparto-logout-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.reparto-back-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Main ────────────────────────────────────────────────── */
+.reparto-main {
+  flex: 1;
+  padding: 32px 24px 64px;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.reparto-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.reparto-section-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 20px 0 10px;
+}
+
+.reparto-section-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.reparto-error {
+  font-size: 13px;
+  color: var(--danger);
+  background: rgba(255, 59, 48, 0.08);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  padding: 16px 0;
+}
+
+/* ── Formularios ─────────────────────────────────────────── */
+.expense-form,
+.group-create-form,
+.member-add-form {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.group-create-form,
+.member-add-form {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.expense-form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.expense-form-row input,
+.expense-form-row select,
+.group-create-form input,
+.member-add-form input {
+  flex: 1;
+  min-width: 140px;
+  padding: 9px 12px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.expense-form-row input:focus,
+.expense-form-row select:focus,
+.group-create-form input:focus,
+.member-add-form input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.btn-primary {
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease;
+  white-space: nowrap;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:disabled { opacity: 0.6; cursor: default; }
+
+.expense-form-error {
+  font-size: 13px;
+  color: var(--danger);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .reparto-header { padding: 0 16px; }
+  .reparto-title { font-size: 15px; }
+  .reparto-username { display: none; }
+  .reparto-main { padding: 20px 16px 48px; }
+}
