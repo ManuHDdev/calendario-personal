@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createGroupSchema, byTokenSchema, createMemberSchema, updateMemberSchema } from './group.schema';
+import {
+  createGroupSchema,
+  byTokenSchema,
+  createMemberSchema,
+  updateMemberSchema,
+  updateGroupSchema,
+} from './group.schema';
 
 describe('createGroupSchema', () => {
   it('accepts a well-formed group', () => {
@@ -43,5 +49,19 @@ describe('updateMemberSchema', () => {
 
   it('rejects unknown fields (strict)', () => {
     expect(updateMemberSchema.safeParse({ name: 'Ana', keycloakUserId: 'x' }).success).toBe(false);
+  });
+});
+
+describe('updateGroupSchema', () => {
+  it('accepts a rename', () => {
+    expect(updateGroupSchema.safeParse({ name: 'Viaje a Oporto' }).success).toBe(true);
+  });
+
+  it('rejects an empty name', () => {
+    expect(updateGroupSchema.safeParse({ name: '' }).success).toBe(false);
+  });
+
+  it('rejects unknown fields (strict)', () => {
+    expect(updateGroupSchema.safeParse({ name: 'Viaje', accessToken: 'x' }).success).toBe(false);
   });
 });
