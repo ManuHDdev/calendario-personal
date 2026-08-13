@@ -29,6 +29,27 @@
 }
 
 /* ── Reparto por participante ────────────────────────────── */
+.split-participants-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.split-participants-header span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.btn-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  background: transparent;
+  padding: 2px 4px;
+}
+.btn-link:hover { text-decoration: underline; }
+
 .split-participants {
   display: flex;
   flex-direction: column;

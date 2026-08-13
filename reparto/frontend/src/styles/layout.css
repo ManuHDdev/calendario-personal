@@ -31,9 +31,45 @@
 }
 
 .reparto-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.group-name-edit-btn {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-tertiary);
+  background: transparent;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+}
+.group-name-edit-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.group-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.group-name-edit input {
+  font-size: 15px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  width: 200px;
+}
+.group-name-edit input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
 }
 
 .reparto-header-right {

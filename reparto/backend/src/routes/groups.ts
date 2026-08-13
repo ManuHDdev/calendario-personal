@@ -7,7 +7,13 @@ import {
   signGroupSessionToken,
 } from '../middleware/groupToken';
 import { resolveGroupByToken, memberHasActiveExpenseReferences } from '../db/queries';
-import { createGroupSchema, byTokenSchema, createMemberSchema, updateMemberSchema } from '../schemas/group.schema';
+import {
+  createGroupSchema,
+  byTokenSchema,
+  createMemberSchema,
+  updateMemberSchema,
+  updateGroupSchema,
+} from '../schemas/group.schema';
 
 const MANAGER_ROLES = ['admin', 'reparto_admin'];
 const READ_ROLES = ['admin', 'reparto_admin', 'reparto_invitado'];
@@ -134,6 +140,31 @@ export async function groupsRoutes(app: FastifyInstance): Promise<void> {
           ...toGroupDto(result.rows[0], isManagerRequest(request)),
           members: membersResult.rows.map(toMemberDto),
         });
+      } catch (err) {
+        return reply.code(500).send({ error: err instanceof Error ? err.message : 'Error interno', statusCode: 500 });
+      }
+    },
+  );
+
+  // PATCH /groups/:id — renombrar grupo (gestor o token de grupo, mismo nivel que renombrar miembro)
+  app.patch<{ Params: { id: string } }>(
+    '/groups/:id',
+    { preHandler: authOrGroupToken('id') },
+    async (request, reply: FastifyReply) => {
+      const { id } = request.params;
+      const parsed = updateGroupSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: parsed.error.issues[0]?.message ?? 'Validación fallida', statusCode: 400 });
+      }
+      try {
+        const result = await pool.query<GroupRow>(
+          'UPDATE "group" SET name = $2 WHERE id = $1 AND activo = true RETURNING *',
+          [id, parsed.data.name],
+        );
+        if (result.rows.length === 0) {
+          return reply.code(404).send({ error: 'Grupo no encontrado', statusCode: 404 });
+        }
+        return reply.send(toGroupDto(result.rows[0], isManagerRequest(request)));
       } catch (err) {
         return reply.code(500).send({ error: err instanceof Error ? err.message : 'Error interno', statusCode: 500 });
       }

@@ -91,6 +91,21 @@ export async function getGroup(token: string, groupId: string): Promise<GroupDet
   return res.json() as Promise<GroupDetail>;
 }
 
+/** El backend devuelve el mismo DTO que POST /groups (sin `members`), no un GroupDetail completo. */
+export async function renameGroup(
+  token: string,
+  groupId: string,
+  name: string,
+): Promise<GroupSummary & { accessToken?: string }> {
+  const res = await fetch(`${BASE}/groups/${groupId}`, {
+    method: 'PATCH',
+    headers: headers(token),
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<GroupSummary & { accessToken?: string }>;
+}
+
 export async function listMembers(token: string, groupId: string): Promise<Member[]> {
   const res = await fetch(`${BASE}/groups/${groupId}/members`, { headers: headers(token) });
   if (!res.ok) await handleError(res);

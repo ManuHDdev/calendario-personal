@@ -8,7 +8,7 @@ import ShareGroupPanel from '../components/ShareGroupPanel';
 import {
   getGroup, listMembers, listExpenses, listCategories, getBalances, getSettlement,
   createExpense, updateExpense, deleteExpense, createMember, updateMember, deleteMember,
-  deleteGroup, rotateGroupToken, ApiError,
+  deleteGroup, rotateGroupToken, renameGroup, ApiError,
 } from '../services/api';
 import type { GroupAuth, Member, Expense, Balance, Transfer, ExpenseCreateInput } from '../types';
 import './GroupPage.css';
@@ -40,6 +40,9 @@ export default function GroupPage({ groupId, auth, headerExtra, onGroupDeleted }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
 
   const canWrite = !auth.isReadOnly;
   const canManageGroup = auth.isManager;
@@ -109,6 +112,27 @@ export default function GroupPage({ groupId, auth, headerExtra, onGroupDeleted }
     }
   };
 
+  const startRenameGroup = () => {
+    setNameDraft(groupName);
+    setEditingName(true);
+  };
+  const confirmRenameGroup = async () => {
+    if (!nameDraft.trim() || nameDraft.trim() === groupName) {
+      setEditingName(false);
+      return;
+    }
+    setSavingName(true);
+    try {
+      const updated = await renameGroup(auth.token, groupId, nameDraft.trim());
+      setGroupName(updated.name);
+      setEditingName(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Error al renombrar el grupo');
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   const handleRotateToken = async () => {
     const { accessToken: newToken } = await rotateGroupToken(auth.token, groupId);
     setAccessToken(newToken);
@@ -140,7 +164,36 @@ export default function GroupPage({ groupId, auth, headerExtra, onGroupDeleted }
       <header className="reparto-header">
         <div className="reparto-header-left">
           {headerExtra}
-          <h1 className="reparto-title">{groupName || 'Grupo'}</h1>
+          {editingName ? (
+            <form
+              className="group-name-edit"
+              onSubmit={(e) => { e.preventDefault(); void confirmRenameGroup(); }}
+            >
+              <input
+                type="text" autoFocus value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                disabled={savingName}
+              />
+              <button type="submit" className="btn-secondary" disabled={savingName}>
+                {savingName ? 'Guardando…' : 'Guardar'}
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => setEditingName(false)} disabled={savingName}>
+                Cancelar
+              </button>
+            </form>
+          ) : (
+            <h1 className="reparto-title">
+              {groupName || 'Grupo'}
+              {canWrite && (
+                <button
+                  type="button" className="group-name-edit-btn" onClick={startRenameGroup}
+                  title="Renombrar grupo" aria-label="Renombrar grupo"
+                >
+                  ✎
+                </button>
+              )}
+            </h1>
+          )}
         </div>
         <div className="reparto-header-right">
           <ThemeToggle />

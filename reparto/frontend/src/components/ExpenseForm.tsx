@@ -62,6 +62,11 @@ export default function ExpenseForm({ members, categories, onSubmit, initial, on
     });
   };
 
+  const allSelected = members.length > 0 && members.every((m) => selected.has(m.id));
+  const toggleSelectAll = () => {
+    setSelected(allSelected ? new Set() : new Set(members.map((m) => m.id)));
+  };
+
   const amountValue = parseFloat(amount.replace(',', '.'));
 
   const exactTotal = members
@@ -185,6 +190,12 @@ export default function ExpenseForm({ members, categories, onSubmit, initial, on
         </select>
       </div>
 
+      <div className="split-participants-header">
+        <span>Participantes</span>
+        <button type="button" className="btn-link" onClick={toggleSelectAll}>
+          {allSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}
+        </button>
+      </div>
       <div className="split-participants">
         {members.map((m) => {
           const checked = selected.has(m.id);
