@@ -182,6 +182,12 @@
 .ruta-btn--primary {
   background: #e07a5f;
   color: #fff;
+}
+
+/* Only the primary button inside the form's action row should absorb the free
+   width. Left unscoped, `flex: 1` also stretched the button on the access
+   gate, which is a flex column, so it grew to the full page height. */
+.ruta-form__actions .ruta-btn--primary {
   flex: 1;
 }
 
