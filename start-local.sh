@@ -29,6 +29,8 @@
 #   watchlist frontend  →  :5181
 #   reparto backend     →  :3010
 #   reparto frontend    →  :5182
+#   ruta backend        →  :3011
+#   ruta frontend       →  :5183
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -70,6 +72,7 @@ cleanup() {
   warn "  cd paraisos/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd watchlist/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd reparto/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd ruta/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -146,6 +149,9 @@ info "PostgreSQL (watchlist :5438)..."
 info "PostgreSQL (reparto :5439)..."
 (cd "$SCRIPT_DIR/reparto/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (ruta :5440)..."
+(cd "$SCRIPT_DIR/ruta/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -190,6 +196,12 @@ wait_for_container \
   "PostgreSQL reparto" \
   "reparto-db-local" \
   "docker exec reparto-db-local pg_isready -U reparto -d reparto" \
+  30
+
+wait_for_container \
+  "PostgreSQL ruta" \
+  "ruta-db-local" \
+  "docker exec ruta-db-local pg_isready -U ruta -d ruta" \
   30
 
 wait_for_container \
@@ -323,6 +335,19 @@ start_bg "reparto-backend    :3010" "reparto-backend.log" "$SCRIPT_DIR/reparto/b
       CORS_ORIGIN="http://localhost:5182" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/ruta/backend"
+start_bg "ruta-backend       :3011" "ruta-backend.log" "$SCRIPT_DIR/ruta/backend" \
+  env PORT=3011 \
+      RUTA_DB_HOST="localhost" \
+      RUTA_DB_PORT="5440" \
+      RUTA_DB_NAME="ruta" \
+      RUTA_DB_USER="ruta" \
+      RUTA_DB_PASSWORD="ruta123" \
+      ORS_API_KEY="${ORS_API_KEY:-}" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5183" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -367,6 +392,10 @@ start_bg "watchlist-frontend :5181" "watchlist-frontend.log" "$SCRIPT_DIR/watchl
 
 ensure_deps "$SCRIPT_DIR/reparto/frontend"
 start_bg "reparto-frontend   :5182" "reparto-frontend.log" "$SCRIPT_DIR/reparto/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/ruta/frontend"
+start_bg "ruta-frontend      :5183" "ruta-frontend.log" "$SCRIPT_DIR/ruta/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -432,6 +461,11 @@ echo -e "  ${CYAN}Reparto${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5182/reparto/${NC}"
 echo -e "    Backend health   →  http://localhost:3010/reparto/api/health"
 echo -e "    ${YELLOW}ℹ  REPARTO_GROUP_TOKEN_SECRET de desarrollo por defecto: local-dev-reparto-secret (sobrescribible con la env var)${NC}"
+echo ""
+echo -e "  ${CYAN}Ruta${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5183/ruta/${NC}"
+echo -e "    Backend health   →  http://localhost:3011/ruta/api/health"
+echo -e "    ${YELLOW}ℹ  Sin ORS_API_KEY la busqueda devuelve 503: exporta la variable antes de arrancar (clave gratuita en openrouteservice.org)${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

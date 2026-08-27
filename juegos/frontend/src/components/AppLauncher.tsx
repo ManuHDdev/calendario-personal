@@ -25,6 +25,7 @@ const APPS: AppDef[] = [
   { id: 'juegos',     nombre: 'Juegos',     color: '#ff453a', roles: ['admin', 'familia', 'invitado'] },
   { id: 'watchlist',  nombre: 'Watchlist',  color: '#64d2ff', roles: ['admin'] },
   { id: 'reparto',    nombre: 'Reparto',    color: '#a2845e', roles: ['admin', 'reparto_admin', 'reparto_invitado'] },
+  { id: 'ruta',       nombre: 'Ruta',       color: '#e07a5f', roles: ['admin'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -41,6 +42,7 @@ function getUrls(): Record<string, string> {
     juegos:     local ? 'http://localhost:5180/juegos/'  : '/juegos/',
     watchlist:  local ? 'http://localhost:5181/watchlist/' : '/watchlist/',
     reparto:    local ? 'http://localhost:5182/reparto/'   : '/reparto/',
+    ruta:       local ? 'http://localhost:5183/ruta/'     : '/ruta/',
   };
 }
 
@@ -129,6 +131,14 @@ function AppIcon({ id }: { id: string }) {
           <line x1="12" y1="12" x2="12" y2="3"/>
           <line x1="12" y1="12" x2="19.36" y2="16.5"/>
           <line x1="12" y1="12" x2="4.64" y2="16.5"/>
+        </svg>
+      );
+    case 'ruta':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <circle cx="6" cy="19" r="2.4"/>
+          <circle cx="18" cy="5" r="2.4"/>
+          <path d="M8.4 19h5.1a3.5 3.5 0 0 0 0-7h-3a3.5 3.5 0 0 1 0-7h5.1"/>
         </svg>
       );
     default:
