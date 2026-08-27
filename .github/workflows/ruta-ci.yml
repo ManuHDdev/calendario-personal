@@ -1,0 +1,123 @@
+name: CI/CD Ruta
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ruta/**'
+      - '.github/workflows/ruta-ci.yml'
+
+jobs:
+  lint-and-build-backend:
+    name: Ruta · Build backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: ruta/backend
+        run: npm ci && npm run build
+
+      # The corridor-coverage geometry is the load-bearing part of this app:
+      # if it regresses, searches silently miss listings instead of failing.
+      - name: Test
+        working-directory: ruta/backend
+        run: npm test
+
+  lint-and-build-frontend:
+    name: Ruta · Build frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: ruta/frontend
+        run: npm ci && npm run build
+
+  docker-build-and-push:
+    name: Ruta · Docker build & push
+    runs-on: ubuntu-latest
+    needs: [lint-and-build-backend, lint-and-build-frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build & push ruta-backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ruta/backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/ruta-backend:latest
+            ghcr.io/${{ env.OWNER }}/ruta-backend:${{ github.sha }}
+
+      - name: Build & push ruta-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ruta/frontend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/ruta-frontend:latest
+            ghcr.io/${{ env.OWNER }}/ruta-frontend:${{ github.sha }}
+
+  deploy:
+    name: Deploy · Ruta VPS
+    runs-on: ubuntu-latest
+    needs: docker-build-and-push
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar docker-compose e init.sql al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "ruta/infra/docker-compose.prod.yml,ruta/infra/init.sql"
+          target: /home/manu/ruta
+          strip_components: 2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /home/manu/ruta
+
+            docker compose -f docker-compose.prod.yml pull ruta-backend ruta-frontend
+            docker compose -f docker-compose.prod.yml up -d ruta-db ruta-backend ruta-frontend
+            docker compose -f docker-compose.prod.yml ps

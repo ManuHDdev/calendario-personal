@@ -1,0 +1,434 @@
+.ruta-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+/* ── Header ──────────────────────────────────────────────────────── */
+
+.ruta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-primary);
+  flex-shrink: 0;
+}
+
+.ruta-header__left,
+.ruta-header__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ruta-header h1 {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.ruta-header__tag {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.ruta-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────── */
+
+.ruta-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.ruta-sidebar {
+  width: 380px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  background: var(--bg-secondary);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ruta-main {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.ruta-map {
+  position: absolute;
+  inset: 0;
+}
+
+/* ── Form ────────────────────────────────────────────────────────── */
+
+.ruta-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ruta-form__row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ruta-form__row--split {
+  flex-direction: row;
+  gap: 12px;
+}
+
+.ruta-form__row--split > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ruta-form label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.ruta-form input[type='text'],
+.ruta-form input[type='number'] {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: border-color 200ms ease;
+}
+
+.ruta-form input[type='text']:focus,
+.ruta-form input[type='number']:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ruta-form input[type='range'] {
+  accent-color: #e07a5f;
+}
+
+.ruta-form small {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.ruta-form__resolved {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  line-height: 1.4;
+}
+
+.ruta-form__error {
+  font-size: 13px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.ruta-form__actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+
+.ruta-btn {
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: opacity 200ms ease, background-color 200ms ease;
+}
+
+.ruta-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.ruta-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ruta-btn--primary {
+  background: #e07a5f;
+  color: #fff;
+}
+
+/* Only the primary button inside the form's action row should absorb the free
+   width. Left unscoped, `flex: 1` also stretched the button on the access
+   gate, which is a flex column, so it grew to the full page height. */
+.ruta-form__actions .ruta-btn--primary {
+  flex: 1;
+}
+
+/* ── Saved searches ──────────────────────────────────────────────── */
+
+.ruta-saved h2 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.ruta-saved ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ruta-saved li {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.ruta-saved__run {
+  flex: 1;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ruta-saved__run strong {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.ruta-saved__run span {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.ruta-saved__delete {
+  width: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.ruta-saved__delete:hover {
+  color: var(--danger);
+}
+
+/* ── Results ─────────────────────────────────────────────────────── */
+
+.ruta-results--empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ruta-results__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.ruta-results__meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ruta-results__warning {
+  font-size: 12px;
+  color: var(--playa, #ff9500);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.ruta-results__none {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ruta-results__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ruta-card {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  text-align: left;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.ruta-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.ruta-card--selected {
+  border-color: #e07a5f;
+  box-shadow: var(--shadow-md);
+}
+
+.ruta-card img,
+.ruta-card__noimage {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.ruta-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ruta-card__title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ruta-card__price {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e07a5f;
+}
+
+.ruta-card__meta {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.ruta-card__link {
+  display: inline-block;
+  margin: 4px 0 0 8px;
+  font-size: 11.5px;
+  color: var(--accent);
+}
+
+.ruta-card__link:hover {
+  text-decoration: underline;
+}
+
+/* ── Access gate ─────────────────────────────────────────────────── */
+
+.ruta-gate {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 24px;
+}
+
+.ruta-gate h1 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.ruta-gate p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* ── Leaflet popup ───────────────────────────────────────────────── */
+
+.ruta-popup {
+  font-family: inherit;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ruta-popup__price {
+  font-weight: 600;
+  color: #e07a5f;
+}
+
+.ruta-popup__meta {
+  font-size: 11.5px;
+  color: #6e6e73;
+  line-height: 1.4;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .ruta-body {
+    flex-direction: column;
+  }
+
+  .ruta-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    max-height: 55vh;
+  }
+
+  .ruta-main {
+    min-height: 45vh;
+  }
+
+  .ruta-header {
+    flex-wrap: wrap;
+  }
+}

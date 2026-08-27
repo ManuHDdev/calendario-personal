@@ -28,6 +28,8 @@
 #   watchlist frontend  →  :5181
 #   reparto backend     →  :3010
 #   reparto frontend    →  :5182
+#   ruta backend        →  :3011
+#   ruta frontend       →  :5183
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -54,6 +56,7 @@ function Cleanup {
   warn "  cd paraisos\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd watchlist\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd reparto\infra; docker compose -f docker-compose.local.yml down"
+  warn "  cd ruta\infra; docker compose -f docker-compose.local.yml down"
 }
 
 # Registrar cleanup al salir
@@ -118,6 +121,10 @@ docker compose -f docker-compose.local.yml up -d
 
 info "PostgreSQL (reparto :5439)..."
 Set-Location (Join-Path $SCRIPT_DIR "reparto\infra")
+docker compose -f docker-compose.local.yml up -d
+
+info "PostgreSQL (ruta :5440)..."
+Set-Location (Join-Path $SCRIPT_DIR "ruta\infra")
 docker compose -f docker-compose.local.yml up -d
 
 Set-Location $SCRIPT_DIR
@@ -206,6 +213,18 @@ do {
   Write-Host -NoNewline "."; Start-Sleep -Seconds 2
 } while ($true)
 Write-Host ""; info "  ✓ PostgreSQL (reparto) listo."
+
+# ── 5g. Esperar a PostgreSQL (ruta) ─────────────────────────
+info "PostgreSQL ruta..."
+$retries = 30
+do {
+  $r = docker compose -f "$SCRIPT_DIR\ruta\infra\docker-compose.local.yml" exec -T ruta-db pg_isready -U ruta -d ruta 2>$null
+  if ($LASTEXITCODE -eq 0) { break }
+  $retries--
+  if ($retries -le 0) { err "PostgreSQL (ruta) no arrancó." }
+  Write-Host -NoNewline "."; Start-Sleep -Seconds 2
+} while ($true)
+Write-Host ""; info "  ✓ PostgreSQL (ruta) listo."
 
 # ── 6. Esperar a Keycloak ────────────────────────────────────────────────────
 info "Keycloak (puede tardar ~30s la primera vez)..."
@@ -326,6 +345,17 @@ StartBackground "reparto-backend   :3010" "reparto-backend.log" `
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ORIGIN="http://localhost:5182" }
 
+# Ruta backend
+EnsureDeps (Join-Path $SCRIPT_DIR "ruta\backend")
+StartBackground "ruta-backend      :3011" "ruta-backend.log" `
+  (Join-Path $SCRIPT_DIR "ruta\backend") `
+  "npm run dev" `
+  @{ PORT="3011"; RUTA_DB_HOST="localhost"; RUTA_DB_PORT="5440";
+     RUTA_DB_NAME="ruta"; RUTA_DB_USER="ruta"; RUTA_DB_PASSWORD="ruta123";
+     ORS_API_KEY=$(if ($env:ORS_API_KEY) { $env:ORS_API_KEY } else { "" });
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5183" }
+
 # Calendario backend (Spring Boot)
 StartBackground "calendario-backend :8081" "calendario-backend.log" `
   (Join-Path $SCRIPT_DIR "backend") `
@@ -373,6 +403,10 @@ StartBackground "watchlist-frontend :5181" "watchlist-frontend.log" `
 EnsureDeps (Join-Path $SCRIPT_DIR "reparto\frontend")
 StartBackground "reparto-frontend   :5182" "reparto-frontend.log" `
   (Join-Path $SCRIPT_DIR "reparto\frontend") "npm run dev"
+
+EnsureDeps (Join-Path $SCRIPT_DIR "ruta\frontend")
+StartBackground "ruta-frontend      :5183" "ruta-frontend.log" `
+  (Join-Path $SCRIPT_DIR "ruta\frontend") "npm run dev"
 
 EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
 StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
@@ -438,6 +472,11 @@ Write-Host "  Reparto" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5182/reparto/"
 Write-Host "    Backend health   ->  http://localhost:3010/reparto/api/health"
 Write-Host "    REPARTO_GROUP_TOKEN_SECRET de desarrollo por defecto: local-dev-reparto-secret (sobrescribible con la env var)" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  Ruta" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5183/ruta/"
+Write-Host "    Backend health   ->  http://localhost:3011/ruta/api/health"
+Write-Host "    Sin ORS_API_KEY la busqueda devuelve 503: exporta la variable antes de arrancar (clave gratuita en openrouteservice.org)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow

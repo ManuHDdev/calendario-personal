@@ -506,6 +506,63 @@ Calendario/reparto/ dentro del monorepo elbunkerdelingeniero.
 
 ---
 
+## Ruta — Wallapop a lo largo de un trayecto
+
+### Ubicación
+Calendario/ruta/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/, storage/, mapacyd/, ytdl/, gastos/, ofertas/, paraisos/, juegos/, watchlist/ y reparto/)
+- Frontend: React + Vite + TypeScript
+- Base de datos: PostgreSQL 15, propia (`ruta`), tablas `busqueda_ruta` y `geocode_cache`
+- Mapa: Leaflet.js instalado vía npm (no CDN)
+- Rutas por carretera: OpenRouteService (misma `ORS_API_KEY` que paraisos, pero aquí se conserva la GEOMETRÍA completa, no solo el summary)
+- Geocodificación: Nominatim (OpenStreetMap), serializada a 1 req/s y cacheada de forma permanente en `geocode_cache`
+- Marketplace: Wallapop vía su API interna `api.wallapop.com/api/v3/search` (no oficial, mismo endpoint que el proyecto `marketplace-watcher`)
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón)
+- Validaciones: Zod en todos los endpoints que reciben body
+- Sin ORM — queries directas con el cliente pg
+- Con tests de backend (vitest), ejecutados en CI
+
+### Roles
+Único rol con acceso: `admin` (el propietario es el único usuario), misma postura que Gastos/Ofertas/Watchlist. `familia` e `invitado` no tienen acceso a Ruta, ni a la API ni al AppLauncher. **No añade ningún rol nuevo al realm de Keycloak.**
+
+### Qué hace
+Dado un trayecto A→B, devuelve los anuncios de Wallapop que estén a menos de N km de desvío de la ruta real, ordenados por el orden en que se pasarían conduciendo. El filtro NO es "cerca de las ciudades del camino": es la distancia perpendicular al trazado real, calculada anuncio a anuncio, usando las coordenadas que Wallapop expone en `location.latitude`/`location.longitude` de cada ítem.
+
+### Geometría del corredor (IMPORTANTE — no "simplificar")
+Wallapop solo acepta círculos (centro + `distance_in_km`), y lo que hace falta es un corredor. Con círculos de radio `Q` cada `S` km, la desigualdad triangular da `|P C| <= R + S/2`, luego **`S = 2*(Q - R)`**, y exige `Q > R`.
+
+La cota aparentemente más ajustada `Q >= sqrt(R^2 + (S/2)^2)` **es incorrecta**: solo vale para rutas rectas. En el exterior de una curva deja puntos hasta un 8% fuera del círculo más cercano (medido contra una polilínea Badajoz–Madrid), perdiendo anuncios en silencio. Está documentado en `ruta/backend/src/services/corridor.ts` y verificado en `corridor.test.ts`, que recorre el borde del corredor de una ruta con curvas.
+
+El planificador elige el radio MÁS PEQUEÑO que cabe en el presupuesto de peticiones, no el más grande: cada página de Wallapop está limitada a 40 anuncios, así que los círculos grandes gastan sus huecos en anuncios lejos de la ruta y pierden recall.
+
+### Rutas (`/ruta/api/*`)
+- `GET /geocode?q=` — texto libre → coordenadas (Nominatim, cacheado en Postgres)
+- `POST /search` — la búsqueda de corredor; devuelve `route` (polilínea, km, minutos), `plan` (centros, radio, espaciado, `fullCoverage`), `listings` y `stats` (`fetched`, `matched`, `requests`, `failedRequests`)
+- `GET /searches` — búsquedas guardadas, siempre `activo=true`
+- `POST /searches` — alta
+- `GET /searches/:id` — detalle
+- `PATCH /searches/:id` — edición parcial
+- `DELETE /searches/:id` — borrado lógico (`activo=false`, `deleted_at=now()`)
+- `GET /health`
+
+`plan.fullCoverage` y `stats.failedRequests` se muestran en la UI cuando no son perfectos: una búsqueda parcial nunca debe parecerse a una completa.
+
+### Alcance deliberado: solo Wallapop
+Milanuncios NO tiene búsqueda por coordenadas + radio (solo por slug de provincia), así que un desvío de N km no se puede cumplir sin geocodificar cada anuncio. Queda fuera a propósito. Añadirlo más adelante no obliga a rediseñar nada: el filtro exacto por distancia a la polilínea es agnóstico de la fuente.
+
+### Variables de entorno del backend
+`RUTA_DB_HOST`, `RUTA_DB_NAME`, `RUTA_DB_USER`, `RUTA_DB_PASSWORD`, `RUTA_DB_PORT`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3011), `ORS_API_KEY` (obligatoria; sin ella `POST /search` devuelve 503 en vez de romper el arranque)
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/ruta-backend:latest`, `ghcr.io/manuhddev/ruta-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los ocho roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
@@ -593,6 +650,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Juegos             | :5180    | :3008   |
 | Watchlist          | :5181    | :3009   |
 | Reparto            | :5182    | :3010   |
+| Ruta               | :5183    | :3011   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -601,9 +659,10 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | PostgreSQL (paraisos)| :5437 | —       |
 | PostgreSQL (watchlist)| :5438| —       |
 | PostgreSQL (reparto)| :5439  | —       |
+| PostgreSQL (ruta)  | :5440   | —       |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 10 Dockerfiles y 10 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 11 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 10 Dockerfiles y 10 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 12 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
