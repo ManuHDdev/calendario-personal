@@ -40,6 +40,21 @@ conversacional y distinto. Cada subapp tiene su directorio y su `.env` en el
 VPS, así que no se pisan — pero no reutilices el token de gastos aquí, o los
 avisos de pisos saldrán por el bot equivocado.
 
+### Si el primer despliegue ya falló sin el .env
+
+Es lo esperado, y no deja nada roto: el volumen se crea pero Postgres nunca
+llega a inicializarse (aborta antes de `initdb` por no tener contraseña), así
+que `init.sql` sigue pendiente de ejecutarse. Tras crear el `.env`:
+
+```bash
+cd /home/manu/pisos
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Si `pisos-db` siguiera sin arrancar, `docker compose -f docker-compose.prod.yml
+down -v` y repetir. El `-v` borra el volumen: aquí es seguro porque todavía no
+hay ni un dato dentro, pero NO lo uses una vez la app lleve anuncios guardados.
+
 ### Sacar el TELEGRAM_OWNER_CHAT_ID
 
 Escríbele algo al bot desde Telegram y luego, desde una copia del repo:

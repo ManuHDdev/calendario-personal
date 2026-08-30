@@ -1,3 +1,7 @@
+# Las variables marcadas con `:?` son obligatorias: si falta el .env, docker
+# compose aborta nada mas empezar diciendo cual falta, en lugar de levantar un
+# Postgres sin contrasena que solo se manifiesta como "pisos-db is unhealthy".
+# Un despliegue a medias no debe parecerse a uno completo.
 networks:
   calendario-net:
     external: true
@@ -8,15 +12,15 @@ services:
     image: postgres:15
     container_name: pisos-db
     environment:
-      POSTGRES_DB:       ${PISOS_DB_NAME}
-      POSTGRES_USER:     ${PISOS_DB_USER}
-      POSTGRES_PASSWORD: ${PISOS_DB_PASSWORD}
+      POSTGRES_DB:       ${PISOS_DB_NAME:?PISOS_DB_NAME no definida: falta /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}
+      POSTGRES_USER:     ${PISOS_DB_USER:?PISOS_DB_USER no definida: falta /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}
+      POSTGRES_PASSWORD: ${PISOS_DB_PASSWORD:?PISOS_DB_PASSWORD no definida: falta /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}
     volumes:
       - pisos_pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${PISOS_DB_USER} -d ${PISOS_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${PISOS_DB_USER:?PISOS_DB_USER no definida: falta /home/manu/pisos/.env (ver DEPLOY_NOTES.md)} -d ${PISOS_DB_NAME:?PISOS_DB_NAME no definida: falta /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,11 +33,11 @@ services:
     environment:
       PORT:                 3012
       PISOS_DB_HOST:        pisos-db
-      PISOS_DB_NAME:        ${PISOS_DB_NAME}
-      PISOS_DB_USER:        ${PISOS_DB_USER}
-      PISOS_DB_PASSWORD:    ${PISOS_DB_PASSWORD}
-      KEYCLOAK_CERTS_URL:   ${KEYCLOAK_CERTS_URL}
-      CORS_ORIGIN:          ${CORS_ORIGIN}
+      PISOS_DB_NAME:        ${PISOS_DB_NAME:?PISOS_DB_NAME no definida: falta /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}
+      PISOS_DB_USER:        ${PISOS_DB_USER:?PISOS_DB_USER no definida: falta /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}
+      PISOS_DB_PASSWORD:    ${PISOS_DB_PASSWORD:?PISOS_DB_PASSWORD no definida: falta /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}
+      KEYCLOAK_CERTS_URL:   ${KEYCLOAK_CERTS_URL:?KEYCLOAK_CERTS_URL no definida: copia el valor del .env de otra subapp}
+      CORS_ORIGIN:          ${CORS_ORIGIN:?CORS_ORIGIN no definida: falta /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}
       # El rastreador vive dentro de este contenedor: con restart
       # unless-stopped, vigila solo mientras el VPS esté en pie.
       PISOS_INTERVALO_MINUTOS:  ${PISOS_INTERVALO_MINUTOS:-15}
