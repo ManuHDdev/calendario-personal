@@ -16,6 +16,12 @@ porque contiene secretos que no viven en el repositorio.
 `docker compose` lee las variables de `/home/manu/pisos/.env`. Sin ese fichero,
 `POSTGRES_PASSWORD` llega vacío y el contenedor de Postgres se niega a
 arrancar, así que `pisos-backend` (que espera a que esté sano) tampoco sube.
+Por eso las tres de base de datos van con `:?` en el compose: sin ellas, el
+despliegue aborta al instante diciendo cuál falta.
+
+`KEYCLOAK_CERTS_URL` y `CORS_ORIGIN` NO hacen falta en el `.env`: el backend ya
+trae como valor por defecto exactamente el de producción, el mismo que usan las
+otras subapps. Solo póngalos si algún día cambian.
 
 ```bash
 ssh -p 2269 manu@87.216.88.165
@@ -24,8 +30,6 @@ cat > /home/manu/pisos/.env <<'ENV'
 PISOS_DB_NAME=pisos
 PISOS_DB_USER=pisos
 PISOS_DB_PASSWORD=<la contraseña generada para este despliegue>
-KEYCLOAK_CERTS_URL=http://calendario-keycloak:8080/keycloak/realms/calendario/protocol/openid-connect/certs
-CORS_ORIGIN=https://elbunkerdelingeniero.duckdns.org
 PISOS_INTERVALO_MINUTOS=15
 PISOS_PAGINAS_POR_PORTAL=2
 TELEGRAM_BOT_TOKEN=<token del bot de pisos, de @BotFather>
@@ -55,17 +59,24 @@ Si `pisos-db` siguiera sin arrancar, `docker compose -f docker-compose.prod.yml
 down -v` y repetir. El `-v` borra el volumen: aquí es seguro porque todavía no
 hay ni un dato dentro, pero NO lo uses una vez la app lleve anuncios guardados.
 
-### Sacar el TELEGRAM_OWNER_CHAT_ID
+### El TELEGRAM_OWNER_CHAT_ID
 
-Escríbele algo al bot desde Telegram y luego, desde una copia del repo:
+En un chat privado, el `chat_id` es el ID de usuario de Telegram del
+propietario. Si no lo sabes, escríbele algo al bot y luego, desde una copia del
+repo:
 
 ```bash
 cd pisos/backend
 TELEGRAM_BOT_TOKEN=<token> npm run telegram:chat-id
 ```
 
-Imprime los chats que le han escrito al bot. No metas la URL de `getUpdates` en
-el navegador: lleva el token dentro y acaba en el historial.
+No metas la URL de `getUpdates` en el navegador: lleva el token dentro y acaba
+en el historial.
+
+**Requisito que se olvida siempre:** un bot de Telegram NO puede escribir el
+primero a alguien que nunca le ha hablado. Hay que abrir el bot y pulsar
+«Empezar» una vez; si no, los envíos fallan con `403 bot can't initiate
+conversation with a user`, aunque el token y el chat id sean correctos.
 
 ### Comprobación tras desplegar
 

@@ -1,7 +1,11 @@
-# Las variables marcadas con `:?` son obligatorias: si falta el .env, docker
-# compose aborta nada mas empezar diciendo cual falta, en lugar de levantar un
-# Postgres sin contrasena que solo se manifiesta como "pisos-db is unhealthy".
-# Un despliegue a medias no debe parecerse a uno completo.
+# Las tres variables de base de datos van con `:?` porque no tienen valor por
+# defecto posible: sin contrasena, Postgres se niega a inicializarse y lo unico
+# que se ve es "pisos-db is unhealthy", que no dice nada. Con `:?`, compose
+# aborta al instante nombrando la que falta.
+#
+# El resto NO lleva `:?` a proposito: el backend ya trae como valor por defecto
+# el de produccion (KEYCLOAK_CERTS_URL, CORS_ORIGIN), y sin las de Telegram el
+# rastreador funciona igual, solo se queda sin avisos.
 networks:
   calendario-net:
     external: true
@@ -36,8 +40,8 @@ services:
       PISOS_DB_NAME:        "${PISOS_DB_NAME:?falta PISOS_DB_NAME en /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}"
       PISOS_DB_USER:        "${PISOS_DB_USER:?falta PISOS_DB_USER en /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}"
       PISOS_DB_PASSWORD:    "${PISOS_DB_PASSWORD:?falta PISOS_DB_PASSWORD en /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}"
-      KEYCLOAK_CERTS_URL:   "${KEYCLOAK_CERTS_URL:?falta KEYCLOAK_CERTS_URL en /home/manu/pisos/.env (copiala del .env de otra subapp)}"
-      CORS_ORIGIN:          "${CORS_ORIGIN:?falta CORS_ORIGIN en /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}"
+      KEYCLOAK_CERTS_URL:   ${KEYCLOAK_CERTS_URL}
+      CORS_ORIGIN:          ${CORS_ORIGIN}
       # El rastreador vive dentro de este contenedor: con restart
       # unless-stopped, vigila solo mientras el VPS esté en pie.
       PISOS_INTERVALO_MINUTOS:  ${PISOS_INTERVALO_MINUTOS:-15}
