@@ -11,6 +11,24 @@ a GHCR, copia `docker-compose.prod.yml` e `init.sql` a `/home/manu/pisos` y
 levanta los contenedores. Lo único que NO puede hacer solo es crear el `.env`,
 porque contiene secretos que no viven en el repositorio.
 
+### La forma corta: un solo comando
+
+Desde una copia del repo, en la máquina que tenga la clave SSH del VPS:
+
+```bash
+bash scripts/pisos-setup-vps.sh
+```
+
+Pide el token y el chat id, **prueba el bot antes de tocar nada** (si no has
+pulsado «Empezar» te lo dice ahí mismo en vez de fallar en silencio dentro de
+una semana), escribe el `.env` con la contraseña generada en el propio
+servidor, levanta los contenedores y espera a que el backend responda.
+
+Es idempotente: al repetirlo conserva la contraseña de base de datos que ya
+hubiera — regenerarla dejaría la base inaccesible.
+
+El resto de esta sección es lo mismo a mano, por si prefieres verlo paso a paso.
+
 ### Paso obligatorio en el VPS, ANTES del primer despliegue
 
 `docker compose` lee las variables de `/home/manu/pisos/.env`. Sin ese fichero,
