@@ -563,6 +563,125 @@ Milanuncios NO tiene búsqueda por coordenadas + radio (solo por slug de provinc
 
 ---
 
+## Pisos — Rastreador de anuncios de vivienda en venta
+
+### Ubicación
+Calendario/pisos/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que panel/, storage/, mapacyd/, ytdl/, gastos/, ofertas/, paraisos/, juegos/, watchlist/, reparto/ y ruta/)
+- Frontend: React + Vite + TypeScript
+- Base de datos: PostgreSQL 15, propia (`pisos`), tablas `busqueda` y `anuncio` + singleton `scraper_state`
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón)
+- Avisos: bot de Telegram (Telegraf) **de una sola dirección** — solo emite, no escucha comandos ni hace long polling, a diferencia del bot conversacional de `gastos`
+- Validaciones: Zod en todos los endpoints que reciben body
+- Sin ORM — queries directas con el cliente pg
+- Con tests de backend (vitest), ejecutados en CI
+
+### Qué hace
+Vigila Fotocasa, pisos.com y Wallapop cada pocos minutos y avisa por Telegram
+en cuanto aparece un piso **en venta** que cumple los criterios guardados
+(zona, precio, m², habitaciones, baños, ascensor/garaje/terraza). Solo compra:
+el alquiler queda fuera a propósito.
+
+### El rastreador corre solo (IMPORTANTE)
+El planificador vive **dentro del propio proceso del backend**
+(`services/planificador.ts`, `setTimeout` encadenado — no `setInterval`, para
+que un rastreo largo no se solape consigo mismo). No hay cron externo, systemd
+timer ni asistente de por medio: mientras el contenedor esté levantado
+(`restart: unless-stopped`), rastrea. Es la diferencia deliberada con
+`ofertas`, cuyo scraper (`marketplace-watcher`) es un proyecto Python separado
+fuera de este monorepo.
+
+### Dos principios de diseño que explican casi todo el código
+1. **Un dato desconocido no descarta un anuncio.** `null` es "el portal no lo
+   dice" y pasa el filtro; solo un `false` explícito ("sin ascensor") descarta.
+   Los portales solo publican los extras en la ficha, no en el listado, así que
+   tratar el silencio como un "no" haría desaparecer la mayoría de los pisos
+   válidos en silencio.
+2. **Un rastreo parcial nunca debe parecerse a uno completo.** Un portal caído
+   degrada el resultado, no lo aborta: se guarda lo encontrado y el motivo del
+   fallo queda en `busqueda.ultimo_rastreo_error`, que la UI enseña en rojo.
+   Mismo criterio que `plan.fullCoverage` en `ruta`.
+
+### Portales
+Todo el conocimiento específico de un portal vive en un bloque marcado dentro
+de `portales/<portal>.ts` — es el único sitio a tocar si un portal cambia.
+
+- **Fotocasa** y **pisos.com**: por nombre de zona. Se leen del JSON que la
+  propia página deja embebido (JSON-LD de schema.org o el estado que hidrata su
+  SPA), NO raspando clases CSS: los nombres de clase cambian con cada
+  despliegue de su front, el JSON-LD está ahí para Google y es mucho más
+  estable. Además, en el estado embebido se buscan nodos por su FORMA (id +
+  precio + superficie) y no por su ruta exacta, que también cambia.
+- **Wallapop**: mismo endpoint interno que ya usa `ruta`. Necesita
+  **coordenadas y radio**, no un nombre de zona; sin ellos esa búsqueda salta
+  ese portal con un motivo explícito. Tampoco expone m²/habitaciones
+  estructurados (los escribe un particular), así que se extraen del título y la
+  descripción en `portales/normalizar.ts`.
+
+Por eso el filtro fino se aplica en el backend, igual para los tres portales,
+después de normalizar — y no delegando en el buscador de cada uno, que ofrecen
+juegos de filtros distintos.
+
+**Idealista queda fuera a propósito**: está detrás de DataDome y un cliente
+HTTP simple se bloquea en días; su API oficial (100 peticiones/mes gratis,
+previa aprobación) no da para rastrear cada 15 minutos.
+
+### Tests y smoke (IMPORTANTE)
+Los tests de vitest corren contra **fixtures**, no contra los portales reales:
+verifican la lógica de parseo, pero no pueden verificar que un portal siga
+sirviendo hoy lo esperado — CI no sale a internet. Para eso está
+`npm run smoke -- <portal|todos> "<zona>"`, que golpea el portal de verdad y
+enseña la **cobertura por campo** (precio, m², habitaciones…). Esa cobertura es
+la métrica real: un parser medio roto devuelve anuncios con todo a `null` y aun
+así "funciona". Ejecutarlo tras cada despliegue y cuando un portal deje de
+devolver resultados.
+
+### Rutas (`/pisos/api/*`)
+- `GET /searches` — búsquedas guardadas, siempre `activo=true`
+- `POST /searches` — alta
+- `PATCH /searches/:id` — edición parcial
+- `DELETE /searches/:id` — borrado lógico (`activo=false`, `deleted_at=now()`)
+- `POST /searches/:id/rastrear` — rastreo manual ("Buscar ahora"). **No
+  notifica a propósito**: la primera pasada de una búsqueda nueva trae decenas
+  de anuncios antiguos que no son novedades y dispararía cien mensajes de golpe
+- `GET /listings` — feed de anuncios, filtros `busqueda`/`nuevos`/`descartados`
+- `PATCH /listings/:id` — marcar visto / descartado
+- `POST /listings/marcar-vistos` — marcar todo como visto
+- `DELETE /listings/:id` — borrado lógico
+- `GET`/`PATCH` `/scraper/state` — on/off global del rastreador (admin, Keycloak)
+- `GET /health`
+
+### Roles
+Único rol con acceso: `admin` (el propietario es el único usuario), misma
+postura que Gastos/Ofertas/Watchlist/Ruta. `familia` e `invitado` no tienen
+acceso a Pisos, ni a la API ni al AppLauncher. **No añade ningún rol nuevo al
+realm de Keycloak.**
+
+### Bot de Telegram
+Emite avisos, no escucha comandos. Alta manual vía `@BotFather` — ver
+`pisos/README.md`. Sin `TELEGRAM_BOT_TOKEN`/`TELEGRAM_OWNER_CHAT_ID` el
+rastreador sigue funcionando y guardando anuncios, solo se queda sin avisos (lo
+dice en el log al arrancar). Un anuncio cuyo envío falla **no se marca como
+notificado**, así que se reintenta en la siguiente vuelta en vez de perderse.
+
+### Variables de entorno del backend
+`PISOS_DB_HOST`, `PISOS_DB_NAME`, `PISOS_DB_USER`, `PISOS_DB_PASSWORD`,
+`PISOS_DB_PORT`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3012),
+`PISOS_INTERVALO_MINUTOS` (default 15, con ±20% de jitter),
+`PISOS_PAGINAS_POR_PORTAL` (default 2), `TELEGRAM_BOT_TOKEN`,
+`TELEGRAM_OWNER_CHAT_ID`, `WALLAPOP_CATEGORIA_INMUEBLES` (default `200`,
+sobrescribible por si Wallapop cambia el id de su categoría inmobiliaria).
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/pisos-backend:latest`, `ghcr.io/manuhddev/pisos-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los ocho roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
@@ -582,7 +701,7 @@ exactamente estos nombres.
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
-Ofertas y Calendario solo son accesibles para `admin` (uso exclusivo del
+Ofertas, Ruta, Pisos y Calendario solo son accesibles para `admin` (uso exclusivo del
 propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
 llamar a su API. Juegos es la única excepción a ese último punto: es la primera
 subapp visible y utilizable por los tres roles por igual (ver sección "Juegos"
@@ -651,6 +770,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Watchlist          | :5181    | :3009   |
 | Reparto            | :5182    | :3010   |
 | Ruta               | :5183    | :3011   |
+| Pisos              | :5184    | :3012   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -660,9 +780,10 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | PostgreSQL (watchlist)| :5438| —       |
 | PostgreSQL (reparto)| :5439  | —       |
 | PostgreSQL (ruta)  | :5440   | —       |
+| PostgreSQL (pisos) | :5441   | —       |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 10 Dockerfiles y 10 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 12 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 12 Dockerfiles y 12 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 13 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.

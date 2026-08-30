@@ -184,8 +184,8 @@ CLIENT_ID=$(node -e "const a=JSON.parse(process.argv[1]); process.stdout.write(a
 # la lista de solo-desarrollo, rompiendo el login de todas las apps. Al no
 # haber distinción de entorno, unificar la lista es la forma segura de
 # evitar esa clase de bug sin depender de cómo se invoque el script.
-REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*","http://localhost:5180/*","http://localhost:5181/*","http://localhost:5182/*","https://elbunkerdelingeniero.duckdns.org/*"]'
-WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179","http://localhost:5180","http://localhost:5181","http://localhost:5182","https://elbunkerdelingeniero.duckdns.org"]'
+REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*","http://localhost:5180/*","http://localhost:5181/*","http://localhost:5182/*","http://localhost:5183/*","http://localhost:5184/*","https://elbunkerdelingeniero.duckdns.org/*"]'
+WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179","http://localhost:5180","http://localhost:5181","http://localhost:5182","http://localhost:5183","http://localhost:5184","https://elbunkerdelingeniero.duckdns.org"]'
 
 # Obtener la configuración actual del cliente y parchearla
 CLIENT_JSON=$(curl -sf \

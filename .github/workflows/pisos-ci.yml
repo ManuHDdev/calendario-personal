@@ -1,0 +1,128 @@
+name: CI/CD Pisos
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pisos/**'
+      - '.github/workflows/pisos-ci.yml'
+
+jobs:
+  lint-and-build-backend:
+    name: Pisos · Build backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: pisos/backend
+        run: npm ci && npm run build
+
+      # El filtro por criterios y el normalizador de texto libre son la parte
+      # que sostiene esta app: si regresan, las busquedas dejan de encontrar
+      # pisos validos en silencio, en lugar de fallar de forma visible.
+      #
+      # OJO: estos tests corren contra fixtures, no contra los portales
+      # reales — CI no sale a internet. Para comprobar que Fotocasa/pisos.com/
+      # Wallapop siguen sirviendo lo esperado: npm run smoke (ver README).
+      - name: Test
+        working-directory: pisos/backend
+        run: npm test
+
+  lint-and-build-frontend:
+    name: Pisos · Build frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: pisos/frontend
+        run: npm ci && npm run build
+
+  docker-build-and-push:
+    name: Pisos · Docker build & push
+    runs-on: ubuntu-latest
+    needs: [lint-and-build-backend, lint-and-build-frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build & push pisos-backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./pisos/backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/pisos-backend:latest
+            ghcr.io/${{ env.OWNER }}/pisos-backend:${{ github.sha }}
+
+      - name: Build & push pisos-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./pisos/frontend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/pisos-frontend:latest
+            ghcr.io/${{ env.OWNER }}/pisos-frontend:${{ github.sha }}
+
+  deploy:
+    name: Deploy · Pisos VPS
+    runs-on: ubuntu-latest
+    needs: docker-build-and-push
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar docker-compose e init.sql al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "pisos/infra/docker-compose.prod.yml,pisos/infra/init.sql"
+          target: /home/manu/pisos
+          strip_components: 2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /home/manu/pisos
+
+            docker compose -f docker-compose.prod.yml pull pisos-backend pisos-frontend
+            docker compose -f docker-compose.prod.yml up -d pisos-db pisos-backend pisos-frontend
+            docker compose -f docker-compose.prod.yml ps

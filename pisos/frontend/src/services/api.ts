@@ -1,0 +1,120 @@
+import keycloak from './keycloak';
+import type {
+  Anuncio,
+  Busqueda,
+  BusquedaFormData,
+  BusquedaUpdateData,
+  ResultadoRastreo,
+  ScraperState,
+} from '../types';
+
+const BASE = '/pisos/api';
+
+function headers(): Record<string, string> {
+  const token = keycloak.token;
+  if (!token) throw new Error('No auth token');
+  return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+}
+
+async function handleError(res: Response): Promise<never> {
+  let msg = `Error ${res.status}`;
+  try {
+    const body = (await res.json()) as { error?: string };
+    if (body.error) msg = body.error;
+  } catch { /* ignore */ }
+  throw new Error(msg);
+}
+
+export async function getSearches(): Promise<Busqueda[]> {
+  const res = await fetch(`${BASE}/searches`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<Busqueda[]>;
+}
+
+export async function createSearch(data: BusquedaFormData): Promise<Busqueda> {
+  const res = await fetch(`${BASE}/searches`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<Busqueda>;
+}
+
+export async function updateSearch(id: string, data: BusquedaUpdateData): Promise<Busqueda> {
+  const res = await fetch(`${BASE}/searches/${id}`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<Busqueda>;
+}
+
+export async function deleteSearch(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/searches/${id}`, { method: 'DELETE', headers: headers() });
+  if (!res.ok && res.status !== 204) await handleError(res);
+}
+
+/** Rastreo manual: "mira ahora", sin esperar a la siguiente vuelta. */
+export async function rastrearAhora(id: string): Promise<ResultadoRastreo> {
+  const res = await fetch(`${BASE}/searches/${id}/rastrear`, { method: 'POST', headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<ResultadoRastreo>;
+}
+
+export interface FiltroAnuncios {
+  busqueda?: string;
+  soloNuevos?: boolean;
+  incluirDescartados?: boolean;
+}
+
+export async function getListings(filtro: FiltroAnuncios = {}): Promise<Anuncio[]> {
+  const params = new URLSearchParams();
+  if (filtro.busqueda) params.set('busqueda', filtro.busqueda);
+  if (filtro.soloNuevos) params.set('nuevos', 'true');
+  if (filtro.incluirDescartados) params.set('descartados', 'true');
+
+  const res = await fetch(`${BASE}/listings?${params.toString()}`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<Anuncio[]>;
+}
+
+export async function updateListing(
+  id: string,
+  data: { visto?: boolean; descartado?: boolean },
+): Promise<Anuncio> {
+  const res = await fetch(`${BASE}/listings/${id}`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<Anuncio>;
+}
+
+export async function marcarTodosVistos(busquedaId?: string): Promise<{ marcados: number }> {
+  const res = await fetch(`${BASE}/listings/marcar-vistos`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(busquedaId ? { busqueda_id: busquedaId } : {}),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<{ marcados: number }>;
+}
+
+export async function getScraperState(): Promise<ScraperState> {
+  const res = await fetch(`${BASE}/scraper/state`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<ScraperState>;
+}
+
+export async function updateScraperState(running: boolean): Promise<ScraperState> {
+  const res = await fetch(`${BASE}/scraper/state`, {
+    method: 'PATCH',
+    headers: headers(),
+    body: JSON.stringify({ running }),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<ScraperState>;
+}

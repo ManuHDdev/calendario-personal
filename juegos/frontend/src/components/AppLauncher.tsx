@@ -26,6 +26,7 @@ const APPS: AppDef[] = [
   { id: 'watchlist',  nombre: 'Watchlist',  color: '#64d2ff', roles: ['admin'] },
   { id: 'reparto',    nombre: 'Reparto',    color: '#a2845e', roles: ['admin', 'reparto_admin', 'reparto_invitado'] },
   { id: 'ruta',       nombre: 'Ruta',       color: '#e07a5f', roles: ['admin'] },
+  { id: 'pisos',      nombre: 'Pisos',      color: '#7cb518', roles: ['admin'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -43,6 +44,7 @@ function getUrls(): Record<string, string> {
     watchlist:  local ? 'http://localhost:5181/watchlist/' : '/watchlist/',
     reparto:    local ? 'http://localhost:5182/reparto/'   : '/reparto/',
     ruta:       local ? 'http://localhost:5183/ruta/'     : '/ruta/',
+    pisos:      local ? 'http://localhost:5184/pisos/'   : '/pisos/',
   };
 }
 
@@ -139,6 +141,14 @@ function AppIcon({ id }: { id: string }) {
           <circle cx="6" cy="19" r="2.4"/>
           <circle cx="18" cy="5" r="2.4"/>
           <path d="M8.4 19h5.1a3.5 3.5 0 0 0 0-7h-3a3.5 3.5 0 0 1 0-7h5.1"/>
+        </svg>
+      );
+    case 'pisos':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <path d="M3 10.5 12 3l9 7.5"/>
+          <path d="M5 9.8V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.8"/>
+          <rect x="9.5" y="13" width="5" height="8"/>
         </svg>
       );
     default:
