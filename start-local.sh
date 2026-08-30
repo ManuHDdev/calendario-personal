@@ -31,6 +31,8 @@
 #   reparto frontend    →  :5182
 #   ruta backend        →  :3011
 #   ruta frontend       →  :5183
+#   pisos backend       →  :3012
+#   pisos frontend      →  :5184
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -73,6 +75,7 @@ cleanup() {
   warn "  cd watchlist/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd reparto/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd ruta/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd pisos/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -152,6 +155,9 @@ info "PostgreSQL (reparto :5439)..."
 info "PostgreSQL (ruta :5440)..."
 (cd "$SCRIPT_DIR/ruta/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (pisos :5441)..."
+(cd "$SCRIPT_DIR/pisos/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -202,6 +208,12 @@ wait_for_container \
   "PostgreSQL ruta" \
   "ruta-db-local" \
   "docker exec ruta-db-local pg_isready -U ruta -d ruta" \
+  30
+
+wait_for_container \
+  "PostgreSQL pisos" \
+  "pisos-db-local" \
+  "docker exec pisos-db-local pg_isready -U pisos -d pisos" \
   30
 
 wait_for_container \
@@ -348,6 +360,23 @@ start_bg "ruta-backend       :3011" "ruta-backend.log" "$SCRIPT_DIR/ruta/backend
       CORS_ORIGIN="http://localhost:5183" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/pisos/backend"
+# PISOS_INTERVALO_MINUTOS alto en local a proposito: en desarrollo se usa el
+# boton "Buscar ahora", y no hace falta estar golpeando los portales de fondo.
+start_bg "pisos-backend      :3012" "pisos-backend.log" "$SCRIPT_DIR/pisos/backend" \
+  env PORT=3012 \
+      PISOS_DB_HOST="localhost" \
+      PISOS_DB_PORT="5441" \
+      PISOS_DB_NAME="pisos" \
+      PISOS_DB_USER="pisos" \
+      PISOS_DB_PASSWORD="pisos123" \
+      PISOS_INTERVALO_MINUTOS="${PISOS_INTERVALO_MINUTOS:-60}" \
+      TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}" \
+      TELEGRAM_OWNER_CHAT_ID="${TELEGRAM_OWNER_CHAT_ID:-}" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5184" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -396,6 +425,10 @@ start_bg "reparto-frontend   :5182" "reparto-frontend.log" "$SCRIPT_DIR/reparto/
 
 ensure_deps "$SCRIPT_DIR/ruta/frontend"
 start_bg "ruta-frontend      :5183" "ruta-frontend.log" "$SCRIPT_DIR/ruta/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/pisos/frontend"
+start_bg "pisos-frontend     :5184" "pisos-frontend.log" "$SCRIPT_DIR/pisos/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -466,6 +499,12 @@ echo -e "  ${CYAN}Ruta${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5183/ruta/${NC}"
 echo -e "    Backend health   →  http://localhost:3011/ruta/api/health"
 echo -e "    ${YELLOW}ℹ  Sin ORS_API_KEY la busqueda devuelve 503: exporta la variable antes de arrancar (clave gratuita en openrouteservice.org)${NC}"
+echo ""
+echo -e "  ${CYAN}Pisos${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5184/pisos/${NC}"
+echo -e "    Backend health   →  http://localhost:3012/pisos/api/health"
+echo -e "    ${YELLOW}ℹ  Sin TELEGRAM_BOT_TOKEN/TELEGRAM_OWNER_CHAT_ID rastrea y guarda, pero no avisa al movil${NC}"
+echo -e "    ${YELLOW}ℹ  Comprobar los portales reales:  cd pisos/backend && npm run smoke -- todos \"Badajoz\"${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

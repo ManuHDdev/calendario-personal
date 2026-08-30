@@ -25,6 +25,7 @@ function appUrls(): Record<string, string> {
     watchlist:  local ? 'http://localhost:5181/watchlist/' : '/watchlist/',
     reparto:    local ? 'http://localhost:5182/reparto/'   : '/reparto/',
     ruta:       local ? 'http://localhost:5183/ruta/'      : '/ruta/',
+    pisos:      local ? 'http://localhost:5184/pisos/'    : '/pisos/',
   };
 }
 
@@ -57,6 +58,7 @@ export class AppLauncher {
     { id: 'watchlist',  nombre: 'Watchlist',  color: '#64d2ff', roles: ['admin'],           url: '' },
     { id: 'reparto',    nombre: 'Reparto',    color: '#a2845e', roles: ['admin','reparto_admin','reparto_invitado'], url: '' },
     { id: 'ruta',       nombre: 'Ruta',       color: '#e07a5f', roles: ['admin'],           url: '' },
+    { id: 'pisos',      nombre: 'Pisos',      color: '#7cb518', roles: ['admin'],           url: '' },
   ];
 
   get apps(): App[] {

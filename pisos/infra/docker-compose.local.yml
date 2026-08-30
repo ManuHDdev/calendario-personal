@@ -1,0 +1,23 @@
+services:
+  pisos-db:
+    image: postgres:15
+    container_name: pisos-db-local
+    ports:
+      - "5441:5432"
+    environment:
+      POSTGRES_DB: pisos
+      POSTGRES_USER: pisos
+      POSTGRES_PASSWORD: pisos123
+    volumes:
+      - pisos_local_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pisos -d pisos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  pisos_local_data:

@@ -1,0 +1,524 @@
+/* Estética del monorepo: neutros, espaciado generoso, bordes suaves,
+   animaciones de 150-250 ms. El acento verde solo marca lo accionable. */
+
+.pisos-layout {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+}
+
+/* ── Cabecera ─────────────────────────────────────────────────────────── */
+
+.pisos-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+}
+
+.pisos-header-left,
+.pisos-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pisos-title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.pisos-username {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pisos-logout-btn {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.pisos-logout-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ── Cuerpo ───────────────────────────────────────────────────────────── */
+
+.pisos-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pisos-error {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pisos-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 32px 0;
+  text-align: center;
+}
+
+/* ── Barra de pestañas y estado del rastreador ────────────────────────── */
+
+.pisos-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pestanas {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.pestana {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.pestana--activa {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.scraper-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scraper-status {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.scraper-status--on  { color: var(--success); }
+.scraper-status--off { color: var(--text-tertiary); }
+
+/* ── Filtros del feed ─────────────────────────────────────────────────── */
+
+.pisos-filtros {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pisos-filtros select {
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* ── Botones ──────────────────────────────────────────────────────────── */
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease, opacity 150ms ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  align-self: flex-start;
+}
+
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover:not(:disabled) { background: var(--border); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+}
+
+.btn-danger:hover { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+
+.btn-mini { padding: 5px 10px; font-size: 12px; }
+
+button:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Formulario de búsqueda ───────────────────────────────────────────── */
+
+.busqueda-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.campo-fila {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.campo--ancho { flex: 2 1 280px; }
+
+.campo > span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.campo > span em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.campo input {
+  font-size: 14px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color 150ms ease;
+  min-width: 0;
+}
+
+.campo input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.grupo {
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.grupo legend {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.chip input { accent-color: var(--accent); }
+
+.chip--on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.ayuda {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.45;
+}
+
+.form-error {
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.form-acciones {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ── Lista de búsquedas ───────────────────────────────────────────────── */
+
+.busqueda-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.busqueda-item {
+  padding: 18px 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity 200ms ease;
+}
+
+.busqueda-item--pausada { opacity: 0.55; }
+
+.busqueda-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.busqueda-nombre {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.busqueda-ubicacion,
+.busqueda-criterios {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.busqueda-portales {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.busqueda-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.busqueda-alerta {
+  font-size: 12px;
+  color: var(--danger);
+  line-height: 1.45;
+}
+
+.busqueda-acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+/* ── Feed de anuncios ─────────────────────────────────────────────────── */
+
+.anuncio-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.anuncio-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+
+.anuncio-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Lo sin ver se marca con un borde de acento, no con un color de fondo:
+   basta para localizarlo de un vistazo sin ensuciar la retícula. */
+.anuncio-card--nuevo { border-color: var(--accent); }
+
+.anuncio-imagen {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  background: var(--bg-tertiary);
+}
+
+.anuncio-imagen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.anuncio-sin-imagen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.badge-nuevo {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.anuncio-cuerpo {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.anuncio-precio-fila {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.anuncio-precio {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.anuncio-antes {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+}
+
+.anuncio-m2 {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.anuncio-titulo {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.anuncio-titulo:hover { color: var(--accent); }
+
+.anuncio-caract {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.anuncio-ubicacion {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.anuncio-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.anuncio-acciones {
+  display: flex;
+  gap: 6px;
+  padding-top: 6px;
+}
+
+@media (max-width: 640px) {
+  .pisos-main { padding: 16px; }
+  .pisos-header { padding: 12px 16px; }
+  .anuncio-grid { grid-template-columns: 1fr; }
+}

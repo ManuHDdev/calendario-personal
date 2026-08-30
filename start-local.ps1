@@ -30,6 +30,8 @@
 #   reparto frontend    →  :5182
 #   ruta backend        →  :3011
 #   ruta frontend       →  :5183
+#   pisos backend       →  :3012
+#   pisos frontend      →  :5184
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -57,6 +59,7 @@ function Cleanup {
   warn "  cd watchlist\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd reparto\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd ruta\infra; docker compose -f docker-compose.local.yml down"
+  warn "  cd pisos\infra; docker compose -f docker-compose.local.yml down"
 }
 
 # Registrar cleanup al salir
@@ -125,6 +128,10 @@ docker compose -f docker-compose.local.yml up -d
 
 info "PostgreSQL (ruta :5440)..."
 Set-Location (Join-Path $SCRIPT_DIR "ruta\infra")
+docker compose -f docker-compose.local.yml up -d
+
+info "PostgreSQL (pisos :5441)..."
+Set-Location (Join-Path $SCRIPT_DIR "pisos\infra")
 docker compose -f docker-compose.local.yml up -d
 
 Set-Location $SCRIPT_DIR
@@ -225,6 +232,18 @@ do {
   Write-Host -NoNewline "."; Start-Sleep -Seconds 2
 } while ($true)
 Write-Host ""; info "  ✓ PostgreSQL (ruta) listo."
+
+# ── 5h. Esperar a PostgreSQL (pisos) ─────────────────────────
+info "PostgreSQL pisos..."
+$retries = 30
+do {
+  $r = docker compose -f "$SCRIPT_DIR\pisos\infra\docker-compose.local.yml" exec -T pisos-db pg_isready -U pisos -d pisos 2>$null
+  if ($LASTEXITCODE -eq 0) { break }
+  $retries--
+  if ($retries -le 0) { err "PostgreSQL (pisos) no arrancó." }
+  Write-Host -NoNewline "."; Start-Sleep -Seconds 2
+} while ($true)
+Write-Host ""; info "  ✓ PostgreSQL (pisos) listo."
 
 # ── 6. Esperar a Keycloak ────────────────────────────────────────────────────
 info "Keycloak (puede tardar ~30s la primera vez)..."
@@ -356,6 +375,21 @@ StartBackground "ruta-backend      :3011" "ruta-backend.log" `
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ORIGIN="http://localhost:5183" }
 
+# Pisos backend
+# PISOS_INTERVALO_MINUTOS alto en local a proposito: en desarrollo se usa el
+# boton "Buscar ahora", no hace falta golpear los portales de fondo.
+EnsureDeps (Join-Path $SCRIPT_DIR "pisos\backend")
+StartBackground "pisos-backend     :3012" "pisos-backend.log" `
+  (Join-Path $SCRIPT_DIR "pisos\backend") `
+  "npm run dev" `
+  @{ PORT="3012"; PISOS_DB_HOST="localhost"; PISOS_DB_PORT="5441";
+     PISOS_DB_NAME="pisos"; PISOS_DB_USER="pisos"; PISOS_DB_PASSWORD="pisos123";
+     PISOS_INTERVALO_MINUTOS=$(if ($env:PISOS_INTERVALO_MINUTOS) { $env:PISOS_INTERVALO_MINUTOS } else { "60" });
+     TELEGRAM_BOT_TOKEN=$(if ($env:TELEGRAM_BOT_TOKEN) { $env:TELEGRAM_BOT_TOKEN } else { "" });
+     TELEGRAM_OWNER_CHAT_ID=$(if ($env:TELEGRAM_OWNER_CHAT_ID) { $env:TELEGRAM_OWNER_CHAT_ID } else { "" });
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5184" }
+
 # Calendario backend (Spring Boot)
 StartBackground "calendario-backend :8081" "calendario-backend.log" `
   (Join-Path $SCRIPT_DIR "backend") `
@@ -407,6 +441,10 @@ StartBackground "reparto-frontend   :5182" "reparto-frontend.log" `
 EnsureDeps (Join-Path $SCRIPT_DIR "ruta\frontend")
 StartBackground "ruta-frontend      :5183" "ruta-frontend.log" `
   (Join-Path $SCRIPT_DIR "ruta\frontend") "npm run dev"
+
+EnsureDeps (Join-Path $SCRIPT_DIR "pisos\frontend")
+StartBackground "pisos-frontend     :5184" "pisos-frontend.log" `
+  (Join-Path $SCRIPT_DIR "pisos\frontend") "npm run dev"
 
 EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
 StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
@@ -477,6 +515,12 @@ Write-Host "  Ruta" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5183/ruta/"
 Write-Host "    Backend health   ->  http://localhost:3011/ruta/api/health"
 Write-Host "    Sin ORS_API_KEY la busqueda devuelve 503: exporta la variable antes de arrancar (clave gratuita en openrouteservice.org)" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  Pisos" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5184/pisos/"
+Write-Host "    Backend health   ->  http://localhost:3012/pisos/api/health"
+Write-Host "    Sin TELEGRAM_BOT_TOKEN/TELEGRAM_OWNER_CHAT_ID rastrea y guarda, pero no avisa al movil" -ForegroundColor Yellow
+Write-Host "    Comprobar los portales reales:  cd pisos\backend; npm run smoke -- todos \"Badajoz\"" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow
