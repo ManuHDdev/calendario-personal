@@ -6,55 +6,92 @@
 
 ## Alta de la subapp `pisos`
 
-1. **Variables nuevas en el `.env` del VPS** (junto a las del resto de subapps):
+El pipeline (`.github/workflows/pisos-ci.yml`) construye las imágenes, las sube
+a GHCR, copia `docker-compose.prod.yml` e `init.sql` a `/home/manu/pisos` y
+levanta los contenedores. Lo único que NO puede hacer solo es crear el `.env`,
+porque contiene secretos que no viven en el repositorio.
 
-   ```
-   PISOS_DB_NAME=pisos
-   PISOS_DB_USER=pisos
-   PISOS_DB_PASSWORD=<generar>
-   # Opcionales, con valor por defecto razonable:
-   PISOS_INTERVALO_MINUTOS=15
-   PISOS_PAGINAS_POR_PORTAL=2
-   ```
+### Paso obligatorio en el VPS, ANTES del primer despliegue
 
-2. **Bot de Telegram** (necesario para los avisos al móvil; sin él la app
-   rastrea y guarda, pero no avisa):
+`docker compose` lee las variables de `/home/manu/pisos/.env`. Sin ese fichero,
+`POSTGRES_PASSWORD` llega vacío y el contenedor de Postgres se niega a
+arrancar, así que `pisos-backend` (que espera a que esté sano) tampoco sube.
 
-   - `@BotFather` → `/newbot` → guarda el token en `TELEGRAM_BOT_TOKEN`.
-   - Escríbele algo al bot y saca tu `chat.id` de
-     `https://api.telegram.org/bot<TOKEN>/getUpdates` → `TELEGRAM_OWNER_CHAT_ID`.
+```bash
+ssh -p 2269 manu@87.216.88.165
+mkdir -p /home/manu/pisos
+cat > /home/manu/pisos/.env <<'ENV'
+PISOS_DB_NAME=pisos
+PISOS_DB_USER=pisos
+PISOS_DB_PASSWORD=<la contraseña generada para este despliegue>
+KEYCLOAK_CERTS_URL=http://calendario-keycloak:8080/keycloak/realms/calendario/protocol/openid-connect/certs
+CORS_ORIGIN=https://elbunkerdelingeniero.duckdns.org
+PISOS_INTERVALO_MINUTOS=15
+PISOS_PAGINAS_POR_PORTAL=2
+TELEGRAM_BOT_TOKEN=<token del bot de pisos, de @BotFather>
+TELEGRAM_OWNER_CHAT_ID=<ver abajo>
+ENV
+chmod 600 /home/manu/pisos/.env
+```
 
-   `gastos` ya usa esas dos variables para SU bot. Si el `.env` es compartido,
-   crea un bot distinto para pisos y separa las variables por servicio en el
-   compose, o los avisos de pisos acabarán saliendo por el bot de gastos.
+`TELEGRAM_BOT_TOKEN` y `TELEGRAM_OWNER_CHAT_ID` son **de este `.env` y solo de
+este**: `gastos` usa esas mismas dos variables para SU bot, que es
+conversacional y distinto. Cada subapp tiene su directorio y su `.env` en el
+VPS, así que no se pisan — pero no reutilices el token de gastos aquí, o los
+avisos de pisos saldrán por el bot equivocado.
 
-3. **Nginx**: `nginx/calendario.conf` trae ya el bloque `/pisos/`. Recargar
-   con `nginx -t && nginx -s reload` tras copiarlo.
+### Sacar el TELEGRAM_OWNER_CHAT_ID
 
-4. **Keycloak**: se han añadido los puertos locales `5183` y `5184` a los
-   redirect URIs. El `5183` (ruta) **faltaba desde antes** — sin él, el login
-   local de Ruta se rompía al ejecutar el script. Aplicar con:
+Escríbele algo al bot desde Telegram y luego, desde una copia del repo:
 
-   ```bash
-   bash scripts/keycloak-update-realm.sh http://localhost:8080 admin <password>
-   ```
+```bash
+cd pisos/backend
+TELEGRAM_BOT_TOKEN=<token> npm run telegram:chat-id
+```
 
-   No afecta a producción: el redirect de producción sigue siendo el mismo.
+Imprime los chats que le han escrito al bot. No metas la URL de `getUpdates` en
+el navegador: lleva el token dentro y acaba en el historial.
 
-5. **Comprobación obligatoria tras desplegar** — los tests de CI corren contra
-   fixtures y NO prueban que los portales sigan sirviendo lo esperado:
+### Comprobación tras desplegar
 
-   ```bash
-   docker exec -it pisos-backend node -e "process.exit(0)"   # contenedor vivo
-   curl -s https://elbunkerdelingeniero.duckdns.org/pisos/api/health
-   ```
+```bash
+curl -s https://elbunkerdelingeniero.duckdns.org/pisos/api/health
+docker logs pisos-backend --tail 30    # debe decir "Rastreador programado cada ~15 min"
+```
 
-   Y desde una copia del repo (necesita las devDependencies, así que en local,
-   no en el contenedor de producción):
+Si el log dice `TELEGRAM_BOT_TOKEN/TELEGRAM_OWNER_CHAT_ID sin configurar`, el
+rastreo funciona pero no habrá avisos: revisa el `.env` y `docker compose up -d`.
 
-   ```bash
-   cd pisos/backend && npm run smoke -- todos "Badajoz" --lat 38.8794 --lng -6.9707 --radio 30
-   ```
+### Comprobación de los portales (IMPORTANTE, no la salta CI)
 
-   Si un portal da cero resultados o cobertura muy baja por campo, ha cambiado
-   su estructura: ajustar el bloque de conocimiento de `portales/<portal>.ts`.
+Los tests corren contra fixtures y NO prueban que Fotocasa/pisos.com/Wallapop
+sigan sirviendo hoy lo esperado — CI no sale a internet. Desde una copia local
+del repo:
+
+```bash
+cd pisos/backend && npm install
+npm run smoke -- todos "Badajoz" --lat 38.8794 --lng -6.9707 --radio 30
+```
+
+Fíjate en la **cobertura por campo** que imprime, no solo en el número de
+anuncios: un parser medio roto devuelve anuncios con todo a `null` y aun así
+"funciona". Cero resultados o cobertura muy baja en un portal → ha cambiado su
+estructura; ajustar el bloque marcado en `pisos/backend/src/portales/<portal>.ts`.
+
+### Keycloak
+
+Se han añadido los puertos locales `5183` y `5184` a los redirect URIs. El
+`5183` (ruta) **faltaba desde su alta** y rompía su login local al ejecutar el
+script. Solo afecta a desarrollo local; producción no cambia:
+
+```bash
+bash scripts/keycloak-update-realm.sh http://localhost:8080 admin <password>
+```
+
+### Nginx
+
+`nginx/calendario.conf` ya trae el bloque `/pisos/`, y el pipeline de
+Calendario lo publica y recarga nginx solo. El bloque usa `set $svc_pisos ...`
+antes de `proxy_pass`, que hace que nginx resuelva el host en cada petición y
+no al cargar la configuración: por eso `nginx -t` pasa aunque los contenedores
+de pisos todavía no existan, y el orden de despliegue no importa.
