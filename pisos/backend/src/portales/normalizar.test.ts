@@ -11,6 +11,8 @@ import {
   slugificar,
   normalizarTexto,
   decodificarEntidades,
+  esCapitalDeProvincia,
+  ubicacionCoincide,
 } from './normalizar';
 
 describe('parsearPrecio', () => {
@@ -134,6 +136,37 @@ describe('extraerHabitaciones con abreviaturas de portal', () => {
 describe('extraerMetros con separador de millares', () => {
   it('"1.000 m²" son mil metros, no cero', () => {
     expect(extraerMetros('Parcela de 1.000 m²')).toBe(1000);
+  });
+});
+
+describe('esCapitalDeProvincia', () => {
+  it('reconoce las capitales cuyo nombre a secas designa la provincia', () => {
+    expect(esCapitalDeProvincia('Cáceres')).toBe(true);
+    expect(esCapitalDeProvincia('  badajoz ')).toBe(true);
+    expect(esCapitalDeProvincia('A Coruña')).toBe(true);
+  });
+
+  it('un pueblo cualquiera no es capital', () => {
+    expect(esCapitalDeProvincia('Montijo')).toBe(false);
+    expect(esCapitalDeProvincia('Casar de Cáceres')).toBe(false);
+  });
+});
+
+describe('ubicacionCoincide', () => {
+  it('acepta el municipio buscado escrito de varias formas', () => {
+    expect(ubicacionCoincide('Casco Antiguo, Cáceres', 'Cáceres')).toBe(true);
+    expect(ubicacionCoincide('Centro (Cáceres Capital)', 'Cáceres')).toBe(true);
+    expect(ubicacionCoincide('Cáceres', 'Cáceres')).toBe(true);
+  });
+
+  it('rechaza otros municipios aunque contengan la palabra', () => {
+    expect(ubicacionCoincide('Casar de Cáceres', 'Cáceres')).toBe(false);
+    expect(ubicacionCoincide('Plasencia', 'Cáceres')).toBe(false);
+  });
+
+  it('objetivo vacío no filtra; ubicación desconocida no coincide', () => {
+    expect(ubicacionCoincide('donde sea', '')).toBe(true);
+    expect(ubicacionCoincide(null, 'Cáceres')).toBe(false);
   });
 });
 

@@ -20,9 +20,11 @@
  */
 
 import type { AnuncioCrudo } from '../types/pisos';
-import { normalizarTexto } from '../portales/normalizar';
+import { normalizarTexto, ubicacionCoincide } from '../portales/normalizar';
 
 export interface Criterios {
+  /** Municipio buscado. El anuncio debe estar en él, no solo en su provincia. */
+  ubicacion: string;
   precio_min: number | null;
   precio_max: number | null;
   metros_min: number | null;
@@ -58,6 +60,14 @@ function fueraDeRango(
 }
 
 export function cumpleCriterios(anuncio: AnuncioCrudo, criterios: Criterios): Veredicto {
+  // La ubicación SÍ descarta, incluso cuando no se conoce: el propietario
+  // busca un municipio concreto, no una provincia. Es la única excepción
+  // junto al precio a la regla de "un dato desconocido no descarta" — y en
+  // la práctica los tres portales siempre traen el municipio.
+  if (!ubicacionCoincide(anuncio.ubicacion, criterios.ubicacion)) {
+    return { cumple: false, motivo: `fuera de ${criterios.ubicacion}` };
+  }
+
   // El precio SÍ descarta cuando no se conoce: un anuncio sin precio es
   // siempre un "consúltanos", y no es lo que se está buscando aquí.
   if (anuncio.precio === null && (criterios.precio_min !== null || criterios.precio_max !== null)) {

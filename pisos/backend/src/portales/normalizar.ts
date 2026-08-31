@@ -182,3 +182,45 @@ export function slugificar(texto: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
+
+/**
+ * Los 50 municipios capital de provincia. En Fotocasa y pisos.com su nombre
+ * a secas designa la PROVINCIA entera; para la ciudad hay que pedir
+ * "<nombre> capital". Un pueblo cualquiera no tiene esa ambigüedad.
+ */
+const CAPITALES_DE_PROVINCIA = new Set([
+  'a coruna', 'albacete', 'alicante', 'almeria', 'avila', 'badajoz', 'barcelona',
+  'bilbao', 'burgos', 'caceres', 'cadiz', 'castellon de la plana', 'ciudad real',
+  'cordoba', 'cuenca', 'donostia', 'san sebastian', 'girona', 'granada', 'guadalajara',
+  'huelva', 'huesca', 'jaen', 'las palmas de gran canaria', 'leon', 'lleida', 'logrono',
+  'lugo', 'madrid', 'malaga', 'murcia', 'ourense', 'oviedo', 'palencia',
+  'palma', 'palma de mallorca', 'pamplona', 'pontevedra', 'salamanca',
+  'santa cruz de tenerife', 'santander', 'segovia', 'sevilla', 'soria', 'tarragona',
+  'teruel', 'toledo', 'valencia', 'valladolid', 'vitoria', 'vitoria gasteiz',
+  'zamora', 'zaragoza',
+]);
+
+export function esCapitalDeProvincia(nombre: string): boolean {
+  return CAPITALES_DE_PROVINCIA.has(normalizarTexto(nombre).replace(/\s+/g, ' ').trim());
+}
+
+/**
+ * ¿El anuncio está en el municipio buscado?
+ *
+ * Cuando el propietario escribe "Cáceres" quiere la ciudad de Cáceres, no la
+ * provincia: "Casco Antiguo, Cáceres" y "Centro (Cáceres Capital)" valen,
+ * pero "Casar de Cáceres" (otro municipio) y "Plasencia" no. Se compara
+ * PARTE a PARTE (separando por comas y paréntesis) para no aceptar un
+ * "…de Cáceres" por contener la palabra.
+ */
+export function ubicacionCoincide(ubicacionAnuncio: string | null, objetivo: string): boolean {
+  const meta = normalizarTexto(objetivo).replace(/\bcapital\b/g, '').replace(/\s+/g, ' ').trim();
+  if (!meta) return true;
+  if (!ubicacionAnuncio) return false;
+
+  return normalizarTexto(ubicacionAnuncio)
+    .replace(/[()]/g, ',')
+    .split(',')
+    .map((parte) => parte.replace(/\bcapital\b/g, '').replace(/\s+/g, ' ').trim())
+    .some((parte) => parte === meta);
+}
