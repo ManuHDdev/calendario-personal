@@ -1,0 +1,154 @@
+name: Pisos · Provisionar VPS
+
+# Alta (o re-alta) de la subapp `pisos` en el VPS.
+#
+# Existe porque el .env de pisos contiene secretos y por eso no vive en el
+# repositorio, lo que dejaba el despliegue a medias hasta que alguien entraba
+# por SSH a mano. Este workflow hace ese ultimo paso usando la clave que ya
+# tiene el runner, leyendo los secretos de GitHub en lugar del fichero.
+#
+# Requiere dos secretos de repositorio (Settings -> Secrets and variables ->
+# Actions):
+#   PISOS_TELEGRAM_BOT_TOKEN
+#   PISOS_TELEGRAM_OWNER_CHAT_ID
+#
+# Es idempotente: conserva la contrasena de base de datos que ya hubiera
+# (regenerarla dejaria la base inaccesible) y solo refresca lo demas.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  provision:
+    name: Escribir .env y levantar pisos
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Comprobar que los secretos existen
+        env:
+          TOKEN:   ${{ secrets.PISOS_TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.PISOS_TELEGRAM_OWNER_CHAT_ID }}
+        run: |
+          faltan=""
+          [ -n "$TOKEN" ]   || faltan="$faltan PISOS_TELEGRAM_BOT_TOKEN"
+          [ -n "$CHAT_ID" ] || faltan="$faltan PISOS_TELEGRAM_OWNER_CHAT_ID"
+          if [ -n "$faltan" ]; then
+            echo "::error::Faltan secretos de repositorio:$faltan"
+            echo "Anadelos en Settings -> Secrets and variables -> Actions y vuelve a lanzar este workflow."
+            exit 1
+          fi
+          echo "Secretos presentes."
+
+      # Se comprueba Telegram ANTES de tocar el VPS: un token incorrecto o un
+      # bot al que nunca se le ha dado a /start no rompe nada visible — el
+      # rastreador seguiria guardando anuncios y simplemente no avisaria. Ese
+      # es justo el fallo que no quieres descubrir una semana despues.
+      - name: Probar el bot de Telegram
+        env:
+          TOKEN:   ${{ secrets.PISOS_TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.PISOS_TELEGRAM_OWNER_CHAT_ID }}
+        run: |
+          respuesta=$(curl -sS --max-time 20 \
+            -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+            -d "chat_id=${CHAT_ID}" \
+            --data-urlencode "text=Pisos conectado. A partir de ahora te aviso por aqui de los pisos nuevos." \
+            || echo '{"ok":false,"description":"no se pudo contactar con api.telegram.org"}')
+
+          if ! echo "$respuesta" | grep -q '"ok":true'; then
+            # La respuesta de error de Telegram no incluye el token; la URL si,
+            # y por eso no se imprime.
+            echo "::error::Telegram rechazo el envio: $(echo "$respuesta" | head -c 300)"
+            echo "Causas habituales: no has pulsado Empezar en el bot (un bot no puede"
+            echo "escribir el primero a quien nunca le ha hablado), o el token/chat id no son correctos."
+            exit 1
+          fi
+          echo "Mensaje de prueba enviado."
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # El compose y el init.sql los deja el workflow de despliegue, pero se
+      # copian tambien aqui para que provisionar funcione aunque sea lo primero
+      # que se ejecute.
+      - name: Copiar compose e init.sql al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "pisos/infra/docker-compose.prod.yml,pisos/infra/init.sql"
+          target: /home/manu/pisos
+          strip_components: 2
+
+      - name: Escribir .env y levantar la aplicacion
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          TELEGRAM_BOT_TOKEN:     ${{ secrets.PISOS_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.PISOS_TELEGRAM_OWNER_CHAT_ID }}
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: TELEGRAM_BOT_TOKEN,TELEGRAM_OWNER_CHAT_ID
+          script: |
+            set -euo pipefail
+            cd /home/manu/pisos
+
+            # La contrasena se genera aqui y solo si no habia una: si la base ya
+            # esta inicializada, cambiarla la dejaria inaccesible.
+            PASS=""
+            if [ -f .env ]; then
+              PASS=$(grep -E '^PISOS_DB_PASSWORD=' .env | cut -d= -f2- || true)
+            fi
+            if [ -z "$PASS" ]; then
+              PASS=$(openssl rand -hex 24)
+              echo "Contrasena de base de datos generada."
+            else
+              echo "Se conserva la contrasena de base de datos existente."
+            fi
+
+            umask 077
+            cat > .env <<ENV
+            PISOS_DB_NAME=pisos
+            PISOS_DB_USER=pisos
+            PISOS_DB_PASSWORD=${PASS}
+            PISOS_INTERVALO_MINUTOS=15
+            PISOS_PAGINAS_POR_PORTAL=2
+            TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+            TELEGRAM_OWNER_CHAT_ID=${TELEGRAM_OWNER_CHAT_ID}
+            ENV
+            chmod 600 .env
+            echo ".env escrito."
+
+            # Un intento previo sin .env pudo dejar un pisos-db a medio crear,
+            # con la configuracion vieja y un volumen sin inicializar. Se retira
+            # para que init.sql corra limpio; no hay datos que perder todavia.
+            if docker inspect pisos-db >/dev/null 2>&1; then
+              if ! docker exec pisos-db pg_isready -U pisos -d pisos >/dev/null 2>&1; then
+                echo "Retirando un pisos-db previo que nunca llego a inicializarse."
+                docker compose -f docker-compose.prod.yml down -v || true
+              fi
+            fi
+
+            docker compose -f docker-compose.prod.yml pull pisos-backend pisos-frontend
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "Esperando a que el backend responda..."
+            for i in $(seq 1 30); do
+              if docker exec pisos-backend node -e "require('http').get('http://localhost:3012/pisos/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))" 2>/dev/null; then
+                echo "El backend responde."
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "El backend no respondio en 60 s. Log:"
+                docker logs pisos-backend --tail 40 || true
+                exit 1
+              fi
+              sleep 2
+            done
+
+            docker compose -f docker-compose.prod.yml ps
+            echo ""
+            docker logs pisos-backend --tail 15

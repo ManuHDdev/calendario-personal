@@ -29,6 +29,22 @@ hubiera — regenerarla dejaría la base inaccesible.
 
 El resto de esta sección es lo mismo a mano, por si prefieres verlo paso a paso.
 
+### Alternativa sin terminal: provisionar desde GitHub Actions
+
+Si no tienes a mano la maquina con la clave SSH (por ejemplo, desde el movil),
+el workflow `Pisos · Provisionar VPS` hace lo mismo usando la clave que ya
+tiene el runner. Requiere anadir una sola vez dos secretos de repositorio en
+Settings -> Secrets and variables -> Actions:
+
+| Secreto | Valor |
+|---|---|
+| `PISOS_TELEGRAM_BOT_TOKEN` | el token de @BotFather |
+| `PISOS_TELEGRAM_OWNER_CHAT_ID` | tu chat id de Telegram |
+
+Despues, Actions -> «Pisos · Provisionar VPS» -> Run workflow. Comprueba el
+bot, escribe el `.env`, levanta los contenedores y espera al health check.
+GitHub enmascara los secretos en los logs, asi que el token no aparece.
+
 ### Paso obligatorio en el VPS, ANTES del primer despliegue
 
 `docker compose` lee las variables de `/home/manu/pisos/.env`. Sin ese fichero,
