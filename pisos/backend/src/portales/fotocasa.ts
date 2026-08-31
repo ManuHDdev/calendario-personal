@@ -13,6 +13,7 @@ import {
 import {
   parsearPrecio,
   slugificar,
+  esCapitalDeProvincia,
   decodificarEntidades,
   extraerMetros,
   extraerHabitaciones,
@@ -51,7 +52,9 @@ const PORTAL = 'fotocasa';
  * ─────────────────────────────────────────────────────────────────────────
  */
 function construirUrl(criterios: CriteriosPortal, pagina: number): string {
-  const zona = slugificar(criterios.ubicacion);
+  // En Fotocasa "caceres" es la provincia y "caceres-capital" la ciudad.
+  const base = slugificar(criterios.ubicacion);
+  const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}-capital` : base;
   const ruta = `/es/comprar/viviendas/${zona}/todas-las-zonas/l/${pagina > 1 ? pagina : ''}`;
 
   const params = new URLSearchParams();

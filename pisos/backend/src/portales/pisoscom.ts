@@ -5,6 +5,7 @@ import { extraerJsonLd, filtrarPorTipo, primerValor, comoTexto } from './extraer
 import {
   parsearPrecio,
   slugificar,
+  esCapitalDeProvincia,
   decodificarEntidades,
   extraerMetros,
   extraerHabitaciones,
@@ -37,7 +38,9 @@ const PORTAL = 'pisos';
  * ─────────────────────────────────────────────────────────────────────────
  */
 function construirUrl(criterios: CriteriosPortal, pagina: number): string {
-  const zona = slugificar(criterios.ubicacion);
+  // "pisos-caceres" es la provincia; "pisos-caceres_capital" la ciudad.
+  const base = slugificar(criterios.ubicacion);
+  const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}_capital` : base;
   // pisos.com pagina por segmento de ruta, no por query: /venta/pisos-badajoz/2/
   const ruta = pagina <= 1 ? `/venta/pisos-${zona}/` : `/venta/pisos-${zona}/${pagina}/`;
 

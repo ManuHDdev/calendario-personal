@@ -3,6 +3,7 @@ import { cumpleCriterios, parsearExclusiones, precioPorMetro, type Criterios } f
 import type { AnuncioCrudo } from '../types/pisos';
 
 const SIN_FILTROS: Criterios = {
+  ubicacion: '', // vacío = no filtra por municipio
   precio_min: null,
   precio_max: null,
   metros_min: null,
@@ -81,6 +82,26 @@ describe('cumpleCriterios — dato desconocido', () => {
     expect(cumpleCriterios(anuncio({ ascensor: null }), { ...SIN_FILTROS, exige_ascensor: true }).cumple).toBe(true);
     expect(cumpleCriterios(anuncio({ garaje: false }), { ...SIN_FILTROS, exige_garaje: true }).cumple).toBe(false);
     expect(cumpleCriterios(anuncio({ terraza: false }), { ...SIN_FILTROS, exige_terraza: true }).cumple).toBe(false);
+  });
+});
+
+describe('cumpleCriterios — municipio', () => {
+  const enCaceres = { ...SIN_FILTROS, ubicacion: 'Cáceres' };
+
+  it('acepta el anuncio que está en el municipio buscado', () => {
+    expect(cumpleCriterios(anuncio({ ubicacion: 'Casco Antiguo, Cáceres' }), enCaceres).cumple).toBe(true);
+    expect(cumpleCriterios(anuncio({ ubicacion: 'Centro (Cáceres Capital)' }), enCaceres).cumple).toBe(true);
+    expect(cumpleCriterios(anuncio({ ubicacion: 'Cáceres' }), enCaceres).cumple).toBe(true);
+  });
+
+  it('descarta otros municipios de la misma provincia', () => {
+    expect(cumpleCriterios(anuncio({ ubicacion: 'Plasencia' }), enCaceres).cumple).toBe(false);
+    // "Casar de Cáceres" contiene la palabra pero es OTRO municipio
+    expect(cumpleCriterios(anuncio({ ubicacion: 'Casar de Cáceres' }), enCaceres).cumple).toBe(false);
+  });
+
+  it('descarta el anuncio sin ubicación conocida (la ubicación es el eje de la búsqueda)', () => {
+    expect(cumpleCriterios(anuncio({ ubicacion: null }), enCaceres).cumple).toBe(false);
   });
 });
 
