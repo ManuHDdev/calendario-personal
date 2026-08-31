@@ -27,6 +27,7 @@ const APPS: AppDef[] = [
   { id: 'reparto',    nombre: 'Reparto',    color: '#a2845e', roles: ['admin', 'reparto_admin', 'reparto_invitado'] },
   { id: 'ruta',       nombre: 'Ruta',       color: '#e07a5f', roles: ['admin'] },
   { id: 'pisos',      nombre: 'Pisos',      color: '#7cb518', roles: ['admin'] },
+  { id: 'trader',     nombre: 'Trader',     color: '#32d74b', roles: ['admin'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -45,6 +46,7 @@ function getUrls(): Record<string, string> {
     reparto:    local ? 'http://localhost:5182/reparto/'   : '/reparto/',
     ruta:       local ? 'http://localhost:5183/ruta/'     : '/ruta/',
     pisos:      local ? 'http://localhost:5184/pisos/'   : '/pisos/',
+    trader:     local ? 'http://localhost:5183/trader/'   : '/trader/',
   };
 }
 
@@ -141,6 +143,13 @@ function AppIcon({ id }: { id: string }) {
           <circle cx="6" cy="19" r="2.4"/>
           <circle cx="18" cy="5" r="2.4"/>
           <path d="M8.4 19h5.1a3.5 3.5 0 0 0 0-7h-3a3.5 3.5 0 0 1 0-7h5.1"/>
+        </svg>
+      );
+    case 'trader':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <polyline points="3 17 9 11 13 15 21 7"/>
+          <polyline points="21 12 21 7 16 7"/>
         </svg>
       );
     case 'pisos':
