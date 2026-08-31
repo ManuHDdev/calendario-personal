@@ -4,9 +4,14 @@ import { busquedasRoutes } from './routes/busquedas';
 import { anunciosRoutes } from './routes/anuncios';
 import { arrancarPlanificador, pararPlanificador } from './services/planificador';
 import { notificacionesActivas } from './telegram/notificador';
+import { registrarParserJsonToleranteAVacio } from './jsonBody';
 
 const isProd = process.env.NODE_ENV === 'production';
 const app = Fastify({ logger: isProd, trustProxy: true });
+
+// Un `Content-Type: application/json` sin cuerpo (p. ej. el botón "Buscar
+// ahora", que hace POST sin body) no debe ser un 400 automático.
+registrarParserJsonToleranteAVacio(app);
 
 async function bootstrap() {
   const defaultOrigins = ['https://elbunkerdelingeniero.duckdns.org', 'http://localhost:5184'];
