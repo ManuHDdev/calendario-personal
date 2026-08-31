@@ -42,9 +42,14 @@ subapp `ruta`.
 
 | Portal | Cómo se lee | Filtros que aplica el portal |
 |---|---|---|
-| Fotocasa | Estado embebido de su SPA, con JSON-LD de reserva | precio, m², habitaciones |
-| pisos.com | JSON-LD de schema.org | precio, m², habitaciones |
-| Wallapop | API interna `api.wallapop.com/api/v3/search` | precio y radio |
+| Fotocasa | `<script type="application/json" id="__initial_props__">` → array `realEstates` | precio, m², habitaciones |
+| pisos.com | marcado de la tarjeta (`.ad-preview__*`); coordenadas del JSON-LD | precio, m², habitaciones |
+| Wallapop | API interna `api.wallapop.com/api/v3/search`; datos de `type_attributes` | precio y radio |
+
+pisos.com dejó de publicar precio/m²/habitaciones en el JSON-LD (2026-08), así que
+ahí SÍ se raspa el HTML de la tarjeta; en Fotocasa y Wallapop los datos siguen
+estando estructurados. `npm run smoke` enseña la cobertura por campo tras cada
+cambio en un portal.
 
 Wallapop necesita **coordenadas y radio**, no un nombre de zona: sin ellos, esa
 búsqueda salta ese portal con un motivo explícito en lugar de barrer España
