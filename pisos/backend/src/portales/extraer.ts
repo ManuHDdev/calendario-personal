@@ -95,20 +95,76 @@ const CLAVES_ESTADO = [
   '__PRELOADED_STATE__',
 ];
 
+/**
+ * Recorta el objeto JSON balanceado que empieza en el primer `{` en o
+ * después de `desde`. Cuenta llaves respetando strings y escapes, así que
+ * sirve para un blob de hidratación enorme y anidado — a diferencia de un
+ * `\{[\s\S]*?\}`, que corta en la primera `}` y devuelve basura.
+ */
+function objetoBalanceado(txt: string, desde: number): string | null {
+  const inicio = txt.indexOf('{', desde);
+  if (inicio === -1) return null;
+
+  let profundidad = 0;
+  let enString = false;
+  let escape = false;
+
+  for (let i = inicio; i < txt.length; i++) {
+    const c = txt[i];
+    if (enString) {
+      if (escape) escape = false;
+      else if (c === '\\') escape = true;
+      else if (c === '"') enString = false;
+      continue;
+    }
+    if (c === '"') enString = true;
+    else if (c === '{') profundidad++;
+    else if (c === '}' && --profundidad === 0) return txt.slice(inicio, i + 1);
+  }
+  return null;
+}
+
+function escaparRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Estado que la SPA del portal deja embebido para hidratarse. Se recogen
+ * todos los candidatos y se devuelve el mayor: el estado de hidratación es
+ * casi siempre el bloque JSON más grande de la página.
+ *
+ *  - `<script type="application/json" id="…">` — Next.js y Fotocasa
+ *    (`id="__initial_props__"`), donde vive `realEstates[]`.
+ *  - `<script id="__NEXT_DATA__">`.
+ *  - `window.__X__ = { … }` / `self.__X__ = { … }`, con recorte de llave
+ *    balanceada.
+ */
 export function extraerEstadoEmbebido(html: string): unknown | null {
+  const candidatos: unknown[] = [];
+
+  for (const bloque of bloquesScript(html, /<script[^>]+type=["']application\/json["'][^>]*>/i)) {
+    const datos = parsearJsonSeguro(bloque);
+    if (datos !== null && typeof datos === 'object') candidatos.push(datos);
+  }
+
   for (const bloque of bloquesScript(html, /<script[^>]*id=["']__NEXT_DATA__["'][^>]*>/i)) {
     const datos = parsearJsonSeguro(bloque);
-    if (datos !== null) return datos;
+    if (datos !== null) candidatos.push(datos);
   }
 
   for (const clave of CLAVES_ESTADO) {
-    const regex = new RegExp(`(?:window\\.)?${clave}\\s*=\\s*(\\{[\\s\\S]*?\\})\\s*[;<]`);
-    const match = html.match(regex);
+    const marca = new RegExp(`(?:window\\.|self\\.)?${escaparRegex(clave)}\\s*=`);
+    const match = marca.exec(html);
     if (!match) continue;
-    const datos = parsearJsonSeguro(match[1]);
-    if (datos !== null) return datos;
+    const bruto = objetoBalanceado(html, match.index + match[0].length);
+    const datos = bruto ? parsearJsonSeguro(bruto) : null;
+    if (datos !== null) candidatos.push(datos);
   }
-  return null;
+
+  if (candidatos.length === 0) return null;
+  return candidatos.sort(
+    (a, b) => JSON.stringify(b).length - JSON.stringify(a).length,
+  )[0];
 }
 
 /**

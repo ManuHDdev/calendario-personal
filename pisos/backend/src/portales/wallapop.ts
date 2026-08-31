@@ -25,14 +25,18 @@ const TAMANO_PAGINA = 40;
  * wallapop.ts` (y el proyecto marketplace-watcher): NO es la API de partner
  * de pago, y puede cambiar sin aviso.
  *
- * Diferencia importante con los portales inmobiliarios: Wallapop no expone
- * metros ni habitaciones como campos estructurados en la búsqueda, porque
- * los anuncios los escribe un particular a mano. Por eso aquí se pide poco
- * al servidor (palabra clave, zona y precio, que sí soporta) y todo lo demás
- * se saca del título/descripción con `normalizar.ts`. Es también la razón de
- * que el filtro fino se aplique después, igual para los tres portales.
+ * Diferencia importante con los portales inmobiliarios: en Wallapop el
+ * grueso del anuncio lo escribe un particular a mano. Cuando el anuncio SÍ
+ * está publicado como inmueble, la API trae `type_attributes` con
+ * `{ operation, type, surface, rooms, bathrooms }` estructurado y se usan
+ * esos; si no, se cae al texto del título/descripción con `normalizar.ts`.
+ * `type_attributes.type` también sirve para descartar locales, garajes y
+ * terrenos, que no son lo que busca esta app.
  *
- * Verificar con:  npm run smoke -- wallapop "Badajoz"
+ * Wallapop devuelve pocos inmuebles en venta por esta vía (su búsqueda no
+ * es un portal inmobiliario): es una fuente de apoyo, no la principal.
+ *
+ * Verificar con:  npm run smoke -- wallapop "Madrid" --lat 40.4168 --lng -3.7038 --radio 15
  * ─────────────────────────────────────────────────────────────────────────
  */
 
@@ -60,7 +64,25 @@ interface ItemCrudo {
     region2?: unknown;
   } | null;
   images?: Array<{ urls?: { small?: unknown; medium?: unknown } | null }> | null;
+  /**
+   * Wallapop SÍ trae datos estructurados de inmueble cuando el anuncio está
+   * publicado como tal (no cuando alguien vende un piso desde la categoría
+   * genérica). Se prefieren a lo que se saque del texto libre.
+   */
+  type_attributes?: {
+    operation?: unknown;
+    type?: unknown;
+    surface?: unknown;
+    rooms?: unknown;
+    bathrooms?: unknown;
+    elevator?: unknown;
+    garage?: unknown;
+    terrace?: unknown;
+  } | null;
 }
+
+/** `type_attributes.type` que no son vivienda. */
+const TIPOS_NO_VIVIENDA = ['local', 'oficina', 'garaje', 'plaza de garaje', 'terreno', 'nave', 'trastero', 'parking'];
 
 function construirQuery(criterios: CriteriosPortal): URLSearchParams {
   const query = new URLSearchParams({
@@ -104,6 +126,15 @@ export function parsearItem(raw: ItemCrudo): AnuncioCrudo | null {
   const descripcion = typeof raw.description === 'string' ? raw.description : '';
   const texto = `${titulo} ${descripcion}`;
 
+  const attrs = raw.type_attributes ?? null;
+  const tipoAttr = typeof attrs?.type === 'string' ? attrs.type.toLowerCase() : null;
+  // Si el anuncio se identifica como local/garaje/terreno, no es lo que busca
+  // esta app; se descarta aquí en vez de dejar que pase el filtro por no
+  // tener m²/habitaciones.
+  if (tipoAttr && TIPOS_NO_VIVIENDA.some((t) => tipoAttr.includes(t))) return null;
+  const num = (v: unknown): number | null =>
+    typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.round(v) : null;
+
   const amount = raw.price?.amount;
   const ciudad = typeof raw.location?.city === 'string' ? raw.location.city : null;
   const region =
@@ -130,13 +161,13 @@ export function parsearItem(raw: ItemCrudo): AnuncioCrudo | null {
     url: `https://es.wallapop.com/item/${slug}`,
     titulo,
     precio: typeof amount === 'number' ? amount : null,
-    metros: extraerMetros(texto),
-    habitaciones: extraerHabitaciones(texto),
-    banos: extraerBanos(texto),
+    metros: num(attrs?.surface) ?? extraerMetros(texto),
+    habitaciones: num(attrs?.rooms) ?? extraerHabitaciones(texto),
+    banos: num(attrs?.bathrooms) ?? extraerBanos(texto),
     planta: extraerPlanta(texto),
-    ascensor: tieneAscensor(texto),
-    garaje: tieneGaraje(texto),
-    terraza: tieneTerraza(texto),
+    ascensor: (attrs?.elevator === true ? true : null) ?? tieneAscensor(texto),
+    garaje: (attrs?.garage === true ? true : null) ?? tieneGaraje(texto),
+    terraza: (attrs?.terrace === true ? true : null) ?? tieneTerraza(texto),
     ubicacion: [ciudad, region].filter(Boolean).join(', ') || null,
     latitud: typeof lat === 'number' ? lat : null,
     longitud: typeof lng === 'number' ? lng : null,
