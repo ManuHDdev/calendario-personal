@@ -3,9 +3,9 @@
 # que se ve es "pisos-db is unhealthy", que no dice nada. Con `:?`, compose
 # aborta al instante nombrando la que falta.
 #
-# El resto NO lleva `:?` a proposito: el backend ya trae como valor por defecto
-# el de produccion (KEYCLOAK_CERTS_URL, CORS_ORIGIN), y sin las de Telegram el
-# rastreador funciona igual, solo se queda sin avisos.
+# El resto NO lleva `:?` a proposito: KEYCLOAK_CERTS_URL y CORS_ORIGIN traen su
+# valor de produccion aqui mismo con `:-`, y sin las de Telegram el rastreador
+# funciona igual, solo se queda sin avisos.
 networks:
   calendario-net:
     external: true
@@ -40,8 +40,8 @@ services:
       PISOS_DB_NAME:        "${PISOS_DB_NAME:?falta PISOS_DB_NAME en /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}"
       PISOS_DB_USER:        "${PISOS_DB_USER:?falta PISOS_DB_USER en /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}"
       PISOS_DB_PASSWORD:    "${PISOS_DB_PASSWORD:?falta PISOS_DB_PASSWORD en /home/manu/pisos/.env (ver DEPLOY_NOTES.md)}"
-      KEYCLOAK_CERTS_URL:   ${KEYCLOAK_CERTS_URL}
-      CORS_ORIGIN:          ${CORS_ORIGIN}
+      KEYCLOAK_CERTS_URL:   ${KEYCLOAK_CERTS_URL:-http://calendario-keycloak:8080/keycloak/realms/calendario/protocol/openid-connect/certs}
+      CORS_ORIGIN:          ${CORS_ORIGIN:-https://elbunkerdelingeniero.duckdns.org}
       # El rastreador vive dentro de este contenedor: con restart
       # unless-stopped, vigila solo mientras el VPS esté en pie.
       PISOS_INTERVALO_MINUTOS:  ${PISOS_INTERVALO_MINUTOS:-15}
