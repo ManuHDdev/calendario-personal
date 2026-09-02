@@ -198,7 +198,7 @@ export function canViewFolder(folderPath: string, viewer: Viewer): boolean {
   return walkFilesRaw(safePath(folderPath)).some((entry) => canViewFile(entry.relativePath, viewer));
 }
 
-function walkFilesRaw(startDir: string): FileEntry[] {
+function walkFilesRaw(startDir: string, recursive = true): FileEntry[] {
   const results: FileEntry[] = [];
 
   function walk(dir: string): void {
@@ -211,7 +211,7 @@ function walkFilesRaw(startDir: string): FileEntry[] {
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!HIDDEN_DIRS.has(entry.name)) walk(fullPath);
+        if (recursive && !HIDDEN_DIRS.has(entry.name)) walk(fullPath);
       } else if (entry.isFile()) {
         try {
           const file = buildEntry(fullPath);
@@ -248,11 +248,18 @@ export function canMutateFolder(folderPath: string, viewer: Viewer): boolean {
  * Si se especifica folder, sólo devuelve los archivos dentro de esa carpeta
  * (incluyendo subcarpetas). Sin folder devuelve TODOS los archivos del disco.
  */
-export function getAllFiles(folder: string | undefined, viewer: Viewer): FileEntry[] {
+export function getAllFiles(
+  folder: string | undefined,
+  viewer: Viewer,
+  options: { rootOnly?: boolean } = {},
+): FileEntry[] {
   const startDir = folder ? safePath(folder) : BASE_PATH;
   if (folder && (!fs.existsSync(startDir) || !fs.statSync(startDir).isDirectory())) return [];
 
-  const results = walkFilesRaw(startDir);
+  // rootOnly: los archivos sueltos en la raíz, los que no están en ninguna
+  // carpeta. Es lo que alimenta la carpeta virtual "Sin carpeta" del sidebar,
+  // que no existe en disco — son los mismos archivos de siempre, agrupados.
+  const results = walkFilesRaw(startDir, !options.rootOnly);
   if (viewer.isAdmin) return results;
   return results.filter((file) => canViewFile(file.relativePath, viewer));
 }
@@ -294,18 +301,13 @@ export function getFolders(viewer: Viewer): FolderEntry[] {
   });
 }
 
-/** Guarda un archivo. Devuelve el FileEntry resultante. */
-export async function saveFile(
-  filename: string,
-  mimeType: string,
-  stream: Readable,
-  folder: string | undefined,
-  owner: { sub: string; username: string },
-): Promise<FileEntry> {
-  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
-    throw new Error(`MIME type not allowed: ${mimeType}`);
-  }
-
+/**
+ * Ruta destino libre para `filename` dentro de `folder`, creando la carpeta si
+ * hace falta. Si ya existe un archivo con ese nombre, va probando `nombre_1`,
+ * `nombre_2`... Lo usan tanto la subida de una sola tacada como el paso final
+ * de una subida troceada, para que ambas nombren igual.
+ */
+export function resolveDestination(filename: string, folder: string | undefined): string {
   const targetDir = folder ? safePath(folder) : BASE_PATH;
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
@@ -320,7 +322,27 @@ export async function saveFile(
     counter++;
   }
 
-  const dest = path.join(targetDir, finalName);
+  return path.join(targetDir, finalName);
+}
+
+/** Construye el FileEntry de un archivo ya escrito en disco. */
+export function describeFile(absolutePath: string): FileEntry {
+  return buildEntry(absolutePath);
+}
+
+/** Guarda un archivo. Devuelve el FileEntry resultante. */
+export async function saveFile(
+  filename: string,
+  mimeType: string,
+  stream: Readable,
+  folder: string | undefined,
+  owner: { sub: string; username: string },
+): Promise<FileEntry> {
+  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+    throw new Error(`MIME type not allowed: ${mimeType}`);
+  }
+
+  const dest = resolveDestination(filename, folder);
   const writeStream = fs.createWriteStream(dest);
   try {
     await pipeline(stream, writeStream);

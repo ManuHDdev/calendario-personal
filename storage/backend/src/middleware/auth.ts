@@ -129,3 +129,8 @@ export async function authMiddleware(
     reply.code(401).send({ error: 'Unauthorized', message });
   }
 }
+
+/** El usuario del JWT como dueño de un recurso (para file_meta/folder_meta). */
+export function toOwner(user: JwtPayload | undefined): { sub: string; username: string } {
+  return { sub: user?.sub ?? '', username: user?.preferred_username ?? user?.sub ?? 'unknown' };
+}

@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
-import { authMiddleware, hasAnyRole, JwtPayload } from '../middleware/auth';
+import { authMiddleware, hasAnyRole, toOwner, JwtPayload } from '../middleware/auth';
 import {
   getAllFiles,
   getFolders,
@@ -35,10 +35,6 @@ function toViewer(user: JwtPayload | undefined): Viewer {
   return { sub: user?.sub ?? '', isAdmin: hasAnyRole(user, ['admin']) };
 }
 
-function toOwner(user: JwtPayload | undefined): { sub: string; username: string } {
-  return { sub: user?.sub ?? '', username: user?.preferred_username ?? user?.sub ?? 'unknown' };
-}
-
 export async function filesRoutes(app: FastifyInstance): Promise<void> {
   ensureBasePath();
 
@@ -51,15 +47,17 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
     }
   });
 
-  // ── GET /storage/api/files?folder= ────────────────────────────────────────
+  // ── GET /storage/api/files?folder=&rootOnly= ──────────────────────────────
   app.get(
     '/storage/api/files',
     async (
-      request: FastifyRequest<{ Querystring: { folder?: string } }>,
+      request: FastifyRequest<{ Querystring: { folder?: string; rootOnly?: string } }>,
       _reply: FastifyReply,
     ) => {
-      const { folder } = request.query;
-      return getAllFiles(folder, toViewer(request.user));
+      const { folder, rootOnly } = request.query;
+      // rootOnly alimenta la carpeta virtual "Sin carpeta": los archivos que
+      // están sueltos en la raíz, sin descender a las carpetas de dentro.
+      return getAllFiles(folder, toViewer(request.user), { rootOnly: rootOnly === 'true' });
     },
   );
 

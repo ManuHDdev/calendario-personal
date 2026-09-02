@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import { filesRoutes } from './routes/files';
 import { permissionsRoutes } from './routes/permissions';
+import { uploadsRoutes } from './routes/uploads';
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './services/fileService';
 
 const app = Fastify({ logger: true, bodyLimit: MAX_UPLOAD_BYTES });
@@ -14,8 +15,9 @@ async function bootstrap() {
       'https://elbunkerdelingeniero.duckdns.org',
       'http://localhost:5173',
     ],
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Range'],
+    // PATCH lo usan mover archivo y los trozos de una subida reanudable.
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Range', 'X-Chunk-Offset'],
     exposedHeaders: ['Content-Range', 'Accept-Ranges', 'Content-Length', 'Content-Disposition'],
     credentials: true,
   });
@@ -30,6 +32,7 @@ async function bootstrap() {
 
   // Rutas
   await app.register(filesRoutes);
+  await app.register(uploadsRoutes);
   await app.register(permissionsRoutes);
 
   // Health check (sin auth)

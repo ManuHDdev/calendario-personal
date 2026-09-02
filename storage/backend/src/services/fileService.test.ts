@@ -8,6 +8,7 @@ import {
   resolveMimeType,
   ALLOWED_MIME_TYPES,
   MAX_UPLOAD_BYTES,
+  getAllFiles,
 } from './fileService';
 import { getDb, closeDb, setOwner, setGrantees, renamePathPrefix } from '../db';
 
@@ -230,5 +231,37 @@ describe('tope de subida alineado entre backend y los dos nginx', () => {
     // Si algún día el global sube por encima del de Storage, el override deja
     // de tener sentido y este test avisa de que hay que revisarlo.
     expect(clientMaxBodySize(conf)).toBeLessThan(MAX_UPLOAD_BYTES);
+  });
+});
+
+describe('getAllFiles con rootOnly', () => {
+  // La carpeta virtual "Sin carpeta" del sidebar: los archivos sueltos en la
+  // raíz. No existe en disco, es este filtro.
+  const admin2 = { sub: 'admin-sub', isAdmin: true };
+
+  beforeEach(() => {
+    for (const entry of fs.readdirSync(BASE_PATH)) {
+      if (entry !== '.meta') fs.rmSync(path.join(BASE_PATH, entry), { recursive: true, force: true });
+    }
+    touchFile('suelta.jpg');
+    touchFile('otra-suelta.png');
+    touchFile('Viajes/dentro.jpg');
+    touchFile('Viajes/2024/muy-dentro.jpg');
+  });
+
+  it('sin rootOnly devuelve todo, incluidas las subcarpetas', () => {
+    const nombres = getAllFiles(undefined, admin2).map((f) => f.relativePath).sort();
+    expect(nombres).toEqual([
+      'Viajes/2024/muy-dentro.jpg',
+      'Viajes/dentro.jpg',
+      'otra-suelta.png',
+      'suelta.jpg',
+    ]);
+  });
+
+  it('con rootOnly devuelve solo los que no están en ninguna carpeta', () => {
+    const archivos = getAllFiles(undefined, admin2, { rootOnly: true });
+    expect(archivos.map((f) => f.relativePath).sort()).toEqual(['otra-suelta.png', 'suelta.jpg']);
+    expect(archivos.every((f) => f.folder === null)).toBe(true);
   });
 });

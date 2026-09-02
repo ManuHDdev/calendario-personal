@@ -59,19 +59,66 @@
   animation: slideUp 200ms ease;
 }
 
-.upload-error {
+/* La pila es lo posicionado; cada error es un elemento normal dentro. Así
+   varios errores se apilan en vez de taparse entre sí. */
+.upload-error-stack {
   position: fixed;
   bottom: 24px;
   right: 24px;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 32px));
+}
+
+.upload-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   background: #fff1f0;
   color: var(--danger);
   border: 1px solid rgba(255, 59, 48, 0.2);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
   font-size: 13px;
-  z-index: 150;
-  max-width: 320px;
+  margin: 0;
   animation: slideUp 200ms ease;
+}
+
+.upload-error-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.upload-error-dismiss {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin: -2px -4px 0 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  transition: opacity 200ms ease, background 200ms ease;
+}
+
+.upload-error-dismiss:hover {
+  opacity: 1;
+  background: rgba(255, 59, 48, 0.1);
+}
+
+.upload-error-dismiss:focus-visible {
+  outline: 2px solid var(--danger);
+  outline-offset: 1px;
+  opacity: 1;
 }
 
 @keyframes fadeIn {

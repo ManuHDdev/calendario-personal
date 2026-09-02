@@ -54,6 +54,25 @@ export function getDb(): Database.Database {
 
     CREATE INDEX IF NOT EXISTS idx_grants_lookup ON grants(resource_type, resource_path);
     CREATE INDEX IF NOT EXISTS idx_grants_grantee ON grants(grantee_id);
+
+    -- Subidas troceadas en curso. received_bytes es la ÚNICA fuente de verdad
+    -- de por dónde va la subida: el .part del disco puede tener de más si el
+    -- proceso murió entre el append y el UPDATE, y por eso se trunca a este
+    -- valor antes de cada append.
+    CREATE TABLE IF NOT EXISTS upload_session (
+      id TEXT PRIMARY KEY,
+      filename TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      total_bytes INTEGER NOT NULL,
+      received_bytes INTEGER NOT NULL DEFAULT 0,
+      folder TEXT,
+      owner_id TEXT NOT NULL,
+      owner_username TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_upload_session_owner ON upload_session(owner_id);
   `);
 
   return db;
@@ -187,4 +206,51 @@ export function hasFolderGrantOnAny(folderPaths: string[], userSub: string): boo
     )
     .get(userSub, ...folderPaths);
   return row !== undefined;
+}
+
+// ── Subidas troceadas ─────────────────────────────────────────────────────
+
+export interface UploadSessionRow {
+  id: string;
+  filename: string;
+  mime_type: string;
+  total_bytes: number;
+  received_bytes: number;
+  folder: string | null;
+  owner_id: string;
+  owner_username: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function insertUploadSession(row: Omit<UploadSessionRow, 'created_at' | 'updated_at' | 'received_bytes'>): void {
+  const now = new Date().toISOString();
+  getDb()
+    .prepare(
+      `INSERT INTO upload_session
+         (id, filename, mime_type, total_bytes, received_bytes, folder, owner_id, owner_username, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
+    )
+    .run(row.id, row.filename, row.mime_type, row.total_bytes, row.folder, row.owner_id, row.owner_username, now, now);
+}
+
+export function getUploadSession(id: string): UploadSessionRow | undefined {
+  return getDb().prepare('SELECT * FROM upload_session WHERE id = ?').get(id) as UploadSessionRow | undefined;
+}
+
+export function setUploadReceivedBytes(id: string, receivedBytes: number): void {
+  getDb()
+    .prepare('UPDATE upload_session SET received_bytes = ?, updated_at = ? WHERE id = ?')
+    .run(receivedBytes, new Date().toISOString(), id);
+}
+
+export function deleteUploadSession(id: string): void {
+  getDb().prepare('DELETE FROM upload_session WHERE id = ?').run(id);
+}
+
+/** Sesiones sin actividad desde `isoCutoff`, para poder barrer sus .part. */
+export function listStaleUploadSessions(isoCutoff: string): UploadSessionRow[] {
+  return getDb()
+    .prepare('SELECT * FROM upload_session WHERE updated_at < ?')
+    .all(isoCutoff) as UploadSessionRow[];
 }
