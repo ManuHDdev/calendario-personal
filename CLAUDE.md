@@ -190,6 +190,22 @@ Calendario/storage/ dentro del monorepo elbunkerdelingeniero.
 ### Rutas (`/storage/api/*`)
 `GET /files`, `GET /folders`, `POST /upload`, `GET /files/:path/download|preview|thumbnail`, `PATCH /files/:path` (mover), `DELETE /files/:path`, `POST /folders`, `PATCH /folders/:path` (renombrar), `DELETE /folders/:path`, `GET /health`
 
+### Límite de subida (OBLIGATORIO mantener alineado)
+500 MB, y ese número está en **tres** sitios que deben coincidir: `BODY_LIMIT` en
+`storage/backend/src/index.ts`, `client_max_body_size` en
+`storage/frontend/nginx.conf` (el nginx que va dentro de la imagen del frontend)
+y `client_max_body_size` del bloque `location /storage/` en
+`nginx/calendario.conf`. Si a un nginx se le olvida la directiva, aplica su
+default de **1 MB** y cualquier foto de móvil falla con 413 antes de llegar al
+backend — el `server` de `calendario.conf` tiene además un límite global de 20 M
+que el bloque de Storage sobreescribe a propósito.
+
+### Fotos de iPhone (.HEIC)
+El navegador no siempre sabe qué es un `.heic`: en Windows, Chrome y Firefox lo
+suben como `application/octet-stream` o sin tipo. Por eso el backend no se fía
+del MIME declarado — `resolveMimeType()` lo deduce de la extensión cuando llega
+uno genérico. Se admiten `image/heic` e `image/heif`.
+
 ### Variables de entorno
 `STORAGE_PATH` (prod: `/mnt/storage-ssd`), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3001)
 
