@@ -19,6 +19,7 @@ import {
   ensureBasePath,
   ALLOWED_MIME_TYPES,
   resolveMimeType,
+  MAX_UPLOAD_MB,
   Viewer,
 } from '../services/fileService';
 
@@ -91,7 +92,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
         if (data.file.truncated) {
           return reply
             .code(413)
-            .send({ error: 'El archivo supera el límite de 500 MB' });
+            .send({ error: `El archivo supera el límite de ${MAX_UPLOAD_MB} MB` });
         }
         return reply.code(500).send({ error: err instanceof Error ? err.message : 'Upload failed' });
       }
