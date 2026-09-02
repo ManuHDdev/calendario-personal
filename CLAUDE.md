@@ -185,10 +185,37 @@ Calendario/storage/ dentro del monorepo elbunkerdelingeniero.
 - Validaciones: manuales (sin Zod)
 
 ### Roles
-`admin` y `familia` → acceso completo (subir, mover, borrar, crear carpetas). `invitado` → sin acceso.
+`admin` y `familia` → acceso completo (subir, mover, borrar, crear carpetas). `invitado` → sin acceso. Una subida en curso es privada de quien la empezó: nadie más puede consultarla, continuarla ni cancelarla.
 
 ### Rutas (`/storage/api/*`)
-`GET /files`, `GET /folders`, `POST /upload`, `GET /files/:path/download|preview|thumbnail`, `PATCH /files/:path` (mover), `DELETE /files/:path`, `POST /folders`, `PATCH /folders/:path` (renombrar), `DELETE /folders/:path`, `GET /health`
+`GET /files` (query `folder`, `rootOnly`), `GET /folders`, `POST /upload`, `GET /files/:path/download|preview|thumbnail`, `PATCH /files/:path` (mover), `DELETE /files/:path`, `POST /folders`, `PATCH /folders/:path` (renombrar), `DELETE /folders/:path`, `GET /health`
+
+Subida troceada y reanudable: `POST /uploads` (abre sesión), `GET /uploads/:id`
+(por dónde va), `PATCH /uploads/:id` (un trozo, binario crudo + cabecera
+`X-Chunk-Offset`), `POST /uploads/:id/complete`, `DELETE /uploads/:id`.
+
+### Subidas reanudables (por qué existen)
+Con una única petición de 2 GB, que el móvil se bloquee a mitad tira la conexión
+y se pierde la subida entera. Por eso los archivos de más de 8 MB van en trozos:
+si uno falla se reintenta solo ese, y lo ya subido se queda en el servidor.
+
+Dos invariantes que explican el código:
+1. **`received_bytes` de la base de datos es la única fuente de verdad**, no el
+   tamaño del `.part`. Si el proceso muere entre escribir el trozo y confirmarlo,
+   el `.part` va por delante; por eso se trunca a `received_bytes` antes de cada
+   append, en vez de fiarse de lo que hay en disco.
+2. **El servidor decide desde dónde se reanuda.** El cliente pregunta antes de
+   cada reintento en lugar de usar su propia cuenta, que puede estar adelantada
+   si se perdió la respuesta de un trozo que sí llegó.
+
+Los `.part` viven en `.meta/uploads/` (dentro de `HIDDEN_DIRS`, así que nunca
+asoman en los listados) y se barren a las 24 h sin actividad.
+
+### Carpeta "Sin carpeta"
+Los archivos subidos sin elegir carpeta caen en la raíz de `STORAGE_PATH`. La
+entrada "Sin carpeta" del sidebar **no es una carpeta de disco**: es
+`GET /files?rootOnly=true`, que lista solo la raíz sin descender. No se mueve
+ningún archivo, así que aplica igual a todo lo que ya hubiera.
 
 ### Límite de subida (OBLIGATORIO mantener alineado)
 **2 GB**, dimensionado para vídeo de iPhone: un `.mov` en 4K ronda los 400 MB por
@@ -887,6 +914,6 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 
 ## Deuda técnica conocida
 
-- **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
+- **Sin tests**: Panel y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
 - **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 13 Dockerfiles y 13 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 14 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.

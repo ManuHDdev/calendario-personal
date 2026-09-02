@@ -24,6 +24,10 @@ export default function StoragePage() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
+  // "Sin carpeta" no es una carpeta de disco: es activeFolder=null pidiendo
+  // solo los archivos de la raíz, sin bajar a las carpetas de dentro. Por eso
+  // es un estado aparte y no un valor más de activeFolder.
+  const [rootOnly, setRootOnly] = useState(false);
   const [search, setSearch] = useState('');
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [deleteTargets, setDeleteTargets] = useState<FileItem[] | null>(null);
@@ -44,14 +48,14 @@ export default function StoragePage() {
   const loadFiles = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getFiles(activeFolder ?? undefined);
+      const data = await getFiles(activeFolder ?? undefined, rootOnly);
       setFiles(data);
     } catch (err) {
       console.error('Failed to load files', err);
     } finally {
       setLoading(false);
     }
-  }, [activeFolder]);
+  }, [activeFolder, rootOnly]);
 
   useEffect(() => { loadFolders(); }, [loadFolders]);
   useEffect(() => { loadFiles(); }, [loadFiles]);
@@ -130,7 +134,9 @@ export default function StoragePage() {
 
   const headerTitle = activeFolder
     ? activeFolder.split('/').join(' / ')
-    : 'Todos los archivos';
+    : rootOnly
+      ? 'Sin carpeta'
+      : 'Todos los archivos';
 
   const isAdmin = ((keycloak.tokenParsed as { realm_access?: { roles?: string[] } })?.realm_access?.roles ?? []).includes('admin');
 
@@ -149,7 +155,9 @@ export default function StoragePage() {
       <Sidebar
         folders={folders}
         activeFolder={activeFolder}
-        onSelectFolder={(folder) => { setActiveFolder(folder); setSearch(''); clearSelection(); }}
+        rootOnly={rootOnly}
+        onSelectFolder={(folder) => { setActiveFolder(folder); setRootOnly(false); setSearch(''); clearSelection(); }}
+        onSelectRoot={() => { setActiveFolder(null); setRootOnly(true); setSearch(''); clearSelection(); }}
         onFoldersChange={loadFolders}
         onShareFolder={(folder) => setShareTargets([{ type: 'folder', path: folder.path, name: folder.path.split('/').pop()! }])}
         currentUserId={currentUserId}
