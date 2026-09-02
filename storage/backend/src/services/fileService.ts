@@ -29,6 +29,7 @@ export const ALLOWED_MIME_TYPES = new Set([
   'image/gif',
   'image/webp',
   'image/heic',
+  'image/heif',
   'video/mp4',
   'video/quicktime',
   'video/x-matroska',
@@ -36,6 +37,23 @@ export const ALLOWED_MIME_TYPES = new Set([
   'video/x-msvideo',
   'application/pdf',
 ]);
+
+// Tipos que un navegador manda cuando no sabe qué es el archivo. Windows no
+// registra .heic en el sistema, así que Chrome/Firefox suben las fotos de
+// iPhone como octet-stream (o con el tipo vacío) y el filtro de MIME las
+// rechazaba con un 415 aunque .heic sea un formato admitido.
+const GENERIC_MIME_TYPES = new Set(['', 'application/octet-stream', 'binary/octet-stream']);
+
+/**
+ * Tipo MIME real de un archivo subido. Se respeta el que declara el navegador
+ * salvo que sea genérico; en ese caso se deduce de la extensión, que es lo
+ * mismo que hace buildEntry() al releer el archivo del disco.
+ */
+export function resolveMimeType(filename: string, reportedMimeType: string): string {
+  const reported = (reportedMimeType || '').trim().toLowerCase();
+  if (!GENERIC_MIME_TYPES.has(reported)) return reported;
+  return mime.lookup(path.extname(filename)) || 'application/octet-stream';
+}
 
 // Carpetas del sistema que nunca deben mostrarse
 const HIDDEN_DIRS = new Set(['lost+found', '.Trash-1000', '$RECYCLE.BIN', '.meta']);
@@ -289,7 +307,14 @@ export async function saveFile(
 
   const dest = path.join(targetDir, finalName);
   const writeStream = fs.createWriteStream(dest);
-  await pipeline(stream, writeStream);
+  try {
+    await pipeline(stream, writeStream);
+  } catch (err) {
+    // Subida cortada a medias (límite de tamaño, conexión caída): no dejar el
+    // archivo parcial en el NAS haciéndose pasar por una subida correcta.
+    fs.rmSync(dest, { force: true });
+    throw err;
+  }
 
   const entry = buildEntry(dest);
   setOwner('file', entry.relativePath, owner.sub, owner.username);

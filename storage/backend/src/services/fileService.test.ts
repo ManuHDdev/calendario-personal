@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { canViewFile, canViewFolder, ensureBasePath } from './fileService';
+import { canViewFile, canViewFolder, ensureBasePath, resolveMimeType, ALLOWED_MIME_TYPES } from './fileService';
 import { getDb, closeDb, setOwner, setGrantees, renamePathPrefix } from '../db';
 
 const BASE_PATH = process.env.STORAGE_PATH as string;
@@ -118,5 +118,38 @@ describe('renamePathPrefix', () => {
     expect(folderPaths).toEqual(['Excursiones', 'Excursiones/2024', 'Viajes2']);
     expect(filePaths).toEqual(['Excursiones/2024/foto.jpg']);
     expect(grantPaths).toEqual(['Excursiones/2024']);
+  });
+});
+
+describe('resolveMimeType', () => {
+  it('respeta el tipo que declara el navegador cuando es concreto', () => {
+    expect(resolveMimeType('foto.jpg', 'image/jpeg')).toBe('image/jpeg');
+    expect(resolveMimeType('IMG_0001.HEIC', 'image/heic')).toBe('image/heic');
+  });
+
+  it('deduce el tipo de la extensión cuando el navegador manda uno genérico', () => {
+    // Windows no registra .heic, así que Chrome/Firefox suben las fotos de
+    // iPhone como octet-stream o sin tipo.
+    expect(resolveMimeType('IMG_0001.HEIC', 'application/octet-stream')).toBe('image/heic');
+    expect(resolveMimeType('IMG_0001.heic', '')).toBe('image/heic');
+    expect(resolveMimeType('foto.jpg', 'application/octet-stream')).toBe('image/jpeg');
+  });
+
+  it('normaliza mayúsculas y espacios del tipo declarado', () => {
+    expect(resolveMimeType('foto.jpg', ' IMAGE/JPEG ')).toBe('image/jpeg');
+  });
+
+  it('devuelve octet-stream si ni el navegador ni la extensión lo dicen', () => {
+    expect(resolveMimeType('archivo.desconocido', '')).toBe('application/octet-stream');
+  });
+
+  it('el tipo deducido de una foto de iPhone pasa el filtro de subida', () => {
+    expect(ALLOWED_MIME_TYPES.has(resolveMimeType('IMG_0001.HEIC', ''))).toBe(true);
+    expect(ALLOWED_MIME_TYPES.has(resolveMimeType('IMG_0002.heif', ''))).toBe(true);
+  });
+
+  it('sigue rechazando lo que no está permitido aunque la extensión sea conocida', () => {
+    expect(ALLOWED_MIME_TYPES.has(resolveMimeType('script.sh', ''))).toBe(false);
+    expect(ALLOWED_MIME_TYPES.has(resolveMimeType('doc.docx', ''))).toBe(false);
   });
 });

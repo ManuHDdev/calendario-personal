@@ -4,7 +4,7 @@ import type { FileItem } from '../types';
 import ProgressBar from './ProgressBar';
 import './UploadButton.css';
 
-const ACCEPTED = '.jpg,.jpeg,.png,.gif,.webp,.heic,.mp4,.mov,.avi,.mkv,.webm,.pdf';
+const ACCEPTED = '.jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.mp4,.mov,.avi,.mkv,.webm,.pdf';
 
 interface Props {
   folder?: string;

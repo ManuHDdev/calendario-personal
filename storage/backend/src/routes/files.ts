@@ -18,6 +18,7 @@ import {
   canMutateFolder,
   ensureBasePath,
   ALLOWED_MIME_TYPES,
+  resolveMimeType,
   Viewer,
 } from '../services/fileService';
 
@@ -75,7 +76,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       const data = await request.file();
       if (!data) return reply.code(400).send({ error: 'No file provided' });
 
-      const mimeType = data.mimetype;
+      const mimeType = resolveMimeType(data.filename, data.mimetype);
       if (!ALLOWED_MIME_TYPES.has(mimeType)) {
         data.file.resume();
         return reply.code(415).send({ error: `MIME type not allowed: ${mimeType}` });
@@ -85,6 +86,13 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
         const entry = await saveFile(data.filename, mimeType, data.file, folder, toOwner(request.user));
         return reply.code(201).send(entry);
       } catch (err) {
+        // @fastify/multipart corta el stream al superar el límite: es un 413,
+        // no un fallo del servidor.
+        if (data.file.truncated) {
+          return reply
+            .code(413)
+            .send({ error: 'El archivo supera el límite de 500 MB' });
+        }
         return reply.code(500).send({ error: err instanceof Error ? err.message : 'Upload failed' });
       }
     },
