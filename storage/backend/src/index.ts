@@ -3,11 +3,9 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import { filesRoutes } from './routes/files';
 import { permissionsRoutes } from './routes/permissions';
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './services/fileService';
 
-const MB = 1024 * 1024;
-const BODY_LIMIT = 500 * MB;
-
-const app = Fastify({ logger: true, bodyLimit: BODY_LIMIT });
+const app = Fastify({ logger: true, bodyLimit: MAX_UPLOAD_BYTES });
 
 async function bootstrap() {
   // CORS — sólo el dominio de producción (y localhost para dev)
@@ -22,10 +20,11 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Multipart (subida de archivos) con límite 500 MB
+  // Multipart (subida de archivos). El tope sale de fileService, que es el
+  // único sitio donde se define — ver MAX_UPLOAD_BYTES.
   await app.register(multipart, {
     limits: {
-      fileSize: BODY_LIMIT,
+      fileSize: MAX_UPLOAD_BYTES,
     },
   });
 
@@ -40,7 +39,7 @@ async function bootstrap() {
   const host = process.env.HOST || '0.0.0.0';
 
   await app.listen({ port, host });
-  app.log.info(`Storage backend listening on ${host}:${port}`);
+  app.log.info(`Storage backend listening on ${host}:${port} (subida máx. ${MAX_UPLOAD_MB} MB)`);
 }
 
 bootstrap().catch((err) => {

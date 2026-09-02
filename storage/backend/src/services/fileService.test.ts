@@ -1,7 +1,14 @@
 import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { canViewFile, canViewFolder, ensureBasePath, resolveMimeType, ALLOWED_MIME_TYPES } from './fileService';
+import {
+  canViewFile,
+  canViewFolder,
+  ensureBasePath,
+  resolveMimeType,
+  ALLOWED_MIME_TYPES,
+  MAX_UPLOAD_BYTES,
+} from './fileService';
 import { getDb, closeDb, setOwner, setGrantees, renamePathPrefix } from '../db';
 
 const BASE_PATH = process.env.STORAGE_PATH as string;
@@ -151,5 +158,77 @@ describe('resolveMimeType', () => {
   it('sigue rechazando lo que no está permitido aunque la extensión sea conocida', () => {
     expect(ALLOWED_MIME_TYPES.has(resolveMimeType('script.sh', ''))).toBe(false);
     expect(ALLOWED_MIME_TYPES.has(resolveMimeType('doc.docx', ''))).toBe(false);
+  });
+});
+
+// ── Tope de subida: los tres sitios deben coincidir ────────────────────────
+//
+// El límite vive en el backend (MAX_UPLOAD_BYTES) y en dos nginx distintos: el
+// que va dentro de la imagen del frontend y el bloque /storage/ del nginx
+// compartido del VPS. Si uno se queda corto, corta la subida con un 413 antes
+// de que llegue al backend; si se le olvida la directiva, aplica el default de
+// nginx (1 MB) y falla hasta una foto. Ya pasó una vez, así que se comprueba.
+
+/** Sube directorios desde cwd hasta encontrar la raíz del monorepo. */
+function repoRoot(): string {
+  let dir = process.cwd();
+  for (let i = 0; i < 6; i++) {
+    if (fs.existsSync(path.join(dir, 'nginx', 'calendario.conf'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error(`No se encuentra la raíz del repo subiendo desde ${process.cwd()}`);
+}
+
+/** "2048M" → bytes. nginx admite sufijo k/m/g, o bytes sin sufijo. */
+function parseNginxSize(raw: string): number {
+  const match = /^(\d+)([kmg]?)$/i.exec(raw.trim());
+  if (!match) throw new Error(`Tamaño de nginx no reconocido: "${raw}"`);
+  const factor = { '': 1, k: 1024, m: 1024 ** 2, g: 1024 ** 3 }[match[2].toLowerCase()] as number;
+  return Number(match[1]) * factor;
+}
+
+/**
+ * client_max_body_size del fichero. Con `insideLocation` se busca solo dentro
+ * de ese bloque location — calendario.conf tiene además un límite global mucho
+ * menor a nivel de server, que es justo el que NO queremos leer.
+ */
+function clientMaxBodySize(confPath: string, insideLocation?: string): number {
+  let conf = fs.readFileSync(confPath, 'utf-8');
+
+  if (insideLocation) {
+    const start = conf.indexOf(`location ${insideLocation} {`);
+    expect(start, `no hay bloque "location ${insideLocation}" en ${confPath}`).toBeGreaterThan(-1);
+    let depth = 0;
+    let end = start;
+    for (let i = conf.indexOf('{', start); i < conf.length; i++) {
+      if (conf[i] === '{') depth++;
+      else if (conf[i] === '}' && --depth === 0) { end = i; break; }
+    }
+    conf = conf.slice(start, end);
+  }
+
+  const directive = /^\s*client_max_body_size\s+(\S+?);/m.exec(conf);
+  expect(directive, `falta client_max_body_size en ${confPath} — nginx aplicaría su default de 1 MB`).not.toBeNull();
+  return parseNginxSize((directive as RegExpExecArray)[1]);
+}
+
+describe('tope de subida alineado entre backend y los dos nginx', () => {
+  it('el nginx de la imagen del frontend admite lo mismo que el backend', () => {
+    const conf = path.join(repoRoot(), 'storage', 'frontend', 'nginx.conf');
+    expect(clientMaxBodySize(conf, '/storage/api/')).toBe(MAX_UPLOAD_BYTES);
+  });
+
+  it('el bloque /storage/ del nginx compartido admite lo mismo que el backend', () => {
+    const conf = path.join(repoRoot(), 'nginx', 'calendario.conf');
+    expect(clientMaxBodySize(conf, '/storage/')).toBe(MAX_UPLOAD_BYTES);
+  });
+
+  it('el bloque /storage/ sobreescribe el límite global del server, que es menor', () => {
+    const conf = path.join(repoRoot(), 'nginx', 'calendario.conf');
+    // Si algún día el global sube por encima del de Storage, el override deja
+    // de tener sentido y este test avisa de que hay que revisarlo.
+    expect(clientMaxBodySize(conf)).toBeLessThan(MAX_UPLOAD_BYTES);
   });
 });

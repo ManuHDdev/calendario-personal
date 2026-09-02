@@ -23,6 +23,21 @@ const BASE_PATH = path.resolve(process.env.STORAGE_PATH || '/mnt/storage-ssd');
 
 const UUID_NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341';
 
+/**
+ * Tamaño máximo de subida. Un vídeo de iPhone en 4K ronda los 400 MB por
+ * minuto, así que el tope tiene que dar para varios minutos de grabación.
+ *
+ * OBLIGATORIO: este número vive en tres sitios que deben coincidir — aquí,
+ * en `storage/frontend/nginx.conf` y en el bloque `location /storage/` de
+ * `nginx/calendario.conf`. Si a un nginx se le olvida su directiva, aplica su
+ * default de 1 MB y la subida muere con un 413 antes de llegar al backend.
+ * `fileService.test.ts` comprueba que los tres siguen alineados.
+ */
+export const MAX_UPLOAD_BYTES = 2048 * 1024 * 1024;
+
+/** El tope en MB, para los mensajes de error de cara al usuario. */
+export const MAX_UPLOAD_MB = MAX_UPLOAD_BYTES / (1024 * 1024);
+
 export const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
