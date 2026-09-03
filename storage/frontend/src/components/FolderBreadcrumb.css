@@ -1,0 +1,54 @@
+/* Barra de "dónde estoy". A propósito NO usa nowrap/ellipsis como el título
+   de la cabecera: si el camino no cabe en una línea, pasa a la siguiente en
+   vez de esconder el final, que es justo la carpeta en la que estás. */
+.folder-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 4px;
+  column-gap: 2px;
+  padding: 10px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.breadcrumb-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+button.breadcrumb-crumb {
+  cursor: pointer;
+}
+
+button.breadcrumb-crumb:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* La carpeta donde estás ahora mismo: en negrita y en el color de acento, sin
+   posibilidad de confundirla con un tramo pulsable. */
+.breadcrumb-current {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.breadcrumb-separator {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  margin: 0 1px;
+}
+
+@media (max-width: 640px) {
+  .folder-breadcrumb {
+    padding: 8px 16px;
+    font-size: 12.5px;
+  }
+}

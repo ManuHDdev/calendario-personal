@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
+import FolderBreadcrumb from '../components/FolderBreadcrumb';
 import FileGrid from '../components/FileGrid';
 import UploadButton from '../components/UploadButton';
 import PreviewModal from '../components/PreviewModal';
@@ -66,6 +67,15 @@ export default function StoragePage() {
   };
 
   const clearSelection = () => setSelected(new Set());
+
+  // Navegar a una carpeta (o a null = raíz general). La usan tanto el sidebar
+  // como la miga de pan de arriba, así que vive en un único sitio.
+  const handleSelectFolder = (folder: string | null) => {
+    setActiveFolder(folder);
+    setRootOnly(false);
+    setSearch('');
+    clearSelection();
+  };
 
   const toggleSelect = (file: FileItem) => {
     setSelected((prev) => {
@@ -156,7 +166,7 @@ export default function StoragePage() {
         folders={folders}
         activeFolder={activeFolder}
         rootOnly={rootOnly}
-        onSelectFolder={(folder) => { setActiveFolder(folder); setRootOnly(false); setSearch(''); clearSelection(); }}
+        onSelectFolder={handleSelectFolder}
         onSelectRoot={() => { setActiveFolder(null); setRootOnly(true); setSearch(''); clearSelection(); }}
         onFoldersChange={loadFolders}
         onShareFolder={(folder) => setShareTargets([{ type: 'folder', path: folder.path, name: folder.path.split('/').pop()! }])}
@@ -203,6 +213,12 @@ export default function StoragePage() {
             />
           </div>
         </header>
+
+        <FolderBreadcrumb
+          activeFolder={activeFolder}
+          rootOnly={rootOnly}
+          onNavigate={handleSelectFolder}
+        />
 
         {search && (
           <p className="search-results-label">
