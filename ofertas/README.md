@@ -35,3 +35,38 @@ Este token es lo único que necesitará `marketplace-watcher` para llamar a `GET
 ## Seed inicial
 
 Las dos búsquedas ya validadas por el propietario ("Juegos DS baratos", "Philips Hue baratos") se insertan automáticamente la primera vez que arranca el contenedor de Postgres, vía `ofertas/infra/init.sql` (mismo mecanismo de seed que usan `gastos`/`mapacyd` para el resto de su esquema).
+
+## Migraciones de esquema
+
+`init.sql` **solo lo ejecuta Postgres la primera vez que arranca sobre un
+volumen vacío**. Cualquier columna o tabla que se le añada después del primer
+despliegue no llega nunca a una base de datos ya existente, y este repo no usa
+herramienta de migraciones. Por eso existe `infra/migrations/`.
+
+Aplicarlas (en el VPS, desde el directorio donde vive el `docker-compose` de
+ofertas):
+
+```bash
+bash migrate.sh
+```
+
+Son idempotentes y van en una transacción: se pueden ejecutar tantas veces
+como haga falta, y sobre una base de datos ya correcta no cambian nada. El
+script imprime el esquema resultante al terminar para poder verificarlo.
+
+Si a `init.sql` se le añade una columna o una tabla, **hay que añadirla también
+a una migración**: `backend/src/db/migrations.test.ts` compara los dos ficheros
+y falla si se desalinean.
+
+### Síntomas de una base de datos desalineada
+
+```
+GET /ofertas/api/scraper/state   → 500  relation "scraper_state" does not exist
+GET /ofertas/api/searches/active → 500  column "habilitada" does not exist
+GET /ofertas/api/searches        → 200  (es SELECT *, no se entera)
+```
+
+Es decir: la UI carga el listado pero enseña un banner de error, y el scraper
+externo se queda sin búsquedas. `GET /ofertas/api/health` responde 503 cuando
+la base de datos no está accesible — pero **no** detecta esta deriva de
+esquema, que sí es visible en la salida de `migrate.sh`.

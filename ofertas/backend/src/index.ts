@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { searchesRoutes } from './routes/searches';
 import { scraperStateRoutes } from './routes/scraperState';
+import { healthRoutes } from './routes/health';
 
 const isProd = process.env.NODE_ENV === 'production';
 const app = Fastify({ logger: isProd });
@@ -20,11 +21,7 @@ async function bootstrap() {
 
   await app.register(searchesRoutes, { prefix: '/ofertas/api' });
   await app.register(scraperStateRoutes, { prefix: '/ofertas/api' });
-
-  app.get('/ofertas/api/health', async () => ({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  }));
+  await app.register(healthRoutes, { prefix: '/ofertas/api' });
 
   const port = Number(process.env.PORT) || 3006;
   await app.listen({ port, host: '0.0.0.0' });
