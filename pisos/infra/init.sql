@@ -95,6 +95,12 @@ CREATE TABLE IF NOT EXISTS anuncio (
     -- y ver la caída total desde la publicación, sin tabla de histórico.
     precio_inicial      NUMERIC(12, 2),
     precio_previo       NUMERIC(12, 2),
+    -- Precio en el momento del ULTIMO AVISO ENTREGADO. Es la referencia contra
+    -- la que se decide si hay una bajada que contar, y solo avanza cuando el
+    -- mensaje sale de verdad. Comparar contra `precio_previo` (que es pegajoso:
+    -- solo cambia si cambia el precio) hacia que una misma bajada se reenviase
+    -- en cada vuelta para siempre.
+    precio_notificado   NUMERIC(12, 2),
     metros              INTEGER,
     habitaciones        INTEGER,
     banos               INTEGER,

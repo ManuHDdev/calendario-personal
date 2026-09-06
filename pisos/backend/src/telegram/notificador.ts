@@ -62,9 +62,13 @@ export function formatearNovedad(novedad: NovedadAnuncio, nombreBusqueda: string
       ? `📉 <b>Bajada de precio</b> · ${escaparHtml(nombreBusqueda)}`
       : `🏠 <b>Piso nuevo</b> · ${escaparHtml(nombreBusqueda)}`;
 
+  // Se tacha `precio_notificado`, no `precio_previo`: lo util es contra que
+  // precio ha bajado RESPECTO A LO QUE SE TE DIJO LA ULTIMA VEZ. Si un aviso
+  // se perdio por el camino, `precio_previo` enseñaria un precio intermedio
+  // que el propietario nunca llego a ver.
   const precio =
-    tipo === 'bajada' && anuncio.precio_previo !== null
-      ? `${euros(anuncio.precio)}  <s>${euros(anuncio.precio_previo)}</s>`
+    tipo === 'bajada' && anuncio.precio_notificado !== null
+      ? `${euros(anuncio.precio)}  <s>${euros(anuncio.precio_notificado)}</s>`
       : euros(anuncio.precio);
 
   const caracteristicas = [

@@ -46,6 +46,7 @@ export interface Anuncio {
   precio: number | null;
   precio_inicial: number | null;
   precio_previo: number | null;
+  precio_notificado: number | null;
   metros: number | null;
   habitaciones: number | null;
   banos: number | null;

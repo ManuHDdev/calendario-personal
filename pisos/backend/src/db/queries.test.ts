@@ -7,6 +7,7 @@ import {
   deleteAnuncio,
   upsertAnuncio,
   marcarTodosVistos,
+  marcarNotificado,
 } from './queries';
 import type { AnuncioCrudo } from '../types/pisos';
 
@@ -140,9 +141,35 @@ describe('upsertAnuncio', () => {
     expect(upsertAnuncio('b-1', crudo).text).toContain('(xmax = 0) AS es_nuevo');
   });
 
-  it('usa el mismo parámetro para precio y precio_inicial en el alta', () => {
-    const { values } = upsertAnuncio('b-1', crudo);
-    expect(values[0]).toBe('b-1');
+  it('fija precio_notificado al insertar, para tener referencia de bajadas', () => {
+    // Sin referencia inicial, una bajada posterior no se detectaria nunca.
+    const { text, values } = upsertAnuncio('b-1', crudo);
+    const sql = text.replace(/\s+/g, ' ');
+    expect(sql).toContain('precio, precio_inicial, precio_notificado');
+    // El mismo parametro alimenta los tres: al insertar, precio, precio
+    // inicial y referencia de aviso valen lo mismo.
+    expect(sql).toContain('$5,$6,$6,$6,');
     expect(values[5]).toBe(120000);
+  });
+
+  it('parametriza la busqueda en el alta', () => {
+    expect(upsertAnuncio('b-1', crudo).values[0]).toBe('b-1');
+  });
+
+  it('NO toca precio_notificado al refrescar: solo avanza al avisar', () => {
+    // Si el refresco lo moviera, la referencia seguiria al precio actual y
+    // ninguna bajada llegaria a contarse jamas.
+    expect(upsertAnuncio('b-1', crudo).text).not.toMatch(/SET[\s\S]*precio_notificado = /);
+  });
+});
+
+describe('marcarNotificado', () => {
+  it('avanza la referencia de precio en el mismo UPDATE que la marca', () => {
+    // Es lo que corta el bucle: sin mover precio_notificado, la misma bajada
+    // se reenviaba en cada vuelta del rastreador.
+    const { text, values } = marcarNotificado('a-1');
+    expect(text).toContain('notificado_at = NOW()');
+    expect(text).toContain('precio_notificado = precio');
+    expect(values).toEqual(['a-1']);
   });
 });

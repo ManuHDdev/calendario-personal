@@ -13,6 +13,7 @@ import { pool } from '../db/pool';
 import { getProvider } from '../portales';
 import type { CriteriosPortal } from '../portales/types';
 import { cumpleCriterios } from './criterios';
+import { decidirNovedad } from './novedades';
 import { upsertAnuncio, marcarRastreo } from '../db/queries';
 import { normalizarFila } from '../db/filas';
 import { PORTALES } from '../types/pisos';
@@ -137,15 +138,8 @@ export async function rastrearBusqueda(
 
       if (!opciones.notificarNovedades) continue;
 
-      if (fila.es_nuevo) {
-        novedades.push({ anuncio: fila, tipo: 'nuevo' });
-      } else if (
-        fila.precio !== null &&
-        fila.precio_previo !== null &&
-        fila.precio < fila.precio_previo
-      ) {
-        novedades.push({ anuncio: fila, tipo: 'bajada' });
-      }
+      const tipo = decidirNovedad(fila, fila.es_nuevo);
+      if (tipo) novedades.push({ anuncio: fila, tipo });
     }
 
     // El error se guarda en la búsqueda para que la UI pueda decir "Fotocasa

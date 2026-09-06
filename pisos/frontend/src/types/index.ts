@@ -74,6 +74,8 @@ export interface Anuncio {
   precio: number | null;
   precio_inicial: number | null;
   precio_previo: number | null;
+  /** Precio del ultimo aviso entregado; referencia contra la que se mide una bajada. */
+  precio_notificado: number | null;
   precio_m2: number | null;
   metros: number | null;
   habitaciones: number | null;

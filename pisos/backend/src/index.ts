@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import { busquedasRoutes } from './routes/busquedas';
 import { anunciosRoutes } from './routes/anuncios';
 import { arrancarPlanificador, pararPlanificador } from './services/planificador';
+import { aplicarMigraciones } from './db/migraciones';
 import { notificacionesActivas } from './telegram/notificador';
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -19,6 +20,10 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
+
+  // Antes de aceptar trafico: si el esquema se queda atras respecto a la
+  // imagen, cada rastreo fallaria contra una columna que no existe.
+  await aplicarMigraciones({ info: (m) => (isProd ? app.log.info(m) : console.log(m)) });
 
   await app.register(busquedasRoutes, { prefix: '/pisos/api' });
   await app.register(anunciosRoutes, { prefix: '/pisos/api' });

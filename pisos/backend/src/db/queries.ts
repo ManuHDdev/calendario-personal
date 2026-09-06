@@ -15,7 +15,8 @@ const COLS_BUSQUEDA = `id, nombre, ubicacion, latitud, longitud, radio_km,
                        created_at, updated_at`;
 
 const COLS_ANUNCIO = `id, busqueda_id, portal, portal_id, url, titulo,
-                      precio, precio_inicial, precio_previo, metros, habitaciones, banos,
+                      precio, precio_inicial, precio_previo, precio_notificado,
+                      metros, habitaciones, banos,
                       planta, ascensor, garaje, terraza, ubicacion,
                       latitud, longitud, imagen_url,
                       visto, descartado, notificado_at, visto_ultima_vez_at,
@@ -235,10 +236,11 @@ export function deleteAnuncio(id: string): Query {
 export function upsertAnuncio(busquedaId: string, a: AnuncioCrudo): Query {
   return {
     text: `INSERT INTO anuncio
-             (busqueda_id, portal, portal_id, url, titulo, precio, precio_inicial,
+             (busqueda_id, portal, portal_id, url, titulo,
+              precio, precio_inicial, precio_notificado,
               metros, habitaciones, banos, planta, ascensor, garaje, terraza,
               ubicacion, latitud, longitud, imagen_url)
-           VALUES ($1,$2,$3,$4,$5,$6,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+           VALUES ($1,$2,$3,$4,$5,$6,$6,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
            ON CONFLICT (busqueda_id, portal, portal_id) DO UPDATE
               SET url = EXCLUDED.url,
                   titulo = EXCLUDED.titulo,
@@ -287,9 +289,21 @@ export function upsertAnuncio(busquedaId: string, a: AnuncioCrudo): Query {
   };
 }
 
+/**
+ * Marca un anuncio como avisado y FIJA LA NUEVA REFERENCIA de precio.
+ *
+ * Las dos cosas van juntas y en el mismo UPDATE a proposito: mover
+ * `precio_notificado` es lo que impide que la misma bajada se vuelva a contar
+ * en la siguiente vuelta. Y como esto solo se llama cuando Telegram ha
+ * aceptado el mensaje, un envio fallido deja la referencia intacta y el aviso
+ * se reintenta, en vez de perderse.
+ */
 export function marcarNotificado(id: string): Query {
   return {
-    text: `UPDATE anuncio SET notificado_at = NOW() WHERE id = $1 RETURNING id`,
+    text: `UPDATE anuncio
+              SET notificado_at = NOW(), precio_notificado = precio
+            WHERE id = $1
+        RETURNING id`,
     values: [id],
   };
 }

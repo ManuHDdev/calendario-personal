@@ -14,6 +14,7 @@ function anuncio(overrides: Partial<Anuncio> = {}): Anuncio {
     precio: 120000,
     precio_inicial: 120000,
     precio_previo: null,
+    precio_notificado: 120000,
     metros: 90,
     habitaciones: 3,
     banos: 2,
@@ -65,15 +66,20 @@ describe('formatearNovedad', () => {
     expect(mensaje).toContain('1333 €/m²');
   });
 
-  it('una bajada de precio enseña el precio anterior tachado', () => {
+  it('una bajada tacha el precio del ULTIMO AVISO, no el anterior al ultimo cambio', () => {
+    // Los dos campos difieren cuando un aviso se perdio por el camino: aqui
+    // el propietario vio 130.000 € en su ultimo mensaje, aunque entremedias
+    // el anuncio pasara por 125.000 €. Tacharle un precio que nunca vio seria
+    // desconcertante.
     const novedad: NovedadAnuncio = {
-      anuncio: anuncio({ precio: 110000, precio_previo: 130000 }),
+      anuncio: anuncio({ precio: 110000, precio_previo: 125000, precio_notificado: 130000 }),
       tipo: 'bajada',
     };
     const mensaje = formatearNovedad(novedad, 'Badajoz');
     expect(mensaje).toContain('Bajada de precio');
     expect(mensaje).toContain('110.000 €');
     expect(mensaje).toContain('<s>130.000 €</s>');
+    expect(mensaje).not.toContain('125.000');
   });
 
   it('no imprime "null" cuando falta un dato', () => {
