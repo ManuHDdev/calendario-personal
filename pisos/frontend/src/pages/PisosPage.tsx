@@ -17,7 +17,7 @@ import {
   getScraperState,
   updateScraperState,
 } from '../services/api';
-import type { Anuncio, Busqueda, BusquedaFormData } from '../types';
+import { PORTALES, NOMBRE_PORTAL, type Anuncio, type Busqueda, type BusquedaFormData, type PortalId } from '../types';
 import './PisosPage.css';
 
 type Pestana = 'anuncios' | 'busquedas';
@@ -27,6 +27,7 @@ export default function PisosPage() {
   const [busquedas, setBusquedas] = useState<Busqueda[]>([]);
   const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
+  const [filtroPortal, setFiltroPortal] = useState<PortalId | ''>('');
   const [soloNuevos, setSoloNuevos] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -48,12 +49,16 @@ export default function PisosPage() {
   const cargarAnuncios = useCallback(async () => {
     try {
       setAnuncios(
-        await getListings({ busqueda: filtroBusqueda || undefined, soloNuevos }),
+        await getListings({
+          busqueda: filtroBusqueda || undefined,
+          portal: filtroPortal || undefined,
+          soloNuevos,
+        }),
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar los anuncios');
     }
-  }, [filtroBusqueda, soloNuevos]);
+  }, [filtroBusqueda, filtroPortal, soloNuevos]);
 
   useEffect(() => {
     void (async () => {
@@ -125,8 +130,13 @@ export default function PisosPage() {
     setAnuncios((prev) => prev.filter((a) => a.id !== id));
   };
 
+  // Se le pasa el filtro visible: marcar tambien lo que no esta en pantalla
+  // haria desaparecer novedades sin que nadie las haya mirado.
   const handleMarcarTodos = async () => {
-    await marcarTodosVistos(filtroBusqueda || undefined);
+    await marcarTodosVistos({
+      busqueda: filtroBusqueda || undefined,
+      portal: filtroPortal || undefined,
+    });
     await cargarAnuncios();
   };
 
@@ -191,6 +201,15 @@ export default function PisosPage() {
                 <option value="">Todas las búsquedas</option>
                 {busquedas.map((b) => (
                   <option key={b.id} value={b.id}>{b.nombre}</option>
+                ))}
+              </select>
+              <select
+                value={filtroPortal}
+                onChange={(e) => setFiltroPortal(e.target.value as PortalId | '')}
+              >
+                <option value="">Todas las fuentes</option>
+                {PORTALES.map((p) => (
+                  <option key={p} value={p}>{NOMBRE_PORTAL[p]}</option>
                 ))}
               </select>
               <label className={`chip${soloNuevos ? ' chip--on' : ''}`}>

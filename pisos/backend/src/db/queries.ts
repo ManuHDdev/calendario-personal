@@ -1,5 +1,5 @@
 import type { CreateBusquedaInput, UpdateBusquedaInput, UpdateAnuncioInput } from '../schemas/pisos.schema';
-import type { AnuncioCrudo } from '../types/pisos';
+import type { AnuncioCrudo, PortalId } from '../types/pisos';
 
 export interface Query {
   text: string;
@@ -140,6 +140,8 @@ export function marcarRastreo(id: string, error: string | null): Query {
 
 export interface FiltroAnuncios {
   busquedaId?: string;
+  /** Portal de origen. El valor lo valida la ruta contra PORTALES. */
+  portal?: PortalId;
   soloNuevos?: boolean;
   incluirDescartados?: boolean;
   limite?: number;
@@ -155,6 +157,10 @@ export function listAnuncios(filtro: FiltroAnuncios): Query {
   if (filtro.busquedaId) {
     values.push(filtro.busquedaId);
     where.push(`a.busqueda_id = $${values.length}`);
+  }
+  if (filtro.portal) {
+    values.push(filtro.portal);
+    where.push(`a.portal = $${values.length}`);
   }
   if (filtro.soloNuevos) where.push('a.visto = false');
   if (!filtro.incluirDescartados) where.push('a.descartado = false');
@@ -196,16 +202,30 @@ export function updateAnuncio(id: string, data: UpdateAnuncioInput): Query {
   };
 }
 
-export function marcarTodosVistos(busquedaId: string | null): Query {
+/**
+ * Marca como vistos los anuncios que encajan en el filtro.
+ *
+ * Recibe el mismo filtro que el listado a proposito: el boton dice "marcar
+ * todo como visto" estando el usuario mirando una vista ya acotada, y marcar
+ * ademas lo que no esta viendo seria una sorpresa desagradable — sobre todo
+ * porque `visto` es lo que decide si un anuncio destaca como novedad.
+ */
+export function marcarTodosVistos(filtro: Pick<FiltroAnuncios, 'busquedaId' | 'portal'>): Query {
+  const where = ['activo = true', 'visto = false'];
   const values: unknown[] = [];
-  let filtro = '';
-  if (busquedaId) {
-    values.push(busquedaId);
-    filtro = ` AND busqueda_id = $${values.length}`;
+
+  if (filtro.busquedaId) {
+    values.push(filtro.busquedaId);
+    where.push(`busqueda_id = $${values.length}`);
   }
+  if (filtro.portal) {
+    values.push(filtro.portal);
+    where.push(`portal = $${values.length}`);
+  }
+
   return {
     text: `UPDATE anuncio SET visto = true
-            WHERE activo = true AND visto = false${filtro}
+            WHERE ${where.join(' AND ')}
         RETURNING id`,
     values,
   };

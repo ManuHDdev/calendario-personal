@@ -83,6 +83,23 @@ describe('listAnuncios', () => {
     expect(listAnuncios({ limite: 0 }).values.at(-1)).toBe(1);
   });
 
+  it('filtra por portal de origen y lo parametriza', () => {
+    const { text, values } = listAnuncios({ portal: 'fotocasa' });
+    expect(text).toContain('a.portal = $1');
+    expect(values).toContain('fotocasa');
+  });
+
+  it('sin portal no añade la condición', () => {
+    expect(listAnuncios({}).text).not.toContain('a.portal =');
+  });
+
+  it('combina búsqueda y portal en la misma consulta', () => {
+    const { text, values } = listAnuncios({ busquedaId: 'abc', portal: 'wallapop' });
+    expect(text).toContain('a.busqueda_id = $1');
+    expect(text).toContain('a.portal = $2');
+    expect(values.slice(0, 2)).toEqual(['abc', 'wallapop']);
+  });
+
   it('parametriza el id de búsqueda en lugar de interpolarlo', () => {
     const { text, values } = listAnuncios({ busquedaId: 'abc' });
     expect(text).toContain('a.busqueda_id = $1');
@@ -92,8 +109,25 @@ describe('listAnuncios', () => {
 
 describe('marcarTodosVistos', () => {
   it('acota a una búsqueda si se pasa, y si no marca todas', () => {
-    expect(marcarTodosVistos('id-1').text).toContain('busqueda_id = $1');
-    expect(marcarTodosVistos(null).text).not.toContain('busqueda_id =');
+    expect(marcarTodosVistos({ busquedaId: 'id-1' }).text).toContain('busqueda_id = $1');
+    expect(marcarTodosVistos({}).text).not.toContain('busqueda_id =');
+  });
+
+  it('respeta el filtro de portal que el usuario tiene puesto', () => {
+    // Sin esto, "marcar todo como visto" marcaria anuncios que el usuario no
+    // esta viendo — y `visto` es justo lo que decide si algo destaca como
+    // novedad, asi que se perderian de vista en silencio.
+    const { text, values } = marcarTodosVistos({ busquedaId: 'id-1', portal: 'pisos' });
+    expect(text).toContain('busqueda_id = $1');
+    expect(text).toContain('portal = $2');
+    expect(values).toEqual(['id-1', 'pisos']);
+  });
+
+  it('solo por portal, sin búsqueda', () => {
+    const { text, values } = marcarTodosVistos({ portal: 'fotocasa' });
+    expect(text).toContain('portal = $1');
+    expect(text).not.toContain('busqueda_id =');
+    expect(values).toEqual(['fotocasa']);
   });
 });
 

@@ -12,7 +12,7 @@ import {
 } from '../db/queries';
 import { normalizarFila } from '../db/filas';
 import { precioPorMetro } from '../services/criterios';
-import type { Anuncio, ScraperState } from '../types/pisos';
+import { PORTALES, type Anuncio, type PortalId, type ScraperState } from '../types/pisos';
 
 const SOLO_ADMIN = ['admin'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -28,19 +28,37 @@ function aDto(fila: FilaAnuncio) {
 }
 
 export async function anunciosRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Querystring: { busqueda?: string; nuevos?: string; descartados?: string; limite?: string } }>(
+  app.get<{
+    Querystring: {
+      busqueda?: string;
+      portal?: string;
+      nuevos?: string;
+      descartados?: string;
+      limite?: string;
+    };
+  }>(
     '/listings',
     { preHandler: authMiddleware(SOLO_ADMIN) },
     async (request, reply: FastifyReply) => {
-      const { busqueda, nuevos, descartados, limite } = request.query;
+      const { busqueda, portal, nuevos, descartados, limite } = request.query;
 
       if (busqueda && !UUID.test(busqueda)) {
         return reply.code(400).send({ error: 'busqueda no es un ID válido', statusCode: 400 });
+      }
+      // Se rechaza un portal desconocido en vez de ignorarlo: filtrar por algo
+      // que no existe devolveria una lista vacia indistinguible de "no hay
+      // nada", y el usuario creeria que no hay anuncios de esa fuente.
+      if (portal && !PORTALES.includes(portal as PortalId)) {
+        return reply.code(400).send({
+          error: `portal debe ser uno de: ${PORTALES.join(', ')}`,
+          statusCode: 400,
+        });
       }
 
       try {
         const { text, values } = listAnuncios({
           busquedaId: busqueda,
+          portal: portal as PortalId | undefined,
           soloNuevos: nuevos === 'true',
           incluirDescartados: descartados === 'true',
           limite: limite ? Number(limite) : undefined,
@@ -83,16 +101,26 @@ export async function anunciosRoutes(app: FastifyInstance): Promise<void> {
   );
 
   /** "Marcar todo como visto", opcionalmente acotado a una búsqueda. */
-  app.post<{ Body: { busqueda_id?: string } }>(
+  app.post<{ Body: { busqueda_id?: string; portal?: string } }>(
     '/listings/marcar-vistos',
     { preHandler: authMiddleware(SOLO_ADMIN) },
     async (request, reply: FastifyReply) => {
       const busquedaId = request.body?.busqueda_id;
+      const portal = request.body?.portal;
       if (busquedaId && !UUID.test(busquedaId)) {
         return reply.code(400).send({ error: 'busqueda_id no es un ID válido', statusCode: 400 });
       }
+      if (portal && !PORTALES.includes(portal as PortalId)) {
+        return reply.code(400).send({
+          error: `portal debe ser uno de: ${PORTALES.join(', ')}`,
+          statusCode: 400,
+        });
+      }
       try {
-        const { text, values } = marcarTodosVistos(busquedaId ?? null);
+        const { text, values } = marcarTodosVistos({
+          busquedaId,
+          portal: portal as PortalId | undefined,
+        });
         const { rowCount } = await pool.query(text, values);
         return reply.send({ marcados: rowCount ?? 0 });
       } catch (err) {

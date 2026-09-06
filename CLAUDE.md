@@ -694,9 +694,12 @@ devolver resultados.
 - `POST /searches/:id/rastrear` — rastreo manual ("Buscar ahora"). **No
   notifica a propósito**: la primera pasada de una búsqueda nueva trae decenas
   de anuncios antiguos que no son novedades y dispararía cien mensajes de golpe
-- `GET /listings` — feed de anuncios, filtros `busqueda`/`nuevos`/`descartados`
+- `GET /listings` — feed de anuncios, filtros `busqueda`/`portal`/`nuevos`/`descartados`.
+  Un `portal` desconocido es un 400, no una lista vacía: filtrar por algo que no
+  existe devolvería un resultado indistinguible de "no hay anuncios de esa fuente"
 - `PATCH /listings/:id` — marcar visto / descartado
-- `POST /listings/marcar-vistos` — marcar todo como visto
+- `POST /listings/marcar-vistos` — marca lo que encaja en el filtro (`busqueda_id`,
+  `portal`), no la tabla entera: el botón se pulsa sobre una vista ya acotada
 - `DELETE /listings/:id` — borrado lógico
 - `GET`/`PATCH` `/scraper/state` — on/off global del rastreador (admin, Keycloak)
 - `GET /health`

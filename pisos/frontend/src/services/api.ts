@@ -1,6 +1,7 @@
 import keycloak from './keycloak';
 import type {
   Anuncio,
+  PortalId,
   Busqueda,
   BusquedaFormData,
   BusquedaUpdateData,
@@ -75,6 +76,7 @@ export async function rastrearAhora(id: string): Promise<ResultadoRastreo> {
 
 export interface FiltroAnuncios {
   busqueda?: string;
+  portal?: PortalId;
   soloNuevos?: boolean;
   incluirDescartados?: boolean;
 }
@@ -82,6 +84,7 @@ export interface FiltroAnuncios {
 export async function getListings(filtro: FiltroAnuncios = {}): Promise<Anuncio[]> {
   const params = new URLSearchParams();
   if (filtro.busqueda) params.set('busqueda', filtro.busqueda);
+  if (filtro.portal) params.set('portal', filtro.portal);
   if (filtro.soloNuevos) params.set('nuevos', 'true');
   if (filtro.incluirDescartados) params.set('descartados', 'true');
 
@@ -103,11 +106,17 @@ export async function updateListing(
   return res.json() as Promise<Anuncio>;
 }
 
-export async function marcarTodosVistos(busquedaId?: string): Promise<{ marcados: number }> {
+/** Marca como vistos SOLO los anuncios que encajan en el filtro visible. */
+export async function marcarTodosVistos(
+  filtro: { busqueda?: string; portal?: PortalId } = {},
+): Promise<{ marcados: number }> {
   const res = await fetch(`${BASE}/listings/marcar-vistos`, {
     method: 'POST',
     headers: headers(),
-    body: JSON.stringify(busquedaId ? { busqueda_id: busquedaId } : {}),
+    body: JSON.stringify({
+      ...(filtro.busqueda ? { busqueda_id: filtro.busqueda } : {}),
+      ...(filtro.portal ? { portal: filtro.portal } : {}),
+    }),
   });
   if (!res.ok) await handleError(res);
   return res.json() as Promise<{ marcados: number }>;
