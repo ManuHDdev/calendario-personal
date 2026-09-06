@@ -13,6 +13,31 @@
  * dato inventado es peor que no filtrarlo.
  */
 
+/**
+ * Decodifica entidades HTML. Fotocasa y sobre todo pisos.com sirven los
+ * textos del listado sin decodificar ("San Mart&#xED;n", "n&#xBA; 1",
+ * "1.000 m&#xB2;"), porque los pensaron para pintarse dentro del DOM, no para
+ * leerse crudos. Sin esto, los títulos y ubicaciones llegan con basura y el
+ * filtro de palabras excluidas nunca casaría "ático" contra "&#xE1;tico".
+ */
+export function decodificarEntidades(texto: string): string {
+  return texto
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => codepointSeguro(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => codepointSeguro(Number.parseInt(dec, 10)))
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&(?:apos|#39);/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&aacute;/gi, 'á').replace(/&eacute;/gi, 'é').replace(/&iacute;/gi, 'í')
+    .replace(/&oacute;/gi, 'ó').replace(/&uacute;/gi, 'ú').replace(/&ntilde;/gi, 'ñ');
+}
+
+function codepointSeguro(n: number): string {
+  return Number.isFinite(n) && n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : '';
+}
+
 /** Quita acentos y baja a minúsculas para poder buscar patrones sin duplicarlos. */
 export function normalizarTexto(texto: string): string {
   return texto
@@ -53,9 +78,11 @@ function primerEntero(texto: string, patron: RegExp): number | null {
 
 /** "Piso de 90 m2", "90m²", "90 metros cuadrados" → 90 */
 export function extraerMetros(texto: string): number | null {
-  const t = normalizarTexto(texto);
+  // "1.000 m²" son mil metros: se une el separador de millares antes de leer.
+  const t = normalizarTexto(texto).replace(/(\d)\.(\d{3})(?=\D|$)/g, '$1$2');
   const metros =
     primerEntero(t, /(\d{2,4})\s*(?:m2|m²|mts2|mts|metros(?:\s+cuadrados)?)\b/) ??
+    primerEntero(t, /(\d{2,4})\s*m²/) ??
     primerEntero(t, /(\d{2,4})\s*m\b(?!\w)/);
   if (metros === null) return null;
   // Un piso de 5 m² o de 2.000 m² es casi siempre un número que significaba
@@ -64,10 +91,13 @@ export function extraerMetros(texto: string): number | null {
   return metros >= 15 && metros <= 1000 ? metros : null;
 }
 
-/** "3 habitaciones", "3 hab", "3 dormitorios", "3 dorm" → 3 */
+/** "3 habitaciones", "3 hab", "3 hab.", "5 habs.", "3 dormitorios", "3 dorm" → 3 */
 export function extraerHabitaciones(texto: string): number | null {
   const t = normalizarTexto(texto);
-  const hab = primerEntero(t, /(\d{1,2})\s*(?:habitacion(?:es)?|hab\b|dormitorio(?:s)?|dorm\b)/);
+  const hab = primerEntero(
+    t,
+    /(\d{1,2})\s*(?:hab(?:s|\.|itacion(?:es)?)?|dormitorio(?:s)?|dorm)(?![a-z])/,
+  );
   if (hab === null) return null;
   return hab >= 0 && hab <= 20 ? hab : null;
 }
@@ -151,4 +181,46 @@ export function slugificar(texto: string): string {
   return normalizarTexto(texto)
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Los 50 municipios capital de provincia. En Fotocasa y pisos.com su nombre
+ * a secas designa la PROVINCIA entera; para la ciudad hay que pedir
+ * "<nombre> capital". Un pueblo cualquiera no tiene esa ambigüedad.
+ */
+const CAPITALES_DE_PROVINCIA = new Set([
+  'a coruna', 'albacete', 'alicante', 'almeria', 'avila', 'badajoz', 'barcelona',
+  'bilbao', 'burgos', 'caceres', 'cadiz', 'castellon de la plana', 'ciudad real',
+  'cordoba', 'cuenca', 'donostia', 'san sebastian', 'girona', 'granada', 'guadalajara',
+  'huelva', 'huesca', 'jaen', 'las palmas de gran canaria', 'leon', 'lleida', 'logrono',
+  'lugo', 'madrid', 'malaga', 'murcia', 'ourense', 'oviedo', 'palencia',
+  'palma', 'palma de mallorca', 'pamplona', 'pontevedra', 'salamanca',
+  'santa cruz de tenerife', 'santander', 'segovia', 'sevilla', 'soria', 'tarragona',
+  'teruel', 'toledo', 'valencia', 'valladolid', 'vitoria', 'vitoria gasteiz',
+  'zamora', 'zaragoza',
+]);
+
+export function esCapitalDeProvincia(nombre: string): boolean {
+  return CAPITALES_DE_PROVINCIA.has(normalizarTexto(nombre).replace(/\s+/g, ' ').trim());
+}
+
+/**
+ * ¿El anuncio está en el municipio buscado?
+ *
+ * Cuando el propietario escribe "Cáceres" quiere la ciudad de Cáceres, no la
+ * provincia: "Casco Antiguo, Cáceres" y "Centro (Cáceres Capital)" valen,
+ * pero "Casar de Cáceres" (otro municipio) y "Plasencia" no. Se compara
+ * PARTE a PARTE (separando por comas y paréntesis) para no aceptar un
+ * "…de Cáceres" por contener la palabra.
+ */
+export function ubicacionCoincide(ubicacionAnuncio: string | null, objetivo: string): boolean {
+  const meta = normalizarTexto(objetivo).replace(/\bcapital\b/g, '').replace(/\s+/g, ' ').trim();
+  if (!meta) return true;
+  if (!ubicacionAnuncio) return false;
+
+  return normalizarTexto(ubicacionAnuncio)
+    .replace(/[()]/g, ',')
+    .split(',')
+    .map((parte) => parte.replace(/\bcapital\b/g, '').replace(/\s+/g, ' ').trim())
+    .some((parte) => parte === meta);
 }

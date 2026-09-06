@@ -9,11 +9,12 @@ import {
   primerValor,
   comoTexto,
   comoEntero,
-  comoBooleano,
 } from './extraer';
 import {
   parsearPrecio,
   slugificar,
+  esCapitalDeProvincia,
+  decodificarEntidades,
   extraerMetros,
   extraerHabitaciones,
   extraerBanos,
@@ -30,17 +31,30 @@ const PORTAL = 'fotocasa';
  * ─────────────────────────────────────────────────────────────────────────
  * TODO EL CONOCIMIENTO ESPECÍFICO DE Fotocasa VIVE EN ESTE BLOQUE.
  *
- * Fotocasa renderiza en servidor y deja el listado en el estado embebido de
- * su SPA. En vez de fijar la RUTA exacta dentro de ese estado (que cambia
- * con cada despliegue de su front), se buscan nodos por su FORMA: un anuncio
- * es un objeto con id, precio y superficie o habitaciones. Eso sobrevive a
- * un renombrado de la ruta, que es el modo de fallo habitual.
+ * Fotocasa renderiza en servidor y deja el listado en un
+ * `<script type="application/json" id="__initial_props__">`. Dentro, cada
+ * anuncio es un nodo del array `realEstates`. En vez de fijar la RUTA exacta
+ * a ese array (cambia con cada despliegue de su front), se buscan nodos por
+ * su FORMA: un objeto con `id` numérico, `rawPrice` y `features`. Eso
+ * sobrevive a un renombrado de la ruta, que es el modo de fallo habitual.
+ *
+ * Forma del nodo (2026-08):
+ *   id: 190620092 · rawPrice: 138000 · price: "138.000 €"
+ *   detail: { "es-ES": "/es/comprar/vivienda/.../190620092/d" }
+ *   buildingType/buildingSubtype: "Flat" | "House_Chalet" | "Penthouse" | …
+ *   transactionTypeId: 1 = venta
+ *   address: { municipality, district, city, province, … }
+ *   coordinates: { latitude, longitude }
+ *   features: [{ key: "surface"|"rooms"|"bathrooms"|"elevator"|…, value }]
+ *   multimedia: [{ type: "image", src }]
  *
  * Verificar con:  npm run smoke -- fotocasa "Badajoz"
  * ─────────────────────────────────────────────────────────────────────────
  */
 function construirUrl(criterios: CriteriosPortal, pagina: number): string {
-  const zona = slugificar(criterios.ubicacion);
+  // En Fotocasa "caceres" es la provincia y "caceres-capital" la ciudad.
+  const base = slugificar(criterios.ubicacion);
+  const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}-capital` : base;
   const ruta = `/es/comprar/viviendas/${zona}/todas-las-zonas/l/${pagina > 1 ? pagina : ''}`;
 
   const params = new URLSearchParams();
@@ -56,17 +70,26 @@ function construirUrl(criterios: CriteriosPortal, pagina: number): string {
   return `${BASE}${ruta.replace(/\/$/, '')}?${params.toString()}`;
 }
 
-/** ¿Este nodo del estado embebido tiene pinta de ser un anuncio? */
+/** Subtipos que no son vivienda: no interesan aunque salgan en el listado. */
+const SUBTIPOS_NO_VIVIENDA = new Set([
+  'garage', 'parking', 'land', 'terrain', 'plot', 'office', 'business',
+  'commercial', 'local', 'premises', 'building', 'storage', 'industrial',
+]);
+
+/** ¿Este nodo del estado embebido tiene pinta de ser un anuncio de vivienda en venta? */
 function pareceAnuncio(nodo: Record<string, unknown>): boolean {
-  const tieneId = nodo.id !== undefined || nodo.realEstateId !== undefined;
-  const tienePrecio =
-    nodo.price !== undefined || nodo.rawPrice !== undefined || nodo.priceValue !== undefined;
-  const tieneVivienda =
-    nodo.surface !== undefined ||
-    nodo.rooms !== undefined ||
-    nodo.features !== undefined ||
-    nodo.buildingSubtype !== undefined;
-  return Boolean(tieneId && tienePrecio && tieneVivienda);
+  const tieneId = typeof nodo.id === 'number' || nodo.id !== undefined || nodo.realEstateId !== undefined;
+  const tienePrecio = nodo.rawPrice !== undefined || nodo.price !== undefined;
+  const esListado = Array.isArray(nodo.features) || nodo.detail !== undefined || nodo.buildingSubtype !== undefined;
+  if (!(tieneId && tienePrecio && esListado)) return false;
+
+  // Alquiler fuera: esta app es solo compra.
+  if (nodo.transactionTypeId !== undefined && nodo.transactionTypeId !== 1) return false;
+
+  const subtipo = comoTexto(primerValor(nodo, ['buildingSubtype', 'buildingType']))?.toLowerCase() ?? '';
+  if ([...SUBTIPOS_NO_VIVIENDA].some((s) => subtipo.includes(s))) return false;
+
+  return true;
 }
 
 /**
@@ -102,21 +125,71 @@ function numeroONulo(valor: unknown): number | null {
   return null;
 }
 
+/** buildingSubtype de Fotocasa → una palabra legible para el título. */
+const SUBTIPO_LEGIBLE: Record<string, string> = {
+  flat: 'Piso',
+  apartment: 'Apartamento',
+  penthouse: 'Ático',
+  duplex: 'Dúplex',
+  studio: 'Estudio',
+  loft: 'Loft',
+  house_chalet: 'Casa o chalet',
+  house: 'Casa',
+  chalet: 'Chalet',
+  villa: 'Chalet',
+  townhouse: 'Casa adosada',
+  groundfloorwithgarden: 'Bajo con jardín',
+  rusticproperty: 'Casa rural',
+  countryhouse: 'Casa de campo',
+};
+
+/** ¿El nodo lista esta `feature` por su clave? (presencia = la tiene). */
+function tieneFeature(nodo: Record<string, unknown>, clave: string): boolean | null {
+  const features = nodo.features;
+  if (!Array.isArray(features)) return null;
+  return features.some((f) => {
+    if (f === null || typeof f !== 'object') return false;
+    const key = comoTexto((f as Record<string, unknown>).key);
+    return key?.toLowerCase() === clave.toLowerCase();
+  })
+    ? true
+    : null;
+}
+
 function parsearNodo(nodo: Record<string, unknown>): AnuncioCrudo | null {
-  const portalId = comoTexto(primerValor(nodo, ['id', 'realEstateId', 'adId']));
+  const portalId = comoTexto(primerValor(nodo, ['id', 'realEstateId', 'realEstateAdId', 'adId']));
   if (!portalId) return null;
 
-  const urlBruta = comoTexto(primerValor(nodo, ['detailUrl', 'url', 'link', 'slug']));
+  // La URL de la ficha va bajo una clave de idioma: detail["es-ES"].
+  const urlBruta = comoTexto(
+    primerValor(nodo, [
+      'detail.es-ES',
+      'detailWithParams.es-ES',
+      'detail.es',
+      'detailUrl',
+      'url',
+      'link',
+      'slug',
+    ]),
+  );
   if (!urlBruta) return null;
 
-  const titulo =
-    comoTexto(primerValor(nodo, ['title', 'description', 'buildingSubtype', 'subtitle'])) ??
-    '(sin título)';
-  const descripcion = comoTexto(primerValor(nodo, ['description', 'comment'])) ?? '';
+  const descripcion = decodificarEntidades(comoTexto(primerValor(nodo, ['description', 'comment'])) ?? '');
+
+  const subtipo = comoTexto(primerValor(nodo, ['buildingSubtype', 'buildingType']))?.toLowerCase() ?? '';
+  const municipio = comoTexto(primerValor(nodo, ['address.municipality', 'address.city']));
+  const distrito = comoTexto(primerValor(nodo, ['address.district', 'address.neighborhood']));
+  const etiquetaTipo = SUBTIPO_LEGIBLE[subtipo] ?? 'Vivienda';
+  const titulo = decodificarEntidades(
+    [etiquetaTipo, distrito || municipio ? `en ${distrito ?? municipio}` : '']
+      .filter(Boolean)
+      .join(' ') || '(sin título)',
+  );
+
   const texto = `${titulo} ${descripcion}`;
 
   const precio = parsearPrecio(
-    comoTexto(primerValor(nodo, ['rawPrice', 'price', 'priceValue', 'transactions.0.price'])),
+    comoTexto(primerValor(nodo, ['rawPrice', 'price', 'priceValue'])),
   );
 
   const metros = leerFeature(nodo, 'surface') ?? comoEntero(nodo.surface) ?? extraerMetros(texto);
@@ -124,20 +197,14 @@ function parsearNodo(nodo: Record<string, unknown>): AnuncioCrudo | null {
     leerFeature(nodo, 'rooms') ?? comoEntero(nodo.rooms) ?? extraerHabitaciones(texto);
   const banos =
     leerFeature(nodo, 'bathrooms') ?? comoEntero(nodo.bathrooms) ?? extraerBanos(texto);
-  const plantaFeature = leerFeature(nodo, 'floor');
 
-  const ubicacion = comoTexto(
-    primerValor(nodo, [
-      'address',
-      'location',
-      'neighborhood',
-      'subtitle',
-      'locations.0.name',
-      'municipality',
-    ]),
-  );
+  const ubicacion = decodificarEntidades(
+    [distrito, municipio].filter(Boolean).join(', ') ||
+      comoTexto(primerValor(nodo, ['address.province', 'location'])) ||
+      '',
+  ) || null;
 
-  const imagen = primerValor(nodo, ['multimedia.0.src', 'photos.0.url', 'thumbnail', 'image']);
+  const imagen = primerValor(nodo, ['multimedia.0.src', 'multimedia.0.url', 'photos.0.url', 'thumbnail', 'image']);
 
   return {
     portal: PORTAL,
@@ -148,12 +215,15 @@ function parsearNodo(nodo: Record<string, unknown>): AnuncioCrudo | null {
     metros,
     habitaciones,
     banos,
-    planta: plantaFeature !== null ? `${plantaFeature}ª` : extraerPlanta(texto),
-    // Los extras solo llegan estructurados en la ficha, no en el listado; de
-    // ahí que se acepten tanto un booleano del portal como el texto libre.
-    ascensor: comoBooleano(primerValor(nodo, ['hasLift', 'lift', 'elevator'])) ?? tieneAscensor(texto),
-    garaje: comoBooleano(primerValor(nodo, ['hasParking', 'parking', 'garage'])) ?? tieneGaraje(texto),
-    terraza: comoBooleano(primerValor(nodo, ['hasTerrace', 'terrace'])) ?? tieneTerraza(texto),
+    // El `floor` de features es un id de enum, no el número de planta; solo
+    // se puede afirmar la planta desde el texto libre de la descripción.
+    planta: extraerPlanta(texto),
+    ascensor: tieneFeature(nodo, 'elevator') ?? tieneAscensor(texto),
+    garaje:
+      tieneFeature(nodo, 'parking') ??
+      tieneFeature(nodo, 'garage') ??
+      tieneGaraje(texto),
+    terraza: tieneFeature(nodo, 'terrace') ?? tieneTerraza(texto),
     ubicacion,
     latitud: numeroONulo(primerValor(nodo, ['coordinates.latitude', 'latitude', 'lat'])),
     longitud: numeroONulo(primerValor(nodo, ['coordinates.longitude', 'longitude', 'lng'])),

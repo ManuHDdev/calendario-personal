@@ -1,16 +1,12 @@
 import type { AnuncioCrudo } from '../types/pisos';
 import type { CriteriosPortal, OpcionesBusqueda, PortalProvider } from './types';
 import { fetchTexto } from './http';
-import {
-  extraerJsonLd,
-  filtrarPorTipo,
-  primerValor,
-  comoTexto,
-  comoEntero,
-} from './extraer';
+import { extraerJsonLd, filtrarPorTipo, primerValor, comoTexto } from './extraer';
 import {
   parsearPrecio,
   slugificar,
+  esCapitalDeProvincia,
+  decodificarEntidades,
   extraerMetros,
   extraerHabitaciones,
   extraerBanos,
@@ -28,14 +24,23 @@ const PORTAL = 'pisos';
  * TODO EL CONOCIMIENTO ESPECÍFICO DE pisos.com VIVE EN ESTE BLOQUE.
  *
  * Si el portal cambia su estructura de URL, se toca `construirUrl`; si
- * cambia la forma de sus datos, se toca `parsearAnuncio`. Nada más del
- * proyecto depende de estos detalles.
+ * cambia la forma de sus datos, se toca `parsearTarjeta`.
+ *
+ * Nota (2026-08): el JSON-LD de pisos.com dejó de traer precio, superficie y
+ * habitaciones — solo url, título, dirección, geo e imagen. Esos tres datos
+ * ahora únicamente están en el marcado de la tarjeta (`.ad-preview__*`), así
+ * que aquí SÍ se raspa HTML, al contrario que en Fotocasa. Se compensa
+ * leyendo el número limpio de `data-ad-price` en vez del texto "580.000 €", y
+ * las coordenadas se siguen tomando del JSON-LD (que sí las conserva),
+ * cruzando por `@id`.
  *
  * Verificar con:  npm run smoke -- pisos "Badajoz"
  * ─────────────────────────────────────────────────────────────────────────
  */
 function construirUrl(criterios: CriteriosPortal, pagina: number): string {
-  const zona = slugificar(criterios.ubicacion);
+  // "pisos-caceres" es la provincia; "pisos-caceres_capital" la ciudad.
+  const base = slugificar(criterios.ubicacion);
+  const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}_capital` : base;
   // pisos.com pagina por segmento de ruta, no por query: /venta/pisos-badajoz/2/
   const ruta = pagina <= 1 ? `/venta/pisos-${zona}/` : `/venta/pisos-${zona}/${pagina}/`;
 
@@ -52,77 +57,9 @@ function construirUrl(criterios: CriteriosPortal, pagina: number): string {
   return `${BASE}${ruta}${query ? `?${query}` : ''}`;
 }
 
-/** El id del anuncio dentro de pisos.com, sacado de su propia URL. */
-function idDesdeUrl(url: string): string | null {
-  const match = url.match(/(\d{6,})/g);
-  return match ? match[match.length - 1] : null;
-}
-
 function absoluta(url: string): string {
   if (url.startsWith('http')) return url;
   return `${BASE}${url.startsWith('/') ? '' : '/'}${url}`;
-}
-
-function parsearAnuncio(objeto: Record<string, unknown>): AnuncioCrudo | null {
-  const urlBruta = comoTexto(primerValor(objeto, ['url', 'mainEntityOfPage', 'offers.url']));
-  if (!urlBruta) return null;
-
-  const url = absoluta(urlBruta);
-  const portalId =
-    comoTexto(primerValor(objeto, ['sku', 'productID', 'identifier'])) ?? idDesdeUrl(url);
-  if (!portalId) return null;
-
-  const titulo = comoTexto(primerValor(objeto, ['name', 'headline', 'description'])) ?? '(sin título)';
-  const descripcion = comoTexto(objeto.description) ?? '';
-  // El texto libre es el plan B para todo lo que el JSON-LD no traiga
-  // estructurado; en pisos.com el título suele llevar metros y habitaciones.
-  const texto = `${titulo} ${descripcion}`;
-
-  const precio = parsearPrecio(
-    comoTexto(primerValor(objeto, ['offers.price', 'price', 'offers.lowPrice'])),
-  );
-
-  const metros =
-    comoEntero(primerValor(objeto, ['floorSize.value', 'floorSize', 'size'])) ??
-    extraerMetros(texto);
-  const habitaciones =
-    comoEntero(primerValor(objeto, ['numberOfRooms.value', 'numberOfRooms', 'numberOfBedrooms'])) ??
-    extraerHabitaciones(texto);
-  const banos =
-    comoEntero(primerValor(objeto, ['numberOfBathroomsTotal', 'numberOfBathrooms'])) ??
-    extraerBanos(texto);
-
-  const ubicacion =
-    comoTexto(
-      primerValor(objeto, [
-        'address.addressLocality',
-        'address.streetAddress',
-        'address',
-        'containedInPlace.name',
-      ]),
-    ) ?? null;
-
-  const imagenBruta = objeto.image;
-  const imagenUrl = comoTexto(Array.isArray(imagenBruta) ? imagenBruta[0] : imagenBruta);
-
-  return {
-    portal: PORTAL,
-    portalId,
-    url,
-    titulo,
-    precio,
-    metros,
-    habitaciones,
-    banos,
-    planta: extraerPlanta(texto),
-    ascensor: tieneAscensor(texto),
-    garaje: tieneGaraje(texto),
-    terraza: tieneTerraza(texto),
-    ubicacion,
-    latitud: numeroONulo(primerValor(objeto, ['geo.latitude'])),
-    longitud: numeroONulo(primerValor(objeto, ['geo.longitude'])),
-    imagenUrl: imagenUrl ? absoluta(imagenUrl) : null,
-  };
 }
 
 function numeroONulo(valor: unknown): number | null {
@@ -134,28 +71,135 @@ function numeroONulo(valor: unknown): number | null {
   return null;
 }
 
-/** Expuesto para los tests: parsea una página ya descargada. */
-export function parsearPagina(html: string): AnuncioCrudo[] {
-  const objetos = extraerJsonLd(html);
-  const candidatos = filtrarPorTipo(objetos, [
-    'Product',
+interface Geo {
+  latitud: number | null;
+  longitud: number | null;
+  region: string | null;
+}
+
+/**
+ * Del JSON-LD solo se aprovecha lo que sigue trayendo: coordenadas y región,
+ * indexadas por `@id` (el mismo id que la tarjeta lleva en `id="…"`).
+ */
+function mapaGeoPorId(html: string): Map<string, Geo> {
+  const mapa = new Map<string, Geo>();
+  for (const objeto of filtrarPorTipo(extraerJsonLd(html), [
+    'SingleFamilyResidence',
     'Residence',
     'Apartment',
     'House',
-    'SingleFamilyResidence',
-    'RealEstateListing',
-    'Offer',
-  ]);
+    'Product',
+  ])) {
+    const id = comoTexto(primerValor(objeto, ['@id', 'identifier', 'sku', 'productID']));
+    if (!id) continue;
+    mapa.set(id, {
+      latitud: numeroONulo(primerValor(objeto, ['geo.latitude'])),
+      longitud: numeroONulo(primerValor(objeto, ['geo.longitude'])),
+      region:
+        decodificarEntidades(
+          comoTexto(
+            primerValor(objeto, ['address.addressLocality', 'address.addressRegion']),
+          ) ?? '',
+        ) || null,
+    });
+  }
+  return mapa;
+}
 
+function primerGrupo(bloque: string, patron: RegExp): string | null {
+  const m = bloque.match(patron);
+  return m ? decodificarEntidades(m[1]).replace(/\s+/g, ' ').trim() || null : null;
+}
+
+/**
+ * Parte el HTML del listado en las tarjetas `<div id="…" class="… ad-preview …">`
+ * y saca cada una por separado. Se corta cada bloque en el inicio de la
+ * siguiente tarjeta para que un dato de la tarjeta B no se cuele en la A.
+ */
+function trocearTarjetas(html: string): string[] {
+  const inicio = /<div\s+id="(\d+\.\d+)"\s+class="[^"]*\bad-preview\b[^"]*"/g;
+  const indices: number[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = inicio.exec(html)) !== null) indices.push(m.index);
+
+  return indices.map((desde, i) =>
+    html.slice(desde, i + 1 < indices.length ? indices[i + 1] : desde + 12_000),
+  );
+}
+
+/** Expuesto para los tests: parsea una página ya descargada. */
+export function parsearPagina(html: string): AnuncioCrudo[] {
+  const geoPorId = mapaGeoPorId(html);
   const anuncios: AnuncioCrudo[] = [];
   const vistos = new Set<string>();
-  for (const objeto of candidatos) {
-    const anuncio = parsearAnuncio(objeto);
+
+  for (const bloque of trocearTarjetas(html)) {
+    const anuncio = parsearTarjeta(bloque, geoPorId);
     if (!anuncio || vistos.has(anuncio.portalId)) continue;
     vistos.add(anuncio.portalId);
     anuncios.push(anuncio);
   }
   return anuncios;
+}
+
+function parsearTarjeta(bloque: string, geoPorId: Map<string, Geo>): AnuncioCrudo | null {
+  const id = bloque.match(/^<div\s+id="(\d+\.\d+)"/)?.[1];
+  if (!id) return null;
+
+  const urlBruta =
+    primerGrupo(bloque, /data-lnk-href="([^"]+)"/) ??
+    primerGrupo(bloque, /class="[^"]*\bad-preview__title\b[^"]*"[^>]*href="([^"]+)"/) ??
+    primerGrupo(bloque, /href="([^"]+)"[^>]*class="[^"]*\bad-preview__title\b/);
+  if (!urlBruta) return null;
+
+  const titulo =
+    primerGrupo(bloque, /class="[^"]*\bad-preview__title\b[^"]*"[^>]*>([^<]+)</) ?? '(sin título)';
+  const subtitulo = primerGrupo(bloque, /class="[^"]*\bad-preview__subtitle\b[^"]*"[^>]*>([^<]+)</);
+
+  // El número limpio de data-ad-price antes que el texto "580.000 €".
+  const precio =
+    numeroONulo(primerGrupo(bloque, /data-ad-price="(\d+)"/)) ??
+    parsearPrecio(primerGrupo(bloque, /class="[^"]*\bad-preview__price\b[^"]*"[^>]*>([^<]+)</));
+
+  // Cada característica (m², hab, baños) es un <p class="ad-preview__char">.
+  const chars = [...bloque.matchAll(/class="[^"]*\bad-preview__char\b[^"]*"[^>]*>([^<]+)</g)].map(
+    (m) => decodificarEntidades(m[1]).toLowerCase(),
+  );
+  // Cada chip de característica se lee por separado y, si el chip concreto no
+  // da el dato, se reintenta sobre el texto entero de la tarjeta.
+  const chipsTexto = chars.join(' · ');
+  const texto = `${titulo} ${subtitulo ?? ''} ${chipsTexto}`;
+  const metros =
+    extraerMetros(chars.find((c) => /m²|m2|metro/.test(c)) ?? '') ?? extraerMetros(chipsTexto);
+  const habitaciones =
+    extraerHabitaciones(chars.find((c) => /hab|dormit/.test(c)) ?? '') ??
+    extraerHabitaciones(chipsTexto);
+  const banos = extraerBanos(chars.find((c) => /ba[ñn]o|aseo/.test(c)) ?? '') ?? extraerBanos(chipsTexto);
+
+  const imagenUrl =
+    primerGrupo(bloque, /<img[^>]+src="(https:\/\/fotos\.imghs\.net[^"]+)"/) ??
+    primerGrupo(bloque, /<img[^>]+data-src="(https:\/\/fotos\.imghs\.net[^"]+)"/);
+
+  const geo = geoPorId.get(id);
+
+  return {
+    portal: PORTAL,
+    portalId: id,
+    url: absoluta(urlBruta),
+    titulo,
+    precio,
+    metros,
+    habitaciones,
+    banos,
+    planta: extraerPlanta(texto),
+    ascensor: tieneAscensor(texto),
+    garaje: tieneGaraje(texto),
+    terraza: tieneTerraza(texto),
+    ubicacion: subtitulo ?? geo?.region ?? null,
+    latitud: geo?.latitud ?? null,
+    longitud: geo?.longitud ?? null,
+    imagenUrl: imagenUrl ? absoluta(imagenUrl) : null,
+  };
 }
 
 export const pisosComProvider: PortalProvider = {

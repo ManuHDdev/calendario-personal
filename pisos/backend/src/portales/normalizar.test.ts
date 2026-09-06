@@ -10,6 +10,9 @@ import {
   tieneTerraza,
   slugificar,
   normalizarTexto,
+  decodificarEntidades,
+  esCapitalDeProvincia,
+  ubicacionCoincide,
 } from './normalizar';
 
 describe('parsearPrecio', () => {
@@ -101,6 +104,69 @@ describe('características con negación', () => {
     expect(tieneTerraza('Ático con terraza de 20m')).toBe(true);
     expect(tieneTerraza('Piso sin terraza')).toBe(false);
     expect(tieneTerraza('Piso interior')).toBeNull();
+  });
+});
+
+describe('decodificarEntidades', () => {
+  it('decodifica las entidades numéricas que sirven pisos.com y Fotocasa', () => {
+    expect(decodificarEntidades('San Mart&#xED;n de Trevejo')).toBe('San Martín de Trevejo');
+    expect(decodificarEntidades('n&#xBA; 1')).toBe('nº 1');
+    expect(decodificarEntidades('131 m&#xB2;')).toBe('131 m²');
+    expect(decodificarEntidades('60.000 &#8364;')).toBe('60.000 €');
+  });
+
+  it('decodifica las cinco entidades con nombre y deja intacto el resto', () => {
+    expect(decodificarEntidades('Pisos &amp; Casas')).toBe('Pisos & Casas');
+    expect(decodificarEntidades('sin entidades')).toBe('sin entidades');
+  });
+});
+
+describe('extraerHabitaciones con abreviaturas de portal', () => {
+  it('entiende "5 habs.", "1 hab." y "3 dorm"', () => {
+    expect(extraerHabitaciones('5 habs.')).toBe(5);
+    expect(extraerHabitaciones('1 hab.')).toBe(1);
+    expect(extraerHabitaciones('Piso con 3 dorm')).toBe(3);
+  });
+
+  it('no confunde "habitable" con una habitación', () => {
+    expect(extraerHabitaciones('vivienda 100% habitable')).toBeNull();
+  });
+});
+
+describe('extraerMetros con separador de millares', () => {
+  it('"1.000 m²" son mil metros, no cero', () => {
+    expect(extraerMetros('Parcela de 1.000 m²')).toBe(1000);
+  });
+});
+
+describe('esCapitalDeProvincia', () => {
+  it('reconoce las capitales cuyo nombre a secas designa la provincia', () => {
+    expect(esCapitalDeProvincia('Cáceres')).toBe(true);
+    expect(esCapitalDeProvincia('  badajoz ')).toBe(true);
+    expect(esCapitalDeProvincia('A Coruña')).toBe(true);
+  });
+
+  it('un pueblo cualquiera no es capital', () => {
+    expect(esCapitalDeProvincia('Montijo')).toBe(false);
+    expect(esCapitalDeProvincia('Casar de Cáceres')).toBe(false);
+  });
+});
+
+describe('ubicacionCoincide', () => {
+  it('acepta el municipio buscado escrito de varias formas', () => {
+    expect(ubicacionCoincide('Casco Antiguo, Cáceres', 'Cáceres')).toBe(true);
+    expect(ubicacionCoincide('Centro (Cáceres Capital)', 'Cáceres')).toBe(true);
+    expect(ubicacionCoincide('Cáceres', 'Cáceres')).toBe(true);
+  });
+
+  it('rechaza otros municipios aunque contengan la palabra', () => {
+    expect(ubicacionCoincide('Casar de Cáceres', 'Cáceres')).toBe(false);
+    expect(ubicacionCoincide('Plasencia', 'Cáceres')).toBe(false);
+  });
+
+  it('objetivo vacío no filtra; ubicación desconocida no coincide', () => {
+    expect(ubicacionCoincide('donde sea', '')).toBe(true);
+    expect(ubicacionCoincide(null, 'Cáceres')).toBe(false);
   });
 });
 

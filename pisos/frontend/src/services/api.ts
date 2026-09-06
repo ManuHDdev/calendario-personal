@@ -10,10 +10,20 @@ import type {
 
 const BASE = '/pisos/api';
 
-function headers(): Record<string, string> {
+/** Solo autenticación: para peticiones sin cuerpo. */
+function authHeaders(): Record<string, string> {
   const token = keycloak.token;
   if (!token) throw new Error('No auth token');
-  return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  return { Authorization: `Bearer ${token}` };
+}
+
+/**
+ * Autenticación + JSON: solo para peticiones que envían cuerpo. Declarar
+ * `Content-Type: application/json` sin body hace que Fastify responda 400
+ * (`FST_ERR_CTP_EMPTY_JSON_BODY`) antes de llegar al handler.
+ */
+function headers(): Record<string, string> {
+  return { ...authHeaders(), 'Content-Type': 'application/json' };
 }
 
 async function handleError(res: Response): Promise<never> {
@@ -52,13 +62,13 @@ export async function updateSearch(id: string, data: BusquedaUpdateData): Promis
 }
 
 export async function deleteSearch(id: string): Promise<void> {
-  const res = await fetch(`${BASE}/searches/${id}`, { method: 'DELETE', headers: headers() });
+  const res = await fetch(`${BASE}/searches/${id}`, { method: 'DELETE', headers: authHeaders() });
   if (!res.ok && res.status !== 204) await handleError(res);
 }
 
 /** Rastreo manual: "mira ahora", sin esperar a la siguiente vuelta. */
 export async function rastrearAhora(id: string): Promise<ResultadoRastreo> {
-  const res = await fetch(`${BASE}/searches/${id}/rastrear`, { method: 'POST', headers: headers() });
+  const res = await fetch(`${BASE}/searches/${id}/rastrear`, { method: 'POST', headers: authHeaders() });
   if (!res.ok) await handleError(res);
   return res.json() as Promise<ResultadoRastreo>;
 }

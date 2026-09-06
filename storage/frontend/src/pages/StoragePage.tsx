@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
+import FolderBreadcrumb from '../components/FolderBreadcrumb';
 import FileGrid from '../components/FileGrid';
 import UploadButton from '../components/UploadButton';
 import PreviewModal from '../components/PreviewModal';
@@ -24,6 +25,10 @@ export default function StoragePage() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
+  // "Sin carpeta" no es una carpeta de disco: es activeFolder=null pidiendo
+  // solo los archivos de la raíz, sin bajar a las carpetas de dentro. Por eso
+  // es un estado aparte y no un valor más de activeFolder.
+  const [rootOnly, setRootOnly] = useState(false);
   const [search, setSearch] = useState('');
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
   const [deleteTargets, setDeleteTargets] = useState<FileItem[] | null>(null);
@@ -44,14 +49,14 @@ export default function StoragePage() {
   const loadFiles = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getFiles(activeFolder ?? undefined);
+      const data = await getFiles(activeFolder ?? undefined, rootOnly);
       setFiles(data);
     } catch (err) {
       console.error('Failed to load files', err);
     } finally {
       setLoading(false);
     }
-  }, [activeFolder]);
+  }, [activeFolder, rootOnly]);
 
   useEffect(() => { loadFolders(); }, [loadFolders]);
   useEffect(() => { loadFiles(); }, [loadFiles]);
@@ -62,6 +67,15 @@ export default function StoragePage() {
   };
 
   const clearSelection = () => setSelected(new Set());
+
+  // Navegar a una carpeta (o a null = raíz general). La usan tanto el sidebar
+  // como la miga de pan de arriba, así que vive en un único sitio.
+  const handleSelectFolder = (folder: string | null) => {
+    setActiveFolder(folder);
+    setRootOnly(false);
+    setSearch('');
+    clearSelection();
+  };
 
   const toggleSelect = (file: FileItem) => {
     setSelected((prev) => {
@@ -130,7 +144,9 @@ export default function StoragePage() {
 
   const headerTitle = activeFolder
     ? activeFolder.split('/').join(' / ')
-    : 'Todos los archivos';
+    : rootOnly
+      ? 'Sin carpeta'
+      : 'Todos los archivos';
 
   const isAdmin = ((keycloak.tokenParsed as { realm_access?: { roles?: string[] } })?.realm_access?.roles ?? []).includes('admin');
 
@@ -149,7 +165,9 @@ export default function StoragePage() {
       <Sidebar
         folders={folders}
         activeFolder={activeFolder}
-        onSelectFolder={(folder) => { setActiveFolder(folder); setSearch(''); clearSelection(); }}
+        rootOnly={rootOnly}
+        onSelectFolder={handleSelectFolder}
+        onSelectRoot={() => { setActiveFolder(null); setRootOnly(true); setSearch(''); clearSelection(); }}
         onFoldersChange={loadFolders}
         onShareFolder={(folder) => setShareTargets([{ type: 'folder', path: folder.path, name: folder.path.split('/').pop()! }])}
         currentUserId={currentUserId}
@@ -195,6 +213,12 @@ export default function StoragePage() {
             />
           </div>
         </header>
+
+        <FolderBreadcrumb
+          activeFolder={activeFolder}
+          rootOnly={rootOnly}
+          onNavigate={handleSelectFolder}
+        />
 
         {search && (
           <p className="search-results-label">

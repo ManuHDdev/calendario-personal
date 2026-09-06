@@ -9,7 +9,10 @@ import type { FolderEntry } from '../types';
 interface Props {
   folders: FolderEntry[];
   activeFolder: string | null;
+  /** Está seleccionada la carpeta virtual "Sin carpeta". */
+  rootOnly: boolean;
   onSelectFolder: (folder: string | null) => void;
+  onSelectRoot: () => void;
   onFoldersChange: () => void;
   onShareFolder: (folder: FolderEntry) => void;
   currentUserId: string;
@@ -46,7 +49,7 @@ function buildTree(paths: string[]): FolderNode[] {
 }
 
 export default function Sidebar({
-  folders, activeFolder, onSelectFolder, onFoldersChange, onShareFolder, currentUserId, isAdmin, isOpen, onClose,
+  folders, activeFolder, rootOnly, onSelectFolder, onSelectRoot, onFoldersChange, onShareFolder, currentUserId, isAdmin, isOpen, onClose,
 }: Props) {
   const username = (keycloak.tokenParsed as { preferred_username?: string })?.preferred_username ?? '';
   const folderMap = new Map(folders.map((f) => [f.path, f]));
@@ -315,17 +318,34 @@ export default function Sidebar({
 
       <nav className="sidebar-nav">
         <button
-          className={`sidebar-all ${activeFolder === null ? 'active' : ''}`}
+          className={`sidebar-all ${activeFolder === null && !rootOnly ? 'active' : ''}`}
           onClick={() => { onSelectFolder(null); onClose?.(); }}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-            stroke={activeFolder === null ? 'var(--accent)' : 'var(--text-secondary)'} strokeWidth="1.8">
+            stroke={activeFolder === null && !rootOnly ? 'var(--accent)' : 'var(--text-secondary)'} strokeWidth="1.8">
             <rect x="3" y="3" width="7" height="7" rx="1"/>
             <rect x="14" y="3" width="7" height="7" rx="1"/>
             <rect x="3" y="14" width="7" height="7" rx="1"/>
             <rect x="14" y="14" width="7" height="7" rx="1"/>
           </svg>
           <span>Todos los archivos</span>
+        </button>
+
+        {/* Los archivos que están sueltos en la raíz. No es una carpeta de
+            disco: es el mismo sitio donde ya caían, pero con una entrada propia
+            para poder verlos aparte de los que sí están clasificados. */}
+        <button
+          className={`sidebar-all ${rootOnly ? 'active' : ''}`}
+          onClick={() => { onSelectRoot(); onClose?.(); }}
+          title="Archivos que no están en ninguna carpeta"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke={rootOnly ? 'var(--accent)' : 'var(--text-secondary)'} strokeWidth="1.8">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <line x1="12" y1="11" x2="12" y2="15"/>
+            <line x1="10" y1="13" x2="14" y2="13"/>
+          </svg>
+          <span>Sin carpeta</span>
         </button>
 
         {folders.length > 0 && <div className="sidebar-section-label">Carpetas</div>}

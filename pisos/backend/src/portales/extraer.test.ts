@@ -69,6 +69,23 @@ describe('extraerEstadoEmbebido', () => {
   it('devuelve null si no hay estado embebido reconocible', () => {
     expect(extraerEstadoEmbebido('<html><body>vacío</body></html>')).toBeNull();
   });
+
+  it('recorta una variable global con objeto anidado (no corta en la primera })', () => {
+    const html = `<script>window.__INITIAL_PROPS__ = {"a":{"b":{"c":42}},"d":1};</script>`;
+    expect(leerRuta(extraerEstadoEmbebido(html), 'a.b.c')).toBe(42);
+  });
+
+  it('lee un <script type="application/json" id="…"> (Fotocasa: __initial_props__)', () => {
+    const html = `<script type="application/json" id="__initial_props__">{"realEstates":[{"id":1}]}</script>`;
+    expect(leerRuta(extraerEstadoEmbebido(html), 'realEstates.0.id')).toBe(1);
+  });
+
+  it('entre varios candidatos devuelve el mayor (el estado de hidratación)', () => {
+    const html = `
+      <script type="application/json">{"x":1}</script>
+      <script>window.__NEXT_DATA__ = {"props":{"lista":[1,2,3,4,5,6,7,8,9,10]}};</script>`;
+    expect(leerRuta(extraerEstadoEmbebido(html), 'props.lista.0')).toBe(1);
+  });
 });
 
 describe('buscarNodos', () => {

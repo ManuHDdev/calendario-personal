@@ -26,6 +26,7 @@ function appUrls(): Record<string, string> {
     reparto:    local ? 'http://localhost:5182/reparto/'   : '/reparto/',
     ruta:       local ? 'http://localhost:5183/ruta/'      : '/ruta/',
     pisos:      local ? 'http://localhost:5184/pisos/'    : '/pisos/',
+    trader:     local ? 'http://localhost:5183/trader/'    : '/trader/',
   };
 }
 
@@ -59,6 +60,7 @@ export class AppLauncher {
     { id: 'reparto',    nombre: 'Reparto',    color: '#a2845e', roles: ['admin','reparto_admin','reparto_invitado'], url: '' },
     { id: 'ruta',       nombre: 'Ruta',       color: '#e07a5f', roles: ['admin'],           url: '' },
     { id: 'pisos',      nombre: 'Pisos',      color: '#7cb518', roles: ['admin'],           url: '' },
+    { id: 'trader',     nombre: 'Trader',     color: '#32d74b', roles: ['admin'], url: '' },
   ];
 
   get apps(): App[] {

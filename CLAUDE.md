@@ -185,10 +185,58 @@ Calendario/storage/ dentro del monorepo elbunkerdelingeniero.
 - Validaciones: manuales (sin Zod)
 
 ### Roles
-`admin` y `familia` → acceso completo (subir, mover, borrar, crear carpetas). `invitado` → sin acceso.
+`admin` y `familia` → acceso completo (subir, mover, borrar, crear carpetas). `invitado` → sin acceso. Una subida en curso es privada de quien la empezó: nadie más puede consultarla, continuarla ni cancelarla.
 
 ### Rutas (`/storage/api/*`)
-`GET /files`, `GET /folders`, `POST /upload`, `GET /files/:path/download|preview|thumbnail`, `PATCH /files/:path` (mover), `DELETE /files/:path`, `POST /folders`, `PATCH /folders/:path` (renombrar), `DELETE /folders/:path`, `GET /health`
+`GET /files` (query `folder`, `rootOnly`), `GET /folders`, `POST /upload`, `GET /files/:path/download|preview|thumbnail`, `PATCH /files/:path` (mover), `DELETE /files/:path`, `POST /folders`, `PATCH /folders/:path` (renombrar), `DELETE /folders/:path`, `GET /health`
+
+Subida troceada y reanudable: `POST /uploads` (abre sesión), `GET /uploads/:id`
+(por dónde va), `PATCH /uploads/:id` (un trozo, binario crudo + cabecera
+`X-Chunk-Offset`), `POST /uploads/:id/complete`, `DELETE /uploads/:id`.
+
+### Subidas reanudables (por qué existen)
+Con una única petición de 2 GB, que el móvil se bloquee a mitad tira la conexión
+y se pierde la subida entera. Por eso los archivos de más de 8 MB van en trozos:
+si uno falla se reintenta solo ese, y lo ya subido se queda en el servidor.
+
+Dos invariantes que explican el código:
+1. **`received_bytes` de la base de datos es la única fuente de verdad**, no el
+   tamaño del `.part`. Si el proceso muere entre escribir el trozo y confirmarlo,
+   el `.part` va por delante; por eso se trunca a `received_bytes` antes de cada
+   append, en vez de fiarse de lo que hay en disco.
+2. **El servidor decide desde dónde se reanuda.** El cliente pregunta antes de
+   cada reintento en lugar de usar su propia cuenta, que puede estar adelantada
+   si se perdió la respuesta de un trozo que sí llegó.
+
+Los `.part` viven en `.meta/uploads/` (dentro de `HIDDEN_DIRS`, así que nunca
+asoman en los listados) y se barren a las 24 h sin actividad.
+
+### Carpeta "Sin carpeta"
+Los archivos subidos sin elegir carpeta caen en la raíz de `STORAGE_PATH`. La
+entrada "Sin carpeta" del sidebar **no es una carpeta de disco**: es
+`GET /files?rootOnly=true`, que lista solo la raíz sin descender. No se mueve
+ningún archivo, así que aplica igual a todo lo que ya hubiera.
+
+### Límite de subida (OBLIGATORIO mantener alineado)
+**2 GB**, dimensionado para vídeo de iPhone: un `.mov` en 4K ronda los 400 MB por
+minuto. Ese número está en **tres** sitios que deben coincidir:
+`MAX_UPLOAD_BYTES` en `storage/backend/src/services/fileService.ts` (única
+definición — `index.ts` y las rutas lo importan de ahí), `client_max_body_size`
+en `storage/frontend/nginx.conf` (el nginx que va dentro de la imagen del
+frontend) y `client_max_body_size` del bloque `location /storage/` en
+`nginx/calendario.conf`. Si a un nginx se le olvida la directiva, aplica su
+default de **1 MB** y falla hasta una foto con 413 antes de llegar al backend —
+el `server` de `calendario.conf` tiene además un límite global de 20 M que el
+bloque de Storage sobreescribe a propósito.
+
+No hay que fiarse de la memoria: `fileService.test.ts` lee los dos `.conf` y
+falla si alguno se desalinea o pierde la directiva.
+
+### Fotos de iPhone (.HEIC)
+El navegador no siempre sabe qué es un `.heic`: en Windows, Chrome y Firefox lo
+suben como `application/octet-stream` o sin tipo. Por eso el backend no se fía
+del MIME declarado — `resolveMimeType()` lo deduce de la extensión cuando llega
+uno genérico. Se admiten `image/heic` e `image/heif`.
 
 ### Variables de entorno
 `STORAGE_PATH` (prod: `/mnt/storage-ssd`), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3001)
@@ -682,6 +730,87 @@ sobrescribible por si Wallapop cambia el id de su categoría inmobiliaria).
 
 ---
 
+## Trader — Laboratorio de predicción de precios de cripto
+
+### Ubicación
+**Fuera de este monorepo**: `crypto-trader/`, repositorio propio
+(`https://github.com/ManuHDdev/crypto-trader`, privado). Se integra igual que
+`vine-bot` y `marketplace-watcher`: ruta en nginx y entrada en el menú de apps,
+sin vivir dentro de `Calendario/`.
+
+### Stack
+- Backend: **Python 3.12 + FastAPI** — la única subapp que no es Fastify/TypeScript.
+  Desviación deliberada: el backend es un pipeline de investigación con pandas,
+  LightGBM y pyarrow, y reescribirlo en Node para respetar la convención sería
+  el tipo equivocado de consistencia.
+- Frontend: React + Vite + TypeScript (igual que el resto)
+- Sin base de datos: los datos son Parquet y JSON sobre un bind mount
+  (`/home/manu/trader/data`, ~51MB: velas de 676 pares, series exógenas,
+  evaluaciones y cuentas de paper trading)
+- Autenticación: Keycloak 26.1, realm "calendario", RS256 verificado con PyJWT
+  contra el JWKS del realm. A diferencia del resto de subapps no se verifica el
+  JWT a mano: reimplementar comprobaciones de firma en un segundo lenguaje para
+  imitar una decisión de estilo añade riesgo sin añadir consistencia real.
+- Tests: 261 backend (pytest), 28 frontend (vitest)
+
+### Roles
+Único rol con acceso: `admin`. No hay nivel de solo lectura — lo que sirve es un
+registro de investigación privado. `familia` e `invitado` reciben 403 (no 401:
+están autenticados, reenviarlos al login sería un bucle).
+
+### Rutas (`/trader/api/*`)
+- `GET /health` — **única ruta abierta**, porque un healthcheck que necesita
+  credencial no sirve como healthcheck
+- `GET /status` — series almacenadas y si la ejecución real está activada
+- `GET /candles?symbol=&timeframe=&limit=` — velas OHLCV
+- `GET /signals?timeframe=` — lectura actual por activo (régimen de tendencia,
+  ciclo de halving, estructura Wyckoff), cada una etiquetada con la evidencia
+  que el laboratorio estableció para ella
+- `GET /paper` — cuentas de paper trading y su curva de equity
+- `GET /evaluations`, `GET /evaluations/:symbol/:timeframe` — informes
+  walk-forward guardados
+
+Toda la API es de solo lectura: hay un test que falla si aparece cualquier ruta
+que no sea `GET`. No existe ninguna credencial de exchange ni ningún camino de
+código que coloque una orden.
+
+### Trabajo programado
+Cron diario en el VPS a las 00:30 UTC:
+`docker exec trader-backend python scripts/tick.py`. Refresca las velas y
+avanza las cuentas de paper trading una barra. Idempotente: reejecutarlo no
+duplica nada y una ejecución tras una caída recupera los días perdidos.
+
+### Variables de entorno del backend
+`CRYPTO_DATA_DIR`, `CRYPTO_MODEL_DIR`, `CRYPTO_CORS_ORIGINS`,
+`CRYPTO_KEYCLOAK_CERTS_URL`, `CRYPTO_KEYCLOAK_ISSUER`, `CRYPTO_ENABLE_DOCS`
+(false en producción: el frontend proxea todo el prefijo `/trader/api/`, así que
+un Swagger expuesto entregaría el esquema a cualquiera que cargase la URL),
+`CRYPTO_LIVE_TRADING_ENABLED` (ningún camino de código honra `true`; existe para
+que la intención sea explícita)
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/trader-backend:latest`, `ghcr.io/manuhddev/trader-frontend:latest`
+
+### CI/CD
+El workflow del propio repositorio publica en GHCR usando el `GITHUB_TOKEN` que
+GitHub acuña por ejecución con `permissions: packages: write` — **no** un PAT en
+`GHCR_TOKEN` como el resto del monorepo. Una credencial de larga vida menos que
+crear, guardar y rotar. El job de despliegue está tras
+`vars.VPS_DEPLOY_ENABLED` y apagado hasta que se instale una clave SSH dedicada;
+mientras tanto se despliega con `scripts/deploy.sh` desde una estación con
+acceso al VPS. Ver `DEPLOY.md` en ese repositorio.
+
+### Aviso importante sobre nginx
+El bloque `location /trader/` está aplicado **in situ** en el fichero del
+servidor (`/home/manu/nginx-shared/conf.d/elbunkerdelingeniero.conf`), que ha
+divergido de `nginx/calendario.conf` de este repositorio. Copiar el fichero del
+repo encima del servidor rompería las rutas que solo existen allí.
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los ocho roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
@@ -701,7 +830,7 @@ exactamente estos nombres.
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
-Ofertas, Ruta, Pisos y Calendario solo son accesibles para `admin` (uso exclusivo del
+Ofertas, Ruta, Pisos, Trader y Calendario solo son accesibles para `admin` (uso exclusivo del
 propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
 llamar a su API. Juegos es la única excepción a ese último punto: es la primera
 subapp visible y utilizable por los tres roles por igual (ver sección "Juegos"
@@ -769,6 +898,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Juegos             | :5180    | :3008   |
 | Watchlist          | :5181    | :3009   |
 | Reparto            | :5182    | :3010   |
+| Trader             | :5183    | :3011   |
 | Ruta               | :5183    | :3011   |
 | Pisos              | :5184    | :3012   |
 | Keycloak           | :8080    | —       |
@@ -784,6 +914,6 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 
 ## Deuda técnica conocida
 
-- **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
+- **Sin tests**: Panel y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 12 Dockerfiles y 12 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 13 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 13 Dockerfiles y 13 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 14 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.

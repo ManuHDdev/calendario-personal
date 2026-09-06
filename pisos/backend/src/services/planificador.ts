@@ -24,6 +24,18 @@ export interface Logger {
   error: (msg: string) => void;
 }
 
+/**
+ * La PRIMERA vuelta de una búsqueda trae decenas de pisos que llevan meses
+ * publicados: no son novedades y avisar de todos revienta el móvil con cien
+ * mensajes de golpe. Esa vuelta se guarda como línea base y a partir de la
+ * siguiente ya se avisa de lo que aparezca nuevo. Mismo motivo por el que
+ * "Buscar ahora" tampoco notifica. `ultimo_rastreo_at` lo deja NOW() el
+ * primer `marcarRastreo`, así que es null exactamente una vez.
+ */
+export function esPrimeraVuelta(busqueda: Pick<Busqueda, 'ultimo_rastreo_at'>): boolean {
+  return busqueda.ultimo_rastreo_at === null;
+}
+
 const INTERVALO_MINUTOS = Number(process.env.PISOS_INTERVALO_MINUTOS) || 15;
 const PAGINAS_POR_PORTAL = Number(process.env.PISOS_PAGINAS_POR_PORTAL) || 2;
 
@@ -76,16 +88,19 @@ export async function ejecutarVuelta(log: Logger): Promise<ResultadoRastreo[]> {
     if (parado) break;
     if (indice > 0) await dormir(PAUSA_ENTRE_BUSQUEDAS_MS);
 
+    const primeraVuelta = esPrimeraVuelta(busqueda);
+
     try {
       const resultado = await rastrearBusqueda(busqueda, {
         maxPaginas: PAGINAS_POR_PORTAL,
-        notificarNovedades: true,
+        notificarNovedades: !primeraVuelta,
       });
       resultados.push(resultado);
 
       log.info(
         `[${busqueda.nombre}] ${resultado.encontrados} encontrados, ${resultado.guardados} guardados, ` +
           `${resultado.novedades.length} novedades` +
+          (primeraVuelta ? ' (primera vuelta: línea base, sin avisos)' : '') +
           (resultado.fallos.length > 0 ? `, ${resultado.fallos.length} portal(es) con fallo` : ''),
       );
 
