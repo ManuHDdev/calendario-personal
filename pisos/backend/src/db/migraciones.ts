@@ -35,13 +35,19 @@ const MIGRACIONES: Migracion[] = [
   },
   {
     nombre: 'anuncio.precio_notificado — referencia inicial',
-    // Los anuncios que ya existían se toman por avisados a su precio actual:
-    // así una bajada futura sí se detecta, y ninguno de ellos se reenvía por
-    // el simple hecho de haber bajado en el pasado.
+    // Todo anuncio ya guardado toma su precio ACTUAL como referencia, se le
+    // hubiera avisado o no. Dos razones:
+    //
+    //  · Ninguno se reenvía por haber bajado en el pasado: la referencia es lo
+    //    que vale hoy, así que no hay bajada pendiente que contar.
+    //  · Los que llegaron por un «Buscar ahora» nunca tuvieron aviso, y
+    //    limitar esto a `notificado_at IS NOT NULL` los dejaría sin referencia
+    //    para siempre — es decir, incapaces de avisar de una bajada futura,
+    //    en silencio y sin que nadie lo note.
     sql: `UPDATE anuncio
              SET precio_notificado = precio
            WHERE precio_notificado IS NULL
-             AND notificado_at IS NOT NULL`,
+             AND precio IS NOT NULL`,
   },
 ];
 
