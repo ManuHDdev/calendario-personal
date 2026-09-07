@@ -1,0 +1,108 @@
+name: CI/CD Locales
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'locales/**'
+      - '.github/workflows/locales-ci.yml'
+
+jobs:
+  lint-and-build-backend:
+    name: Locales · Build backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: locales/backend
+        run: npm ci && npm run build
+
+      # El semaforo de viabilidad y el prefiltro geometrico son la parte que
+      # sostiene esta app. Si regresan, deja de avisar de locales validos, o
+      # peor: empieza a dar por bueno alguno que no lo es.
+      #
+      # Los tests son deliberadamente independientes de la base de datos para
+      # que CI los pueda correr. Lo que NO cubren es que Overpass, Nominatim o
+      # el portal de datos de Madrid sigan sirviendo lo esperado: eso solo se
+      # comprueba ejecutando `npm run padron` con salida a internet.
+      - name: Test
+        working-directory: locales/backend
+        run: npm test
+
+  docker-build-and-push:
+    name: Locales · Docker build & push
+    runs-on: ubuntu-latest
+    needs: lint-and-build-backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build & push locales-backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./locales/backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/locales-backend:latest
+            ghcr.io/${{ env.OWNER }}/locales-backend:${{ github.sha }}
+
+  deploy:
+    name: Deploy · Locales VPS
+    runs-on: ubuntu-latest
+    needs: docker-build-and-push
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar docker-compose e init.sql al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "locales/infra/docker-compose.prod.yml,locales/infra/init.sql"
+          target: /home/manu/locales
+          strip_components: 2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /home/manu/locales
+
+            docker compose -f docker-compose.prod.yml pull locales-backend
+            docker compose -f docker-compose.prod.yml up -d locales-db locales-backend
+            docker compose -f docker-compose.prod.yml ps
+
+            # El padron NO se importa aqui. Es una operacion larga (sale a
+            # Overpass comunidad por comunidad) y manual a proposito: hasta
+            # que se ejecute, toda comprobacion devuelve "sin datos", que es
+            # lo correcto. Ver DEPLOY_NOTES.md.

@@ -32,6 +32,7 @@
 #   ruta frontend       →  :5183
 #   pisos backend       →  :3012
 #   pisos frontend      →  :5184
+#   locales backend     →  :3013
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -60,6 +61,7 @@ function Cleanup {
   warn "  cd reparto\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd ruta\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd pisos\infra; docker compose -f docker-compose.local.yml down"
+  warn "  cd locales\infra; docker compose -f docker-compose.local.yml down"
 }
 
 # Registrar cleanup al salir
@@ -132,6 +134,10 @@ docker compose -f docker-compose.local.yml up -d
 
 info "PostgreSQL (pisos :5441)..."
 Set-Location (Join-Path $SCRIPT_DIR "pisos\infra")
+docker compose -f docker-compose.local.yml up -d
+
+info "PostgreSQL (locales :5442)..."
+Set-Location (Join-Path $SCRIPT_DIR "locales\infra")
 docker compose -f docker-compose.local.yml up -d
 
 Set-Location $SCRIPT_DIR
@@ -244,6 +250,18 @@ do {
   Write-Host -NoNewline "."; Start-Sleep -Seconds 2
 } while ($true)
 Write-Host ""; info "  ✓ PostgreSQL (pisos) listo."
+
+# ── 5i. Esperar a PostgreSQL (locales) ─────────────────────────
+info "PostgreSQL locales..."
+$retries = 30
+do {
+  $r = docker compose -f "$SCRIPT_DIR\locales\infra\docker-compose.local.yml" exec -T locales-db pg_isready -U locales -d locales 2>$null
+  if ($LASTEXITCODE -eq 0) { break }
+  $retries--
+  if ($retries -le 0) { err "PostgreSQL (locales) no arrancó." }
+  Write-Host -NoNewline "."; Start-Sleep -Seconds 2
+} while ($true)
+Write-Host ""; info "  ✓ PostgreSQL (locales) listo."
 
 # ── 6. Esperar a Keycloak ────────────────────────────────────────────────────
 info "Keycloak (puede tardar ~30s la primera vez)..."
@@ -390,6 +408,23 @@ StartBackground "pisos-backend     :3012" "pisos-backend.log" `
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ORIGIN="http://localhost:5184" }
 
+EnsureDeps (Join-Path $SCRIPT_DIR "locales\backend")
+# Hasta importar el padron (npm run padron -- madrid) toda comprobacion
+# devuelve "sin datos". Es lo correcto: un padron vacio no demuestra que no
+# haya farmacias cerca.
+StartBackground "locales-backend   :3013" "locales-backend.log" `
+  (Join-Path $SCRIPT_DIR "locales\backend") `
+  "npm run dev" `
+  @{ PORT="3013"; LOCALES_DB_HOST="localhost"; LOCALES_DB_PORT="5442";
+     LOCALES_DB_NAME="locales"; LOCALES_DB_USER="locales"; LOCALES_DB_PASSWORD="locales123";
+     LOCALES_MOTOR_DISTANCIA=$(if ($env:LOCALES_MOTOR_DISTANCIA) { $env:LOCALES_MOTOR_DISTANCIA } else { "ors" });
+     ORS_API_KEY=$(if ($env:ORS_API_KEY) { $env:ORS_API_KEY } else { "" });
+     VALHALLA_URL=$(if ($env:VALHALLA_URL) { $env:VALHALLA_URL } else { "http://localhost:8002" });
+     TELEGRAM_BOT_TOKEN=$(if ($env:TELEGRAM_BOT_TOKEN) { $env:TELEGRAM_BOT_TOKEN } else { "" });
+     TELEGRAM_OWNER_CHAT_ID=$(if ($env:TELEGRAM_OWNER_CHAT_ID) { $env:TELEGRAM_OWNER_CHAT_ID } else { "" });
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5185" }
+
 # Calendario backend (Spring Boot)
 StartBackground "calendario-backend :8081" "calendario-backend.log" `
   (Join-Path $SCRIPT_DIR "backend") `
@@ -521,6 +556,11 @@ Write-Host "    Frontend         ->  http://localhost:5184/pisos/"
 Write-Host "    Backend health   ->  http://localhost:3012/pisos/api/health"
 Write-Host "    Sin TELEGRAM_BOT_TOKEN/TELEGRAM_OWNER_CHAT_ID rastrea y guarda, pero no avisa al movil" -ForegroundColor Yellow
 Write-Host "    Comprobar los portales reales:  cd pisos\backend; npm run smoke -- todos \"Badajoz\"" -ForegroundColor Yellow
+
+Write-Host ""
+Write-Host "  Locales (sin frontend todavia)"
+Write-Host "    Backend health   ->  http://localhost:3013/locales/api/health"
+Write-Host "    Importar el padron antes de usarlo:  cd locales\backend; npm run padron -- madrid" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow
