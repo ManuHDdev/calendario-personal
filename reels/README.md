@@ -20,10 +20,15 @@ clips/ + canción  →  energía de movimiento por clip (el que más se mueve ab
 
 Todo en tu máquina. Sin cuenta, sin clave de API, sin coste más allá de Claude Pro.
 
+**Si vuelves a esto después de un tiempo, o continúa otra persona: empieza por
+[`SIGUIENTE.md`](SIGUIENTE.md)** — estado actual, decisiones de diseño y los
+siguientes pasos por orden de impacto.
+
 ## Uso
 
 ```bash
 pip install -r requirements.txt          # + ffmpeg en el PATH
+python probar.py                         # comprueba la instalacion sin material propio
 python montar.py --clips ./clips --musica ./track.mp3 --salida reel.mp4
 ```
 

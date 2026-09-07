@@ -811,6 +811,83 @@ repo encima del servidor rompería las rutas que solo existen allí.
 
 ---
 
+## Reels — montaje automático de vídeos verticales
+
+### Ubicación
+`Calendario/reels/` dentro del monorepo.
+
+### NO es una subapp (importante)
+No tiene backend, ni frontend, ni imagen Docker, ni base de datos, ni entrada en
+el AppLauncher, ni rol de Keycloak. **No se despliega en el VPS.** Es una
+herramienta de línea de comandos que corre en la máquina de escritorio del
+propietario: el vídeo en bruto pesa cientos de MB por minuto y el render quiere
+CPU que el VPS no tiene libre. Por eso no aparece en la tabla de roles ni en la
+de puertos, y por eso no hay que actualizar las 14 copias del AppLauncher al
+tocarla.
+
+### Stack
+- Python 3.10+, sin framework. Segunda desviación deliberada del monorepo
+  Fastify/TypeScript, por el mismo motivo que `crypto-trader`: el trabajo es un
+  pipeline de proceso de señal (ffmpeg, librosa, Whisper) y reescribirlo en Node
+  para respetar la convención sería el tipo equivocado de consistencia.
+- `ffmpeg`/`ffprobe` como binarios externos, invocados con argv array
+  (`subprocess.run` con lista, nunca un string de shell), igual que `ytdl` hace
+  con `yt-dlp`.
+- `librosa` (beats), `faster-whisper` (transcripción local con marcas por
+  palabra), `numpy` (energía de movimiento por clip).
+- Sin base de datos, sin red, sin claves de API: todo el proceso es local.
+
+### Qué hace
+Carpeta de clips + una canción → reel 1080x1920 con cortes al beat por debajo
+de un techo de duración de plano, recorte 9:16 con punch-in, subtítulos karaoke
+quemados y música con ducking bajo la voz.
+
+### Estructura
+```
+reels/
+├── montar.py              → CLI principal
+├── probar.py              → prueba de humo: genera material sintético y mide el resultado
+├── montar.bat             → lanzador de Windows
+├── SIGUIENTE.md           → estado, decisiones de diseño y siguientes pasos
+└── pipeline/
+    ├── analisis.py        → ffprobe + energía de movimiento por clip
+    ├── beats.py           → detección de beats y rejilla de cortes
+    ├── plan.py            → reparto de clips sobre la rejilla
+    ├── render.py          → ffmpeg: 9:16, punch-in, concatenado, mezcla, quemado
+    ├── subtitulos.py      → generación del ASS karaoke
+    └── transcripcion.py   → faster-whisper con marcas por palabra
+```
+
+### Dos decisiones que explican casi todo el código
+1. **Se transcribe el montaje ya concatenado, no los clips sueltos.** Las marcas
+   salen ya en la línea de tiempo final, sin reproyectar los tiempos de cada
+   recorte, así que los subtítulos cuadran siempre. El precio es que la
+   transcripción no puede guiar el montaje.
+2. **Se renderiza plano a plano a intermedios y luego se concatena**, en vez de
+   un único `filter_complex`. Algo más lento, pero cuando un plano falla se ve
+   cuál y el fallo no se lleva por delante el reel entero. Mismo criterio que
+   "un rastreo parcial nunca debe parecerse a uno completo" en `pisos`.
+
+### Prueba
+`python probar.py` genera cinco clips sintéticos con movimiento distinto y una
+pista con percusión real, monta un reel y **mide el fichero de salida** con
+ffprobe y detección de cambio de escena: resolución, duración, número de cortes
+y plano más largo. No hay tests unitarios: lo que importa aquí es lo que acaba
+en el mp4, no lo que el plan decía que iba a acabar.
+
+La pista sintética necesita transitorios de verdad (bombo y charles). Con un
+seno con tremolo, librosa devuelve cero beats y la prueba mediría la rejilla de
+emergencia en vez del camino normal.
+
+### Descartado: montage-ai
+Se evaluó [montage-ai](https://github.com/mfahsold/montage-ai) leyendo su
+código. Sus subtítulos dependen de `cgpu` (una CLI de terceros que rebusca GPU
+gratuita en la nube): `transcriber.py` declara "Audio transcription via Whisper
+on cgpu", en su `requirements.txt` no hay ningún Whisper local y no admite un
+`.srt` propio. Más la licencia PolyForm Noncommercial. Ver `reels/SIGUIENTE.md`.
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los ocho roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
