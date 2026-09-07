@@ -1,0 +1,23 @@
+services:
+  locales-db:
+    image: postgres:15
+    container_name: locales-db-local
+    ports:
+      - "5442:5432"
+    environment:
+      POSTGRES_DB: locales
+      POSTGRES_USER: locales
+      POSTGRES_PASSWORD: locales123
+    volumes:
+      - locales_local_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U locales -d locales"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  locales_local_data:
