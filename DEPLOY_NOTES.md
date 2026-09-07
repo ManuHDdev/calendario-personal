@@ -66,10 +66,10 @@ Sin esas dos variables la app funciona igual, solo se queda sin bot.
 correcto —un padrón vacío no demuestra que no haya farmacias cerca— pero la app
 no sirve de nada hasta ejecutarlo.
 
-```bash
-docker exec -it locales-backend node -e "1" >/dev/null   # comprobar que responde
+La imagen de producción solo lleva `dist` (no hay `ts-node`), así que el CLI se
+invoca sobre el compilado, no con `npm run padron`:
 
-# La imagen de produccion solo lleva `dist`, asi que el CLI se invoca directo:
+```bash
 docker exec -it locales-backend node dist/padron/cli.js madrid
 ```
 
