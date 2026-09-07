@@ -1,0 +1,5 @@
+# Pipeline de montaje de reels. Todo local, sin claves de API.
+librosa>=0.10          # deteccion de beats
+faster-whisper>=1.0    # transcripcion con marcas por palabra, en CPU
+numpy>=1.24            # energia de movimiento por clip
+soundfile>=0.12        # lectura de audio (dependencia de librosa)

@@ -1,160 +1,124 @@
 # Reels — edición automática de vídeos de viaje para TikTok/Reels/Shorts
 
-Carpeta de trabajo (no es una subapp del monorepo: no tiene backend, ni Docker
-en el VPS, ni entrada en el AppLauncher). Es una herramienta **local, de
-escritorio**, porque el vídeo en bruto pesa cientos de MB por minuto y el
-renderizado quiere CPU/GPU que el VPS no tiene libre.
+Herramienta **local de escritorio**. No es una subapp del monorepo: no tiene
+backend, ni imagen Docker en el VPS, ni entrada en el AppLauncher. El vídeo en
+bruto pesa cientos de MB por minuto y el render quiere CPU que el VPS no tiene
+libre.
 
-## Qué queremos
+## Qué hace
 
-Vídeo 9:16 a partir de material de viaje (mezcla de plano a cámara + recurso),
-con:
+```
+clips/ + canción  →  energía de movimiento por clip (el que más se mueve abre)
+                  →  beats de la canción (librosa)
+                  →  rejilla de cortes con techo duro de duración de plano
+                  →  reparto de clips, sin repetir clip consecutivo
+                  →  9:16 + punch-in progresivo en cada plano
+                  →  faster-whisper: transcripción con marcas por palabra
+                  →  subtítulos karaoke quemados + música con ducking
+                  →  reel.mp4
+```
 
-- Subtítulos quemados, palabra a palabra (estilo karaoke)
-- Un corte cada **< 3 s**
-- Silencios y muletillas fuera
-- Trucos de retención: gancho en el primer segundo, punch-in de zoom en planos
-  largos, cortes al ritmo de la música, cierre en bucle
+Todo en tu máquina. Sin cuenta, sin clave de API, sin coste más allá de Claude Pro.
 
-## Estado de la investigación (sept 2026)
+## Uso
 
-**Conclusión corta: no existe un proyecto que haga exactamente esto de una
-pieza.** Lo que hay se divide en dos familias, y ninguna es nuestro caso
-exacto:
+```bash
+pip install -r requirements.txt          # + ffmpeg en el PATH
+python montar.py --clips ./clips --musica ./track.mp3 --salida reel.mp4
+```
 
-### Familia A — "vídeo largo → shorts" (podcast / hablando a cámara)
+En Windows, edita las tres rutas de `montar.bat` y doble clic.
 
-Cogen una grabación de una hora, buscan el momento bueno con un LLM, recortan a
-9:16 siguiendo la cara y queman subtítulos. Maduros y bien mantenidos, pero
-suponen **una sola toma continua con alguien hablando**, no 40 clips sueltos de
-un viaje.
+Opciones que importan:
 
-| Proyecto | ⭐ | Licencia | Nota |
-|---|---|---|---|
-| [openshorts](https://github.com/mutonby/openshorts) | 3.9k | MIT (core) | Lo más completo: detección de momentos, reencuadre con seguimiento de cara, subtítulos, doblaje. Self-host gratis de verdad. Necesita LLM (Gemini con free tier, u Ollama local). |
-| [ClipsAI](https://github.com/ClipsAI/clipsai) | 538 | MIT | Librería Python. Reencuadre 16:9→9:16 siguiendo al que habla + recorte por transcripción. Pensado explícitamente para "podcasts, entrevistas, sermones". |
+| Opción | Por defecto | Para qué |
+|---|---|---|
+| `--duracion` | 30 | Duración objetivo del reel |
+| `--max-plano` | 2.5 | Techo de duración de plano. Por encima de 3s se pierde atención |
+| `--min-plano` | 0.6 | Suelo, para que no quede epiléptico |
+| `--sin-subtitulos` | — | Salta la transcripción. Útil para iterar el montaje rápido |
+| `--modelo-whisper` | small | `tiny`/`base`/`small`/`medium`/`large-v3` |
 
-### Familia B — "muchos clips + música → montaje"
+## Verificado (no "debería funcionar")
 
-Esto sí es el montaje de viaje. Mucho más verde.
+Probado de punta a punta sobre 5 clips sintéticos 1920x1080 y una pista de
+percusión a 120 BPM. Medido sobre el fichero de salida, no a ojo:
 
-| Proyecto | ⭐ | Licencia | Nota |
-|---|---|---|---|
-| [montage-ai](https://github.com/mfahsold/montage-ai) | 47 | **PolyForm Noncommercial** | El único que cubre casi todo el pliego a la vez: detección de beats, análisis de escena, montaje, reencuadre a 9:16, quemado de subtítulos (plantillas TikTok/Karaoke), 8 estilos de corte. Local-first, sin LLM obligatorio. |
+| Comprobación | Resultado |
+|---|---|
+| Resolución de salida | **1080x1920**, 30 fps, AAC estéreo 48 kHz |
+| Cortes detectados (scene change) | 19 en 19,03 s |
+| Plano más largo | **1,03 s** (techo pedido: 2,5 s) |
+| BPM detectado en pista de 120 BPM | 117,5, 78 beats |
+| Punch-in sobre fuente 100% estática | Diferencia entre primer y último fotograma **3,56** (0 = no ocurre) |
+| Subtítulos karaoke quemados | Palabra activa en amarillo y mayor, al 60% de altura |
+| Todos los clips usados | Sí (5/5) |
 
-### Los ladrillos maduros (plan B: construir a medida)
+Dos fallos encontrados y corregidos durante esa prueba:
 
-Si montage-ai no da la talla, el pipeline se monta con estas piezas, todas
-estables y de sobra probadas:
+1. **Un clip se quedaba siempre fuera.** La rotación elegía dentro de los
+   candidatos de cada hueco y caía en un ciclo corto que se saltaba justo los
+   del medio de la lista. Ahora recorre la lista entera.
+2. **El montaje reventaba con música sin transitorios claros.** Una pista
+   ambient devuelve cero beats y saltaba una excepción. Ahora cae a una rejilla
+   regular: peor sincronía, pero un reel montado vale más que un error.
+
+## Limitaciones conocidas de esta v1
+
+Léelas antes de esperar magia:
+
+- **No hay eliminación de silencios ni de muletillas.** Los tramos hablando a
+  cámara se tratan como cualquier otro plano: se cortan al beat. Para tu caso
+  ("mezcla de los dos") esta es la carencia que más se va a notar.
+- **El recorte a 9:16 es al centro, sin seguimiento de cara.** Si te grabas
+  descentrado, te sales del encuadre.
+- **No hay texto de gancho superpuesto** en el primer segundo. Sí se elige como
+  primer plano el de más movimiento, que es la mitad del truco.
+- **La transcripción no se ha podido ejecutar en el entorno de desarrollo**
+  (el proxy bloquea la descarga del modelo desde HuggingFace). El generador de
+  subtítulos sí está verificado, alimentado con una transcripción de prueba.
+  La primera ejecución en tu PC descargará el modelo (~500 MB para `small`).
+
+## Por qué no usamos montage-ai
+
+Era la opción elegida tras la primera investigación. **Queda descartada** al
+leer su código:
+
+- `src/montage_ai/transcriber.py` empieza con *"Audio transcription via Whisper
+  on cgpu"*, y `Transcriber.is_available()` no es más que `is_cgpu_available()`.
+- En su `requirements.txt` **no hay ningún Whisper local**: ni
+  `openai-whisper`, ni `faster-whisper`, ni `torch`.
+- [cgpu](https://github.com/RohanAdwankar/cgpu) es una CLI de 145 estrellas que
+  rebusca GPU gratuita en la nube y exige un asistente de alta interactivo.
+- No hay variable de entorno para pasarle un `.srt` propio: sólo `CAPTIONS` y
+  `CAPTIONS_STYLE`.
+
+Es decir: **los subtítulos, que es tu requisito no negociable, no se pueden
+generar en local.** Dependen de un buscador de compute gratis de terceros.
+Sumado a la licencia PolyForm Noncommercial (deja de amparar el uso el día que
+la cuenta se monetice) y a las 47 estrellas, no es sitio donde construir.
+
+Un detalle por si lo pruebas igualmente: **el estilo correcto es `viral`, no
+`travel`**, pese al nombre. En `styles/travel.json`, `min_cut_beats=2` y
+`max_cut_beats=8` dan planos de 1 a 4 s a 120 BPM — se pasa de tu techo — y
+mete crossfades de 0,5 s. `viral.json` usa 0,5–2 beats y crossfade 0.
+`probar-montage-ai.ps1` queda en la carpeta con esos ajustes ya puestos.
+
+## Estado del open source (sept 2026)
+
+Para el caso "vídeo largo hablando a cámara → shorts", que **no** es el nuestro:
+
+| Proyecto | ⭐ | Licencia |
+|---|---|---|
+| [openshorts](https://github.com/mutonby/openshorts) | 3.9k | MIT (core) |
+| [ClipsAI](https://github.com/ClipsAI/clipsai) | 538 | MIT |
+
+Los ladrillos maduros sobre los que está construido esto:
 
 | Pieza | Para qué | ⭐ / Licencia |
 |---|---|---|
-| [WhisperX](https://github.com/m-bain/whisperX) | Transcripción con **timestamps por palabra** (subtítulo karaoke). Va en CPU con `--compute_type int8 --device cpu`. | 23.9k / BSD-2 |
-| [auto-editor](https://github.com/WyattBlue/auto-editor) | Quitar silencios y tramos sin movimiento. Exporta también timeline a Premiere/Resolve/Kdenlive. | 5.2k / Unlicense |
-| `librosa` | Detección de beats → los cortes caen en el compás. | ISC |
-| `ffmpeg` | Cortes, reencuadre, zoom, quemado de subtítulos ASS, ducking de música. | — |
-
-## Decisión
-
-Probar **montage-ai** primero con material real antes de escribir nada propio.
-Media hora de trabajo frente a semanas: si el resultado ya vale, hemos
-terminado; si no, sabremos exactamente qué falta y el plan B parte de un
-pliego concreto en vez de una intuición.
-
-## Avisos honestos antes de empezar
-
-1. **Licencia.** montage-ai es PolyForm Noncommercial. Subir reels de viaje por
-   gusto entra sin problema; el día que la cuenta se monetice (marca, patrocinio,
-   programa de creadores) esa licencia deja de amparar el uso y habría que
-   migrar al plan B (todas las piezas del plan B son permisivas: BSD, MIT,
-   Unlicense).
-2. **47 estrellas** son pocas. Puede tener aristas, romperse en una
-   actualización o quedar abandonado. Por eso se prueba antes de construir
-   encima.
-3. **Yo no puedo ver el vídeo.** Puedo leer la transcripción, los metadatos de
-   los clips y los logs, y decidir orden, gancho, texto y ritmo a partir de ahí
-   — pero el "esta toma está movida" lo tienes que decir tú. El pipeline no es
-   "subo la tarjeta y publico": es "subo la tarjeta, sale un borrador decente,
-   reviso 2 minutos".
-4. **Claude Pro no incluye créditos de API.** Todo lo que se ejecute aquí es
-   local y gratis (Whisper, ffmpeg, librosa). Si algún día se quiere un LLM
-   dentro del pipeline sin gasto extra, va con Ollama en tu PC.
-
-## Cómo probarlo (Windows)
-
-Requisitos: **Docker Desktop** con WSL2, 16 GB de RAM recomendados (8 GB
-mínimo), 10 GB de disco libre.
-
-```powershell
-# 1. Comprobar la máquina
-docker --version
-docker compose version
-(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB
-(Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors
-
-# 2. Clonar y construir (fuera de este repo)
-cd $HOME
-git clone https://github.com/mfahsold/montage-ai.git
-cd montage-ai
-docker compose build
-
-# 3. Meter material
-#    5-10 clips del mismo viaje (incluye alguno hablando a cámara) + una canción
-copy D:\viajes\lisboa\*.mp4 data\input\
-copy D:\musica\track.mp3  data\music\
-```
-
-Luego lanza el script de esta carpeta, que ya fija los ajustes que nos
-interesan (vertical 1080x1920, subtítulos, estilo de corte rápido):
-
-```powershell
-.\reels\probar-montage-ai.ps1 -MontagePath $HOME\montage-ai
-```
-
-O a mano, si prefieres ver los comandos:
-
-```powershell
-# Pasada rápida en 360p para ver si el montaje tiene sentido (~2-5 min)
-$env:QUALITY_PROFILE="preview"
-$env:EXPORT_WIDTH="1080"; $env:EXPORT_HEIGHT="1920"
-$env:CUT_STYLE="viral"; $env:CAPTIONS="true"; $env:TARGET_DURATION="30"
-docker compose run --rm montage-ai /app/montage-ai.sh run
-```
-
-El resultado sale en `data\output\montage_<timestamp>.mp4`.
-
-### Ajustes que importan
-
-| Variable | Valor | Por qué |
-|---|---|---|
-| `EXPORT_WIDTH` / `EXPORT_HEIGHT` | `1080` / `1920` | Sin esto infiere la resolución del material dominante y te saca 16:9. |
-| `CUT_STYLE` | `viral`, `mtv` o `action` | Los tres estilos de corte rápido. Los otros cinco (`hitchcock`, `documentary`, `minimalist`, `wes_anderson`, `dynamic`) son más pausados. |
-| `CAPTIONS` | `true` | Quemado de subtítulos. Documentado solo en el ejemplo "sin dependencias cloud", así que **hay que verificar en la prueba que realmente los pinta**. |
-| `TARGET_DURATION` | `30` | Sin esto, el montaje dura lo que dure la canción. |
-| `PRESERVE_ASPECT` | `false` | `true` mete letterbox (bandas negras) en vertical: eso mata la retención. |
-| `QUALITY_PROFILE` | `preview` | 360p para iterar; quítalo para el render final. |
-| `STABILIZE` | `true` | Solo en el render final: el material de viaje va a mano y se nota. |
-
-## Qué comprobar en la prueba (protocolo)
-
-Sobre el clip de salida, marca sí/no:
-
-- [ ] Sale en 1080x1920 real, sin bandas negras
-- [ ] Ningún plano dura más de 3 s
-- [ ] Los cortes caen en el beat, no a intervalo fijo
-- [ ] Los subtítulos aparecen, van sincronizados y están **en español**
-- [ ] Los subtítulos van por palabra/grupo corto, no en párrafos
-- [ ] Los subtítulos quedan a media altura, no bajo la UI de TikTok
-- [ ] En los trozos hablando a cámara, el reencuadre sigue la cara
-- [ ] Los silencios y muletillas están fuera
-- [ ] No hay fundidos a negro
-- [ ] El primer segundo es el plano más fuerte, no el más largo
-
-Con esa lista rellenada sé exactamente qué falta y qué toca construir.
-
-## Si no da la talla — plan B
-
-CLI propia en Python sobre los ladrillos maduros de arriba, ejecutable con un
-`.bat`, y yo por detrás decidiendo orden de clips, gancho y copy a partir de la
-transcripción y los metadatos. Sin licencia restrictiva y sin depender de un
-repo de 47 estrellas.
+| [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | Transcripción con marcas por palabra, en CPU | MIT |
+| [WhisperX](https://github.com/m-bain/whisperX) | Alternativa con alineación wav2vec2, más precisa y más pesada | 23.9k / BSD-2 |
+| [auto-editor](https://github.com/WyattBlue/auto-editor) | Quitar silencios (pendiente de integrar) | 5.2k / Unlicense |
+| `librosa` | Beats | ISC |
+| `ffmpeg` | Todo el vídeo | — |
