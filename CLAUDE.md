@@ -967,6 +967,41 @@ repo encima del servidor rompería las rutas que solo existen allí.
 
 ---
 
+## Fútbol (Football Predictor) — Predicción de resultados de fútbol
+
+### Ubicación
+Repo independiente `football-predictor/` (fuera de este monorepo), bajo
+`/futbol/` — mismo patrón que Rummikub Assistant y Trader: repo standalone
+con su propio stack, unido a `calendario-net`.
+
+### Stack
+- Backend Python 3.11 + FastAPI hexagonal; frontend React 19 + Vite.
+- BD PostgreSQL 16 propia — servicio `db` en su `docker-compose.prod.yml`
+  (llamado `db`, **no** `postgres`, para no chocar en `calendario-net` con
+  el `postgres` de Calendario).
+- Predicción: Dixon-Coles + capa GBM (LightGBM) gateada por backtest,
+  100% local, sin LLM ni APIs de pago. Datos: temporada actual de
+  football-data.org, histórico (~5 temporadas) de football-data.co.uk.
+- Auth: realm `calendario`, cliente compartido `calendario-frontend`
+  (sin cliente propio), JWT con PyJWT + PyJWKClient. Solo rol `admin`.
+
+### Rutas (`/futbol/api/*`)
+`GET /fixtures`, `GET /fixtures/{id}`, `GET /model/performance`,
+`GET /health` (abierto). La Champions League no se predice (el modelo es
+por liga; el seed solo cubre las 5 grandes).
+
+### Despliegue
+Pipeline propio en GitHub Actions (`.github/workflows/deploy.yml`,
+`workflow_dispatch`): SSH, `deploy/.env`, `docker compose up -d --build`,
+health-check, e inserta los bloques nginx `/futbol/` en el vhost
+compartido vía `deploy/scripts/install-nginx-snippet.sh` (idempotente,
+con backup + `nginx -t`). Contenedores
+`football-predictor-{backend,db,frontend}-1`. **Ese bloque nginx se borra
+si otro subapp redespliega el vhost compartido** — relanzar el workflow
+con `update_nginx=true` para reinsertarlo.
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los ocho roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
@@ -988,7 +1023,7 @@ Locales tampoco añade rol: solo `admin`, como Gastos/Ofertas/Ruta/Pisos.
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
-Ofertas, Ruta, Pisos, Locales, Trader y Calendario solo son accesibles para `admin` (uso exclusivo del
+Ofertas, Ruta, Pisos, Locales, Trader, Fútbol y Calendario solo son accesibles para `admin` (uso exclusivo del
 propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
 llamar a su API. Juegos es la única excepción a ese último punto: es la primera
 subapp visible y utilizable por los tres roles por igual (ver sección "Juegos"
@@ -1060,6 +1095,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Ruta               | :5183    | :3011   |
 | Pisos              | :5184    | :3012   |
 | Locales            | :5185    | :3013   |
+| Fútbol (repo externo, stack propio) | :5186 | :8000 |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
