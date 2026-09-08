@@ -12,19 +12,16 @@ const PORTAL = 'tablondeanuncios';
  * ─────────────────────────────────────────────────────────────────────────
  * TODO EL CONOCIMIENTO ESPECÍFICO DE Tablón de Anuncios VIVE EN ESTE BLOQUE.
  *
- * VERIFICADO CONTRA EL PORTAL REAL (2026-09).
+ * VERIFICADO CONTRA EL PORTAL REAL (2026-09) — y DESCARTADO.
  *
- * URL: `https://www.tablondeanuncios.com/farmacias-venta/` — resultados
- * nacionales de la búsqueda "farmacias venta", ordenados por relevancia.
- * Paginación: `?pagina=N`. No hay filtro de zona en la URL; se filtra después
- * contra el texto de ubicación del anuncio.
- *
- * OJO: el buscador de este portal es MUY laxo — para "farmacias venta"
- * devuelve también relojes, coches y lámparas. Se descarta en el parseo todo
- * anuncio que no mencione una farmacia en su URL, título o descripción
- * (`pareceFarmacia`), porque el filtro fino del backend no siempre tiene un
- * criterio económico con el que tirar la basura (una lámpara "en Madrid"
- * pasaría una búsqueda de farmacia por zona).
+ * `https://www.tablondeanuncios.com/farmacias-venta/` responde 200 pero su
+ * buscador IGNORA el término "farmacia": devuelve un feed genérico de
+ * traspasos (venta de locales, ropa laboral, una lámpara, dos calculadoras,
+ * un coche…). En una comprobación real no había ni un solo anuncio de
+ * farmacia. Con `pareceFarmacia` filtrando, el portal devuelve cero, así que
+ * `puedeBuscar` lo declara no rastreable — igual que los portales con bloqueo
+ * anti-bot. El parser y el filtro se dejan escritos por si el portal arregla
+ * su búsqueda algún día.
  *
  * Cada anuncio es `<article class="result-item" id="NNNN">`:
  *   <div class="small-9 cell"><p>  en Sevilla</p></div>          ← ubicación
@@ -155,7 +152,11 @@ export const tablonDeAnunciosProvider: PortalProvider = {
   tipo: 'farmacia',
 
   puedeBuscar() {
-    return { ok: true };
+    return {
+      ok: false as const,
+      motivo:
+        'Tablón de Anuncios no filtra a farmacias (su buscador de "farmacias venta" devuelve un feed genérico de traspasos) — pendiente de que el portal lo arregle',
+    };
   },
 
   buscar(criterios, opciones: OpcionesBusqueda = {}) {

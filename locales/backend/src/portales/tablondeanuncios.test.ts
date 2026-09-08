@@ -69,7 +69,9 @@ describe('Tablón de Anuncios · parsearPagina', () => {
     expect(a.precision).toBe('desconocida');
   });
 
-  it('es un listado nacional: puedeBuscar siempre ok', () => {
-    expect(tablonDeAnunciosProvider.puedeBuscar({} as never)).toEqual({ ok: true });
+  it('puedeBuscar lo declara no rastreable: su buscador no filtra a farmacias', () => {
+    const r = tablonDeAnunciosProvider.puedeBuscar({} as never);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.motivo).toMatch(/no filtra a farmacias/i);
   });
 });
