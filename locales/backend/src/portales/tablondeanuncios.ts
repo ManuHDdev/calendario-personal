@@ -20,9 +20,11 @@ const PORTAL = 'tablondeanuncios';
  * contra el texto de ubicación del anuncio.
  *
  * OJO: el buscador de este portal es MUY laxo — para "farmacias venta"
- * devuelve también relojes, coches y lámparas. El filtro fino (facturación,
- * etc.) del backend descarta casi todo ese ruido; aquí solo se parsea lo que
- * hay.
+ * devuelve también relojes, coches y lámparas. Se descarta en el parseo todo
+ * anuncio que no mencione una farmacia en su URL, título o descripción
+ * (`pareceFarmacia`), porque el filtro fino del backend no siempre tiene un
+ * criterio económico con el que tirar la basura (una lámpara "en Madrid"
+ * pasaría una búsqueda de farmacia por zona).
  *
  * Cada anuncio es `<article class="result-item" id="NNNN">`:
  *   <div class="small-9 cell"><p>  en Sevilla</p></div>          ← ubicación
@@ -42,6 +44,17 @@ const RE_TITULO = /class="titleAd"[^>]*>([^<]+)<\/a>/i;
 const RE_UBICACION = /class="small-9 cell">\s*<p>([^<]*)<\/p>/i;
 const RE_DESCRIPCION = /<p class="hide-for-small-only">([\s\S]*?)<\/p>/i;
 const RE_PRECIO = /class="medium-2 cell[^"]*">([\s\S]*?)<\/p>/i;
+
+/**
+ * ¿El anuncio va realmente de una farmacia? El buscador mezcla de todo, así
+ * que se exige la palabra en la URL, el título o la descripción. `farmacéutic`
+ * cubre "traspaso de oficina farmacéutica"; `botica` es el término coloquial.
+ */
+const RE_ES_FARMACIA = /farmac(?:ia|éutic|eutic)|\bbotica\b/i;
+
+function pareceFarmacia(url: string, titulo: string, descripcion: string | null): boolean {
+  return RE_ES_FARMACIA.test(`${url} ${titulo} ${descripcion ?? ''}`);
+}
 
 function limpiar(texto: string | null | undefined): string | null {
   if (!texto) return null;
@@ -73,11 +86,13 @@ export function parsearPagina(html: string): AnuncioCrudo[] {
     const urlMatch = bloque.match(RE_URL);
     const url = urlMatch?.[1] ?? urlMatch?.[2];
     if (!url) continue;
-    vistos.add(portalId);
 
     const titulo = limpiar(bloque.match(RE_TITULO)?.[1]) ?? 'Farmacia en venta';
-    const ubicacion = normalizarUbicacion(bloque.match(RE_UBICACION)?.[1] ?? null);
     const descripcion = limpiar(bloque.match(RE_DESCRIPCION)?.[1]);
+    if (!pareceFarmacia(url, titulo, descripcion)) continue;
+    vistos.add(portalId);
+
+    const ubicacion = normalizarUbicacion(bloque.match(RE_UBICACION)?.[1] ?? null);
     const precio = parsearPrecio(limpiar(bloque.match(RE_PRECIO)?.[1]));
     const texto = `${titulo} ${descripcion ?? ''}`;
 
