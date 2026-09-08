@@ -197,20 +197,38 @@ queda sin avisos, y lo dice en el log al arrancar.
 esquema, padrón, motores, semáforo, API y bot de consulta. 95 tests unitarios,
 todos sin base de datos para que CI los pueda correr.
 
-**Pendiente**: los rastreadores de portales (Fotocasa, pisos.com, habitaclia,
-yaencontre, Milanuncios para locales; Farmaconsulting, Asefarma,
-negociosenventa, tablondeanuncios para farmacias), el planificador y el
-frontend.
+**Pendiente**: el planificador (`services/rastreo.ts` / `planificador.ts`), las
+rutas HTTP de búsquedas/anuncios/scraper y el frontend.
 
-### Advertencia sobre los parsers, cuando lleguen
+### Rastreadores de portales (fase 5 — entregada, SIN verificar contra la red)
 
-Se escriben a partir del patrón de `pisos`, pero **no se pueden verificar contra
-los portales reales desde el entorno de desarrollo**, cuya política de red
-bloquea todo el egreso. Los tests corren contra fixtures y verifican la lógica
-de parseo, no que el portal sirva hoy lo esperado. Por eso
-`npm run smoke -- <portal> "<zona>"` es parte de la feature y no un extra: es el
-único sitio donde se comprueba la realidad, y hay que contar con **una ronda de
-ajuste por portal** tras ejecutarlo por primera vez con red.
+`src/portales/` contiene los parsers, portados del patrón de `pisos`:
+
+- **Locales en venta**: `fotocasa`, `pisoscom`, `habitaclia`, `yaencontre`,
+  `milanuncios` (este último sin búsqueda por coordenadas: busca por provincia y
+  geocodifica cada anuncio contra `geocode_cache`).
+- **Farmacias en venta**: `farmaconsulting`, `asefarma`, `negociosenventa`,
+  `tablondeanuncios`, `milanuncios-farmacias` (sección de traspasos, portal
+  aparte). Parsean las tarjetas del intermediario buscando la facturación
+  ("facturación 620.000 €", "VF 540.000", "cifra de negocio…") y una ubicación
+  difusa; casi nunca hay dirección exacta, así que se guardan sin coordenadas
+  (`precision: 'desconocida'`) salvo que aparezca un municipio geocodificable.
+
+**Ninguno está verificado contra el portal real.** El entorno de desarrollo no
+tiene salida a internet: la estructura de URL y los selectores de cada portal
+son la mejor conjetura a partir del patrón de `pisos`, documentada en el bloque
+`─────` de su fichero. Los tests de vitest corren contra fixtures embebidos
+(`// forma real aproximada (2026-09), sin verificar contra el portal`) y solo
+comprueban la lógica de parseo, no que el portal sirva hoy lo esperado.
+
+Por eso `npm run smoke -- <portal|locales|farmacias|todos> "<zona>"` es parte de
+la feature y no un extra: es el ÚNICO sitio donde se comprueba la realidad.
+Enseña la cobertura por campo (`📊 precio X/N · superficie X/N · facturación
+X/N · imagen X/N · coords X/N`), que es la métrica que importa — un parser medio
+roto devuelve anuncios con todo a `null` y aun así "no falla". Hay que contar
+con **una ronda de ajuste por portal** tras la primera ejecución con red: lo
+normal será tocar `construirUrl` (segmento de la ruta) o el regex
+`inicioTarjeta` / `pareceAnuncio` del portal.
 
 Lo mismo aplica ya al importador oficial de Madrid: se escribió sin poder ver el
 CSV, así que busca las columnas por una lista de alias y, si no reconoce

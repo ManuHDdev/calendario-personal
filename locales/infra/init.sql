@@ -206,6 +206,9 @@ CREATE TABLE IF NOT EXISTS busqueda (
   distancia_centros_sanitarios_m  INTEGER CHECK (distancia_centros_sanitarios_m > 0),
 
   portales                        TEXT[] NOT NULL DEFAULT '{}',
+  -- Apagar el rastreo o los avisos de una búsqueda sin borrarla.
+  habilitada                      BOOLEAN NOT NULL DEFAULT TRUE,
+  notificar                       BOOLEAN NOT NULL DEFAULT TRUE,
   ultimo_rastreo                  TIMESTAMPTZ,
   ultimo_rastreo_error            TEXT,
 
@@ -214,6 +217,10 @@ CREATE TABLE IF NOT EXISTS busqueda (
   created_at                      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at                      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Altas idempotentes por si la tabla ya existía de un despliegue anterior.
+ALTER TABLE busqueda ADD COLUMN IF NOT EXISTS habilitada BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE busqueda ADD COLUMN IF NOT EXISTS notificar  BOOLEAN NOT NULL DEFAULT TRUE;
 
 CREATE INDEX IF NOT EXISTS idx_busqueda_activa ON busqueda (activo) WHERE activo;
 
@@ -270,8 +277,24 @@ CREATE TABLE IF NOT EXISTS anuncio (
   deleted_at              TIMESTAMPTZ,
   created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (portal, portal_id)
+  -- Cada búsqueda tiene su propia fila para un anuncio: el feed se filtra por
+  -- búsqueda y dos búsquedas pueden encontrar el mismo local con criterios
+  -- de viabilidad distintos.
+  UNIQUE (busqueda_id, portal, portal_id)
 );
+
+-- Migración idempotente desde la clave global anterior, si existía.
+ALTER TABLE anuncio DROP CONSTRAINT IF EXISTS anuncio_portal_portal_id_key;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'anuncio_busqueda_id_portal_portal_id_key'
+  ) THEN
+    ALTER TABLE anuncio
+      ADD CONSTRAINT anuncio_busqueda_id_portal_portal_id_key
+      UNIQUE (busqueda_id, portal, portal_id);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_anuncio_busqueda  ON anuncio (busqueda_id) WHERE activo;
 CREATE INDEX IF NOT EXISTS idx_anuncio_veredicto ON anuncio (veredicto)   WHERE activo;

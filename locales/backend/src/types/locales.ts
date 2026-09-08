@@ -64,6 +64,37 @@ export interface Medicion {
   decisiva: boolean;
 }
 
+/**
+ * Un anuncio tal y como lo devuelve un portal, antes de tocar la base de
+ * datos ni el cálculo de viabilidad.
+ *
+ * Regla transversal (la misma que el padrón): lo que el portal no informa
+ * viaja como `null`, nunca como un valor por defecto. `facturacion` solo la
+ * traen los portales de farmacias; `superficieM2` y `precio`, sobre todo los
+ * de locales. Una farmacia intermediada a menudo llega sin coordenadas —eso
+ * es su forma normal, no un error— y entonces `precision` es `'desconocida'`.
+ */
+export interface AnuncioCrudo {
+  tipo: TipoBusqueda;
+  portal: string;
+  portalId: string;
+  url: string;
+  titulo: string;
+  descripcion: string | null;
+  precio: number | null;
+  precioAnterior: number | null;
+  superficieM2: number | null;
+  facturacion: number | null;
+  direccion: string | null;
+  municipio: string | null;
+  provincia: string | null;
+  comunidad: string | null;
+  latitud: number | null;
+  longitud: number | null;
+  precision: PrecisionCoordenadas;
+  imagenUrl: string | null;
+}
+
 export interface ResultadoViabilidad {
   veredicto: Veredicto;
   motivo: string;
