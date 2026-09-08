@@ -29,6 +29,7 @@ const APPS: AppDef[] = [
   { id: 'pisos',      nombre: 'Pisos',      color: '#7cb518', roles: ['admin'] },
   { id: 'locales',    nombre: 'Locales',    color: '#c97b3c', roles: ['admin'] },
   { id: 'trader',     nombre: 'Trader',     color: '#32d74b', roles: ['admin'] },
+  { id: 'futbol',     nombre: 'Fútbol',     color: '#009b48', roles: ['admin'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -49,6 +50,7 @@ function getUrls(): Record<string, string> {
     pisos:      local ? 'http://localhost:5184/pisos/'   : '/pisos/',
     locales:    local ? 'http://localhost:5185/locales/' : '/locales/',
     trader:     local ? 'http://localhost:5183/trader/'   : '/trader/',
+    futbol:     local ? 'http://localhost:5186/futbol/'   : '/futbol/',
   };
 }
 
@@ -168,6 +170,14 @@ function AppIcon({ id }: { id: string }) {
           <path d="M4 9h16l-1.2-4.2A1 1 0 0 0 17.8 4H6.2a1 1 0 0 0-1 .8L4 9z"/>
           <path d="M5 9v10.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/>
           <path d="M9.5 20.5V15h5v5.5"/>
+        </svg>
+      );
+    case 'futbol':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 8l3 2.2-1.15 3.5h-3.7L9 10.2z" fill="white" stroke="none"/>
+          <path d="M12 3.5v3.6M6 8.2l2.9 2.1M18 8.2l-2.9 2.1M8.1 18l1.15-3.6M15.9 18l-1.15-3.6"/>
         </svg>
       );
     default:

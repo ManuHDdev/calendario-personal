@@ -28,6 +28,7 @@ function appUrls(): Record<string, string> {
     pisos:      local ? 'http://localhost:5184/pisos/'    : '/pisos/',
     locales:    local ? 'http://localhost:5185/locales/'  : '/locales/',
     trader:     local ? 'http://localhost:5183/trader/'    : '/trader/',
+    futbol:     local ? 'http://localhost:5186/futbol/'    : '/futbol/',
   };
 }
 
@@ -63,6 +64,7 @@ export class AppLauncher {
     { id: 'pisos',      nombre: 'Pisos',      color: '#7cb518', roles: ['admin'],           url: '' },
     { id: 'locales',    nombre: 'Locales',    color: '#c97b3c', roles: ['admin'],           url: '' },
     { id: 'trader',     nombre: 'Trader',     color: '#32d74b', roles: ['admin'], url: '' },
+    { id: 'futbol',     nombre: 'Fútbol',     color: '#009b48', roles: ['admin'], url: '' },
   ];
 
   get apps(): App[] {
