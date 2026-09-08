@@ -25,6 +25,11 @@ const PORTAL = 'milanuncios';
  * URL (conjetura): `/locales-y-negocios-en-<provincia-slug>/venta/` con
  * paginación `?pagina=N`. milanuncios es un Next.js con `__NEXT_DATA__`; los
  * anuncios se localizan por FORMA vía `parsearListadoSSR`.
+ *
+ * NO RASTREABLE DESDE SERVIDOR (smoke real 2026-09): 404 en todas las rutas
+ * probadas (incluidas las de redirección) y anti-bot / JS agresivo.
+ * `puedeBuscar` devuelve `{ ok: false }` hasta que haya una solución con
+ * navegador headless — igual que Idealista en pisos. El parser se conserva.
  * ─────────────────────────────────────────────────────────────────────────
  */
 function zonaSlug(criterios: CriteriosPortal): string | null {
@@ -109,10 +114,12 @@ export const milanunciosProvider: PortalProvider = {
   nombre: 'milanuncios',
   tipo: 'local',
 
-  puedeBuscar(criterios) {
-    return zonaSlug(criterios)
-      ? { ok: true }
-      : { ok: false, motivo: 'milanuncios busca por provincia; hace falta provincia o municipio, no solo coordenadas' };
+  puedeBuscar() {
+    return {
+      ok: false,
+      motivo:
+        'milanuncios no es rastreable desde servidor (bloqueo anti-bot / SPA sin HTML) — pendiente de navegador headless, igual que Idealista',
+    };
   },
 
   buscar(criterios, opciones: OpcionesBusqueda = {}) {

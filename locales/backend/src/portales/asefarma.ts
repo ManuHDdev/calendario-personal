@@ -22,6 +22,12 @@ const PORTAL = 'asefarma';
  *
  * URL del listado (conjetura): `/farmacias-en-venta/` con `?provincia=<slug>`
  * y paginación `/page/N/`. Ajustar `inicioTarjeta` si el smoke da cero.
+ *
+ * NO RASTREABLE DESDE SERVIDOR (smoke real 2026-09): 404 en
+ * `/farmacias-en-venta/` y en `/compra-venta-de-farmacias/`; no se consiguió
+ * una muestra de HTML. `puedeBuscar` devuelve `{ ok: false }` hasta que haya
+ * una solución con navegador headless y una URL confirmada — igual que
+ * Idealista en pisos. El parser (`parsearPagina`) se conserva.
  * ─────────────────────────────────────────────────────────────────────────
  */
 const INICIO_TARJETA = /<(?:article|div|li)[^>]*class="[^"]*(?:farmacia|listing|post|entry|card)[^"]*"/i;
@@ -66,7 +72,11 @@ export const asefarmaProvider: PortalProvider = {
   tipo: 'farmacia',
 
   puedeBuscar() {
-    return { ok: true };
+    return {
+      ok: false,
+      motivo:
+        'Asefarma no es rastreable desde servidor (bloqueo anti-bot / SPA sin HTML) — pendiente de navegador headless, igual que Idealista',
+    };
   },
 
   buscar(criterios, opciones: OpcionesBusqueda = {}) {

@@ -14,7 +14,7 @@ export type NombreMotor = 'ors' | 'valhalla';
 
 export const PORTALES_POR_TIPO: Record<TipoBusqueda, readonly string[]> = {
   local: ['fotocasa', 'pisoscom', 'habitaclia', 'yaencontre', 'milanuncios'],
-  farmacia: ['farmaconsulting', 'asefarma', 'negociosenventa', 'tablondeanuncios', 'milanuncios-farmacias'],
+  farmacia: ['farmaconsulting', 'asefarma', 'tablondeanuncios', 'milanuncios-farmacias'],
 };
 
 export const NOMBRE_PORTAL: Record<string, string> = {
@@ -25,7 +25,6 @@ export const NOMBRE_PORTAL: Record<string, string> = {
   milanuncios: 'milanuncios',
   farmaconsulting: 'Farmaconsulting',
   asefarma: 'Asefarma',
-  negociosenventa: 'Negocios en Venta',
   tablondeanuncios: 'Tablón de Anuncios',
   'milanuncios-farmacias': 'milanuncios (farmacias)',
 };

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsearPagina } from './asefarma';
+import { parsearPagina, asefarmaProvider } from './asefarma';
 
 // forma real aproximada (2026-09), sin verificar contra el portal
 const HTML = `
@@ -33,5 +33,9 @@ describe('Asefarma · parsearPagina', () => {
       expect(a.longitud).toBeNull();
       expect(a.precision).toBe('desconocida');
     }
+  });
+
+  it('puedeBuscar devuelve { ok: false }: no rastreable desde servidor', () => {
+    expect(asefarmaProvider.puedeBuscar({} as never).ok).toBe(false);
   });
 });

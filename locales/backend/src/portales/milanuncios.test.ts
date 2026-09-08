@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsearPagina } from './milanuncios';
+import { parsearPagina, milanunciosProvider } from './milanuncios';
 
 // forma real aproximada (2026-09), sin verificar contra el portal
 const HTML = `
@@ -34,5 +34,9 @@ describe('milanuncios (locales) · parsearPagina', () => {
 
   it('descarta los traspasos', () => {
     expect(parsearPagina(HTML).map((a) => a.portalId)).not.toContain('ma-70002');
+  });
+
+  it('puedeBuscar devuelve { ok: false }: no rastreable desde servidor', () => {
+    expect(milanunciosProvider.puedeBuscar({ provincia: 'Madrid' } as never).ok).toBe(false);
   });
 });

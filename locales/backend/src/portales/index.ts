@@ -7,7 +7,6 @@ import { yaencontreProvider } from './yaencontre';
 import { milanunciosProvider } from './milanuncios';
 import { farmaconsultingProvider } from './farmaconsulting';
 import { asefarmaProvider } from './asefarma';
-import { negociosEnVentaProvider } from './negociosenventa';
 import { tablonDeAnunciosProvider } from './tablondeanuncios';
 import { milanunciosFarmaciasProvider } from './milanunciosFarmacias';
 
@@ -24,7 +23,6 @@ export const PROVIDERS_LOCAL: Record<string, PortalProvider> = {
 export const PROVIDERS_FARMACIA: Record<string, PortalProvider> = {
   [farmaconsultingProvider.id]: farmaconsultingProvider,
   [asefarmaProvider.id]: asefarmaProvider,
-  [negociosEnVentaProvider.id]: negociosEnVentaProvider,
   [tablonDeAnunciosProvider.id]: tablonDeAnunciosProvider,
   [milanunciosFarmaciasProvider.id]: milanunciosFarmaciasProvider,
 };
