@@ -15,7 +15,7 @@ RUN apk add --no-cache ffmpeg curl
 # a ciegas en lo que GitHub sirva en ese momento.
 # Actualizar el pin: revisar https://github.com/yt-dlp/yt-dlp/releases y repetir
 # la verificación con el SHA2-256SUMS del nuevo tag.
-RUN YTDLP_VERSION=2026.07.04 \
+RUN YTDLP_VERSION=2026.08.19 \
     && curl -L "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp_musllinux" \
       -o /usr/local/bin/yt-dlp \
     && curl -L "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/SHA2-256SUMS" \
