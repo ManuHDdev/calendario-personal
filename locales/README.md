@@ -221,22 +221,26 @@ internet real), el estado por portal es:
 | Portal | Estado | Nota |
 |---|---|---|
 | `farmaconsulting` | ✅ funciona | Listado nacional único (`/farmacias-en-venta/`), sin zona en la URL. Da región + título + descripción + código de operación (`CCL-…`). No publica facturación/precio/superficie en el listado (registro obligatorio) → esos campos van a `null`; se geocodifica la región. |
-| `tablondeanuncios` | ✅ funciona | `/farmacias-venta/?pagina=N`, tarjetas `<article class="result-item">`. Buscador muy laxo (devuelve ruido); el filtro fino del backend lo descarta. Precio si es numérico, `extraerFacturacion` sobre título+descripción. |
+| `tablondeanuncios` | ⛔ descartado | `/farmacias-venta/` responde 200 pero su buscador ignora el término: devuelve un feed genérico de traspasos (ropa laboral, una lámpara, un coche…), cero farmacias reales. `puedeBuscar` → `{ ok: false }`. El parser + el filtro `pareceFarmacia` quedan escritos por si arreglan la búsqueda. |
 | `asefarma` | ⛔ pendiente headless | 404 en las URLs probadas, sin muestra de HTML. `puedeBuscar` → `{ ok: false }`. |
 | `milanuncios-farmacias` | ⛔ pendiente headless | 404, mismo bloqueo que el milanuncios de locales. `puedeBuscar` → `{ ok: false }`. |
 
 `negociosenventa` se ha **eliminado**: el dominio está aparcado (devuelve un
 redirect JS a `/lander`).
 
-Los 5 portales `⛔` siguen con su parser escrito y sus tests de lógica; solo su
-`puedeBuscar` devuelve `{ ok: false, motivo: '… pendiente de navegador headless,
-igual que Idealista' }`, así que un rastreo los **omite con un motivo claro** en
-vez de fallar cada vuelta. Necesitan la misma solución que Idealista en `pisos`
-(navegador headless / IP residencial) — follow-up documentado, no bloqueante.
+Los 6 portales `⛔` siguen con su parser escrito y sus tests de lógica; solo su
+`puedeBuscar` devuelve `{ ok: false, motivo: … }`, así que un rastreo los
+**omite con un motivo claro** en vez de fallar cada vuelta. Los 4 con bloqueo
+anti-bot / SPA necesitan la misma solución que Idealista en `pisos` (navegador
+headless / IP residencial); `tablondeanuncios` depende de que el portal arregle
+su buscador — follow-ups documentados, no bloqueantes.
+
+**Funcionando de verdad: `fotocasa` + `pisoscom` (locales), `farmaconsulting`
+(farmacias).**
 
 Los tests de vitest corren contra fixtures embebidos: los de `fotocasa`,
-`pisoscom`, `farmaconsulting` y `tablondeanuncios` usan ahora extractos REALES
-del portal (2026-09); comprueban la lógica de parseo, no que el portal siga
+`pisoscom`, `farmaconsulting` y `tablondeanuncios` usan extractos REALES del
+portal (2026-09); comprueban la lógica de parseo, no que el portal siga
 sirviendo hoy lo esperado.
 
 Por eso `npm run smoke -- <portal|locales|farmacias|todos> "<zona>"` es parte de
