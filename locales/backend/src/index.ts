@@ -3,6 +3,10 @@ import cors from '@fastify/cors';
 import { rutasViabilidad } from './routes/viabilidad';
 import { rutasNormativa } from './routes/normativa';
 import { rutasPadron } from './routes/padron';
+import { rutasBusquedas } from './routes/searches';
+import { rutasAnuncios } from './routes/listings';
+import { rutasScraper } from './routes/scraper';
+import { arrancarPlanificador, pararPlanificador } from './services/planificador';
 import { iniciarBot, pararBot } from './telegram/bot';
 import { registrarParserJsonToleranteAVacio } from './jsonBody';
 import { padronVacio } from './padron/importar';
@@ -33,6 +37,9 @@ async function bootstrap() {
   await app.register(rutasViabilidad);
   await app.register(rutasNormativa);
   await app.register(rutasPadron);
+  await app.register(rutasBusquedas);
+  await app.register(rutasAnuncios);
+  await app.register(rutasScraper);
 
   app.get('/locales/api/health', async () => ({
     status: 'ok',
@@ -75,9 +82,16 @@ async function bootstrap() {
 
   iniciarBot({ info: (m) => app.log.info(m), warn: (m) => app.log.warn(m) });
 
+  arrancarPlanificador({
+    info: (m) => app.log.info(m),
+    warn: (m) => app.log.warn(m),
+    error: (m) => app.log.error(m),
+  });
+
   for (const senal of ['SIGTERM', 'SIGINT'] as const) {
     process.once(senal, () => {
       pararBot();
+      pararPlanificador();
       void app.close().then(async () => {
         await pool.end().catch(() => undefined);
         process.exit(0);

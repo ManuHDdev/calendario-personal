@@ -26,7 +26,7 @@
 - [x] 3.2 `padron/oficial/madrid.ts` — importador del dataset `oficinas_farmacia` de `datos.comunidad.madrid` (CSV), geocodificando con Nominatim lo que venga sin coordenadas
 - [x] 3.3 `padron/fusion.ts` — deduplicación por proximidad (<40 m), la fuente oficial gana; ausencia en la fuente ⇒ soft delete, nunca borrado físico
 - [x] 3.4 `padron/cobertura.ts` — cota de cordura poblacional (~1 farmacia / 2.800 hab.) por municipio → `cobertura_municipio`
-- [ ] 3.5 Refresco semanal desde el planificador + arranque en frío si el padrón está vacío
+- [x] 3.5 Refresco semanal desde el planificador + arranque en frío si el padrón está vacío
 - [x] 3.6 Tests: fusión de duplicados a distintas distancias, precedencia de la fuente oficial, soft delete al desaparecer, cálculo de cobertura
 
 ## 4. Módulo de viabilidad
@@ -54,20 +54,20 @@
 
 ## 6. Rastreo y planificador
 
-- [ ] 6.1 `services/criterios.ts` — filtro fino tras normalizar; **un dato desconocido no descarta** (principio de `pisos`)
-- [ ] 6.2 `services/rastreo.ts` — por búsqueda: portales → normalizar → filtrar → viabilidad → UPSERT; fallo de un portal degrada y escribe `ultimo_rastreo_error`
-- [ ] 6.3 `services/planificador.ts` — `setTimeout` encadenado (no `setInterval`), jitter ±20%, respeta `scraper_state.running`
-- [ ] 6.4 Detección de novedad y de bajada de precio para notificar
-- [ ] 6.5 Recálculo de viabilidad de filas cuyo `viabilidad_motor` ya no es el configurado o cuyo padrón cambió
-- [ ] 6.6 Tests: no solapamiento del planificador, degradación parcial, UPSERT idempotente, novedad vs bajada de precio
+- [x] 6.1 `services/criterios.ts` — filtro fino tras normalizar; **un dato desconocido no descarta** (principio de `pisos`)
+- [x] 6.2 `services/rastreo.ts` — por búsqueda: portales → normalizar → filtrar → viabilidad → UPSERT; fallo de un portal degrada y escribe `ultimo_rastreo_error`
+- [x] 6.3 `services/planificador.ts` — `setTimeout` encadenado (no `setInterval`), jitter ±20%, respeta `scraper_state.running`
+- [x] 6.4 Detección de novedad y de bajada de precio para notificar
+- [x] 6.5 Recálculo de viabilidad de filas cuyo `viabilidad_motor` ya no es el configurado o cuyo padrón cambió
+- [x] 6.6 Tests: no solapamiento del planificador, degradación parcial, UPSERT idempotente, novedad vs bajada de precio
 
 ## 7. API (`/locales/api/*`)
 
-- [ ] 7.1 `GET/POST/PATCH/DELETE /searches` (Zod discriminado por `tipo`, soft delete)
-- [ ] 7.2 `POST /searches/:id/rastrear` — manual, **no notifica**
-- [ ] 7.3 `GET /listings` — filtros `busqueda`, `tipo`, `veredicto`, `nuevos`, `descartados`
-- [ ] 7.4 `PATCH /listings/:id`, `POST /listings/marcar-vistos`, `DELETE /listings/:id`
-- [ ] 7.5 `GET/PATCH /scraper/state`
+- [x] 7.1 `GET/POST/PATCH/DELETE /searches` (Zod discriminado por `tipo`, soft delete)
+- [x] 7.2 `POST /searches/:id/rastrear` — manual, **no notifica**
+- [x] 7.3 `GET /listings` — filtros `busqueda`, `tipo`, `veredicto`, `nuevos`, `descartados`
+- [x] 7.4 `PATCH /listings/:id`, `POST /listings/marcar-vistos`, `DELETE /listings/:id`
+- [x] 7.5 `GET/PATCH /scraper/state`
 - [x] 7.6 `GET/PATCH /normativa` — consulta y edición de las distancias por comunidad
 - [x] 7.7 `POST /viabilidad/comprobar` — punto o dirección suelta → veredicto (lo que usa el bot y el botón de la UI)
 - [x] 7.8 `GET /padron/cobertura` — estado del padrón por municipio, para poder ver dónde no fiarse
@@ -76,7 +76,7 @@
 ## 8. Bot de Telegram (doble sentido)
 
 - [x] 8.1 Telegraf con long polling en el proceso Fastify (patrón de `gastos`), ignorando en silencio otros chats
-- [ ] 8.2 Emisión: anuncio nuevo / bajada de precio, con veredicto, metros y aviso de no-certificación; fallo de envío ⇒ no marcar `notificado`
+- [x] 8.2 Emisión: anuncio nuevo / bajada de precio, con veredicto, metros y aviso de no-certificación; fallo de envío ⇒ no marcar `notificado`
 - [x] 8.3 Recepción: ubicación compartida
 - [x] 8.4 Recepción: `/comprobar <dirección>` (precisión `exacta` si lleva número)
 - [x] 8.5 Recepción: URL de anuncio reenviada

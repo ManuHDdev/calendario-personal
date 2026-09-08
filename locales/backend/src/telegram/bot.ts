@@ -18,6 +18,7 @@ import { message } from 'telegraf/filters';
 import { resolverConsulta } from '../services/comprobacion';
 import { formatearVeredicto, AYUDA } from './formato';
 import { GeocodingError } from '../services/geocoding';
+import { todosLosProviders } from '../portales';
 
 let bot: Telegraf | null = null;
 
@@ -113,14 +114,45 @@ export function iniciarBot(log: { info: (m: string) => void; warn: (m: string) =
     const texto = ctx.message.text.trim();
     if (texto.startsWith('/')) return;
 
-    // Una URL de portal: los parsers llegan en la siguiente fase. Se dice, en
-    // vez de ignorarlo y dejar al usuario pensando que se ha perdido.
+    // Una URL de anuncio: se busca un portal que sepa leerla y se saca la
+    // ubicación. Si el anuncio no publica coordenadas, se pide la dirección.
     if (/^https?:\/\//i.test(texto)) {
-      await ctx.reply(
-        'Todavía no sé leer anuncios desde su URL — eso llega con los rastreadores de portales. ' +
-          'Mientras tanto, mándame la dirección del local con `/comprobar` y te lo calculo igual.',
-        { parse_mode: 'Markdown' },
-      );
+      const provider = todosLosProviders().find((p) => p.puedeParsearUrl(texto));
+      if (!provider) {
+        await ctx.reply(
+          'No reconozco ese portal. Mándame la dirección del local con `/comprobar` y te lo calculo igual.',
+          { parse_mode: 'Markdown' },
+        );
+        return;
+      }
+      await ctx.reply('Leyendo el anuncio…');
+      try {
+        const crudo = await provider.parsearUrl(texto);
+        if (!crudo || crudo.latitud === null || crudo.longitud === null) {
+          await ctx.reply(
+            'He podido abrir el anuncio, pero no he podido sacar su ubicación. ' +
+              'Mándame la dirección con `/comprobar` y te lo calculo.',
+            { parse_mode: 'Markdown' },
+          );
+          return;
+        }
+        await responderConsulta(
+          ctx,
+          {
+            latitud: crudo.latitud,
+            longitud: crudo.longitud,
+            precision: crudo.precision,
+            comunidad: crudo.comunidad ?? undefined,
+            provincia: crudo.provincia ?? undefined,
+            municipio: crudo.municipio ?? undefined,
+          },
+          crudo.titulo,
+        );
+      } catch (err) {
+        await ctx.reply(
+          `No he podido leer ese anuncio: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
       return;
     }
 

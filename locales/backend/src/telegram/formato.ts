@@ -7,8 +7,9 @@
 
 import { AVISO_NO_CERTIFICA } from '../viabilidad';
 import type { Medicion, ResultadoViabilidad, Veredicto } from '../types/locales';
+import type { NovedadAnuncio } from '../services/rastreo';
 
-const EMOJI: Record<Veredicto, string> = {
+export const EMOJI: Record<Veredicto, string> = {
   verde: '🟢',
   ambar: '🟡',
   rojo: '🔴',
@@ -78,6 +79,66 @@ export function formatearVeredicto(
   partes.push(`_${AVISO_NO_CERTIFICA}_`);
 
   return partes.join('\n\n');
+}
+
+function escaparMd(texto: string): string {
+  return texto.replace(/([_*`\[\]])/g, '\\$1');
+}
+
+function euros(valor: number | null): string {
+  if (valor === null) return '—';
+  return `${valor.toLocaleString('es-ES', { maximumFractionDigits: 0 })} €`;
+}
+
+/**
+ * Aviso de un anuncio nuevo o de una bajada de precio.
+ *
+ * Ámbar se avisa igual que verde (marcado como "hay que confirmarlo"): el bot
+ * existe para convertir ese ámbar en verde o rojo. Rojo y sin_datos NO se
+ * avisan — eso lo filtra `notificarNovedades`, no esta función.
+ */
+export function formatearNovedad(novedad: NovedadAnuncio, nombreBusqueda: string): string {
+  const { anuncio, tipo } = novedad;
+  const esFarmacia = anuncio.tipo === 'farmacia';
+  const partes: string[] = [];
+
+  const cabecera =
+    tipo === 'bajada'
+      ? `📉 *Bajada de precio* · ${escaparMd(nombreBusqueda)}`
+      : `${EMOJI[anuncio.veredicto] ?? '🟢'} *${esFarmacia ? 'Farmacia nueva' : 'Local nuevo'}* · ${escaparMd(nombreBusqueda)}`;
+  partes.push(cabecera);
+
+  if (anuncio.titulo) partes.push(`*${escaparMd(anuncio.titulo)}*`);
+
+  if (anuncio.veredicto === 'ambar') {
+    partes.push(`${EMOJI.ambar} Necesita confirmación — ${anuncio.veredicto_motivo ?? ''}`.trim());
+  } else if (anuncio.veredicto_motivo) {
+    partes.push(`${EMOJI[anuncio.veredicto] ?? ''} ${anuncio.veredicto_motivo}`.trim());
+  }
+
+  const precio =
+    tipo === 'bajada' && anuncio.precio_anterior !== null
+      ? `💶 ${euros(anuncio.precio)} (antes ${euros(anuncio.precio_anterior)})`
+      : `💶 ${euros(anuncio.precio)}`;
+  partes.push(precio);
+
+  if (esFarmacia) {
+    if (anuncio.facturacion !== null) partes.push(`💰 Facturación ${euros(anuncio.facturacion)}`);
+  } else if (anuncio.superficie_m2 !== null) {
+    partes.push(`📐 ${anuncio.superficie_m2} m²`);
+  }
+
+  const lugar = [anuncio.municipio, anuncio.provincia].filter(Boolean).join(', ');
+  if (lugar) partes.push(`📍 ${escaparMd(lugar)}`);
+
+  if (anuncio.distancia_farmacia_m !== null) {
+    partes.push(`🚶 A ${anuncio.distancia_farmacia_m} m de la farmacia más cercana`);
+  }
+
+  partes.push(`🔗 ${anuncio.portal}: ${anuncio.url}`);
+  partes.push(`_${AVISO_NO_CERTIFICA}_`);
+
+  return partes.join('\n');
 }
 
 /** Ayuda del bot: se manda con /start, /ayuda y ante lo que no entiende. */

@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { formatearVeredicto, AYUDA } from './formato';
-import type { Medicion, ResultadoViabilidad, Umbrales, Veredicto } from '../types/locales';
+import { formatearVeredicto, formatearNovedad, AYUDA } from './formato';
+import type {
+  Anuncio,
+  Medicion,
+  ResultadoViabilidad,
+  Umbrales,
+  Veredicto,
+} from '../types/locales';
+import type { NovedadAnuncio } from '../services/rastreo';
 
 const UMBRALES: Umbrales = {
   comunidad: 'madrid',
@@ -93,6 +100,67 @@ describe('formatearVeredicto', () => {
   it('muestra el punto tal como lo entendió el sistema', () => {
     const t = formatearVeredicto(resultado('verde'), { descripcionPunto: 'Calle Mayor, 12, Madrid' });
     expect(t).toContain('📍 Calle Mayor, 12, Madrid');
+  });
+});
+
+function anuncioFila(over: Partial<Anuncio> = {}): Anuncio {
+  return {
+    id: 1, busqueda_id: 2, tipo: 'local', portal: 'fotocasa', portal_id: 'x1',
+    url: 'https://fotocasa.es/x1', titulo: 'Local céntrico', descripcion: null,
+    precio: 95000, precio_anterior: null, superficie_m2: 130, facturacion: null, imagen_url: null,
+    direccion: null, municipio: 'Badajoz', provincia: 'Badajoz', comunidad: null,
+    latitud: 38.8, longitud: -6.9, precision_coordenadas: 'aproximada',
+    veredicto: 'verde', veredicto_motivo: 'Cumple incluso en el peor caso.',
+    distancia_farmacia_m: 410, farmacia_mas_cercana_id: 5, distancia_centro_m: null,
+    centro_mas_cercano_id: null, viabilidad_calculada_en: null, viabilidad_motor: 'ors',
+    visto: false, descartado: false, notificado: false,
+    created_at: '', updated_at: '',
+    ...over,
+  };
+}
+const nov = (a: Partial<Anuncio>, tipo: NovedadAnuncio['tipo'] = 'nuevo'): NovedadAnuncio => ({
+  anuncio: anuncioFila(a),
+  tipo,
+});
+
+describe('formatearNovedad', () => {
+  it('un local nuevo verde: cabecera, verdicto, precio, superficie, distancia y aviso', () => {
+    const t = formatearNovedad(nov({}), 'Locales Badajoz');
+    expect(t).toContain('🟢 *Local nuevo* · Locales Badajoz');
+    expect(t).toContain('Cumple incluso en el peor caso.');
+    expect(t).toContain('💶 95.000 €');
+    expect(t).toContain('📐 130 m²');
+    expect(t).toContain('🚶 A 410 m de la farmacia más cercana');
+    expect(t).toContain('no una medición oficial');
+  });
+
+  it('un ámbar se avisa como "necesita confirmación"', () => {
+    const t = formatearNovedad(nov({ veredicto: 'ambar', veredicto_motivo: 'El dato no permite decidir.' }), 'B');
+    expect(t).toContain('🟡 *Local nuevo*');
+    expect(t).toContain('Necesita confirmación');
+  });
+
+  it('una farmacia nueva muestra facturación en vez de superficie', () => {
+    const t = formatearNovedad(
+      nov({ tipo: 'farmacia', facturacion: 620000, superficie_m2: null }),
+      'Farmacias Madrid',
+    );
+    expect(t).toContain('*Farmacia nueva*');
+    expect(t).toContain('💰 Facturación 620.000 €');
+    expect(t).not.toContain('m²');
+  });
+
+  it('una bajada de precio muestra el precio anterior tachado en texto', () => {
+    const t = formatearNovedad(nov({ precio: 80000, precio_anterior: 95000 }, 'bajada'), 'B');
+    expect(t).toContain('📉 *Bajada de precio* · B');
+    expect(t).toContain('💶 80.000 € (antes 95.000 €)');
+  });
+
+  it('el veredicto sin_datos NO forma parte del texto de novedad de una bajada', () => {
+    // (sin_datos/rojo no se emiten; el filtro está en notificarNovedades, pero
+    // la cabecera de bajada no debe depender del veredicto)
+    const t = formatearNovedad(nov({ veredicto: 'sin_datos' }, 'bajada'), 'B');
+    expect(t).toContain('📉 *Bajada de precio*');
   });
 });
 

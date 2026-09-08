@@ -45,4 +45,9 @@ export function providersParaTipo(tipo: TipoBusqueda): PortalProvider[] {
   return Object.values(tipo === 'farmacia' ? PROVIDERS_FARMACIA : PROVIDERS_LOCAL);
 }
 
+/** Todos los providers, de cualquier tipo. Lo usa el bot para leer una URL. */
+export function todosLosProviders(): PortalProvider[] {
+  return Object.values(TODOS);
+}
+
 export type { PortalProvider, CriteriosPortal, OpcionesBusqueda } from './types';

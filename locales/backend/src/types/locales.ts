@@ -95,6 +95,90 @@ export interface AnuncioCrudo {
   imagenUrl: string | null;
 }
 
+/**
+ * Una búsqueda guardada, tal y como sale de la base de datos (columnas en
+ * snake_case, NUMERIC ya convertido a número por `normalizarFila`).
+ */
+export interface Busqueda {
+  id: number;
+  nombre: string;
+  tipo: TipoBusqueda;
+  comunidad: string | null;
+  provincia: string | null;
+  municipio: string | null;
+  zona_texto: string | null;
+  latitud: number | null;
+  longitud: number | null;
+  radio_km: number | null;
+  precio_min: number | null;
+  precio_max: number | null;
+  superficie_min: number | null;
+  superficie_max: number | null;
+  pie_calle: boolean | null;
+  facturacion_min: number | null;
+  facturacion_max: number | null;
+  comprobar_farmacias: boolean;
+  comprobar_centros_sanitarios: boolean;
+  distancia_farmacias_m: number | null;
+  distancia_centros_sanitarios_m: number | null;
+  portales: string[];
+  habilitada: boolean;
+  notificar: boolean;
+  ultimo_rastreo: string | null;
+  ultimo_rastreo_error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Un anuncio ya guardado (la fila de `anuncio`). */
+export interface Anuncio {
+  id: number;
+  busqueda_id: number;
+  tipo: TipoBusqueda;
+  portal: string;
+  portal_id: string;
+  url: string;
+  titulo: string | null;
+  descripcion: string | null;
+  precio: number | null;
+  precio_anterior: number | null;
+  superficie_m2: number | null;
+  facturacion: number | null;
+  imagen_url: string | null;
+  direccion: string | null;
+  municipio: string | null;
+  provincia: string | null;
+  comunidad: string | null;
+  latitud: number | null;
+  longitud: number | null;
+  precision_coordenadas: PrecisionCoordenadas;
+  veredicto: Veredicto;
+  veredicto_motivo: string | null;
+  distancia_farmacia_m: number | null;
+  farmacia_mas_cercana_id: number | null;
+  distancia_centro_m: number | null;
+  centro_mas_cercano_id: number | null;
+  viabilidad_calculada_en: string | null;
+  viabilidad_motor: string | null;
+  visto: boolean;
+  descartado: boolean;
+  notificado: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Columnas de viabilidad que el rastreo escribe junto al anuncio. */
+export interface ViabilidadColumnas {
+  veredicto: Veredicto;
+  veredicto_motivo: string | null;
+  distancia_farmacia_m: number | null;
+  farmacia_mas_cercana_id: number | null;
+  distancia_centro_m: number | null;
+  centro_mas_cercano_id: number | null;
+  viabilidad_calculada_en: Date | null;
+  viabilidad_motor: string | null;
+}
+
 export interface ResultadoViabilidad {
   veredicto: Veredicto;
   motivo: string;

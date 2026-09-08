@@ -9,11 +9,17 @@
 import { comprobarPunto } from '../viabilidad';
 import { geocodificar } from './geocoding';
 import { pool } from '../db/pool';
-import type { PuntoConPrecision, ResultadoViabilidad } from '../types/locales';
+import type {
+  PrecisionCoordenadas,
+  PuntoConPrecision,
+  ResultadoViabilidad,
+} from '../types/locales';
 
 export interface ConsultaPuntual {
   latitud?: number;
   longitud?: number;
+  /** Precisión de unas coordenadas dadas. Por defecto 'exacta'. */
+  precision?: PrecisionCoordenadas;
   direccion?: string;
   comunidad?: string;
   provincia?: string;
@@ -71,8 +77,9 @@ export async function resolverConsulta(c: ConsultaPuntual): Promise<RespuestaCom
       lat: c.latitud,
       lng: c.longitud,
       // Unas coordenadas dadas a mano (o una ubicación compartida en Telegram)
-      // apuntan a un punto concreto: no hay ofuscación de portal de por medio.
-      precision: 'exacta',
+      // apuntan a un punto concreto. Un anuncio reenviado trae la coordenada
+      // ofuscada del portal, y entonces se pasa `precision: 'aproximada'`.
+      precision: c.precision ?? 'exacta',
     };
   } else {
     const g = await geocodificar(c.direccion as string);
