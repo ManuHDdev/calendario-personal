@@ -1,0 +1,107 @@
+# Las tres variables de base de datos van con `:?` porque no tienen valor por
+# defecto posible: sin contrasena, Postgres se niega a inicializarse y lo unico
+# que se ve es "locales-db is unhealthy", que no dice nada.
+#
+# El resto NO lleva `:?` a proposito: sin las de Telegram la app funciona igual,
+# solo se queda sin avisos ni consultas desde el movil, y lo dice en el log.
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  locales-db:
+    image: postgres:15
+    container_name: locales-db
+    environment:
+      POSTGRES_DB:       "${LOCALES_DB_NAME:?falta LOCALES_DB_NAME en /home/manu/locales/.env (ver DEPLOY_NOTES.md)}"
+      POSTGRES_USER:     "${LOCALES_DB_USER:?falta LOCALES_DB_USER en /home/manu/locales/.env (ver DEPLOY_NOTES.md)}"
+      POSTGRES_PASSWORD: "${LOCALES_DB_PASSWORD:?falta LOCALES_DB_PASSWORD en /home/manu/locales/.env (ver DEPLOY_NOTES.md)}"
+    volumes:
+      - locales_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LOCALES_DB_USER:?falta LOCALES_DB_USER} -d ${LOCALES_DB_NAME:?falta LOCALES_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calendario-net
+
+  locales-backend:
+    image: ghcr.io/manuhddev/locales-backend:latest
+    container_name: locales-backend
+    environment:
+      PORT:                  3013
+      LOCALES_DB_HOST:       locales-db
+      LOCALES_DB_NAME:       "${LOCALES_DB_NAME:?falta LOCALES_DB_NAME en /home/manu/locales/.env}"
+      LOCALES_DB_USER:       "${LOCALES_DB_USER:?falta LOCALES_DB_USER en /home/manu/locales/.env}"
+      LOCALES_DB_PASSWORD:   "${LOCALES_DB_PASSWORD:?falta LOCALES_DB_PASSWORD en /home/manu/locales/.env}"
+      KEYCLOAK_CERTS_URL:    ${KEYCLOAK_CERTS_URL:-http://calendario-keycloak:8080/keycloak/realms/calendario/protocol/openid-connect/certs}
+      CORS_ORIGIN:           ${CORS_ORIGIN:-https://elbunkerdelingeniero.duckdns.org}
+      # Motor de distancias peatonales. `ors` no necesita nada mas que la clave
+      # que ya usan paraisos y ruta. Para pasar a `valhalla`, levanta el perfil
+      # `valhalla` de abajo y pon LOCALES_MOTOR_DISTANCIA=valhalla.
+      LOCALES_MOTOR_DISTANCIA:          ${LOCALES_MOTOR_DISTANCIA:-ors}
+      ORS_API_KEY:                      ${ORS_API_KEY}
+      VALHALLA_URL:                     ${VALHALLA_URL:-http://locales-valhalla:8002}
+      LOCALES_PRESUPUESTO_RUTAS_DIARIO: ${LOCALES_PRESUPUESTO_RUTAS_DIARIO:-400}
+      TELEGRAM_BOT_TOKEN:               ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_OWNER_CHAT_ID:           ${TELEGRAM_OWNER_CHAT_ID}
+      NODE_ENV:              production
+    depends_on:
+      locales-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3013/locales/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - calendario-net
+
+  locales-frontend:
+    image: ghcr.io/manuhddev/locales-frontend:latest
+    container_name: locales-frontend
+    depends_on:
+      - locales-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+  # Motor de rutas propio. APAGADO por defecto: solo arranca con
+  # `docker compose --profile valhalla up -d`.
+  #
+  # La primera vez construye las teselas del extracto OSM que se le indique, y
+  # eso tarda (del orden de una hora para Espana entera) y ocupa varios GB en
+  # el volumen. Mientras no este listo, deja LOCALES_MOTOR_DISTANCIA=ors: el
+  # backend no depende de este servicio para arrancar.
+  #
+  # Se eligio Valhalla y no OSRM porque OSRM carga el grafo peatonal entero en
+  # RAM, mientras que Valhalla mapea sus teselas bajo demanda y convive con las
+  # otras subapps del mismo VPS.
+  locales-valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    container_name: locales-valhalla
+    profiles: ["valhalla"]
+    environment:
+      # Extracto OSM a usar. Por defecto Espana entera; para probar con menos
+      # disco, apunta a un extracto de una sola comunidad.
+      tile_urls: ${VALHALLA_TILE_URLS:-https://download.geofabrik.de/europe/spain-latest.osm.pbf}
+      server_threads: 2
+      use_tiles_ignore_pbf: "True"
+      force_rebuild: "False"
+      build_elevation: "False"
+      build_admins: "True"
+      build_time_zones: "False"
+    volumes:
+      - locales_valhalla_tiles:/custom_files
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+volumes:
+  locales_pgdata:
+  locales_valhalla_tiles:

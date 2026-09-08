@@ -733,6 +733,159 @@ sobrescribible por si Wallapop cambia el id de su categoría inmobiliaria).
 
 ---
 
+## Locales — locales y farmacias en venta, con la distancia legal comprobada
+
+### Ubicación
+Calendario/locales/ dentro del monorepo elbunkerdelingeniero.
+
+### Estado
+**Entregadas las fases 1, 5, 6 y 9**: esquema, padrón, motores de distancia,
+semáforo de viabilidad, API de consulta, bot de doble sentido, **los 10
+rastreadores de portales** (5 de locales, 5 de farmacias), el **planificador**
+(dentro del proceso del backend, `setTimeout` encadenado), la **API completa**
+(`/searches`, `/listings`, `/scraper/state`), la **emisión de avisos** por
+Telegram y el **frontend** React. Ya tiene entrada en el AppLauncher (las 14
+copias). Pendiente: la primera pasada de `npm run smoke` con red real contra
+cada portal — los parsers están escritos desde el patrón de `pisos` sin poder
+verificarlos contra el portal en vivo (ver `locales/README.md`).
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que el resto de subapps Node)
+- Frontend: React + Vite + TypeScript, mapa Leaflet vía npm (semáforo de
+  viabilidad, feed de anuncios, panel de comprobación puntual, normativa
+  editable, cobertura del padrón)
+- Base de datos: PostgreSQL 15, propia (`locales`), tablas `provincia`,
+  `normativa`, `farmacia`, `centro_sanitario`, `cobertura_municipio`, `busqueda`,
+  `anuncio`, `geocode_cache`, `ruta_cache`, `presupuesto_rutas`, `scraper_state`
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano
+- Rutas peatonales: **motor intercambiable** — OpenRouteService (`foot-walking`
+  matrix, misma `ORS_API_KEY` que paraisos y ruta) o una instancia propia de
+  Valhalla (`sources_to_targets`, `costing=pedestrian`)
+- Geocodificación: Nominatim, 1 req/s, cacheada de forma permanente (patrón de `ruta`)
+- Padrón: OpenStreetMap vía Overpass + registro oficial de la comunidad donde exista
+- Bot de Telegram: Telegraf, long polling, **de doble sentido** (emite y escucha),
+  como el de `gastos` y a diferencia del de `pisos`
+- Validaciones: Zod en todos los endpoints que reciben body
+- Sin ORM — queries directas con el cliente pg
+- Con tests de backend (vitest), ejecutados en CI
+
+### Qué hace
+Busca locales comerciales en venta donde instalar una farmacia, y farmacias ya en
+funcionamiento en venta, y comprueba la distancia **caminando** (no en línea
+recta) a la farmacia y al centro sanitario más cercanos contra la distancia
+mínima que exige esa comunidad autónoma. Ámbito nacional: las 52 provincias y las
+19 comunidades están sembradas.
+
+### El semáforo (lo que explica casi todo el diseño)
+**Nunca dice "cumple" o "no cumple".** La coordenada de un anuncio no es fiable a
+escala de 250 m —los portales la desplazan a propósito— así que el veredicto
+lleva una banda de incertidumbre derivada de la precisión de las coordenadas
+(0 m si es dirección con número, 150 m si es aproximada, 300 m si se desconoce):
+
+- 🟢 **verde**: cumple incluso en el peor caso del error de posición
+- 🔴 **rojo**: incumple incluso en el mejor caso
+- 🟡 **ámbar**: el dato no permite decidir — hay que mirarlo
+- ⚪ **sin_datos**: no se ha podido calcular, y se dice por qué
+
+### Los dos errores no valen lo mismo
+Un falso rojo cuesta una oportunidad; un falso verde cuesta un viaje, una señal o
+peor. De esa asimetría salen tres comportamientos que hay que respetar al tocar
+este código:
+
+1. **Un padrón incompleto degrada los verdes a ámbar.** Un falso verde solo puede
+   venir de una farmacia que existe y no está en la base de datos. Se valida
+   contra la cota poblacional (~1 farmacia por cada 2.800 habitantes); donde no
+   cuadra, no se emite ningún verde.
+2. **Sin normativa cargada para una comunidad se devuelve `sin_datos`, no verde.**
+3. **Sin población conocida, la cobertura se declara insuficiente.** No saber
+   nunca puede leerse como "cumple".
+
+### El prefiltro: dos radios, y el margen NO es opcional
+Caminar es siempre >= la línea recta, así que descartar candidatas lejanas no
+puede producir falsos negativos. Pero hay **dos** radios y confundirlos produce
+falsos verdes:
+
+- **Radio decisivo** = `umbral + margen`. Dentro de él, una candidata sin medir
+  puede cambiar el veredicto, así que no medirla degrada a ámbar. Sin sumar el
+  margen, una farmacia justo fuera del radio podría estar realmente dentro del
+  umbral tras corregir la posición.
+- **Radio informativo** = `umbral × 3 + margen`. Solo para poder decir a cuántos
+  metros está la más cercana aunque cumpla de sobra.
+
+### Normativa: es dato, no código
+Una fila por comunidad en `normativa`, editable por API. El mínimo estatal son
+250 m (Ley 16/1997). **`verificado` distingue lo comprobado contra la norma
+autonómica de lo que solo hereda ese mínimo**: solo 6 de las 20 filas van
+verificadas (Madrid 250/150, Andalucía, Comunidad Valenciana, Baleares, Canarias,
+y la excepción canaria de 1.000 m en zonas farmacéuticas turísticas de tipo
+común). El resto se sirve con `verificado: false` y el veredicto lo dice.
+
+`distancia_centros_sanitarios_m` a `NULL` significa **"esta comunidad no impone
+esa distancia"**, nunca "cero metros".
+
+### Aviso legal (obligatorio en toda superficie que muestre un veredicto)
+El método exacto de medición lo fija el reglamento de cada comunidad. Esta app
+descarta y prioriza; **no certifica nada**. `AVISO_NO_CERTIFICA` en
+`src/viabilidad/index.ts` acompaña a cada veredicto en la API y en el bot.
+
+### El padrón hay que importarlo antes de usar nada
+```bash
+cd locales/backend && npm run padron -- madrid   # o `todas`
+```
+Con el padrón vacío toda comprobación devuelve `sin_datos`. El backend lo avisa
+en el log al arrancar. Tres reglas del importador: una fuente que desaparece **se
+da de baja, no se borra**; una importación fallida **no vacía nada**; y la
+cobertura **se recalcula siempre** al terminar.
+
+### Rutas (`/locales/api/*`)
+- `GET/POST/PATCH/DELETE /searches` — búsquedas guardadas (Zod discriminado por
+  `tipo`: `local` pide superficie/precio, `farmacia` acepta facturación y no
+  exige coordenadas). Soft delete. `id` es SERIAL, no UUID.
+- `POST /searches/:id/rastrear` — rastreo manual. **No notifica a propósito.**
+- `GET /listings` — feed, filtros `busqueda`/`tipo`/`veredicto`/`nuevos`/`descartados`
+- `PATCH /listings/:id` · `POST /listings/marcar-vistos` · `DELETE /listings/:id`
+- `GET/PATCH /scraper/state` — on/off global del rastreador
+- `POST /viabilidad/comprobar` — punto o dirección → veredicto (lo que usa el bot)
+- `GET /viabilidad/presupuesto` — cuota de motor de rutas restante hoy
+- `GET /normativa` · `PATCH /normativa/:comunidad` — distancias por comunidad
+- `GET /padron/cobertura` — dónde el padrón está incompleto (`?incompletos=true`)
+- `GET /padron/resumen` — qué hay cargado, por comunidad y fuente
+- `GET /health`
+
+### El rastreador corre solo
+El planificador vive dentro del proceso del backend (`services/planificador.ts`,
+`setTimeout` encadenado, jitter ±20%, respeta `scraper_state.running`). Mientras
+el contenedor esté en pie, rastrea cada `LOCALES_INTERVALO_MINUTOS` (default 15).
+La primera vuelta de una búsqueda nueva no notifica (traería decenas de anuncios
+viejos). Un anuncio 🔴 o ⚪ no dispara aviso; 🟢 y 🟡 sí (el ámbar, marcado como
+"a confirmar"). Un envío fallido no marca `notificado` → se reintenta.
+
+### Roles
+Único rol con acceso: `admin`, misma postura que Gastos/Ofertas/Ruta/Pisos.
+**No añade ningún rol nuevo al realm de Keycloak.**
+
+### Variables de entorno del backend
+`LOCALES_DB_HOST`, `LOCALES_DB_NAME`, `LOCALES_DB_USER`, `LOCALES_DB_PASSWORD`,
+`LOCALES_DB_PORT`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3013),
+`LOCALES_MOTOR_DISTANCIA` (`ors`|`valhalla`, default `ors`), `ORS_API_KEY`,
+`VALHALLA_URL`, `LOCALES_PRESUPUESTO_RUTAS_DIARIO` (default 400 — **el endpoint
+de matriz de ORS tiene cuota más baja que el de direcciones**),
+`LOCALES_INTERVALO_MINUTOS` (default 15, jitter ±20%),
+`LOCALES_PAGINAS_POR_PORTAL` (default 2), `OVERPASS_URL`,
+`LOCALES_DATASET_MADRID`, `NOMINATIM_USER_AGENT`, `TELEGRAM_BOT_TOKEN`,
+`TELEGRAM_OWNER_CHAT_ID`. Ver `locales/backend/.env.example`.
+
+### Red Docker
+`calendario-net` (externa). El servicio `locales-valhalla` del compose de
+producción está tras el perfil `valhalla` y **apagado por defecto**: construir
+las teselas de España tarda del orden de una hora y ocupa varios GB, y el backend
+no depende de él para arrancar.
+
+### Imágenes Docker
+`ghcr.io/manuhddev/locales-backend:latest`, `ghcr.io/manuhddev/locales-frontend:latest`
+
+---
+
 ## Trader — Laboratorio de predicción de precios de cripto
 
 ### Ubicación
@@ -831,9 +984,11 @@ exactamente estos nombres.
 | reparto_admin     | Gestión completa de grupos de gasto compartido en Reparto (CRUD) |
 | reparto_invitado  | Consulta de todos los grupos de Reparto (solo lectura, sin crear/editar) |
 
+Locales tampoco añade rol: solo `admin`, como Gastos/Ofertas/Ruta/Pisos.
+
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
-Ofertas, Ruta, Pisos, Trader y Calendario solo son accesibles para `admin` (uso exclusivo del
+Ofertas, Ruta, Pisos, Locales, Trader y Calendario solo son accesibles para `admin` (uso exclusivo del
 propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
 llamar a su API. Juegos es la única excepción a ese último punto: es la primera
 subapp visible y utilizable por los tres roles por igual (ver sección "Juegos"
@@ -904,6 +1059,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Trader             | :5183    | :3011   |
 | Ruta               | :5183    | :3011   |
 | Pisos              | :5184    | :3012   |
+| Locales            | :5185    | :3013   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -914,9 +1070,14 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | PostgreSQL (reparto)| :5439  | —       |
 | PostgreSQL (ruta)  | :5440   | —       |
 | PostgreSQL (pisos) | :5441   | —       |
+| PostgreSQL (locales)| :5442  | —       |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 13 Dockerfiles y 13 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 14 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 14 Dockerfiles y 14 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 15 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+
+`locales` ya está en las 14 copias del AppLauncher (`roles: ['admin']`), añadido
+junto con su frontend (fase 9). `crypto-trader/frontend` sigue fuera de este
+repo y se actualiza aparte.

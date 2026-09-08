@@ -33,6 +33,7 @@
 #   ruta frontend       →  :5183
 #   pisos backend       →  :3012
 #   pisos frontend      →  :5184
+#   locales backend     →  :3013
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -76,6 +77,7 @@ cleanup() {
   warn "  cd reparto/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd ruta/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd pisos/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd locales/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -158,6 +160,9 @@ info "PostgreSQL (ruta :5440)..."
 info "PostgreSQL (pisos :5441)..."
 (cd "$SCRIPT_DIR/pisos/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (locales :5442)..."
+(cd "$SCRIPT_DIR/locales/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -214,6 +219,12 @@ wait_for_container \
   "PostgreSQL pisos" \
   "pisos-db-local" \
   "docker exec pisos-db-local pg_isready -U pisos -d pisos" \
+  30
+
+wait_for_container \
+  "PostgreSQL locales" \
+  "locales-db-local" \
+  "docker exec locales-db-local pg_isready -U locales -d locales" \
   30
 
 wait_for_container \
@@ -377,6 +388,30 @@ start_bg "pisos-backend      :3012" "pisos-backend.log" "$SCRIPT_DIR/pisos/backe
       CORS_ORIGIN="http://localhost:5184" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/locales/backend"
+# Motor de distancias: `ors` por defecto, que solo necesita ORS_API_KEY (la
+# misma que usan paraisos y ruta). Sin clave arranca igual, pero cualquier
+# comprobacion respondera 503 diciendo que falta — no falla en silencio.
+#
+# Recuerda que hasta importar el padron (npm run padron -- madrid) toda
+# comprobacion devuelve "sin datos". Es lo correcto: un padron vacio no
+# demuestra que no haya farmacias cerca.
+start_bg "locales-backend    :3013" "locales-backend.log" "$SCRIPT_DIR/locales/backend" \
+  env PORT=3013 \
+      LOCALES_DB_HOST="localhost" \
+      LOCALES_DB_PORT="5442" \
+      LOCALES_DB_NAME="locales" \
+      LOCALES_DB_USER="locales" \
+      LOCALES_DB_PASSWORD="locales123" \
+      LOCALES_MOTOR_DISTANCIA="${LOCALES_MOTOR_DISTANCIA:-ors}" \
+      ORS_API_KEY="${ORS_API_KEY:-}" \
+      VALHALLA_URL="${VALHALLA_URL:-http://localhost:8002}" \
+      TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}" \
+      TELEGRAM_OWNER_CHAT_ID="${TELEGRAM_OWNER_CHAT_ID:-}" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5185" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -505,6 +540,10 @@ echo -e "    Frontend         →  ${BOLD}http://localhost:5184/pisos/${NC}"
 echo -e "    Backend health   →  http://localhost:3012/pisos/api/health"
 echo -e "    ${YELLOW}ℹ  Sin TELEGRAM_BOT_TOKEN/TELEGRAM_OWNER_CHAT_ID rastrea y guarda, pero no avisa al movil${NC}"
 echo -e "    ${YELLOW}ℹ  Comprobar los portales reales:  cd pisos/backend && npm run smoke -- todos \"Badajoz\"${NC}"
+
+echo -e "\n  ${BOLD}Locales${NC} (sin frontend todavia)"
+echo -e "    Backend health   →  http://localhost:3013/locales/api/health"
+echo -e "    ${YELLOW}ℹ  Importar el padron antes de usarlo:  cd locales/backend && npm run padron -- madrid${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

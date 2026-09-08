@@ -27,6 +27,7 @@ const APPS: AppDef[] = [
   { id: 'reparto',    nombre: 'Reparto',    color: '#a2845e', roles: ['admin', 'reparto_admin', 'reparto_invitado'] },
   { id: 'ruta',       nombre: 'Ruta',       color: '#e07a5f', roles: ['admin'] },
   { id: 'pisos',      nombre: 'Pisos',      color: '#7cb518', roles: ['admin'] },
+  { id: 'locales',    nombre: 'Locales',    color: '#c97b3c', roles: ['admin'] },
   { id: 'trader',     nombre: 'Trader',     color: '#32d74b', roles: ['admin'] },
 ];
 
@@ -46,6 +47,7 @@ function getUrls(): Record<string, string> {
     reparto:    local ? 'http://localhost:5182/reparto/'   : '/reparto/',
     ruta:       local ? 'http://localhost:5183/ruta/'     : '/ruta/',
     pisos:      local ? 'http://localhost:5184/pisos/'   : '/pisos/',
+    locales:    local ? 'http://localhost:5185/locales/' : '/locales/',
     trader:     local ? 'http://localhost:5183/trader/'   : '/trader/',
   };
 }
@@ -158,6 +160,14 @@ function AppIcon({ id }: { id: string }) {
           <path d="M3 10.5 12 3l9 7.5"/>
           <path d="M5 9.8V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.8"/>
           <rect x="9.5" y="13" width="5" height="8"/>
+        </svg>
+      );
+    case 'locales':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <path d="M4 9h16l-1.2-4.2A1 1 0 0 0 17.8 4H6.2a1 1 0 0 0-1 .8L4 9z"/>
+          <path d="M5 9v10.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/>
+          <path d="M9.5 20.5V15h5v5.5"/>
         </svg>
       );
     default:
