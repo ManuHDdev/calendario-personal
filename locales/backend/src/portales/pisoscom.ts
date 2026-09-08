@@ -1,7 +1,7 @@
 import type { AnuncioCrudo } from '../types/locales';
 import type { CriteriosPortal, OpcionesBusqueda, PortalProvider } from './types';
 import { fetchTexto } from './http';
-import { extraerJsonLd, filtrarPorTipo, primerValor, comoTexto } from './extraer';
+import { extraerJsonLd, primerValor, comoTexto } from './extraer';
 import {
   parsearPrecio,
   slugificar,
@@ -29,6 +29,15 @@ const PORTAL = 'pisoscom';
  * Igual que en viviendas: el JSON-LD ya solo trae geo + dirección; precio y
  * superficie viven en el marcado de la tarjeta `.ad-preview__*`, con entidades
  * HTML sin decodificar. El precio limpio está en `data-ad-price`.
+ *
+ * VERIFICADO CONTRA EL PORTAL REAL (2026-09, `/venta/locales-madrid/`):
+ *  - Cada tarjeta es `<div id="<id>" class="ad-preview ...">` con
+ *    `id` en formato `<digitos>.<digitos>` (p. ej. `63367423608.994867`).
+ *  - Cada tarjeta lleva SU PROPIO `<script type="application/ld+json">` cuyo
+ *    `@id` es EXACTAMENTE ese mismo id de tarjeta. El cruce geo va por ahí.
+ *  - El `@type` del JSON-LD es `SingleFamilyResidence` (sí, aunque sea un
+ *    local) — por eso `mapaGeoPorId` NO filtra por `@type`: toma cualquier
+ *    objeto JSON-LD que tenga `@id` + `geo`.
  * ─────────────────────────────────────────────────────────────────────────
  */
 function construirUrl(criterios: CriteriosPortal, pagina: number): string {
@@ -69,9 +78,11 @@ interface Geo {
 
 function mapaGeoPorId(html: string): Map<string, Geo> {
   const mapa = new Map<string, Geo>();
-  for (const objeto of filtrarPorTipo(extraerJsonLd(html), [
-    'Store', 'LocalBusiness', 'Place', 'Product', 'Residence',
-  ])) {
+  for (const objeto of extraerJsonLd(html)) {
+    // pisos.com etiqueta cada anuncio como `SingleFamilyResidence` incluso
+    // siendo un local, así que no se filtra por `@type`: basta con que el
+    // objeto tenga un `@id` (= id de tarjeta) y un bloque `geo`.
+    if (objeto.geo === undefined) continue;
     const id = comoTexto(primerValor(objeto, ['@id', 'identifier', 'sku', 'productID']));
     if (!id) continue;
     mapa.set(id, {

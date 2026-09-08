@@ -521,6 +521,17 @@ button:disabled { opacity: 0.5; cursor: default; }
 .cobertura { display: flex; flex-direction: column; gap: 16px; }
 .cobertura-resumen { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
 .cobertura-titulo { font-size: 14px; }
+.cobertura-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.cobertura-progreso {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  background: var(--surface-alt, rgba(0, 0, 0, 0.02));
+}
+.cobertura-resultados { margin: 8px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.6; }
+.cobertura-resultados .ok { color: var(--success); }
+.cobertura-resultados .ko { color: var(--danger, #c0392b); }
 
 @media (max-width: 640px) {
   .locales-main { padding: 16px; }

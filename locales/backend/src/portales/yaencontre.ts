@@ -20,6 +20,11 @@ const PORTAL = 'yaencontre';
  * El slug de zona es el habitual (provincia o municipio). Los anuncios se
  * localizan por FORMA dentro de `__NEXT_DATA__` (id + price + surface) vía
  * `parsearListadoSSR`; si no hay estado, se cae al JSON-LD.
+ *
+ * NO RASTREABLE DESDE SERVIDOR (smoke real 2026-09): 403 desde IP de
+ * datacenter incluso con cabeceras de navegador completas. `puedeBuscar`
+ * devuelve `{ ok: false }` hasta que haya una solución con navegador headless
+ * (IP residencial) — igual que Idealista en pisos. El parser se conserva.
  * ─────────────────────────────────────────────────────────────────────────
  */
 function construirUrl(criterios: CriteriosPortal, pagina: number): string {
@@ -75,10 +80,12 @@ export const yaencontreProvider: PortalProvider = {
   nombre: 'yaencontre',
   tipo: 'local',
 
-  puedeBuscar(criterios) {
-    return criterios.zonaTexto.trim()
-      ? { ok: true }
-      : { ok: false, motivo: 'yaencontre necesita una zona con nombre' };
+  puedeBuscar() {
+    return {
+      ok: false,
+      motivo:
+        'yaencontre no es rastreable desde servidor (bloqueo anti-bot / SPA sin HTML) — pendiente de navegador headless, igual que Idealista',
+    };
   },
 
   buscar(criterios, opciones: OpcionesBusqueda = {}) {

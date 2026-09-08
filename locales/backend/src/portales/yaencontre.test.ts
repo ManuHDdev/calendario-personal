@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsearPagina } from './yaencontre';
+import { parsearPagina, yaencontreProvider } from './yaencontre';
 
 // forma real aproximada (2026-09), sin verificar contra el portal
 // Aquí no hay estado embebido: se ejercita el plan B (JSON-LD).
@@ -35,5 +35,9 @@ describe('yaencontre (locales) · parsearPagina', () => {
 
   it('rechaza el piso', () => {
     expect(parsearPagina(HTML).map((a) => a.portalId)).not.toContain('ye-5502');
+  });
+
+  it('puedeBuscar devuelve { ok: false }: no rastreable desde servidor', () => {
+    expect(yaencontreProvider.puedeBuscar({ zonaTexto: 'Madrid' } as never).ok).toBe(false);
   });
 });

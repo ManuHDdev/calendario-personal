@@ -24,6 +24,11 @@ const PORTAL = 'milanuncios-farmacias';
  *
  * URL (conjetura): `/traspasos-farmacia-en-<provincia-slug>/` con paginación
  * `?pagina=N`.
+ *
+ * NO RASTREABLE DESDE SERVIDOR (smoke real 2026-09): 404, mismo bloqueo
+ * anti-bot que el milanuncios de locales. `puedeBuscar` devuelve
+ * `{ ok: false }` hasta que haya una solución con navegador headless — igual
+ * que Idealista en pisos. El parser se conserva.
  * ─────────────────────────────────────────────────────────────────────────
  */
 const INICIO_TARJETA = /<(?:article|div)[^>]*class="[^"]*(?:ma-AdCard|aditem|ma-AdvertCard)[^"]*"/i;
@@ -71,10 +76,12 @@ export const milanunciosFarmaciasProvider: PortalProvider = {
   nombre: 'milanuncios (farmacias)',
   tipo: 'farmacia',
 
-  puedeBuscar(criterios) {
-    return zonaSlug(criterios)
-      ? { ok: true }
-      : { ok: false, motivo: 'milanuncios busca por provincia; hace falta provincia o municipio' };
+  puedeBuscar() {
+    return {
+      ok: false,
+      motivo:
+        'milanuncios (farmacias) no es rastreable desde servidor (bloqueo anti-bot / SPA sin HTML) — pendiente de navegador headless, igual que Idealista',
+    };
   },
 
   buscar(criterios, opciones: OpcionesBusqueda = {}) {

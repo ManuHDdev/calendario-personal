@@ -14,7 +14,7 @@ export type NombreMotor = 'ors' | 'valhalla';
 
 export const PORTALES_POR_TIPO: Record<TipoBusqueda, readonly string[]> = {
   local: ['fotocasa', 'pisoscom', 'habitaclia', 'yaencontre', 'milanuncios'],
-  farmacia: ['farmaconsulting', 'asefarma', 'negociosenventa', 'tablondeanuncios', 'milanuncios-farmacias'],
+  farmacia: ['farmaconsulting', 'asefarma', 'tablondeanuncios', 'milanuncios-farmacias'],
 };
 
 export const NOMBRE_PORTAL: Record<string, string> = {
@@ -25,7 +25,6 @@ export const NOMBRE_PORTAL: Record<string, string> = {
   milanuncios: 'milanuncios',
   farmaconsulting: 'Farmaconsulting',
   asefarma: 'Asefarma',
-  negociosenventa: 'Negocios en Venta',
   tablondeanuncios: 'Tablón de Anuncios',
   'milanuncios-farmacias': 'milanuncios (farmacias)',
 };
@@ -251,6 +250,45 @@ export interface CoberturaMunicipio {
   suficiente: boolean;
   motivo: string | null;
   calculado_en: string | null;
+}
+
+/** Las 19 claves de comunidad válidas para el padrón (ISO_POR_COMUNIDAD en el backend). */
+export const COMUNIDADES = [
+  'andalucia', 'aragon', 'asturias', 'baleares', 'canarias', 'cantabria',
+  'castilla-leon', 'castilla-mancha', 'cataluna', 'ceuta', 'extremadura',
+  'galicia', 'madrid', 'melilla', 'murcia', 'navarra', 'pais-vasco', 'rioja',
+  'valenciana',
+] as const;
+
+export const NOMBRE_COMUNIDAD: Record<string, string> = {
+  andalucia: 'Andalucía',
+  aragon: 'Aragón',
+  asturias: 'Asturias',
+  baleares: 'Baleares',
+  canarias: 'Canarias',
+  cantabria: 'Cantabria',
+  'castilla-leon': 'Castilla y León',
+  'castilla-mancha': 'Castilla-La Mancha',
+  cataluna: 'Cataluña',
+  ceuta: 'Ceuta',
+  extremadura: 'Extremadura',
+  galicia: 'Galicia',
+  madrid: 'Madrid',
+  melilla: 'Melilla',
+  murcia: 'Murcia',
+  navarra: 'Navarra',
+  'pais-vasco': 'País Vasco',
+  rioja: 'La Rioja',
+  valenciana: 'Comunidad Valenciana',
+};
+
+export interface EstadoPadron {
+  estado: 'inactivo' | 'importando';
+  iniciadoEn: string | null;
+  origen: 'manual' | 'planificador' | null;
+  cola: string[];
+  comunidadActual: string | null;
+  hechas: Array<{ comunidad: string; ok: boolean; resumen?: unknown; error?: string }>;
 }
 
 export interface PadronResumen {

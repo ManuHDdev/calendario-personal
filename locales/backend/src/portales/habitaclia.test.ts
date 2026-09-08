@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsearPagina } from './habitaclia';
+import { parsearPagina, habitacliaProvider } from './habitaclia';
 
 // forma real aproximada (2026-09), sin verificar contra el portal
 const HTML = `
@@ -35,5 +35,10 @@ describe('habitaclia (locales) · parsearPagina', () => {
 
   it('rechaza los anuncios de vivienda', () => {
     expect(parsearPagina(HTML).map((a) => a.portalId)).not.toContain('hc-9002');
+  });
+
+  it('puedeBuscar devuelve { ok: false }: no rastreable desde servidor', () => {
+    const r = habitacliaProvider.puedeBuscar({ zonaTexto: 'Madrid' } as never);
+    expect(r.ok).toBe(false);
   });
 });

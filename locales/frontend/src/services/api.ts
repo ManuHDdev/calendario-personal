@@ -6,6 +6,7 @@ import type {
   BusquedaUpdateData,
   ComprobarBody,
   CoberturaMunicipio,
+  EstadoPadron,
   EstadoPresupuesto,
   Normativa,
   NormativaUpdate,
@@ -194,4 +195,21 @@ export async function getPadronResumen(): Promise<PadronResumen> {
   const res = await fetch(`${BASE}/padron/resumen`, { headers: headers() });
   if (!res.ok) await handleError(res);
   return res.json() as Promise<PadronResumen>;
+}
+
+/** Lanza una importación de padrón a demanda. `['todas']` refresca las 19. */
+export async function importarPadron(comunidades: string[]): Promise<{ encoladas: string[] }> {
+  const res = await fetch(`${BASE}/padron/importar`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ comunidades }),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<{ encoladas: string[] }>;
+}
+
+export async function getEstadoImportPadron(): Promise<EstadoPadron> {
+  const res = await fetch(`${BASE}/padron/importar/estado`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<EstadoPadron>;
 }

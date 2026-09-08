@@ -24,6 +24,12 @@ const PORTAL = 'habitaclia';
  *
  * Los anuncios se localizan por FORMA dentro del estado (id + price + surface)
  * vía `parsearListadoSSR`; si no hay estado, se cae al JSON-LD.
+ *
+ * NO RASTREABLE DESDE SERVIDOR (smoke real 2026-09): 404 en todas las rutas de
+ * locales probadas y la home no publica enlaces `<a>` planos a la sección. Es
+ * un front tipo SPA que exige JS. `puedeBuscar` devuelve `{ ok: false }` hasta
+ * que haya una solución con navegador headless — igual que Idealista en pisos.
+ * El parser (`parsearPagina`) se conserva para cuando eso exista.
  * ─────────────────────────────────────────────────────────────────────────
  */
 function construirUrl(criterios: CriteriosPortal, pagina: number): string {
@@ -78,10 +84,12 @@ export const habitacliaProvider: PortalProvider = {
   nombre: 'habitaclia',
   tipo: 'local',
 
-  puedeBuscar(criterios) {
-    return criterios.zonaTexto.trim()
-      ? { ok: true }
-      : { ok: false, motivo: 'habitaclia necesita una zona con nombre' };
+  puedeBuscar() {
+    return {
+      ok: false,
+      motivo:
+        'habitaclia no es rastreable desde servidor (bloqueo anti-bot / SPA sin HTML) — pendiente de navegador headless, igual que Idealista',
+    };
   },
 
   buscar(criterios, opciones: OpcionesBusqueda = {}) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsearPagina } from './milanunciosFarmacias';
+import { parsearPagina, milanunciosFarmaciasProvider } from './milanunciosFarmacias';
 
 // forma real aproximada (2026-09), sin verificar contra el portal
 const HTML = `
@@ -22,5 +22,9 @@ describe('milanuncios (farmacias) · parsearPagina', () => {
     expect(a.comunidad).toBe('murcia');
     expect(a.latitud).toBeNull();
     expect(a.precision).toBe('desconocida');
+  });
+
+  it('puedeBuscar devuelve { ok: false }: no rastreable desde servidor', () => {
+    expect(milanunciosFarmaciasProvider.puedeBuscar({ provincia: 'Madrid' } as never).ok).toBe(false);
   });
 });

@@ -200,26 +200,44 @@ todos sin base de datos para que CI los pueda correr.
 **Pendiente**: el planificador (`services/rastreo.ts` / `planificador.ts`), las
 rutas HTTP de búsquedas/anuncios/scraper y el frontend.
 
-### Rastreadores de portales (fase 5 — entregada, SIN verificar contra la red)
+### Rastreadores de portales (fase 5 — primera pasada de smoke con red real hecha, 2026-09)
 
-`src/portales/` contiene los parsers, portados del patrón de `pisos`:
+`src/portales/` contiene los parsers, portados del patrón de `pisos`. Tras la
+primera ejecución de `npm run smoke` desde el VPS (única máquina con salida a
+internet real), el estado por portal es:
 
-- **Locales en venta**: `fotocasa`, `pisoscom`, `habitaclia`, `yaencontre`,
-  `milanuncios` (este último sin búsqueda por coordenadas: busca por provincia y
-  geocodifica cada anuncio contra `geocode_cache`).
-- **Farmacias en venta**: `farmaconsulting`, `asefarma`, `negociosenventa`,
-  `tablondeanuncios`, `milanuncios-farmacias` (sección de traspasos, portal
-  aparte). Parsean las tarjetas del intermediario buscando la facturación
-  ("facturación 620.000 €", "VF 540.000", "cifra de negocio…") y una ubicación
-  difusa; casi nunca hay dirección exacta, así que se guardan sin coordenadas
-  (`precision: 'desconocida'`) salvo que aparezca un municipio geocodificable.
+**Locales en venta**
 
-**Ninguno está verificado contra el portal real.** El entorno de desarrollo no
-tiene salida a internet: la estructura de URL y los selectores de cada portal
-son la mejor conjetura a partir del patrón de `pisos`, documentada en el bloque
-`─────` de su fichero. Los tests de vitest corren contra fixtures embebidos
-(`// forma real aproximada (2026-09), sin verificar contra el portal`) y solo
-comprueban la lógica de parseo, no que el portal sirva hoy lo esperado.
+| Portal | Estado | Nota |
+|---|---|---|
+| `fotocasa` | ✅ funciona | 30/30 en precio, superficie, coords e imagen. No tocar. |
+| `pisoscom` | ✅ funciona | precio y superficie 33/33; coords arregladas cruzando el `@id` del JSON-LD (que es igual al `id` de la tarjeta) — el filtro por `@type` sobraba porque pisos.com etiqueta los locales como `SingleFamilyResidence`. |
+| `habitaclia` | ⛔ pendiente headless | 404 en las rutas de locales + home sin `<a>` planos. `puedeBuscar` → `{ ok: false }`. |
+| `yaencontre` | ⛔ pendiente headless | 403 desde IP de datacenter. `puedeBuscar` → `{ ok: false }`. |
+| `milanuncios` | ⛔ pendiente headless | 404 + anti-bot. `puedeBuscar` → `{ ok: false }`. |
+
+**Farmacias en venta**
+
+| Portal | Estado | Nota |
+|---|---|---|
+| `farmaconsulting` | ✅ funciona | Listado nacional único (`/farmacias-en-venta/`), sin zona en la URL. Da región + título + descripción + código de operación (`CCL-…`). No publica facturación/precio/superficie en el listado (registro obligatorio) → esos campos van a `null`; se geocodifica la región. |
+| `tablondeanuncios` | ✅ funciona | `/farmacias-venta/?pagina=N`, tarjetas `<article class="result-item">`. Buscador muy laxo (devuelve ruido); el filtro fino del backend lo descarta. Precio si es numérico, `extraerFacturacion` sobre título+descripción. |
+| `asefarma` | ⛔ pendiente headless | 404 en las URLs probadas, sin muestra de HTML. `puedeBuscar` → `{ ok: false }`. |
+| `milanuncios-farmacias` | ⛔ pendiente headless | 404, mismo bloqueo que el milanuncios de locales. `puedeBuscar` → `{ ok: false }`. |
+
+`negociosenventa` se ha **eliminado**: el dominio está aparcado (devuelve un
+redirect JS a `/lander`).
+
+Los 5 portales `⛔` siguen con su parser escrito y sus tests de lógica; solo su
+`puedeBuscar` devuelve `{ ok: false, motivo: '… pendiente de navegador headless,
+igual que Idealista' }`, así que un rastreo los **omite con un motivo claro** en
+vez de fallar cada vuelta. Necesitan la misma solución que Idealista en `pisos`
+(navegador headless / IP residencial) — follow-up documentado, no bloqueante.
+
+Los tests de vitest corren contra fixtures embebidos: los de `fotocasa`,
+`pisoscom`, `farmaconsulting` y `tablondeanuncios` usan ahora extractos REALES
+del portal (2026-09); comprueban la lógica de parseo, no que el portal siga
+sirviendo hoy lo esperado.
 
 Por eso `npm run smoke -- <portal|locales|farmacias|todos> "<zona>"` es parte de
 la feature y no un extra: es el ÚNICO sitio donde se comprueba la realidad.
