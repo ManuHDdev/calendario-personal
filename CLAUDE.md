@@ -991,14 +991,15 @@ con su propio stack, unido a `calendario-net`.
 por liga; el seed solo cubre las 5 grandes).
 
 ### Despliegue
-Pipeline propio en GitHub Actions (`.github/workflows/deploy.yml`,
+Pipeline propio en GitHub Actions (`football-predictor/.github/workflows/deploy.yml`,
 `workflow_dispatch`): SSH, `deploy/.env`, `docker compose up -d --build`,
-health-check, e inserta los bloques nginx `/futbol/` en el vhost
-compartido vía `deploy/scripts/install-nginx-snippet.sh` (idempotente,
-con backup + `nginx -t`). Contenedores
-`football-predictor-{backend,db,frontend}-1`. **Ese bloque nginx se borra
-si otro subapp redespliega el vhost compartido** — relanzar el workflow
-con `update_nginx=true` para reinsertarlo.
+health-check. Contenedores `football-predictor-{backend,db,frontend}-1`.
+
+Los bloques nginx `/futbol/` y `/futbol/api/` viven en `nginx/calendario.conf`
+de este repo (como los de `trader`/`locales`), así que sobreviven a cualquier
+redeploy de Calendario. El `deploy/scripts/install-nginx-snippet.sh` del repo
+de football-predictor solo hace falta en un servidor donde ese fichero aún no
+los tenga, y no hace nada si ya están.
 
 ---
 
