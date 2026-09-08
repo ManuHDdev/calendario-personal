@@ -252,6 +252,45 @@ export interface CoberturaMunicipio {
   calculado_en: string | null;
 }
 
+/** Las 19 claves de comunidad válidas para el padrón (ISO_POR_COMUNIDAD en el backend). */
+export const COMUNIDADES = [
+  'andalucia', 'aragon', 'asturias', 'baleares', 'canarias', 'cantabria',
+  'castilla-leon', 'castilla-mancha', 'cataluna', 'ceuta', 'extremadura',
+  'galicia', 'madrid', 'melilla', 'murcia', 'navarra', 'pais-vasco', 'rioja',
+  'valenciana',
+] as const;
+
+export const NOMBRE_COMUNIDAD: Record<string, string> = {
+  andalucia: 'Andalucía',
+  aragon: 'Aragón',
+  asturias: 'Asturias',
+  baleares: 'Baleares',
+  canarias: 'Canarias',
+  cantabria: 'Cantabria',
+  'castilla-leon': 'Castilla y León',
+  'castilla-mancha': 'Castilla-La Mancha',
+  cataluna: 'Cataluña',
+  ceuta: 'Ceuta',
+  extremadura: 'Extremadura',
+  galicia: 'Galicia',
+  madrid: 'Madrid',
+  melilla: 'Melilla',
+  murcia: 'Murcia',
+  navarra: 'Navarra',
+  'pais-vasco': 'País Vasco',
+  rioja: 'La Rioja',
+  valenciana: 'Comunidad Valenciana',
+};
+
+export interface EstadoPadron {
+  estado: 'inactivo' | 'importando';
+  iniciadoEn: string | null;
+  origen: 'manual' | 'planificador' | null;
+  cola: string[];
+  comunidadActual: string | null;
+  hechas: Array<{ comunidad: string; ok: boolean; resumen?: unknown; error?: string }>;
+}
+
 export interface PadronResumen {
   farmacias: Array<{
     comunidad: string;

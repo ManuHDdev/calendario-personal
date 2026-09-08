@@ -18,7 +18,8 @@ import {
   listBusquedasRastreables,
   marcarNotificado,
 } from '../db/queries';
-import { importarComunidad, padronVacio } from '../padron/importar';
+import { padronVacio } from '../padron/importar';
+import { intentarReservar, procesarCola } from '../padron/estado';
 import { getMotor } from '../viabilidad/motor';
 import { comprobarPunto } from '../viabilidad';
 import { notificarNovedades } from '../telegram/emision';
@@ -177,19 +178,14 @@ async function refrescarPadron(log: Logger, arranque = false): Promise<void> {
       log.warn('Padrón vacío: importando Madrid en segundo plano para tener línea base.');
     }
 
-    for (const comunidad of comunidades) {
-      try {
-        const r = await importarComunidad(comunidad);
-        log.info(
-          `Padrón ${comunidad}: ${r.farmaciasImportadas} farmacias, ${r.centrosImportados} centros` +
-            (r.errores.length > 0 ? ` (${r.errores.length} incidencia/s)` : ''),
-        );
-      } catch (err) {
-        log.warn(
-          `Refresco de padrón de ${comunidad} falló: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
+    // Candado compartido con la importación manual de la UI: si ya hay una en
+    // curso, este refresco se salta esta vez (el padrón se está refrescando
+    // igualmente).
+    if (!intentarReservar('planificador')) {
+      log.info('Refresco de padrón omitido: ya hay una importación en curso.');
+      return;
     }
+    void procesarCola(comunidades, 'planificador', log);
   } catch (err) {
     log.warn(`Refresco de padrón falló: ${err instanceof Error ? err.message : String(err)}`);
   }

@@ -1,5 +1,22 @@
 import { z } from 'zod';
 import { PORTALES_POR_TIPO } from '../portales';
+import { ISO_POR_COMUNIDAD } from '../padron/osm';
+
+/**
+ * Importación de padrón a demanda: lista no vacía de comunidades válidas.
+ * El literal `todas` se acepta y la ruta lo expande a todas las claves.
+ */
+export const importarPadronSchema = z.object({
+  comunidades: z
+    .array(z.string())
+    .min(1, 'hace falta al menos una comunidad')
+    .refine(
+      (cs) => cs.every((c) => c === 'todas' || c in ISO_POR_COMUNIDAD),
+      { message: `comunidades válidas: todas, ${Object.keys(ISO_POR_COMUNIDAD).join(', ')}` },
+    ),
+});
+
+export type ImportarPadronInput = z.infer<typeof importarPadronSchema>;
 
 /** Un punto puede llegar como coordenadas o como dirección de texto. */
 export const comprobarSchema = z
