@@ -4,114 +4,130 @@
 > y **borra el contenido de este archivo** cuando termines (deja solo este bloque de cabecera vacío).
 > Así evitamos que instrucciones antiguas se mezclen con futuros despliegues.
 
-## Subapp nueva: `locales` (fase 1 — solo backend)
+## `locales` — fases 5, 6 y 9 (rastreadores de portales + planificador + frontend)
 
-Rastreador de locales y farmacias en venta con verificación de distancia peatonal.
-De momento **solo backend**: no hay frontend, así que **no toca nginx ni el
-AppLauncher**. Se usa desde el bot de Telegram y por API.
+La subapp pasa de "solo backend de consulta" a **rastreador completo con
+frontend**. Novedades de este despliegue frente al anterior:
 
-### 1. Crear `/home/manu/locales/.env` en el VPS
+- Nuevo contenedor `locales-frontend` (imagen `ghcr.io/manuhddev/locales-frontend`).
+- Nuevo bloque `location /locales/` en nginx — **se aplica IN SITU** (el fichero
+  del servidor ha divergido del repo).
+- El AppLauncher ya trae la entrada `locales` en las 14 imágenes de frontend —
+  se propaga solo al redesplegar cada subapp; no hay que tocar nada a mano.
+- El planificador arranca dentro de `locales-backend`: en cuanto haya una
+  búsqueda guardada y `scraper_state.running = true`, rastrea cada 15 min.
+
+### 1. `/home/manu/locales/.env` en el VPS
+
+Si ya existe de un despliegue anterior, solo revisa que estén las de Telegram.
+Si es la primera vez:
 
 ```bash
 mkdir -p /home/manu/locales
 cat > /home/manu/locales/.env <<'EOF'
 LOCALES_DB_NAME=locales
 LOCALES_DB_USER=locales
-LOCALES_DB_PASSWORD=<genera uno: openssl rand -hex 24>
+LOCALES_DB_PASSWORD=<openssl rand -hex 24>
 
 # Misma clave que ya usan paraisos y ruta.
 ORS_API_KEY=<tu clave de openrouteservice.org>
 
-# Bot propio, distinto del de pisos y del de gastos (ver paso 3).
+# Bot propio, distinto del de pisos y del de gastos (paso 4).
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_OWNER_CHAT_ID=
 EOF
 chmod 600 /home/manu/locales/.env
 ```
 
-`LOCALES_MOTOR_DISTANCIA` no hace falta ponerla: por defecto es `ors`.
+### 2. Desplegar (lo hace el workflow `locales-ci.yml` al mergear a `main`)
 
-### 2. Desplegar
+Construye backend + frontend, sube ambas imágenes a GHCR, copia
+`docker-compose.prod.yml` + `init.sql` al VPS y levanta `locales-db` +
+`locales-backend` + `locales-frontend`.
 
-El workflow `locales-ci.yml` se dispara solo al mergear a `main` con cambios en
-`locales/**`: construye la imagen, la sube a GHCR, copia el compose y el
-`init.sql` al VPS y levanta `locales-db` + `locales-backend`.
+`init.sql` es idempotente: en un despliegue sobre una BD ya existente añade las
+columnas `busqueda.habilitada` / `busqueda.notificar` y cambia la clave única de
+`anuncio` a `(busqueda_id, portal, portal_id)` sin perder datos.
 
 Comprobación:
 
 ```bash
 curl -s localhost:3013/locales/api/health
-docker logs locales-backend --tail 30
+docker logs locales-backend --tail 40   # motor de rutas + aviso de padrón + "planificador arrancado"
+docker compose -f /home/manu/locales/docker-compose.prod.yml ps
 ```
 
-En el log de arranque tienen que aparecer dos líneas:
-- qué motor de distancias se ha cargado y con qué tope diario;
-- **un aviso de que el padrón está VACÍO** (correcto en este punto).
+### 3. nginx — aplicar el bloque IN SITU
 
-### 3. Dar de alta el bot de Telegram
+El fichero del servidor es `/home/manu/nginx-shared/conf.d/elbunkerdelingeniero.conf`
+(ha divergido del repo — **no copiar `nginx/calendario.conf` encima**). Añadir,
+junto a los otros bloques de subapp, el contenido del bloque `location /locales/`
+que está en `nginx/calendario.conf` de este repo (proxy a `http://locales-frontend:80`,
+`proxy_read_timeout 180s`). Después:
+
+```bash
+docker exec <contenedor-nginx> nginx -t && docker exec <contenedor-nginx> nginx -s reload
+```
+
+Verifica que `https://elbunkerdelingeniero.duckdns.org/locales/` carga y pide login.
+
+### 4. Bot de Telegram (opcional pero recomendado)
 
 1. [@BotFather](https://t.me/BotFather) → `/newbot` → guarda el token.
 2. Escríbele algo al bot.
-3. `cd /home/manu && docker exec locales-backend node -e "..."` no vale aquí;
-   lo más simple es abrir
-   `https://api.telegram.org/bot<TOKEN>/getUpdates` en el navegador y leer
-   `message.chat.id`.
-4. Mete las dos variables en el `.env` y `docker compose -f docker-compose.prod.yml up -d locales-backend`.
+3. Abre `https://api.telegram.org/bot<TOKEN>/getUpdates` y lee `message.chat.id`.
+4. Mete `TELEGRAM_BOT_TOKEN` y `TELEGRAM_OWNER_CHAT_ID` en el `.env` y
+   `docker compose -f docker-compose.prod.yml up -d locales-backend`.
 
-Sin esas dos variables la app funciona igual, solo se queda sin bot.
+Sin esas variables la app y el rastreador funcionan igual, solo sin avisos.
 
-### 4. IMPORTAR EL PADRÓN (imprescindible, y no lo hace el workflow)
+### 5. IMPORTAR EL PADRÓN (imprescindible, y no lo hace el workflow)
 
-**Hasta hacerlo, toda comprobación devuelve "sin datos".** Es el comportamiento
-correcto —un padrón vacío no demuestra que no haya farmacias cerca— pero la app
-no sirve de nada hasta ejecutarlo.
-
-La imagen de producción solo lleva `dist` (no hay `ts-node`), así que el CLI se
-invoca sobre el compilado, no con `npm run padron`:
+**Hasta hacerlo, todo veredicto es "sin datos"** y el planificador no marcará
+ningún anuncio como viable. La imagen de producción solo lleva `dist`:
 
 ```bash
 docker exec -it locales-backend node dist/padron/cli.js madrid
-```
-
-Empieza por Madrid, comprueba la salida, y luego añade las demás:
-
-```bash
+# comprueba la salida, luego el resto:
 docker exec -it locales-backend node dist/padron/cli.js andalucia valenciana baleares canarias murcia cataluna galicia
-# o, si quieres todo de una vez (tarda; sale a Overpass comunidad por comunidad):
+# o de una vez (tarda, sale a Overpass comunidad por comunidad):
 docker exec -it locales-backend node dist/padron/cli.js todas
 ```
 
-**Qué mirar en la salida:**
+Qué mirar: `farmacias: 0` en una comunidad → Overpass saturado, reintenta luego
+(el importador no borra nada al fallar). Error de `Oficial Madrid` con "No se
+reconocen las columnas" + la cabecera real → tocar el objeto `ALIAS` en
+`locales/backend/src/padron/oficial/madrid.ts` (importador escrito sin ver el
+CSV real; es el fallo más probable).
 
-- `farmacias: 0` en una comunidad → Overpass falló o está saturado. Reintenta
-  esa comunidad más tarde; el importador no borra nada cuando falla.
-- Un error de `Oficial Madrid` que menciona **"No se reconocen las columnas"**
-  seguido de la cabecera real del CSV → el portal de datos abiertos ha cambiado
-  los nombres de columna. El único sitio a tocar es el objeto `ALIAS` en
-  `locales/backend/src/padron/oficial/madrid.ts`. Este importador se escribió sin
-  poder ver el CSV real, así que es el fallo más probable de todo el despliegue.
-- `municipios con padrón incompleto` alto → normal al principio; OSM no tiene la
-  población de todos los municipios. En esos municipios no se emitirán verdes,
-  solo ámbares, que es la dirección segura del error.
+### 6. SMOKE de los portales (los parsers NO están verificados contra el portal real)
 
-### 5. Probar de punta a punta
+Los 10 rastreadores están escritos desde el patrón de `pisos` sin salida a
+internet en el entorno de desarrollo. La primera pasada con red real dirá cuáles
+aciertan:
 
-Desde el móvil, al bot:
+```bash
+docker exec -it locales-backend node dist/smoke.js locales "Madrid"
+docker exec -it locales-backend node dist/smoke.js farmacias "Madrid"
+```
 
-- Comparte una **ubicación** cualquiera de Madrid.
-- O manda `/comprobar Gran Vía 1, Madrid`.
+Mira la **cobertura por campo** (`📊 precio X/N · superficie X/N · …`). Un portal
+que devuelve 0 anuncios o todo a `null` necesita un ajuste de selectores en su
+`portales/<portal>.ts` (bloque `─────`). Es esperable en varios: anótalos y se
+ajustan en un follow-up, no bloquean el resto.
 
-Debe contestar con las farmacias más cercanas, sus metros **caminando**, el
-veredicto de color y el aviso de que no certifica.
+### 7. Probar de punta a punta
 
-### Lo que NO hay que hacer en este despliegue
+1. Entra en `/locales/`, crea una búsqueda de tipo `local` (zona "Madrid",
+   portales fotocasa + pisoscom) y otra de tipo `farmacia`.
+2. "Rastrear ahora" en cada una → mira `encontrados` / `guardados` / `fallos`.
+3. El feed de Anuncios debe mostrar el semáforo y los metros a la farmacia.
+4. Pestaña "Comprobar": `Gran Vía 1, Madrid` → veredicto + mapa.
+5. Desde el móvil, al bot: comparte una ubicación o `/comprobar Gran Vía 1, Madrid`.
 
-- **No tocar `nginx/calendario.conf`.** No hay frontend todavía, así que no hay
-  nada que enrutar. (Y recuerda que el fichero del servidor ha divergido del
-  repo: cuando llegue el frontend, el bloque `location /locales/` se aplica
-  **in situ**, no copiando el fichero.)
-- **No tocar Keycloak.** `locales` no añade ningún rol nuevo: solo `admin`.
-- **No levantar `locales-valhalla`.** Está tras el perfil `valhalla` y apagado a
-  propósito: construir las teselas de España tarda ~1 h y ocupa varios GB. Con
-  ORS funciona desde el minuto uno. Antes de plantearlo, mira `free -h` y
-  `df -h` del VPS.
+### Lo que NO hay que hacer
+
+- **No tocar Keycloak.** `locales` no añade ningún rol: solo `admin`.
+- **No levantar `locales-valhalla`.** Perfil `valhalla`, apagado a propósito
+  (~1 h de teselas, varios GB). Con ORS funciona desde el minuto uno.
+- **No copiar `nginx/calendario.conf` al servidor.** Solo el bloque, a mano.

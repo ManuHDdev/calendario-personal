@@ -62,6 +62,15 @@ services:
     networks:
       - calendario-net
 
+  locales-frontend:
+    image: ghcr.io/manuhddev/locales-frontend:latest
+    container_name: locales-frontend
+    depends_on:
+      - locales-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
   # Motor de rutas propio. APAGADO por defecto: solo arranca con
   # `docker compose --profile valhalla up -d`.
   #

@@ -687,17 +687,22 @@ sobrescribible por si Wallapop cambia el id de su categoría inmobiliaria).
 ### Ubicación
 Calendario/locales/ dentro del monorepo elbunkerdelingeniero.
 
-### Estado (IMPORTANTE)
-**Entregada solo la fase 1**: esquema, padrón, motores de distancia, semáforo de
-viabilidad, API y bot de consulta. **Todavía NO existen** los rastreadores de
-portales, el planificador ni el frontend. Por eso `locales` **no tiene entrada en
-el AppLauncher todavía** (ver "Deuda técnica conocida"): añadirla ahora pondría
-un enlace roto a `/locales/` en las 14 copias. Se añade con el frontend, en la
-misma tarea (`openspec/changes/2026-09-02-add-locales-app/tasks.md`, 10.6).
+### Estado
+**Entregadas las fases 1, 5, 6 y 9**: esquema, padrón, motores de distancia,
+semáforo de viabilidad, API de consulta, bot de doble sentido, **los 10
+rastreadores de portales** (5 de locales, 5 de farmacias), el **planificador**
+(dentro del proceso del backend, `setTimeout` encadenado), la **API completa**
+(`/searches`, `/listings`, `/scraper/state`), la **emisión de avisos** por
+Telegram y el **frontend** React. Ya tiene entrada en el AppLauncher (las 14
+copias). Pendiente: la primera pasada de `npm run smoke` con red real contra
+cada portal — los parsers están escritos desde el patrón de `pisos` sin poder
+verificarlos contra el portal en vivo (ver `locales/README.md`).
 
 ### Stack
 - Backend: Fastify + Node.js + TypeScript (igual que el resto de subapps Node)
-- Frontend: React + Vite + TypeScript *(pendiente)*
+- Frontend: React + Vite + TypeScript, mapa Leaflet vía npm (semáforo de
+  viabilidad, feed de anuncios, panel de comprobación puntual, normativa
+  editable, cobertura del padrón)
 - Base de datos: PostgreSQL 15, propia (`locales`), tablas `provincia`,
   `normativa`, `farmacia`, `centro_sanitario`, `cobertura_municipio`, `busqueda`,
   `anuncio`, `geocode_cache`, `ruta_cache`, `presupuesto_rutas`, `scraper_state`
@@ -782,12 +787,27 @@ da de baja, no se borra**; una importación fallida **no vacía nada**; y la
 cobertura **se recalcula siempre** al terminar.
 
 ### Rutas (`/locales/api/*`)
+- `GET/POST/PATCH/DELETE /searches` — búsquedas guardadas (Zod discriminado por
+  `tipo`: `local` pide superficie/precio, `farmacia` acepta facturación y no
+  exige coordenadas). Soft delete. `id` es SERIAL, no UUID.
+- `POST /searches/:id/rastrear` — rastreo manual. **No notifica a propósito.**
+- `GET /listings` — feed, filtros `busqueda`/`tipo`/`veredicto`/`nuevos`/`descartados`
+- `PATCH /listings/:id` · `POST /listings/marcar-vistos` · `DELETE /listings/:id`
+- `GET/PATCH /scraper/state` — on/off global del rastreador
 - `POST /viabilidad/comprobar` — punto o dirección → veredicto (lo que usa el bot)
 - `GET /viabilidad/presupuesto` — cuota de motor de rutas restante hoy
 - `GET /normativa` · `PATCH /normativa/:comunidad` — distancias por comunidad
 - `GET /padron/cobertura` — dónde el padrón está incompleto (`?incompletos=true`)
 - `GET /padron/resumen` — qué hay cargado, por comunidad y fuente
 - `GET /health`
+
+### El rastreador corre solo
+El planificador vive dentro del proceso del backend (`services/planificador.ts`,
+`setTimeout` encadenado, jitter ±20%, respeta `scraper_state.running`). Mientras
+el contenedor esté en pie, rastrea cada `LOCALES_INTERVALO_MINUTOS` (default 15).
+La primera vuelta de una búsqueda nueva no notifica (traería decenas de anuncios
+viejos). Un anuncio 🔴 o ⚪ no dispara aviso; 🟢 y 🟡 sí (el ámbar, marcado como
+"a confirmar"). Un envío fallido no marca `notificado` → se reintenta.
 
 ### Roles
 Único rol con acceso: `admin`, misma postura que Gastos/Ofertas/Ruta/Pisos.
@@ -798,7 +818,9 @@ cobertura **se recalcula siempre** al terminar.
 `LOCALES_DB_PORT`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3013),
 `LOCALES_MOTOR_DISTANCIA` (`ors`|`valhalla`, default `ors`), `ORS_API_KEY`,
 `VALHALLA_URL`, `LOCALES_PRESUPUESTO_RUTAS_DIARIO` (default 400 — **el endpoint
-de matriz de ORS tiene cuota más baja que el de direcciones**), `OVERPASS_URL`,
+de matriz de ORS tiene cuota más baja que el de direcciones**),
+`LOCALES_INTERVALO_MINUTOS` (default 15, jitter ±20%),
+`LOCALES_PAGINAS_POR_PORTAL` (default 2), `OVERPASS_URL`,
 `LOCALES_DATASET_MADRID`, `NOMINATIM_USER_AGENT`, `TELEGRAM_BOT_TOKEN`,
 `TELEGRAM_OWNER_CHAT_ID`. Ver `locales/backend/.env.example`.
 
@@ -809,7 +831,7 @@ las teselas de España tarda del orden de una hora y ocupa varios GB, y el backe
 no depende de él para arrancar.
 
 ### Imágenes Docker
-`ghcr.io/manuhddev/locales-backend:latest` (el frontend aún no existe)
+`ghcr.io/manuhddev/locales-backend:latest`, `ghcr.io/manuhddev/locales-frontend:latest`
 
 ---
 
@@ -986,7 +1008,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Trader             | :5183    | :3011   |
 | Ruta               | :5183    | :3011   |
 | Pisos              | :5184    | :3012   |
-| Locales            | (pendiente) | :3013 |
+| Locales            | :5185    | :3013   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -1003,11 +1025,8 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 
 - **Sin tests**: Panel, Storage y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 13 Dockerfiles y 13 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 14 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 14 Dockerfiles y 14 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 15 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
 
-**Excepción viva y deliberada: `locales` todavía NO está en el AppLauncher.** La
-regla presupone que la subapp tiene frontend, y de `locales` solo existe el
-backend (fase 1). Añadir la entrada ahora pondría un enlace a `/locales/` que
-devuelve 502 en las 14 copias. Se añade en la misma tarea que el frontend
-(`openspec/changes/2026-09-02-add-locales-app/tasks.md`, 10.6). Si alguien lee
-esto y el frontend ya existe, es que esa tarea quedó a medias.
+`locales` ya está en las 14 copias del AppLauncher (`roles: ['admin']`), añadido
+junto con su frontend (fase 9). `crypto-trader/frontend` sigue fuera de este
+repo y se actualiza aparte.

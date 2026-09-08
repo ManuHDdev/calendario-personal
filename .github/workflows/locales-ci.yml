@@ -38,10 +38,27 @@ jobs:
         working-directory: locales/backend
         run: npm test
 
+  lint-and-build-frontend:
+    name: Locales · Build frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: locales/frontend
+        run: npm ci && npm run build
+
   docker-build-and-push:
     name: Locales · Docker build & push
     runs-on: ubuntu-latest
-    needs: lint-and-build-backend
+    needs: [lint-and-build-backend, lint-and-build-frontend]
 
     steps:
       - name: Checkout
@@ -65,6 +82,15 @@ jobs:
           tags: |
             ghcr.io/${{ env.OWNER }}/locales-backend:latest
             ghcr.io/${{ env.OWNER }}/locales-backend:${{ github.sha }}
+
+      - name: Build & push locales-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./locales/frontend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/locales-frontend:latest
+            ghcr.io/${{ env.OWNER }}/locales-frontend:${{ github.sha }}
 
   deploy:
     name: Deploy · Locales VPS
@@ -98,10 +124,14 @@ jobs:
 
             cd /home/manu/locales
 
-            docker compose -f docker-compose.prod.yml pull locales-backend
-            docker compose -f docker-compose.prod.yml up -d locales-db locales-backend
+            docker compose -f docker-compose.prod.yml pull locales-backend locales-frontend
+            docker compose -f docker-compose.prod.yml up -d locales-db locales-backend locales-frontend
             docker compose -f docker-compose.prod.yml ps
 
+            # El bloque `location /locales/` de nginx se aplica IN SITU en el
+            # servidor (el fichero del repo ha divergido) — no lo hace este
+            # workflow. Ver DEPLOY_NOTES.md.
+            #
             # El padron NO se importa aqui. Es una operacion larga (sale a
             # Overpass comunidad por comunidad) y manual a proposito: hasta
             # que se ejecute, toda comprobacion devuelve "sin datos", que es
