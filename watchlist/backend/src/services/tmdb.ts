@@ -1,3 +1,5 @@
+import { incrementUsage } from '../db/usageCounter';
+
 export class MissingApiKeyError extends Error {
   constructor() {
     super('TMDB_API_KEY no configurada');
@@ -54,6 +56,7 @@ async function search(mediaType: 'movie' | 'tv', q: string): Promise<TmdbSearchR
 
   const url = `https://api.themoviedb.org/3/search/${mediaType}?query=${encodeURIComponent(q)}&api_key=${encodeURIComponent(apiKey)}`;
   const res = await fetch(url);
+  await incrementUsage('tmdb'); // cuenta la llamada real, nunca un cache hit (return anterior)
   if (!res.ok) {
     throw new Error(`TMDB respondió ${res.status}`);
   }

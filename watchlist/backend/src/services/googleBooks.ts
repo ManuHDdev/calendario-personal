@@ -1,3 +1,5 @@
+import { incrementUsage } from '../db/usageCounter';
+
 export class MissingApiKeyError extends Error {
   constructor() {
     super('GOOGLE_BOOKS_API_KEY no configurada');
@@ -63,6 +65,7 @@ export async function searchBooks(q: string): Promise<GoogleBooksSearchResult[]>
 
   const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&key=${encodeURIComponent(apiKey)}&maxResults=10`;
   const res = await fetch(url);
+  await incrementUsage('google_books'); // cuenta la llamada real, nunca un cache hit (return anterior)
   if (!res.ok) {
     throw new Error(`Google Books respondió ${res.status}`);
   }

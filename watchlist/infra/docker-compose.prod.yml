@@ -36,6 +36,7 @@ services:
       CORS_ORIGIN:            ${CORS_ORIGIN}
       TMDB_API_KEY:           ${TMDB_API_KEY}
       GOOGLE_BOOKS_API_KEY:   ${GOOGLE_BOOKS_API_KEY}
+      PANEL_INTERNAL_TOKEN:   ${PANEL_INTERNAL_TOKEN}
       NODE_ENV:               production
     depends_on:
       watchlist-db:
