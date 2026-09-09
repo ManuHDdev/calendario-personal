@@ -2,6 +2,7 @@ import keycloak from './keycloak';
 import type {
   Anuncio,
   PortalId,
+  TipoInmueble,
   Busqueda,
   BusquedaFormData,
   BusquedaUpdateData,
@@ -77,6 +78,7 @@ export async function rastrearAhora(id: string): Promise<ResultadoRastreo> {
 export interface FiltroAnuncios {
   busqueda?: string;
   portal?: PortalId;
+  tipo?: TipoInmueble;
   soloNuevos?: boolean;
   incluirDescartados?: boolean;
 }
@@ -85,6 +87,7 @@ export async function getListings(filtro: FiltroAnuncios = {}): Promise<Anuncio[
   const params = new URLSearchParams();
   if (filtro.busqueda) params.set('busqueda', filtro.busqueda);
   if (filtro.portal) params.set('portal', filtro.portal);
+  if (filtro.tipo) params.set('tipo', filtro.tipo);
   if (filtro.soloNuevos) params.set('nuevos', 'true');
   if (filtro.incluirDescartados) params.set('descartados', 'true');
 

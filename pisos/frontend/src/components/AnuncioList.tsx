@@ -1,4 +1,4 @@
-import { NOMBRE_PORTAL, type Anuncio } from '../types';
+import { NOMBRE_PORTAL, ICONO_TIPO, NOMBRE_TIPO, type Anuncio } from '../types';
 
 interface Props {
   anuncios: Anuncio[];
@@ -63,7 +63,7 @@ export default function AnuncioList({ anuncios, onMarcarVisto, onDescartar }: Pr
               </div>
 
               <a className="anuncio-titulo" href={a.url} target="_blank" rel="noopener noreferrer">
-                {a.titulo}
+                <span title={NOMBRE_TIPO[a.tipo]}>{ICONO_TIPO[a.tipo]}</span> {a.titulo}
               </a>
 
               <p className="anuncio-caract">{caracteristicas(a)}</p>

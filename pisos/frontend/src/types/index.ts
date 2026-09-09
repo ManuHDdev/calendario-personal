@@ -13,9 +13,27 @@ export interface PortalConfig {
 
 export type PortalesConfig = Record<PortalId, PortalConfig>;
 
+/**
+ * Tipo de inmueble que persigue una búsqueda: `vivienda` | `local`, excluyentes.
+ * Espejo de `TIPOS` en el backend. Es inmutable una vez creada la búsqueda.
+ */
+export const TIPOS = ['vivienda', 'local'] as const;
+export type TipoInmueble = (typeof TIPOS)[number];
+
+export const NOMBRE_TIPO: Record<TipoInmueble, string> = {
+  vivienda: 'Vivienda',
+  local: 'Local comercial',
+};
+
+export const ICONO_TIPO: Record<TipoInmueble, string> = {
+  vivienda: '🏠',
+  local: '🏪',
+};
+
 export interface Busqueda {
   id: string;
   nombre: string;
+  tipo: TipoInmueble;
   ubicacion: string;
   latitud: number | null;
   longitud: number | null;
@@ -42,6 +60,7 @@ export interface Busqueda {
 
 export interface BusquedaFormData {
   nombre: string;
+  tipo: TipoInmueble;
   ubicacion: string;
   latitud?: number | null;
   longitud?: number | null;
@@ -61,12 +80,17 @@ export interface BusquedaFormData {
   notificar?: boolean;
 }
 
-export type BusquedaUpdateData = Partial<BusquedaFormData>;
+/**
+ * El PATCH nunca envía `tipo`: es inmutable (los anuncios ya vinculados serían
+ * del tipo equivocado). La inmutabilidad se ve en el tipo, no solo en el server.
+ */
+export type BusquedaUpdateData = Partial<Omit<BusquedaFormData, 'tipo'>>;
 
 export interface Anuncio {
   id: string;
   busqueda_id: string;
   busqueda_nombre: string;
+  tipo: TipoInmueble;
   portal: PortalId;
   portal_id: string;
   url: string;
