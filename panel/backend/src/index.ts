@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { usersRoutes } from './routes/users';
 import { meRoutes } from './routes/me';
+import { usageRoutes } from './routes/usage';
 
 const app = Fastify({ logger: true });
 
@@ -18,6 +19,7 @@ async function bootstrap() {
 
   await app.register(usersRoutes);
   await app.register(meRoutes);
+  await app.register(usageRoutes);
 
   app.get('/panel/api/health', async () => ({ status: 'ok' }));
 

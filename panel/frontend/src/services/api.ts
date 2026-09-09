@@ -1,5 +1,5 @@
 import keycloak from './keycloak';
-import type { UserOut, UserFormData } from '../types';
+import type { UserOut, UserFormData, ApiUsageEntry } from '../types';
 
 const BASE = '/panel/api';
 
@@ -59,6 +59,12 @@ export async function deleteUser(id: string): Promise<void> {
     headers: headers(),
   });
   if (!res.ok && res.status !== 204) await handleError(res);
+}
+
+export async function getApiUsage(): Promise<ApiUsageEntry[]> {
+  const res = await fetch(`${BASE}/usage`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<ApiUsageEntry[]>;
 }
 
 export async function changeMyPassword(password: string): Promise<void> {

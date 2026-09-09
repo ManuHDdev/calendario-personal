@@ -5,6 +5,7 @@ import UserModal from '../components/UserModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AppLauncher from '../components/AppLauncher';
 import ThemeToggle from '../components/ThemeToggle';
+import UsageDashboard from '../components/UsageDashboard';
 import type { UserOut, UserFormData } from '../types';
 import './PanelPage.css';
 
@@ -187,6 +188,8 @@ export default function PanelPage() {
             </table>
           </div>
         )}
+
+        <UsageDashboard />
       </main>
 
       {modalUser !== undefined && (
