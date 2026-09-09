@@ -1,12 +1,12 @@
 import type { CreateBusquedaInput, UpdateBusquedaInput, UpdateAnuncioInput } from '../schemas/pisos.schema';
-import type { AnuncioCrudo, PortalId } from '../types/pisos';
+import type { AnuncioCrudo, PortalId, TipoInmueble } from '../types/pisos';
 
 export interface Query {
   text: string;
   values: unknown[];
 }
 
-const COLS_BUSQUEDA = `id, nombre, ubicacion, latitud, longitud, radio_km,
+const COLS_BUSQUEDA = `id, nombre, tipo, ubicacion, latitud, longitud, radio_km,
                        precio_min, precio_max, metros_min, metros_max,
                        habitaciones_min, banos_min,
                        exige_ascensor, exige_garaje, exige_terraza,
@@ -14,7 +14,7 @@ const COLS_BUSQUEDA = `id, nombre, ubicacion, latitud, longitud, radio_km,
                        ultimo_rastreo_at, ultimo_rastreo_error,
                        created_at, updated_at`;
 
-const COLS_ANUNCIO = `id, busqueda_id, portal, portal_id, url, titulo,
+const COLS_ANUNCIO = `id, busqueda_id, tipo, portal, portal_id, url, titulo,
                       precio, precio_inicial, precio_previo, precio_notificado,
                       metros, habitaciones, banos,
                       planta, ascensor, garaje, terraza, ubicacion,
@@ -52,15 +52,16 @@ export function getBusquedaById(id: string): Query {
 export function createBusqueda(data: CreateBusquedaInput): Query {
   return {
     text: `INSERT INTO busqueda
-             (nombre, ubicacion, latitud, longitud, radio_km,
+             (nombre, tipo, ubicacion, latitud, longitud, radio_km,
               precio_min, precio_max, metros_min, metros_max,
               habitaciones_min, banos_min,
               exige_ascensor, exige_garaje, exige_terraza,
               excluir_palabras, portales, habilitada, notificar)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
            RETURNING ${COLS_BUSQUEDA}`,
     values: [
       data.nombre,
+      data.tipo ?? 'vivienda',
       data.ubicacion,
       data.latitud ?? null,
       data.longitud ?? null,
@@ -94,6 +95,8 @@ export function updateBusqueda(id: string, data: UpdateBusquedaInput): Query {
     'habitaciones_min', 'banos_min',
     'exige_ascensor', 'exige_garaje', 'exige_terraza',
     'excluir_palabras', 'portales', 'habilitada', 'notificar',
+    // `tipo` NO está en la allowlist a propósito: es inmutable. Segunda capa de
+    // defensa detrás de `updateBusquedaSchema.omit({ tipo })`.
   ];
 
   const assignments: string[] = [];
@@ -142,6 +145,8 @@ export interface FiltroAnuncios {
   busquedaId?: string;
   /** Portal de origen. El valor lo valida la ruta contra PORTALES. */
   portal?: PortalId;
+  /** Tipo de inmueble. El valor lo valida la ruta contra TIPOS. */
+  tipo?: TipoInmueble;
   soloNuevos?: boolean;
   incluirDescartados?: boolean;
   limite?: number;
@@ -161,6 +166,10 @@ export function listAnuncios(filtro: FiltroAnuncios): Query {
   if (filtro.portal) {
     values.push(filtro.portal);
     where.push(`a.portal = $${values.length}`);
+  }
+  if (filtro.tipo) {
+    values.push(filtro.tipo);
+    where.push(`a.tipo = $${values.length}`);
   }
   if (filtro.soloNuevos) where.push('a.visto = false');
   if (!filtro.incluirDescartados) where.push('a.descartado = false');
@@ -259,8 +268,10 @@ export function upsertAnuncio(busquedaId: string, a: AnuncioCrudo): Query {
              (busqueda_id, portal, portal_id, url, titulo,
               precio, precio_inicial, precio_notificado,
               metros, habitaciones, banos, planta, ascensor, garaje, terraza,
-              ubicacion, latitud, longitud, imagen_url)
-           VALUES ($1,$2,$3,$4,$5,$6,$6,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+              ubicacion, latitud, longitud, imagen_url, tipo)
+           VALUES ($1,$2,$3,$4,$5,$6,$6,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+           -- tipo NO aparece en el DO UPDATE: el tipo de una fila ya existente
+           -- no cambia nunca (la busqueda que la creo es inmutable en tipo).
            ON CONFLICT (busqueda_id, portal, portal_id) DO UPDATE
               SET url = EXCLUDED.url,
                   titulo = EXCLUDED.titulo,
@@ -305,6 +316,7 @@ export function upsertAnuncio(busquedaId: string, a: AnuncioCrudo): Query {
       a.latitud,
       a.longitud,
       a.imagenUrl,
+      a.tipo,
     ],
   };
 }
