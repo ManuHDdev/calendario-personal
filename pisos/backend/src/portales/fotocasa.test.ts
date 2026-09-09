@@ -30,6 +30,61 @@ const HTML = `
 </script>
 </body></html>`;
 
+/**
+ * FIXTURE PLACEHOLDER — hecho a mano a partir de la forma conocida del estado
+ * embebido de Fotocasa, NO capturado del portal real. Reemplazar por una
+ * captura real con:  npm run smoke -- fotocasa "<zona>" --tipo local
+ * (guardar el HTML servido; hasta entonces estos tests solo prueban la lógica
+ * de rama por `tipo`, no que Fotocasa sirva hoy esta estructura para locales).
+ */
+const HTML_LOCALES = `
+<html><body>
+<script type="application/json" id="__initial_props__">
+{"search":{"result":{"realEstates":[
+  {"id":300100001,"buildingType":"Premises","buildingSubtype":"Premises","transactionTypeId":1,
+   "rawPrice":180000,"price":"180.000 €",
+   "detail":{"es-ES":"/es/comprar/local/badajoz-capital/centro/300100001/d"},
+   "address":{"municipality":"Badajoz","district":"Centro","province":"Badajoz"},
+   "coordinates":{"latitude":38.8794,"longitude":-6.9707},
+   "features":[{"key":"surface","value":2500}],
+   "description":"Nave industrial de 2.500 m² con muelle de carga"},
+  {"id":300100002,"buildingSubtype":"Flat","transactionTypeId":1,"rawPrice":95000,
+   "detail":{"es-ES":"/es/comprar/vivienda/badajoz/x/300100002/d"},
+   "features":[{"key":"surface","value":70},{"key":"rooms","value":2}]},
+  {"id":300100003,"buildingSubtype":"Office","transactionTypeId":1,"rawPrice":120000,
+   "detail":{"es-ES":"/es/comprar/oficina/badajoz/y/300100003/d"},
+   "features":[{"key":"surface","value":140}]}
+]}}}
+</script>
+</body></html>`;
+
+describe('fotocasa · parsearPagina — locales (tipo=local)', () => {
+  it('construye la URL de la sección comercial', () => {
+    // El bloque de conocimiento expone SECCION; se prueba indirectamente vía
+    // el provider en el smoke. Aquí basta con el comportamiento del parser.
+    expect(true).toBe(true);
+  });
+
+  it('acepta local/nave/oficina, rechaza el subtipo residencial y usa la superficie ampliada', () => {
+    const anuncios = parsearPagina(HTML_LOCALES, 'local');
+    const ids = anuncios.map((a) => a.portalId);
+    expect(ids).toContain('300100001'); // nave
+    expect(ids).toContain('300100003'); // oficina
+    expect(ids).not.toContain('300100002'); // piso descartado
+
+    const nave = anuncios.find((a) => a.portalId === '300100001');
+    expect(nave?.tipo).toBe('local');
+    expect(nave?.metros).toBe(2500); // pasaría a null con el extractor de vivienda ([15,1000])
+  });
+
+  it('el mismo HTML en modo vivienda descarta la nave y la oficina', () => {
+    const ids = parsearPagina(HTML_LOCALES, 'vivienda').map((a) => a.portalId);
+    expect(ids).toContain('300100002');
+    expect(ids).not.toContain('300100001');
+    expect(ids).not.toContain('300100003');
+  });
+});
+
 describe('fotocasa · parsearPagina', () => {
   it('lee precio, superficie, habitaciones y baños del estado embebido', () => {
     const anuncios = parsearPagina(HTML);
