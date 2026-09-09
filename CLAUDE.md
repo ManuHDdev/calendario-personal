@@ -632,6 +632,42 @@ en cuanto aparece un piso **en venta** que cumple los criterios guardados
 (zona, precio, m², habitaciones, baños, ascensor/garaje/terraza). Solo compra:
 el alquiler queda fuera a propósito.
 
+### Tipo de inmueble: `vivienda` | `local` (excluyentes)
+
+Cada búsqueda declara un `tipo`: `vivienda` (por defecto) o `local` comercial.
+No es un interruptor de "busca las dos cosas" — son criterios, secciones de
+portal y avisos distintos. Reglas:
+
+- **Migración**: `busqueda.tipo` y `anuncio.tipo` nacen con `DEFAULT 'vivienda'`,
+  así que toda búsqueda y todo anuncio anteriores quedan `vivienda` y se
+  comportan byte a byte igual. No hay `UPDATE` de relleno.
+- **Inmutable**: el `PATCH /searches/:id` rechaza `tipo` con 400 (`.strict()` +
+  `.omit`), y la allowlist de `updateBusqueda()` tampoco lo incluye (dos capas).
+  El frontend nunca lo envía en una edición y el selector se deshabilita al
+  editar. Para cambiar de tipo se crea otra búsqueda.
+- **Fotocasa y pisos.com**: `tipo='local'` cambia el segmento de URL a la
+  sección comercial (`/es/comprar/locales/…` y `/venta/locales-<zona>/`,
+  **portados de `locales/` y aún NO verificados contra el portal en vivo** —
+  candidato alternativo de Fotocasa: `local-comercial`), invierte el filtro de
+  subtipos (acepta local/nave/oficina, rechaza piso/ático/chalet) y usa una
+  horquilla de superficie ampliada `[10, 5000]` m² en vez de `[15, 1000]`.
+  `minRooms`/`habitacionesDesde` no se emiten para `local`.
+- **Wallapop** se omite en las búsquedas de `local` con motivo visible
+  (`puedeBuscar → {ok:false}`): su categoría inmobiliaria no distingue local de
+  vivienda de forma fiable.
+- **Filtro fino**: para `local`, `cumpleCriterios` no evalúa habitaciones,
+  baños ni ascensor/garaje/terraza; sí ubicación, precio, metros y exclusiones.
+  Un anuncio cuyo `tipo` no coincide con el de la búsqueda se descarta.
+- **Avisos**: la cabecera es `🏪 Local nuevo` o `🏠 Piso nuevo` según el tipo.
+- **Smoke**: `npm run smoke -- <portal> "<zona>" --tipo local` (default
+  `vivienda`); en `local` la cobertura por campo omite hab/baños para no leerse
+  como avería.
+
+**Lo que NO cambia con esta feature**: no hay puerto nuevo, ni base de datos
+nueva, ni rol nuevo en Keycloak, ni entrada nueva en el AppLauncher — `pisos`
+sigue siendo una sola subapp `admin`. La tabla de puertos, la tabla de roles y
+las 15 copias del AppLauncher se quedan exactamente como están.
+
 ### El rastreador corre solo (IMPORTANTE)
 El planificador vive **dentro del propio proceso del backend**
 (`services/planificador.ts`, `setTimeout` encadenado — no `setInterval`, para
