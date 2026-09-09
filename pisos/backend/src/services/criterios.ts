@@ -19,10 +19,12 @@
  * perder uno bueno en silencio.
  */
 
-import type { AnuncioCrudo } from '../types/pisos';
+import type { AnuncioCrudo, TipoInmueble } from '../types/pisos';
 import { normalizarTexto, ubicacionCoincide } from '../portales/normalizar';
 
 export interface Criterios {
+  /** Tipo de inmueble de la búsqueda. Un anuncio de otro tipo se descarta. */
+  tipo: TipoInmueble;
   /** Municipio buscado. El anuncio debe estar en él, no solo en su provincia. */
   ubicacion: string;
   precio_min: number | null;
@@ -60,6 +62,12 @@ function fueraDeRango(
 }
 
 export function cumpleCriterios(anuncio: AnuncioCrudo, criterios: Criterios): Veredicto {
+  // Segunda línea de defensa detrás de la URL de la sección y del filtro de
+  // subtipos: un anuncio del tipo equivocado nunca entra en el feed.
+  if (anuncio.tipo !== criterios.tipo) {
+    return { cumple: false, motivo: `no es un ${criterios.tipo}` };
+  }
+
   // La ubicación SÍ descarta, incluso cuando no se conoce: el propietario
   // busca un municipio concreto, no una provincia. Es la única excepción
   // junto al precio a la regla de "un dato desconocido no descarta" — y en
@@ -80,28 +88,32 @@ export function cumpleCriterios(anuncio: AnuncioCrudo, criterios: Criterios): Ve
   const metros = fueraDeRango(anuncio.metros, criterios.metros_min, criterios.metros_max);
   if (metros) return { cumple: false, motivo: `superficie ${metros === 'bajo' ? 'insuficiente' : 'excesiva'}` };
 
-  if (
-    criterios.habitaciones_min !== null &&
-    anuncio.habitaciones !== null &&
-    anuncio.habitaciones < criterios.habitaciones_min
-  ) {
-    return { cumple: false, motivo: 'menos habitaciones de las pedidas' };
-  }
+  // Los criterios residenciales no se evalúan para un local: no tiene
+  // habitaciones, ni el propietario espera filtrar una nave por ascensor.
+  if (criterios.tipo === 'vivienda') {
+    if (
+      criterios.habitaciones_min !== null &&
+      anuncio.habitaciones !== null &&
+      anuncio.habitaciones < criterios.habitaciones_min
+    ) {
+      return { cumple: false, motivo: 'menos habitaciones de las pedidas' };
+    }
 
-  if (criterios.banos_min !== null && anuncio.banos !== null && anuncio.banos < criterios.banos_min) {
-    return { cumple: false, motivo: 'menos baños de los pedidos' };
-  }
+    if (criterios.banos_min !== null && anuncio.banos !== null && anuncio.banos < criterios.banos_min) {
+      return { cumple: false, motivo: 'menos baños de los pedidos' };
+    }
 
-  // `false` = el anuncio dice explícitamente que no lo tiene → descarta.
-  // `null` = el portal no lo informa → pasa, y ya se ve en la ficha.
-  if (criterios.exige_ascensor && anuncio.ascensor === false) {
-    return { cumple: false, motivo: 'sin ascensor' };
-  }
-  if (criterios.exige_garaje && anuncio.garaje === false) {
-    return { cumple: false, motivo: 'sin garaje' };
-  }
-  if (criterios.exige_terraza && anuncio.terraza === false) {
-    return { cumple: false, motivo: 'sin terraza' };
+    // `false` = el anuncio dice explícitamente que no lo tiene → descarta.
+    // `null` = el portal no lo informa → pasa, y ya se ve en la ficha.
+    if (criterios.exige_ascensor && anuncio.ascensor === false) {
+      return { cumple: false, motivo: 'sin ascensor' };
+    }
+    if (criterios.exige_garaje && anuncio.garaje === false) {
+      return { cumple: false, motivo: 'sin garaje' };
+    }
+    if (criterios.exige_terraza && anuncio.terraza === false) {
+      return { cumple: false, motivo: 'sin terraza' };
+    }
   }
 
   const exclusiones = parsearExclusiones(criterios.excluir_palabras);

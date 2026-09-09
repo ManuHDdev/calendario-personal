@@ -7,6 +7,7 @@ function anuncio(overrides: Partial<Anuncio> = {}): Anuncio {
   return {
     id: 'a-1',
     busqueda_id: 'b-1',
+    tipo: 'vivienda',
     portal: 'fotocasa',
     portal_id: '123',
     url: 'https://www.fotocasa.es/piso/123',
@@ -80,6 +81,20 @@ describe('formatearNovedad', () => {
     expect(mensaje).toContain('110.000 €');
     expect(mensaje).toContain('<s>130.000 €</s>');
     expect(mensaje).not.toContain('125.000');
+  });
+
+  it('usa 🏪 «Local nuevo» para un local y 🏠 «Piso nuevo» para una vivienda', () => {
+    const local = formatearNovedad(
+      { anuncio: anuncio({ tipo: 'local', titulo: 'Local en esquina' }), tipo: 'nuevo' },
+      'Locales Badajoz',
+    );
+    expect(local).toContain('🏪');
+    expect(local).toContain('Local nuevo');
+    expect(local).not.toContain('Piso nuevo');
+
+    const vivienda = formatearNovedad({ anuncio: anuncio({ tipo: 'vivienda' }), tipo: 'nuevo' }, 'B');
+    expect(vivienda).toContain('🏠');
+    expect(vivienda).toContain('Piso nuevo');
   });
 
   it('no imprime "null" cuando falta un dato', () => {

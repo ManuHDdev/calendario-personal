@@ -57,10 +57,12 @@ export function escaparHtml(texto: string): string {
 export function formatearNovedad(novedad: NovedadAnuncio, nombreBusqueda: string): string {
   const { anuncio, tipo } = novedad;
 
+  const nuevoLabel =
+    anuncio.tipo === 'local' ? '🏪 <b>Local nuevo</b>' : '🏠 <b>Piso nuevo</b>';
   const cabecera =
     tipo === 'bajada'
       ? `📉 <b>Bajada de precio</b> · ${escaparHtml(nombreBusqueda)}`
-      : `🏠 <b>Piso nuevo</b> · ${escaparHtml(nombreBusqueda)}`;
+      : `${nuevoLabel} · ${escaparHtml(nombreBusqueda)}`;
 
   // Se tacha `precio_notificado`, no `precio_previo`: lo util es contra que
   // precio ha bajado RESPECTO A LO QUE SE TE DIJO LA ULTIMA VEZ. Si un aviso
