@@ -157,10 +157,14 @@ Calendario/panel/ dentro del monorepo elbunkerdelingeniero.
 ### Rutas (`/panel/api/*`)
 - `GET/POST/PUT/DELETE /users` → CRUD de usuarios vía Keycloak Admin API
 - `GET /roles` → lista fija `['admin','familia','invitado']`
+- `GET /usage` → consumo agregado de las APIs externas rastreadas en el monorepo (ORS vía Paraísos, TMDB/Google Books vía Watchlist), admin-only (`authAdminMiddleware`). Llama al `GET /usage` interno de cada subapp en paralelo (`Promise.allSettled`, timeout 3s); si uno falla, sus entradas se marcan `unavailable: true` en vez de tumbar toda la petición — ver `panel/backend/src/services/subappUsage.ts`
 - `GET /health`
 
+### Dashboard de uso de APIs externas
+Sección nueva en `PanelPage` (`UsageDashboard.tsx`), tarjetas con llamadas de hoy, restante (cuando la API tiene tope publicado) y hora de reinicio (medianoche UTC). Documentado en `openspec/changes/2026-09-09-add-api-usage-dashboard/`.
+
 ### Variables de entorno
-`KEYCLOAK_BASE_URL`, `KEYCLOAK_CERTS_URL`, `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `CORS_ORIGIN`, `PORT` (default 3002)
+`KEYCLOAK_BASE_URL`, `KEYCLOAK_CERTS_URL`, `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `CORS_ORIGIN`, `PORT` (default 3002), `PANEL_INTERNAL_TOKEN` (compartido con Paraísos y Watchlist), `PARAISOS_BACKEND_URL` (default `http://paraisos-backend:3007`), `WATCHLIST_BACKEND_URL` (default `http://watchlist-backend:3009`)
 
 ### Red Docker
 `calendario-net` (externa)
@@ -406,11 +410,12 @@ Paraísos es una herramienta pública: cualquier visitante puede ver el mapa y l
 - `DELETE /spots/:id` — borrado lógico (admin, Keycloak)
 - `POST /images` — subida de imagen de spot (admin, Keycloak), `multipart/form-data` campo `file`, devuelve `{ url }`
 - `GET /images/:filename` — sirve una imagen subida (público, sin auth)
-- `GET /route-distance` — distancia y duración por carretera entre dos puntos vía OpenRouteService (público, sin auth), query `fromLat`/`fromLng`/`toLat`/`toLng`. Protegido con límite propio de 2000 peticiones/día (por debajo del límite real de ORS), límite de 20 peticiones/5min por IP, y caché en memoria de 6h por par de coordenadas (redondeadas a ~100m) — todo en memoria del proceso, se resetea en cada redeploy
+- `GET /route-distance` — distancia y duración por carretera entre dos puntos vía OpenRouteService (público, sin auth), query `fromLat`/`fromLng`/`toLat`/`toLng`. Protegido con límite propio de 2000 peticiones/día (por debajo del límite real de ORS), límite de 20 peticiones/5min por IP, y caché en memoria de 6h por par de coordenadas (redondeadas a ~100m). El contador diario vive en Postgres (tabla `api_usage_counter`), no en memoria — sobrevive a un redeploy, a diferencia de la caché de resultados y el límite por IP, que sí siguen en memoria y se resetean
+- `GET /usage` — consumo de hoy de ORS (interno, para el dashboard de Panel), bearer-token-gated con `PANEL_INTERNAL_TOKEN` (comparación en tiempo constante, mismo patrón que `SCRAPER_API_KEY` de Ofertas) — un JWT de Keycloak NO da acceso a esta ruta
 - `GET /health`
 
 ### Variables de entorno del backend
-`PARAISOS_DB_HOST`, `PARAISOS_DB_NAME`, `PARAISOS_DB_USER`, `PARAISOS_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3007), `PARAISOS_IMAGES_PATH` (prod: `/app/data/images`, volumen Docker persistente), `ORS_API_KEY` (gratuito, generar en openrouteservice.org — plan gratuito real: 2500 peticiones/día, 40.000/mes, 40 concurrentes), `ORS_API_KEY` (gratuito, generar en openrouteservice.org — límite 2000 peticiones/día)
+`PARAISOS_DB_HOST`, `PARAISOS_DB_NAME`, `PARAISOS_DB_USER`, `PARAISOS_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3007), `PARAISOS_IMAGES_PATH` (prod: `/app/data/images`, volumen Docker persistente), `ORS_API_KEY` (gratuito, generar en openrouteservice.org — plan gratuito real: 2500 peticiones/día, 40.000/mes, 40 concurrentes), `PANEL_INTERNAL_TOKEN` (compartido con Panel y Watchlist, gatea `GET /usage`)
 
 ### Red Docker
 `calendario-net` (externa)
@@ -495,10 +500,14 @@ Calendario/watchlist/ dentro del monorepo elbunkerdelingeniero.
 - `GET /search/movies?q=` — autocompletado de películas vía TMDB
 - `GET /search/tv?q=` — autocompletado de series vía TMDB
 - `GET /search/books?q=` — autocompletado de libros vía Google Books
+- `GET /usage` — consumo de hoy de TMDB y Google Books (interno, para el dashboard de Panel), bearer-token-gated con `PANEL_INTERNAL_TOKEN` (mismo patrón que Paraísos/Ofertas) — un JWT de Keycloak NO da acceso a esta ruta
 - `GET /health`
 
+### Consumo de TMDB y Google Books
+Cada llamada real (nunca un cache hit) incrementa un contador diario en Postgres (`api_usage_counter`, mismo esquema que Paraísos). Google Books tiene cuota gratuita por defecto de 1000/día (Google Cloud); TMDB no publica un tope diario, así que su entrada en `GET /usage` no lleva límite/restante, solo el conteo de hoy. Esto es puramente informativo — no se añade ningún bloqueo nuevo a `/search/*`.
+
 ### Variables de entorno del backend
-`WATCHLIST_DB_HOST`, `WATCHLIST_DB_NAME`, `WATCHLIST_DB_USER`, `WATCHLIST_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3009), `TMDB_API_KEY` (gratuito, themoviedb.org), `GOOGLE_BOOKS_API_KEY` (gratuito, Google Cloud Console). Si alguna de las dos claves falta, el endpoint de búsqueda correspondiente devuelve 503 en vez de romper el arranque del backend.
+`WATCHLIST_DB_HOST`, `WATCHLIST_DB_NAME`, `WATCHLIST_DB_USER`, `WATCHLIST_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3009), `TMDB_API_KEY` (gratuito, themoviedb.org), `GOOGLE_BOOKS_API_KEY` (gratuito, Google Cloud Console). Si alguna de las dos claves falta, el endpoint de búsqueda correspondiente devuelve 503 en vez de romper el arranque del backend. `PANEL_INTERNAL_TOKEN` (compartido con Panel y Paraísos, gatea `GET /usage`).
 
 ### Red Docker
 `calendario-net` (externa)
@@ -1111,7 +1120,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 
 ## Deuda técnica conocida
 
-- **Sin tests**: Panel y mapacyd (backend y frontend) no tienen ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
+- **Sin tests**: Panel (backend) tiene vitest desde el dashboard de uso de APIs (`subappUsage.ts`, `routes/usage.ts`) pero el resto del backend (`users.ts`, `me.ts`, `keycloakAdmin.ts`) y todo el frontend siguen sin cobertura; mapacyd (backend y frontend) sigue sin ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
 - **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 14 Dockerfiles y 14 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 15 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
 

@@ -38,3 +38,12 @@ CREATE INDEX IF NOT EXISTS idx_item_activo_tipo_estado ON item(activo, tipo, est
 -- añadirlo tras un borrado lógico (el índice solo cubre filas activas).
 CREATE UNIQUE INDEX IF NOT EXISTS idx_item_external_unique
     ON item(tipo, external_id) WHERE activo = true AND external_id IS NOT NULL;
+
+-- ── External API usage counters (see openspec add-api-usage-dashboard) ───
+
+CREATE TABLE IF NOT EXISTS api_usage_counter (
+    api_name    TEXT    NOT NULL,
+    usage_date  DATE    NOT NULL,
+    calls       INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (api_name, usage_date)
+);

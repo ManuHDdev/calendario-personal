@@ -4,6 +4,7 @@ import multipart from '@fastify/multipart';
 import { spotsRoutes } from './routes/spots';
 import { imagesRoutes } from './routes/images';
 import { routeDistanceRoutes } from './routes/route';
+import { usageRoutes } from './routes/usage';
 import { seedLegacyImages } from './services/imageService';
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -36,6 +37,7 @@ async function bootstrap() {
   await app.register(spotsRoutes, { prefix: '/paraisos/api' });
   await app.register(imagesRoutes, { prefix: '/paraisos/api' });
   await app.register(routeDistanceRoutes, { prefix: '/paraisos/api' });
+  await app.register(usageRoutes, { prefix: '/paraisos/api' });
 
   app.get('/paraisos/api/health', async () => ({
     status: 'ok',

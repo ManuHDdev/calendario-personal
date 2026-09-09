@@ -79,7 +79,7 @@ function StartBackground($name, $logfile, $workdir, $cmd, $envVars = @{}) {
   $job = Start-Job -ScriptBlock {
     param($wd, $command, $envs, $log)
     Set-Location $wd
-    foreach ($key in $envs.Keys) { $env:($key) = $envs[$key] }
+    foreach ($key in $envs.Keys) { Set-Item -Path "env:$key" -Value $envs[$key] }
     Invoke-Expression $command 2>&1 | Tee-Object -FilePath $log -Append
   } -ArgumentList $workdir, $cmd, $envVars, $logPath
   $script:Jobs += $job
@@ -287,7 +287,9 @@ StartBackground "panel-backend     :3002" "panel-backend.log" `
   "npm run dev" `
   @{ PORT="3002"; KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      KEYCLOAK_BASE_URL="http://localhost:8080"; KEYCLOAK_ADMIN="admin";
-     KEYCLOAK_ADMIN_PASSWORD="admin123"; CORS_ORIGIN="http://localhost:5174" }
+     KEYCLOAK_ADMIN_PASSWORD="admin123"; CORS_ORIGIN="http://localhost:5174";
+     PANEL_INTERNAL_TOKEN=$(if ($env:PANEL_INTERNAL_TOKEN) { $env:PANEL_INTERNAL_TOKEN } else { "local-dev-panel-internal-token" });
+     PARAISOS_BACKEND_URL="http://localhost:3007"; WATCHLIST_BACKEND_URL="http://localhost:3009" }
 
 # Storage backend
 EnsureDeps (Join-Path $SCRIPT_DIR "storage\backend")
@@ -350,7 +352,8 @@ StartBackground "paraisos-backend  :3007" "paraisos-backend.log" `
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ORIGIN="http://localhost:5179";
      PARAISOS_IMAGES_PATH=(Join-Path $SCRIPT_DIR "paraisos\backend\data\images");
-     ORS_API_KEY=$env:ORS_API_KEY }
+     ORS_API_KEY=$env:ORS_API_KEY;
+     PANEL_INTERNAL_TOKEN=$(if ($env:PANEL_INTERNAL_TOKEN) { $env:PANEL_INTERNAL_TOKEN } else { "local-dev-panel-internal-token" }) }
 
 # Watchlist backend
 EnsureDeps (Join-Path $SCRIPT_DIR "watchlist\backend")
@@ -361,7 +364,8 @@ StartBackground "watchlist-backend :3009" "watchlist-backend.log" `
      WATCHLIST_DB_NAME="watchlist"; WATCHLIST_DB_USER="watchlist"; WATCHLIST_DB_PASSWORD="watchlist123";
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ORIGIN="http://localhost:5181";
-     TMDB_API_KEY=$env:TMDB_API_KEY; GOOGLE_BOOKS_API_KEY=$env:GOOGLE_BOOKS_API_KEY }
+     TMDB_API_KEY=$env:TMDB_API_KEY; GOOGLE_BOOKS_API_KEY=$env:GOOGLE_BOOKS_API_KEY;
+     PANEL_INTERNAL_TOKEN=$(if ($env:PANEL_INTERNAL_TOKEN) { $env:PANEL_INTERNAL_TOKEN } else { "local-dev-panel-internal-token" }) }
 
 # Juegos backend
 EnsureDeps (Join-Path $SCRIPT_DIR "juegos\backend")

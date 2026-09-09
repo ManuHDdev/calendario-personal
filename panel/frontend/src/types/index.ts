@@ -13,3 +13,13 @@ export interface UserFormData {
   roles: string[];
   enabled: boolean;
 }
+
+export interface ApiUsageEntry {
+  api: string;
+  label: string;
+  callsToday: number | null;
+  dailyLimit: number | null;
+  remaining: number | null;
+  resetsAt: string | null;
+  unavailable: boolean;
+}
