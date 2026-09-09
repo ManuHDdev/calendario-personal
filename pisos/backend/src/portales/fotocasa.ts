@@ -61,7 +61,8 @@ const PORTAL = 'fotocasa';
 /** Segmento de la ruta de Fotocasa según el tipo de inmueble. */
 const SECCION: Record<TipoInmueble, string> = { vivienda: 'viviendas', local: 'locales' };
 
-function construirUrl(criterios: CriteriosPortal, pagina: number): string {
+/** Expuesto para los tests: la ruta y los parámetros dependen del `tipo`. */
+export function construirUrl(criterios: CriteriosPortal, pagina: number): string {
   // En Fotocasa "caceres" es la provincia y "caceres-capital" la ciudad.
   const base = slugificar(criterios.ubicacion);
   const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}-capital` : base;

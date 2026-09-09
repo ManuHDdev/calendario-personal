@@ -23,13 +23,20 @@ Un `tipo` fuera de ese conjunto SHALL devolver 400/422 y no crear la búsqueda.
 - **THEN** el backend responde 400/422 y no se crea ninguna fila
 
 ### Requirement: El tipo es inmutable
-`PATCH /searches/:id` SHALL rechazar con 400/422 cualquier petición que intente cambiar
-`tipo`, porque los anuncios ya vinculados serían del tipo de inmueble equivocado. Un
-`PATCH` que reenvíe el mismo `tipo` actual SHALL aceptarse.
+`PATCH /searches/:id` SHALL rechazar con 400 cualquier petición cuyo body incluya la clave
+`tipo`, sea cual sea su valor, porque los anuncios ya vinculados serían del tipo de inmueble
+equivocado. El esquema del PATCH omite `tipo` por completo (`.strict()`), así que el cliente
+nunca lo envía; una petición que lo incluya —aunque repita el valor actual— es un error del
+llamante y se responde 400, no se acepta en silencio. La allowlist de `updateBusqueda` en la
+capa de datos excluye `tipo` como segunda barrera.
 
 #### Scenario: Cambio de tipo rechazado
 - **WHEN** se hace `PATCH /searches/:id` sobre una búsqueda `vivienda` con `tipo: 'local'`
-- **THEN** el backend responde 400/422 y la búsqueda no cambia
+- **THEN** el backend responde 400 y la búsqueda no cambia
+
+#### Scenario: Reenvío del mismo tipo rechazado
+- **WHEN** se hace `PATCH /searches/:id` sobre una búsqueda `vivienda` con `tipo: 'vivienda'`
+- **THEN** el backend responde 400 (clave no reconocida) y la búsqueda no cambia
 
 ### Requirement: El anuncio hereda el tipo de su búsqueda
 Cada fila de `anuncio` SHALL llevar `tipo`, copiado de su `busqueda` en el momento de

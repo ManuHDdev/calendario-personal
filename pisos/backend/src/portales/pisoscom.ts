@@ -51,7 +51,8 @@ const SECCION: Record<TipoInmueble, string> = { vivienda: 'pisos', local: 'local
 /** Slugs de URL que en pisos.com son vivienda: si aparecen en un listado de local, se descartan. */
 const SLUGS_RESIDENCIALES = ['piso', 'atico', 'duplex', 'chalet', 'vivienda', 'apartamento', 'estudio', 'casa'];
 
-function construirUrl(criterios: CriteriosPortal, pagina: number): string {
+/** Expuesto para los tests: el segmento de la ruta depende del `tipo`. */
+export function construirUrl(criterios: CriteriosPortal, pagina: number): string {
   // "pisos-caceres" es la provincia; "pisos-caceres_capital" la ciudad.
   const base = slugificar(criterios.ubicacion);
   const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}_capital` : base;

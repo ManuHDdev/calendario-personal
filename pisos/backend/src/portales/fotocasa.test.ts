@@ -1,5 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { parsearPagina } from './fotocasa';
+import { construirUrl, parsearPagina } from './fotocasa';
+import type { CriteriosPortal } from './types';
+
+const CRITERIOS_BASE: CriteriosPortal = {
+  tipo: 'vivienda',
+  ubicacion: 'Plasencia',
+  latitud: null,
+  longitud: null,
+  radioKm: null,
+  precioMin: null,
+  precioMax: null,
+  metrosMin: null,
+  metrosMax: null,
+  habitacionesMin: 3,
+  banosMin: null,
+};
 
 /**
  * Fixture reducido con la forma real (2026-08) del bloque
@@ -59,10 +74,17 @@ const HTML_LOCALES = `
 </body></html>`;
 
 describe('fotocasa · parsearPagina — locales (tipo=local)', () => {
-  it('construye la URL de la sección comercial', () => {
-    // El bloque de conocimiento expone SECCION; se prueba indirectamente vía
-    // el provider en el smoke. Aquí basta con el comportamiento del parser.
-    expect(true).toBe(true);
+  it('construye la URL de la sección comercial y no manda minRooms', () => {
+    const url = construirUrl({ ...CRITERIOS_BASE, tipo: 'local' }, 1);
+    expect(url).toContain('/es/comprar/locales/plasencia/todas-las-zonas/l');
+    expect(url).not.toContain('minRooms');
+    expect(url).toContain('sortType=publicationDate');
+  });
+
+  it('en vivienda mantiene la sección de viviendas y sí manda minRooms', () => {
+    const url = construirUrl(CRITERIOS_BASE, 1);
+    expect(url).toContain('/es/comprar/viviendas/plasencia/todas-las-zonas/l');
+    expect(url).toContain('minRooms=3');
   });
 
   it('acepta local/nave/oficina, rechaza el subtipo residencial y usa la superficie ampliada', () => {
