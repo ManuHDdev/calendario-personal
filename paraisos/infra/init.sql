@@ -52,6 +52,15 @@ CREATE INDEX IF NOT EXISTS idx_parking_spot_spot_id ON parking_spot(spot_id);
 CREATE INDEX IF NOT EXISTS idx_parking_spot_activo ON parking_spot(activo);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_parking_spot_active_unique ON parking_spot(spot_id) WHERE activo = true;
 
+-- ── External API usage counters (see openspec add-api-usage-dashboard) ───
+
+CREATE TABLE IF NOT EXISTS api_usage_counter (
+    api_name    TEXT    NOT NULL,
+    usage_date  DATE    NOT NULL,
+    calls       INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (api_name, usage_date)
+);
+
 -- Seed: spots importados de las Google Sheets originales del proyecto Paraísos
 INSERT INTO spot (nombre, region, provincia, latitud, longitud, imagen_url, categoria) VALUES
 -- EXTREMADURA

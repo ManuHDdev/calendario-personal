@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { incrementUsage, getUsageToday } from '../db/usageCounter';
 
 interface RouteDistanceQuery {
   fromLat?: string;
@@ -28,18 +29,15 @@ interface RouteResult {
 /**
  * Limite diario propio, por debajo del limite real del plan gratuito de ORS
  * (2500/dia) para fallar limpio con un 503 antes de que ORS bloquee la key.
+ * El contador vive en Postgres (api_usage_counter, api_name='ors') en vez de
+ * en memoria, para que sobreviva a un redeploy — ver db/usageCounter.ts.
  */
 const DAILY_CAP = 2000;
-let dailyCount = 0;
-let dailyResetDate = new Date().toISOString().slice(0, 10);
+const API_NAME = 'ors';
 
-function underDailyCap(): boolean {
-  const today = new Date().toISOString().slice(0, 10);
-  if (today !== dailyResetDate) {
-    dailyResetDate = today;
-    dailyCount = 0;
-  }
-  return dailyCount < DAILY_CAP;
+async function underDailyCap(): Promise<boolean> {
+  const callsToday = await getUsageToday(API_NAME);
+  return callsToday < DAILY_CAP;
 }
 
 /** Limite por IP: max 20 peticiones cada 5 minutos, ventana deslizante en memoria. */
@@ -108,14 +106,14 @@ export async function routeDistanceRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(503).send({ error: 'Servicio de rutas no configurado', statusCode: 503 });
       }
 
-      if (!underDailyCap()) {
+      if (!(await underDailyCap())) {
         return reply.code(503).send({ error: 'Limite diario de calculo de rutas alcanzado, disponible manana', statusCode: 503 });
       }
 
       try {
         const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${encodeURIComponent(apiKey)}&start=${fromLngNum},${fromLatNum}&end=${toLngNum},${toLatNum}`;
         const res = await fetch(url);
-        dailyCount++;
+        await incrementUsage(API_NAME);
 
         if (!res.ok) {
           return reply.code(502).send({ error: 'No se pudo calcular la ruta', statusCode: 502 });

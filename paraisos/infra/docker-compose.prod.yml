@@ -36,6 +36,7 @@ services:
       CORS_ORIGIN:          ${CORS_ORIGIN}
       PARAISOS_IMAGES_PATH: /app/data/images
       ORS_API_KEY:          ${ORS_API_KEY}
+      PANEL_INTERNAL_TOKEN: ${PANEL_INTERNAL_TOKEN}
       NODE_ENV:             production
     volumes:
       - paraisos_images:/app/data/images
