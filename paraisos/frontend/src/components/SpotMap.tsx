@@ -100,8 +100,10 @@ export default function SpotMap({ spots, selectedSpot, onSpotSelect, onMapClick,
       zoomControl: false,
     }).setView([39.5, -3.0], 6);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    // CARTO's anonymous basemap CDN now requires an API key (returns a watermarked
+    // tile without one) — switched to Esri's free, key-less light gray basemap.
+    L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
       maxZoom: 19,
     }).addTo(map);
 
