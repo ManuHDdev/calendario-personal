@@ -254,6 +254,9 @@ start_bg "panel-backend     :3002" "panel-backend.log" "$SCRIPT_DIR/panel/backen
       KEYCLOAK_ADMIN="admin" \
       KEYCLOAK_ADMIN_PASSWORD="admin123" \
       CORS_ORIGIN="http://localhost:5174" \
+      PANEL_INTERNAL_TOKEN="${PANEL_INTERNAL_TOKEN:-local-dev-panel-internal-token}" \
+      PARAISOS_BACKEND_URL="http://localhost:3007" \
+      WATCHLIST_BACKEND_URL="http://localhost:3009" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/storage/backend"
@@ -322,6 +325,7 @@ start_bg "paraisos-backend  :3007" "paraisos-backend.log" "$SCRIPT_DIR/paraisos/
       CORS_ORIGIN="http://localhost:5179" \
       PARAISOS_IMAGES_PATH="$SCRIPT_DIR/paraisos/backend/data/images" \
       ORS_API_KEY="${ORS_API_KEY:-}" \
+      PANEL_INTERNAL_TOKEN="${PANEL_INTERNAL_TOKEN:-local-dev-panel-internal-token}" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/juegos/backend"
@@ -343,6 +347,7 @@ start_bg "watchlist-backend  :3009" "watchlist-backend.log" "$SCRIPT_DIR/watchli
       CORS_ORIGIN="http://localhost:5181" \
       TMDB_API_KEY="${TMDB_API_KEY:-}" \
       GOOGLE_BOOKS_API_KEY="${GOOGLE_BOOKS_API_KEY:-}" \
+      PANEL_INTERNAL_TOKEN="${PANEL_INTERNAL_TOKEN:-local-dev-panel-internal-token}" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/reparto/backend"
