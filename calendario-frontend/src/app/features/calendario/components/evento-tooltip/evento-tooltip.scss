@@ -1,5 +1,6 @@
 .tooltip {
-  background: white;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   padding: 12px 0;
@@ -36,7 +37,7 @@
   transition: background var(--transition);
 
   &:hover {
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--color-bg);
 
     .evento-acciones { opacity: 1; }
   }
