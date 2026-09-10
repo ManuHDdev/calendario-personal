@@ -656,8 +656,10 @@ portal y avisos distintos. Reglas:
   editar. Para cambiar de tipo se crea otra búsqueda.
 - **Fotocasa y pisos.com**: `tipo='local'` cambia el segmento de URL a la
   sección comercial (`/es/comprar/locales/…` y `/venta/locales-<zona>/`,
-  **portados de `locales/` y aún NO verificados contra el portal en vivo** —
-  candidato alternativo de Fotocasa: `local-comercial`), invierte el filtro de
+  **verificados contra el portal en vivo el 2026-09-10** — Madrid y Badajoz,
+  ~30 anuncios/página con precio+m²+imagen al 100%; en Fotocasa el nodo trae
+  `buildingType: "Business"` sin `buildingSubtype` y la ficha vuelve bajo
+  `/es/comprar/local-comercial/…`), invierte el filtro de
   subtipos (acepta local/nave/oficina, rechaza piso/ático/chalet) y usa una
   horquilla de superficie ampliada `[10, 5000]` m² en vez de `[15, 1000]`.
   `minRooms`/`habitacionesDesde` no se emiten para `local`.

@@ -39,9 +39,12 @@ const PORTAL = 'pisos';
  * Verificar con:  npm run smoke -- pisos "Badajoz"
  *                 npm run smoke -- pisos "Badajoz" --tipo local
  *
- * SECCIÓN COMERCIAL SIN VERIFICAR (2026-09): `/venta/locales-<zona>/` está
- * portado de `locales/backend/src/portales/pisoscom.ts` y no se ha comprobado
- * contra el portal en vivo (sí lo está la rareza del `@type`, ver más abajo).
+ * SECCIÓN COMERCIAL VERIFICADA CONTRA EL PORTAL EN VIVO (2026-09-10, Madrid y
+ * Badajoz, ~31 anuncios/página con precio+m²+imagen al 100%). El listado se
+ * pide en `/venta/locales-<zona>/`; las fichas vuelven con slug
+ * `local_comercial`, `oficina`, `edificio`… (ninguno en `SLUGS_RESIDENCIALES`,
+ * así que no se descartan). El JSON-LD sigue con la rareza del `@type`
+ * (`SingleFamilyResidence` para todo), ver más abajo.
  * ─────────────────────────────────────────────────────────────────────────
  */
 

@@ -17,11 +17,11 @@ const CRITERIOS_BASE: CriteriosPortal = {
 };
 
 /**
- * FIXTURE PLACEHOLDER — hecho a mano con la forma conocida de pisos.com, NO
- * capturado de la sección real de locales. Reemplazar con:
- *   npm run smoke -- pisos "<zona>" --tipo local
- * Hasta entonces prueba la rama por `tipo` (rechazo por slug, superficie
- * ampliada, geo sin filtro `@type`), no que pisos.com sirva hoy esta forma.
+ * Fixture con la forma de la sección real de locales de pisos.com, verificada
+ * contra el portal en vivo el 2026-09-10 (`npm run smoke -- pisos "Madrid"
+ * --tipo local`): tarjeta `.ad-preview` con `data-lnk-href`, slug de ficha
+ * `local_comercial`/`oficina`/`edificio` (ninguno residencial), y JSON-LD que
+ * solo aporta geo/dirección con `@type` siempre `SingleFamilyResidence`.
  */
 const HTML_LOCALES = `
 <html><body>
