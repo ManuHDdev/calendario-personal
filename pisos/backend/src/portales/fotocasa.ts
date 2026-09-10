@@ -52,9 +52,15 @@ const PORTAL = 'fotocasa';
  * Verificar con:  npm run smoke -- fotocasa "Badajoz"
  *                 npm run smoke -- fotocasa "Badajoz" --tipo local
  *
- * SECCIÓN COMERCIAL SIN VERIFICAR (2026-09): el segmento `/es/comprar/locales/`
- * está portado de `locales/backend/src/portales/fotocasa.ts` y no se ha
- * comprobado contra el portal en vivo. Candidato alternativo: `local-comercial`.
+ * SECCIÓN COMERCIAL — VERIFICADA CONTRA EL PORTAL EN VIVO (2026-09-10, Madrid y
+ * Badajoz, 30 anuncios/página con precio+m²+imagen al 100%). Detalles reales:
+ *   - El listado se pide en `/es/comprar/locales/<zona>/…` (este segmento). Las
+ *     fichas vuelven bajo `/es/comprar/local-comercial/…` en `detail["es-ES"]`;
+ *     es solo la URL de la ficha, no la del listado.
+ *   - El nodo del estado embebido trae `buildingType: "Business"` y NO trae
+ *     `buildingSubtype`. Pasa el filtro porque `business` no está en
+ *     `SUBTIPOS_NO_LOCAL` y sí en `SUBTIPOS_NO_VIVIENDA` (se rechaza en vivienda).
+ *   - `features` mantiene la forma `[{ key, value }]` (surface, bathrooms…).
  * ─────────────────────────────────────────────────────────────────────────
  */
 

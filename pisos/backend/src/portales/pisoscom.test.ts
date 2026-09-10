@@ -17,11 +17,11 @@ const CRITERIOS_BASE: CriteriosPortal = {
 };
 
 /**
- * FIXTURE PLACEHOLDER — hecho a mano con la forma conocida de pisos.com, NO
- * capturado de la sección real de locales. Reemplazar con:
- *   npm run smoke -- pisos "<zona>" --tipo local
- * Hasta entonces prueba la rama por `tipo` (rechazo por slug, superficie
- * ampliada, geo sin filtro `@type`), no que pisos.com sirva hoy esta forma.
+ * Fixture con la forma de la sección real de locales de pisos.com, verificada
+ * contra el portal en vivo el 2026-09-10 (`npm run smoke -- pisos "Madrid"
+ * --tipo local`): tarjeta `.ad-preview` con `data-lnk-href`, slug de ficha
+ * `local_comercial`/`oficina`/`edificio` (ninguno residencial), y JSON-LD que
+ * solo aporta geo/dirección con `@type` siempre `SingleFamilyResidence`.
  */
 const HTML_LOCALES = `
 <html><body>
@@ -134,5 +134,24 @@ describe('pisos.com · locales (tipo=local)', () => {
     expect(local?.tipo).toBe('local');
     expect(local?.metros).toBe(2000); // pasaría a null con el extractor de vivienda ([15,1000])
     expect(local?.latitud).toBeCloseTo(40.0289); // mapaGeoPorId ya no filtra por @type
+  });
+
+  it('un anuncio "A consultar" (data-ad-price="0") deja precio en null, no en 0', () => {
+    // Caso real de la sección de locales: pisos.com sirve data-ad-price="0"
+    // y un texto "A consultar". Un 0 colaría en cualquier filtro de precioMax.
+    const html = `
+<html><body>
+<div id="62518867133.109300" class="ad-preview ad-preview--has-desc " data-lnk-href="/comprar/local_comercial-montesol_mejostilla10004-62518867133_109300/">
+  <div class="ad-preview__inline"><span class="ad-preview__price"> A consultar </span></div>
+  <a href="/comprar/local_comercial-montesol_mejostilla10004-62518867133_109300/" class="ad-preview__title">Local comercial en calle Juan Ramón Jiménez, 5</a>
+  <p class="p-sm ad-preview__subtitle">Montesol-Mejostilla</p>
+  <p class="ad-preview__char p-sm">96 m&#xB2;</p>
+  <div class="contact-box" data-ad-id="62518867133.109300" data-ad-price="0"></div>
+</div>
+</body></html>`;
+    const [anuncio] = parsearPagina(html, 'local');
+    expect(anuncio.portalId).toBe('62518867133.109300');
+    expect(anuncio.precio).toBeNull();
+    expect(anuncio.metros).toBe(96);
   });
 });

@@ -46,29 +46,29 @@ const HTML = `
 </body></html>`;
 
 /**
- * FIXTURE PLACEHOLDER — hecho a mano a partir de la forma conocida del estado
- * embebido de Fotocasa, NO capturado del portal real. Reemplazar por una
- * captura real con:  npm run smoke -- fotocasa "<zona>" --tipo local
- * (guardar el HTML servido; hasta entonces estos tests solo prueban la lógica
- * de rama por `tipo`, no que Fotocasa sirva hoy esta estructura para locales).
+ * Fixture con la forma REAL de la sección comercial de Fotocasa, verificada
+ * contra el portal en vivo el 2026-09-10 (`npm run smoke -- fotocasa "Madrid"
+ * --tipo local`): el nodo trae `buildingType: "Business"` y NO trae
+ * `buildingSubtype`; la ficha vuelve bajo `/es/comprar/local-comercial/…`;
+ * `features` mantiene `[{ key, value }]` (surface, bathrooms).
  */
 const HTML_LOCALES = `
 <html><body>
 <script type="application/json" id="__initial_props__">
 {"search":{"result":{"realEstates":[
-  {"id":300100001,"buildingType":"Premises","buildingSubtype":"Premises","transactionTypeId":1,
+  {"id":300100001,"buildingType":"Business","transactionTypeId":1,
    "rawPrice":180000,"price":"180.000 €",
-   "detail":{"es-ES":"/es/comprar/local/badajoz-capital/centro/300100001/d"},
+   "detail":{"es-ES":"/es/comprar/local-comercial/badajoz-capital/centro/300100001/d"},
    "address":{"municipality":"Badajoz","district":"Centro","province":"Badajoz"},
    "coordinates":{"latitude":38.8794,"longitude":-6.9707},
-   "features":[{"key":"surface","value":2500}],
+   "features":[{"key":"surface","value":2500,"maxValue":0,"minValue":0}],
    "description":"Nave industrial de 2.500 m² con muelle de carga"},
-  {"id":300100002,"buildingSubtype":"Flat","transactionTypeId":1,"rawPrice":95000,
+  {"id":300100002,"buildingType":"Flat","buildingSubtype":"Flat","transactionTypeId":1,"rawPrice":95000,
    "detail":{"es-ES":"/es/comprar/vivienda/badajoz/x/300100002/d"},
    "features":[{"key":"surface","value":70},{"key":"rooms","value":2}]},
-  {"id":300100003,"buildingSubtype":"Office","transactionTypeId":1,"rawPrice":120000,
-   "detail":{"es-ES":"/es/comprar/oficina/badajoz/y/300100003/d"},
-   "features":[{"key":"surface","value":140}]}
+  {"id":300100003,"buildingType":"Business","transactionTypeId":1,"rawPrice":120000,
+   "detail":{"es-ES":"/es/comprar/local-comercial/badajoz/y/300100003/d"},
+   "features":[{"key":"surface","value":140,"maxValue":0,"minValue":0},{"key":"bathrooms","value":1}]}
 ]}}}
 </script>
 </body></html>`;
