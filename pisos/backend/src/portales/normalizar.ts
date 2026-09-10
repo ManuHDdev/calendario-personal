@@ -51,9 +51,15 @@ export function normalizarTexto(texto: string): string {
  *
  * En España el punto es separador de millares y la coma decimal, así que
  * "145.000" son ciento cuarenta y cinco mil, no ciento cuarenta y cinco.
+ *
+ * Un importe de 0 o negativo NO es un precio: los portales lo usan como
+ * centinela de "precio a consultar" (pisos.com sirve `data-ad-price="0"` junto
+ * a un texto "A consultar"). Se devuelve `null` para que el filtro lo trate
+ * como "el portal no lo dice" y no como un piso regalado que cuela en todo
+ * `precioMax`.
  */
 export function parsearPrecio(bruto: string | number | null | undefined): number | null {
-  if (typeof bruto === 'number') return Number.isFinite(bruto) ? bruto : null;
+  if (typeof bruto === 'number') return Number.isFinite(bruto) && bruto > 0 ? bruto : null;
   if (!bruto) return null;
 
   const limpio = bruto.replace(/[^\d.,]/g, '');
@@ -65,7 +71,7 @@ export function parsearPrecio(bruto: string | number | null | undefined): number
     : limpio.replace(/\.(?=\d{3}(\D|$))/g, '');
 
   const valor = Number(normalizado);
-  return Number.isFinite(valor) ? valor : null;
+  return Number.isFinite(valor) && valor > 0 ? valor : null;
 }
 
 /** Primer entero que case con `patron` (que debe capturar el número en el grupo 1). */
