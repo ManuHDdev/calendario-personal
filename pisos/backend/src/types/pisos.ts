@@ -2,6 +2,14 @@
 export const PORTALES = ['fotocasa', 'pisos', 'wallapop'] as const;
 export type PortalId = (typeof PORTALES)[number];
 
+/**
+ * Tipo de inmueble que persigue una búsqueda. Excluyentes: una búsqueda es de
+ * `vivienda` o de `local`, nunca de las dos cosas (criterios, secciones de
+ * portal y avisos distintos). Espejo de `PORTALES`.
+ */
+export const TIPOS = ['vivienda', 'local'] as const;
+export type TipoInmueble = (typeof TIPOS)[number];
+
 export interface PortalConfig {
   enabled: boolean;
 }
@@ -12,6 +20,7 @@ export type PortalesConfig = Record<PortalId, PortalConfig>;
 export interface Busqueda {
   id: string;
   nombre: string;
+  tipo: TipoInmueble;
   ubicacion: string;
   latitud: number | null;
   longitud: number | null;
@@ -39,6 +48,7 @@ export interface Busqueda {
 export interface Anuncio {
   id: string;
   busqueda_id: string;
+  tipo: TipoInmueble;
   portal: PortalId;
   portal_id: string;
   url: string;
@@ -78,6 +88,8 @@ export interface ScraperState {
  * ascensor" y "no lo dice" decide si un piso se filtra o no.
  */
 export interface AnuncioCrudo {
+  /** Copiado de `criterios.tipo` por el provider: llena `anuncio.tipo` sin JOIN. */
+  tipo: TipoInmueble;
   portal: PortalId;
   portalId: string;
   url: string;

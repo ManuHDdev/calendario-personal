@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   listAnuncios,
+  createBusqueda,
   updateBusqueda,
   updateAnuncio,
   deleteBusqueda,
@@ -40,6 +41,72 @@ describe('updateBusqueda', () => {
     expect(() => updateBusqueda('id-1', {})).toThrow(/al menos un campo/);
   });
 });
+
+describe('tipo de inmueble', () => {
+  it('createBusqueda incluye tipo en el INSERT y lo parametriza', () => {
+    const { text, values } = createBusqueda({
+      nombre: 'Locales Badajoz',
+      tipo: 'local',
+      ubicacion: 'Badajoz',
+      portales: { fotocasa: { enabled: true }, pisos: { enabled: true }, wallapop: { enabled: false } },
+    } as never);
+    expect(text).toMatch(/INSERT INTO busqueda\s*\(nombre, tipo, ubicacion/);
+    expect(values[1]).toBe('local');
+  });
+
+  it('createBusqueda cae a vivienda si el input no trae tipo', () => {
+    const { values } = createBusqueda({
+      nombre: 'x',
+      ubicacion: 'y',
+      portales: { fotocasa: { enabled: true }, pisos: { enabled: true }, wallapop: { enabled: false } },
+    } as never);
+    expect(values[1]).toBe('vivienda');
+  });
+
+  it('COLS_BUSQUEDA / COLS_ANUNCIO seleccionan tipo', () => {
+    expect(deleteBusqueda('id-1').text).not.toContain('tipo'); // sanity: no en el delete
+    expect(listAnuncios({}).text).toContain('a.tipo');
+  });
+
+  it('updateBusqueda NUNCA genera SQL para tipo, aunque se cuele en el body', () => {
+    const { text } = updateBusqueda('id-1', { nombre: 'ok', tipo: 'local' } as never);
+    expect(text).not.toMatch(/\btipo = \$/);
+    expect(text).toContain('nombre = $1');
+  });
+
+  it('listAnuncios filtra por tipo y lo parametriza', () => {
+    const { text, values } = listAnuncios({ tipo: 'local' });
+    expect(text).toContain('a.tipo = $1');
+    expect(values).toContain('local');
+  });
+
+  it('upsertAnuncio inserta tipo pero NO lo toca en el DO UPDATE', () => {
+    const { text, values } = upsertAnuncio('b-1', { ...crudoLocal });
+    expect(text.replace(/\s+/g, ' ')).toContain('imagen_url, tipo)');
+    expect(text).not.toMatch(/SET[\s\S]*\btipo = /);
+    expect(values.at(-1)).toBe('local');
+  });
+});
+
+const crudoLocal: AnuncioCrudo = {
+  tipo: 'local',
+  portal: 'fotocasa',
+  portalId: '999',
+  url: 'https://example.test/999',
+  titulo: 'Local',
+  precio: 90000,
+  metros: 200,
+  habitaciones: null,
+  banos: null,
+  planta: null,
+  ascensor: null,
+  garaje: null,
+  terraza: null,
+  ubicacion: 'Badajoz',
+  latitud: null,
+  longitud: null,
+  imagenUrl: null,
+};
 
 describe('updateAnuncio', () => {
   it('solo permite tocar visto y descartado', () => {
@@ -133,6 +200,7 @@ describe('marcarTodosVistos', () => {
 
 describe('upsertAnuncio', () => {
   const crudo: AnuncioCrudo = {
+    tipo: 'vivienda',
     portal: 'fotocasa',
     portalId: '123',
     url: 'https://example.test/123',

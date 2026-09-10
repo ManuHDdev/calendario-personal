@@ -67,6 +67,7 @@ describe('parsearItem', () => {
 
 describe('wallapopProvider.puedeBuscar', () => {
   const base: CriteriosPortal = {
+    tipo: 'vivienda',
     ubicacion: 'Badajoz',
     latitud: null,
     longitud: null,
@@ -87,5 +88,17 @@ describe('wallapopProvider.puedeBuscar', () => {
 
   it('acepta cuando están las tres: centro y radio', () => {
     expect(wallapopProvider.puedeBuscar({ ...base, latitud: 38.8, longitud: -6.9, radioKm: 30 }).ok).toBe(true);
+  });
+
+  it('se niega para tipo local antes incluso de mirar coordenadas', () => {
+    const veredicto = wallapopProvider.puedeBuscar({
+      ...base,
+      tipo: 'local',
+      latitud: 38.8,
+      longitud: -6.9,
+      radioKm: 30,
+    });
+    expect(veredicto.ok).toBe(false);
+    if (!veredicto.ok) expect(veredicto.motivo).toMatch(/no distingue local/i);
   });
 });

@@ -41,6 +41,7 @@ export interface ResultadoRastreo {
 
 function aCriteriosPortal(b: Busqueda): CriteriosPortal {
   return {
+    tipo: b.tipo,
     ubicacion: b.ubicacion,
     latitud: b.latitud,
     longitud: b.longitud,

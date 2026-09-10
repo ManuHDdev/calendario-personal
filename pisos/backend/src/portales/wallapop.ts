@@ -156,6 +156,8 @@ export function parsearItem(raw: ItemCrudo): AnuncioCrudo | null {
   const lng = raw.location?.longitude;
 
   return {
+    // Wallapop solo se rastrea para vivienda: `puedeBuscar` rechaza `local`.
+    tipo: 'vivienda',
     portal: PORTAL,
     portalId: String(id),
     url: `https://es.wallapop.com/item/${slug}`,
@@ -180,6 +182,15 @@ export const wallapopProvider: PortalProvider = {
   nombre: 'Wallapop',
 
   puedeBuscar(criterios) {
+    // Antes que nada: la categoría inmobiliaria de Wallapop no distingue local
+    // de vivienda de forma fiable, así que una búsqueda de local se omite con
+    // motivo visible en vez de devolver ruido.
+    if (criterios.tipo === 'local') {
+      return {
+        ok: false,
+        motivo: 'Wallapop no distingue local de vivienda en su categoría inmobiliaria',
+      };
+    }
     if (criterios.latitud === null || criterios.longitud === null || criterios.radioKm === null) {
       return {
         ok: false,

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PORTALES } from '../types/pisos';
+import { PORTALES, TIPOS } from '../types/pisos';
 
 const portalConfigSchema = z.object({ enabled: z.boolean() });
 
@@ -21,6 +21,9 @@ const enteroPositivo = z.number().int().positive();
 
 const busquedaBaseSchema = z.object({
   nombre: z.string().min(1, 'nombre es obligatorio').max(200),
+  // `vivienda` | `local`, excluyentes. Sin `tipo` en el alta ⇒ `vivienda`, que
+  // es como se comportaba todo antes de esta feature.
+  tipo: z.enum(TIPOS).default('vivienda'),
   ubicacion: z.string().min(1, 'ubicacion es obligatoria').max(200),
 
   latitud: z.number().min(-90).max(90).nullable().optional(),
@@ -100,7 +103,15 @@ export const createBusquedaSchema = busquedaBaseSchema
   .refine(REFINO_METROS.check, REFINO_METROS.opts)
   .refine(REFINO_ZONA.check, REFINO_ZONA.opts);
 
+/**
+ * `.omit({ tipo })` ANTES de `.partial()`: con `.strict()`, mandar `tipo` en un
+ * PATCH es un 400 (`Unrecognized key`) en vez de un campo ignorado — el tipo es
+ * inmutable porque los anuncios ya vinculados serían del tipo equivocado. Omitir
+ * antes de `partial` evita además que el `.default('vivienda')` se cuele en cada
+ * actualización parcial.
+ */
 export const updateBusquedaSchema = busquedaBaseSchema
+  .omit({ tipo: true })
   .partial()
   .strict()
   .refine((d) => Object.keys(d).length > 0, {

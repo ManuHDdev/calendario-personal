@@ -14,6 +14,11 @@ CREATE TABLE IF NOT EXISTS busqueda (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre              TEXT            NOT NULL,
 
+    -- Tipo de inmueble que persigue la búsqueda: 'vivienda' | 'local',
+    -- excluyentes. El DEFAULT hace que toda búsqueda anterior a esta columna
+    -- quede como 'vivienda' sin necesidad de un UPDATE de relleno.
+    tipo                TEXT            NOT NULL DEFAULT 'vivienda',
+
     -- Texto libre de la zona ("Badajoz", "Madrid", "Getafe"). Cada portal lo
     -- convierte a su propio formato de URL/parámetro; no es un identificador
     -- compartido entre portales.
@@ -63,6 +68,7 @@ CREATE TABLE IF NOT EXISTS busqueda (
     created_at          TIMESTAMP       NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMP       NOT NULL DEFAULT NOW(),
 
+    CONSTRAINT busqueda_tipo_valido CHECK (tipo IN ('vivienda', 'local')),
     CONSTRAINT precio_coherente CHECK (
         precio_min IS NULL OR precio_max IS NULL OR precio_min <= precio_max
     ),
@@ -80,6 +86,10 @@ CREATE TABLE IF NOT EXISTS busqueda (
 CREATE TABLE IF NOT EXISTS anuncio (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     busqueda_id         UUID            NOT NULL REFERENCES busqueda(id) ON DELETE CASCADE,
+
+    -- Copiado de la búsqueda al guardar el anuncio, para que el feed filtre por
+    -- tipo sin un JOIN contra busqueda.
+    tipo                TEXT            NOT NULL DEFAULT 'vivienda',
 
     portal              TEXT            NOT NULL,
     -- Identificador del anuncio DENTRO de su portal. La unicidad es por
@@ -126,6 +136,7 @@ CREATE TABLE IF NOT EXISTS anuncio (
     created_at          TIMESTAMP       NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMP       NOT NULL DEFAULT NOW(),
 
+    CONSTRAINT anuncio_tipo_valido CHECK (tipo IN ('vivienda', 'local')),
     CONSTRAINT anuncio_unico_por_busqueda UNIQUE (busqueda_id, portal, portal_id)
 );
 

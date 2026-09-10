@@ -25,13 +25,39 @@ interface Migracion {
   sql: string;
 }
 
-const MIGRACIONES: Migracion[] = [
+export const MIGRACIONES: Migracion[] = [
   {
     nombre: 'anuncio.precio_notificado',
     // Referencia de precio del último aviso entregado. Antes se comparaba
     // contra `precio_previo`, que es pegajoso, y una misma bajada se
     // reenviaba en cada vuelta del rastreador.
     sql: `ALTER TABLE anuncio ADD COLUMN IF NOT EXISTS precio_notificado NUMERIC(12, 2)`,
+  },
+  {
+    nombre: 'busqueda.tipo',
+    sql: `ALTER TABLE busqueda ADD COLUMN IF NOT EXISTS tipo TEXT NOT NULL DEFAULT 'vivienda'`,
+  },
+  {
+    nombre: 'anuncio.tipo',
+    sql: `ALTER TABLE anuncio ADD COLUMN IF NOT EXISTS tipo TEXT NOT NULL DEFAULT 'vivienda'`,
+  },
+  {
+    // PG15 no admite `ADD CONSTRAINT IF NOT EXISTS`, y esto corre en cada
+    // arranque: la guarda contra pg_constraint es lo que lo hace idempotente.
+    nombre: 'busqueda.tipo — CHECK',
+    sql: `DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'busqueda_tipo_valido') THEN
+              ALTER TABLE busqueda ADD CONSTRAINT busqueda_tipo_valido CHECK (tipo IN ('vivienda', 'local'));
+            END IF;
+          END $$`,
+  },
+  {
+    nombre: 'anuncio.tipo — CHECK',
+    sql: `DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'anuncio_tipo_valido') THEN
+              ALTER TABLE anuncio ADD CONSTRAINT anuncio_tipo_valido CHECK (tipo IN ('vivienda', 'local'));
+            END IF;
+          END $$`,
   },
   {
     nombre: 'anuncio.precio_notificado — referencia inicial',
