@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import {
   PORTALES,
   NOMBRE_PORTAL,
@@ -10,6 +10,7 @@ import {
   type Busqueda,
   type TipoInmueble,
 } from '../types';
+import { CIUDADES_PRINCIPALES, buscarCiudad } from '../data/ciudades';
 
 const PORTALES_POR_DEFECTO: PortalesConfig = {
   fotocasa: { enabled: true },
@@ -57,6 +58,43 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
   const [portales, setPortales] = useState<PortalesConfig>(inicial?.portales ?? PORTALES_POR_DEFECTO);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  // Nombre de la ciudad cuyas coordenadas rellenamos nosotros, o `null` si las
+  // que hay ahora en los campos las escribió el usuario (o vienen de `inicial`).
+  // Solo pisamos coordenadas que sean "nuestras" y de una ciudad distinta.
+  const coordsDeCiudad = useRef<string | null>(null);
+  const [ciudadAutocompletada, setCiudadAutocompletada] = useState<string | null>(null);
+
+  const cambiarUbicacion = (valor: string) => {
+    setUbicacion(valor);
+    const ciudad = buscarCiudad(valor);
+    if (!ciudad) {
+      setCiudadAutocompletada(null);
+      return;
+    }
+    const sinCoords = !latitud.trim() && !longitud.trim();
+    const coordsMiasDeOtraCiudad =
+      coordsDeCiudad.current !== null && coordsDeCiudad.current !== ciudad.nombre;
+    if (sinCoords || coordsMiasDeOtraCiudad) {
+      setLatitud(String(ciudad.lat));
+      setLongitud(String(ciudad.lng));
+      coordsDeCiudad.current = ciudad.nombre;
+      setCiudadAutocompletada(ciudad.nombre);
+    } else {
+      setCiudadAutocompletada(null);
+    }
+  };
+
+  // Si el usuario toca lat/lng a mano, dejan de ser "nuestras": no volver a pisarlas.
+  const editarLatitud = (valor: string) => {
+    setLatitud(valor);
+    coordsDeCiudad.current = null;
+    setCiudadAutocompletada(null);
+  };
+  const editarLongitud = (valor: string) => {
+    setLongitud(valor);
+    coordsDeCiudad.current = null;
+    setCiudadAutocompletada(null);
+  };
 
   const esLocal = tipo === 'local';
   const wallapopActivo = portales.wallapop.enabled;
@@ -108,6 +146,8 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
       if (!inicial) {
         setNombre('');
         setUbicacion('');
+        coordsDeCiudad.current = null;
+        setCiudadAutocompletada(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar');
@@ -152,7 +192,20 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
         </label>
         <label className="campo">
           <span>Ubicación</span>
-          <input value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} placeholder="Badajoz" />
+          <input
+            value={ubicacion}
+            onChange={(e) => cambiarUbicacion(e.target.value)}
+            placeholder="Badajoz"
+            list="ciudades-principales"
+          />
+          <datalist id="ciudades-principales">
+            {CIUDADES_PRINCIPALES.map((c) => (
+              <option key={c.nombre} value={c.nombre} />
+            ))}
+          </datalist>
+          {ciudadAutocompletada && (
+            <small className="ayuda">Coordenadas de {ciudadAutocompletada} añadidas para Wallapop.</small>
+          )}
         </label>
       </div>
 
@@ -214,11 +267,11 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
       <div className="campo-fila">
         <label className="campo">
           <span>Latitud {wallapopActivo && <em>(obligatoria)</em>}</span>
-          <input type="number" step="any" value={latitud} onChange={(e) => setLatitud(e.target.value)} placeholder="38.8794" />
+          <input type="number" step="any" value={latitud} onChange={(e) => editarLatitud(e.target.value)} placeholder="38.8794" />
         </label>
         <label className="campo">
           <span>Longitud {wallapopActivo && <em>(obligatoria)</em>}</span>
-          <input type="number" step="any" value={longitud} onChange={(e) => setLongitud(e.target.value)} placeholder="-6.9707" />
+          <input type="number" step="any" value={longitud} onChange={(e) => editarLongitud(e.target.value)} placeholder="-6.9707" />
         </label>
         <label className="campo">
           <span>Radio (km)</span>
