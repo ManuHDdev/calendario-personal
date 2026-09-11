@@ -64,15 +64,15 @@ CREATE TABLE IF NOT EXISTS api_usage_counter (
 -- Seed: spots importados de las Google Sheets originales del proyecto Paraísos
 INSERT INTO spot (nombre, region, provincia, latitud, longitud, imagen_url, categoria) VALUES
 -- EXTREMADURA
-('Garganta la Olla', 'Extremadura', 'Cáceres', 40.117063, -5.777798, NULL, 'piscina'),
+('Garganta la Olla', 'Extremadura', 'Cáceres', 40.117063, -5.777798, '/paraisos/api/images/garganta-la-olla.jpg', 'piscina'),
 ('Garganta de los Infiernos (Los Pilones)', 'Extremadura', 'Cáceres', 40.200967, -5.754287, '/paraisos/api/images/garganta-infiernos.jpg', 'piscina'),
 ('Chorritero de Ovejuela', 'Extremadura', 'Cáceres', 40.319095, -6.447396, '/paraisos/api/images/chorrituelo-ovejuela.jpg', 'piscina'),
 ('Cantera de Alcántara', 'Extremadura', 'Cáceres', 39.746282, -6.892419, NULL, 'piscina'),
-('Garganta de Cuartos', 'Extremadura', 'Cáceres', 40.110806, -5.581752, NULL, 'piscina'),
-('Cascada El Trabuquete', 'Extremadura', 'Cáceres', 40.176689, -5.644560, NULL, 'piscina'),
+('Garganta de Cuartos', 'Extremadura', 'Cáceres', 40.110806, -5.581752, '/paraisos/api/images/garganta-de-cuartos.jpg', 'piscina'),
+('Cascada El Trabuquete', 'Extremadura', 'Cáceres', 40.176689, -5.644560, '/paraisos/api/images/cascada-el-trabuquete.jpg', 'piscina'),
 ('Cascada El Diablo', 'Extremadura', 'Cáceres', 40.130485, -5.448248, '/paraisos/api/images/cascada-diablo.jpg', 'piscina'),
 ('Cascada de Caozo', 'Extremadura', 'Cáceres', 40.133295, -5.852645, '/paraisos/api/images/cascada-caozo.jpg', 'ruta'),
-('Mirador de la Memoria', 'Extremadura', 'Cáceres', 40.123650, -5.947620, NULL, 'ruta'),
+('Mirador de la Memoria', 'Extremadura', 'Cáceres', 40.123650, -5.947620, '/paraisos/api/images/mirador-de-la-memoria.jpg', 'ruta'),
 ('Cascada Las Nogaledas', 'Extremadura', 'Cáceres', 40.186090, -5.828288, '/paraisos/api/images/cascada-las-nogaledas.jpg', 'piscina'),
 ('Granadilla', 'Extremadura', 'Cáceres', 40.268415, -6.106415, '/paraisos/api/images/granadilla.jpg', 'ruta'),
 -- PORTUGAL
@@ -113,14 +113,14 @@ INSERT INTO spot (nombre, region, provincia, latitud, longitud, imagen_url, cate
 ('Charco Azul de Chulilla', 'Comunidad Valenciana', 'Valencia', 39.665033, -0.892200, '/paraisos/api/images/charco-azul-chulilla.jpg', 'piscina'),
 ('Charcos de Quesa', 'Comunidad Valenciana', 'Valencia', 39.088597, -0.783150, NULL, 'piscina'),
 ('Cala de la Mina', 'Comunidad Valenciana', 'Alicante', 38.565301, -0.053940, NULL, 'piscina'),
-('Cala dels Testos', 'Comunidad Valenciana', 'Alicante', 38.711866, 0.171326, NULL, 'piscina'),
+('Cala dels Testos', 'Comunidad Valenciana', 'Alicante', 38.711866, 0.171326, '/paraisos/api/images/cala-dels-testos.jpg', 'piscina'),
 ('Cala Racó del Corb', 'Comunidad Valenciana', 'Alicante', 38.631748, 0.010048, NULL, 'piscina'),
 ('La Granadella', 'Comunidad Valenciana', 'Alicante', 38.729716, 0.197086, '/paraisos/api/images/la-granadella.jpg', 'piscina'),
 ('En Caló', 'Comunidad Valenciana', 'Alicante', 38.732206, 0.213115, NULL, 'piscina'),
 ('Barranco de la Encantada', 'Comunidad Valenciana', 'Alicante', 38.795658, -0.316591, NULL, 'piscina'),
 ('Salto de Chella', 'Comunidad Valenciana', 'Valencia', 39.047148, -0.660906, '/paraisos/api/images/salto-de-chella.jpg', 'piscina'),
 ('Cueva de San José', 'Comunidad Valenciana', 'Valencia', 39.823463, -0.250294, '/paraisos/api/images/cueva-de-san-jose.jpg', 'ruta'),
-('Chorradores de Navarrés', 'Comunidad Valenciana', 'Valencia', 39.110323, -0.710089, NULL, 'piscina'),
+('Chorradores de Navarrés', 'Comunidad Valenciana', 'Valencia', 39.110323, -0.710089, '/paraisos/api/images/chorradores-de-navarres.jpg', 'piscina'),
 ('Cascada El Monstruo', 'Comunidad Valenciana', 'Valencia', 39.243044, -0.766402, NULL, 'piscina'),
 ('Fuentes de Algar', 'Comunidad Valenciana', 'Alicante', 38.660624, -0.094943, '/paraisos/api/images/fuentes-del-algar.jpg', 'piscina'),
 ('Cueva de las Palomas', 'Comunidad Valenciana', 'Valencia', 39.401713, -0.800288, '/paraisos/api/images/cueva-de-las-palomas.jpg', 'piscina'),
@@ -141,22 +141,22 @@ INSERT INTO spot (nombre, region, provincia, latitud, longitud, imagen_url, cate
 ('Salto del Bierge', 'Aragón', 'Huesca', 42.173447, -0.090710, NULL, 'piscina'),
 ('Fayón', 'Aragón', 'Zaragoza', 41.246698, 0.353485, '/paraisos/api/images/fayon.jpg', 'piscina'),
 ('Ordesa - Cascada Cola de Caballo', 'Aragón', 'Huesca', 42.650828, 0.015518, '/paraisos/api/images/cascada-cola-de-caballo.jpg', 'piscina'),
-('Aguas Tuertas', 'Aragón', 'Huesca', 42.834401, -0.627693, NULL, 'ruta'),
-('Barranco La Peonera', 'Aragón', 'Huesca', 42.187320, -0.086586, NULL, 'piscina'),
+('Aguas Tuertas', 'Aragón', 'Huesca', 42.834401, -0.627693, '/paraisos/api/images/aguas-tuertas.jpg', 'ruta'),
+('Barranco La Peonera', 'Aragón', 'Huesca', 42.187320, -0.086586, '/paraisos/api/images/barranco-la-peonera.jpg', 'piscina'),
 -- CATALUÑA
 ('Embalse Llosa del Cavall', 'Cataluña', 'Lleida', 42.117579, 1.606155, '/paraisos/api/images/embalse-llosa-del-cavall.jpg', 'piscina'),
-('Toll de L''Olla', 'Cataluña', 'Tarragona', 41.311499, 1.063881, NULL, 'piscina'),
+('Toll de L''Olla', 'Cataluña', 'Tarragona', 41.311499, 1.063881, '/paraisos/api/images/toll-de-lolla.jpg', 'piscina'),
 ('Gorgs de la Febró', 'Cataluña', 'Tarragona', 41.259880, 0.975794, '/paraisos/api/images/gorgs-de-la-febro.jpg', 'piscina'),
 ('Gorgs Blau', 'Cataluña', 'Girona', 42.320066, 2.585916, NULL, 'piscina'),
 ('Castellfollit de la Roca', 'Cataluña', 'Girona', 42.219545, 2.548864, '/paraisos/api/images/castellfollit-de-la-roca.jpg', 'ruta'),
-('Cascada del Gerber', 'Cataluña', 'Lleida', 42.643536, 1.009381, NULL, 'piscina'),
+('Cascada del Gerber', 'Cataluña', 'Lleida', 42.643536, 1.009381, '/paraisos/api/images/cascada-del-gerber.jpg', 'piscina'),
 ('Congost de Mont-Rebei', 'Cataluña', 'Lleida', 42.082882, 0.682925, '/paraisos/api/images/congost-mont-rebei.jpg', 'ruta'),
 -- ISLAS BALEARES
 ('Cala Saona', 'Islas Baleares', 'Formentera', 38.693448, 1.385037, '/paraisos/api/images/cala-saona.jpg', 'piscina'),
 ('Ses Illetes', 'Islas Baleares', 'Formentera', 38.759609, 1.435673, '/paraisos/api/images/ses-illetes.jpg', 'piscina'),
 -- ISLAS CANARIAS
 ('Cueva de la Reina', 'Islas Canarias', 'Gran Canaria', 28.010839, -15.375553, NULL, 'piscina'),
-('Playa de Castro', 'Islas Canarias', 'Tenerife', 28.397651, -16.592535, NULL, 'playa'),
+('Playa de Castro', 'Islas Canarias', 'Tenerife', 28.397651, -16.592535, '/paraisos/api/images/playa-de-castro.jpg', 'playa'),
 ('Playa de la Montaña Amarilla', 'Islas Canarias', 'Tenerife', 28.009257, -16.638706, '/paraisos/api/images/montana-amarilla.jpg', 'playa'),
 ('Playa de Benijo', 'Islas Canarias', 'Tenerife', 28.576109, -16.185178, '/paraisos/api/images/playa-benijo.jpg', 'playa'),
 ('Playa de Almáciga', 'Islas Canarias', 'Tenerife', 28.571224, -16.203570, '/paraisos/api/images/playa-de-almaciga.jpg', 'playa'),
@@ -165,12 +165,12 @@ INSERT INTO spot (nombre, region, provincia, latitud, longitud, imagen_url, cate
 ('Charco del Viento', 'Islas Canarias', 'Tenerife', 28.400780, -16.673962, '/paraisos/api/images/charco-del-viento.jpg', 'piscina'),
 ('Piscinas naturales Los Abrigos', 'Islas Canarias', 'Tenerife', 28.029208, -16.582612, NULL, 'piscina'),
 ('Cueva de la Vaca', 'Islas Canarias', 'Tenerife', 28.228904, -16.842580, NULL, 'piscina'),
-('Piscina natural Mesas del Mar', 'Islas Canarias', 'Tenerife', 28.503907, -16.424546, NULL, 'piscina'),
+('Piscina natural Mesas del Mar', 'Islas Canarias', 'Tenerife', 28.503907, -16.424546, '/paraisos/api/images/piscina-natural-mesas-del-mar.jpg', 'piscina'),
 ('Charco Azul', 'Islas Canarias', 'El Hierro', 27.776177, -18.038799, '/paraisos/api/images/charco-azul.jpg', 'piscina'),
 -- CROACIA
 ('Lagos de Plitvice', 'Croacia', NULL, 44.900169, 15.610921, '/paraisos/api/images/lagos-plitvice.jpg', 'piscina'),
 -- FILIPINAS
-('Twin Lagoon (Coron Island)', 'Filipinas', NULL, 11.947653, 120.209683, NULL, 'piscina'),
+('Twin Lagoon (Coron Island)', 'Filipinas', NULL, 11.947653, 120.209683, '/paraisos/api/images/twin-lagoon-coron-island.jpg', 'piscina'),
 -- PLAYAS (segunda hoja)
 ('Playa La Rijana', 'Andalucía', 'Granada', 36.709604, -3.391085, '/paraisos/api/images/playa-rijana.jpg', 'playa'),
 ('Playa de Bolonia', 'Andalucía', 'Cádiz', 36.088512, -5.778693, '/paraisos/api/images/playa-de-bolonia.jpg', 'playa'),
@@ -179,4 +179,4 @@ INSERT INTO spot (nombre, region, provincia, latitud, longitud, imagen_url, cate
 ('Playa de Poo', 'Asturias', 'Asturias', 43.428962, -4.784109, '/paraisos/api/images/playa-de-poo.jpg', 'playa'),
 ('Playa de Ballota', 'Asturias', 'Asturias', 43.410021, -4.711833, '/paraisos/api/images/playa-de-ballota.jpg', 'playa'),
 ('Playa de Barro', 'Asturias', 'Asturias', 43.436528, -4.825807, '/paraisos/api/images/playa-de-barro.jpg', 'playa'),
-('Playa de Cué', 'Asturias', 'Asturias', 43.415140, -4.730875, NULL, 'playa');
+('Playa de Cué', 'Asturias', 'Asturias', 43.415140, -4.730875, '/paraisos/api/images/playa-de-cue.jpg', 'playa');
