@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { pool } from '../db/pool';
 import { authMiddleware } from '../middleware/auth';
 import { spotCreateSchema, spotUpdateSchema, parkingSchema } from '../schemas/spot.schema';
+import { deleteImageIfManaged } from '../services/imageService';
 import {
   listSpots,
   getSpotById,
@@ -137,14 +138,24 @@ export async function spotsRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(400).send({ error: 'ID debe ser un numero valido', statusCode: 400 });
       }
       try {
-        const check = await pool.query('SELECT id FROM spot WHERE id = $1 AND activo = true', [id]);
+        const check = await pool.query<Pick<Spot, 'id' | 'imagen_url'>>(
+          'SELECT id, imagen_url FROM spot WHERE id = $1 AND activo = true',
+          [id],
+        );
         if (check.rows.length === 0) {
           return reply.code(404).send({ error: 'Spot no encontrado', statusCode: 404 });
         }
+        const oldImagenUrl = check.rows[0].imagen_url;
 
         const { text, values } = updateSpot(id, parsed.data);
         const result = await pool.query<Spot>(text, values);
-        return reply.send(toSpotDto(result.rows[0]));
+        const spot = result.rows[0];
+
+        if ('imagen_url' in parsed.data && oldImagenUrl !== spot.imagen_url) {
+          deleteImageIfManaged(oldImagenUrl);
+        }
+
+        return reply.send(toSpotDto(spot));
       } catch (err) {
         return reply.code(500).send({ error: err instanceof Error ? err.message : 'Error interno', statusCode: 500 });
       }
@@ -162,10 +173,11 @@ export async function spotsRoutes(app: FastifyInstance): Promise<void> {
       }
       try {
         const { text, values } = deleteSpot(id);
-        const result = await pool.query(text, values);
+        const result = await pool.query<Spot>(text, values);
         if (result.rows.length === 0) {
           return reply.code(404).send({ error: 'Spot no encontrado', statusCode: 404 });
         }
+        deleteImageIfManaged(result.rows[0].imagen_url);
         return reply.code(204).send();
       } catch (err) {
         return reply.code(500).send({ error: err instanceof Error ? err.message : 'Error interno', statusCode: 500 });

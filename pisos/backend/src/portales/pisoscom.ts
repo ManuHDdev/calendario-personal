@@ -1,13 +1,15 @@
-import type { AnuncioCrudo } from '../types/pisos';
+import type { AnuncioCrudo, TipoInmueble } from '../types/pisos';
 import type { CriteriosPortal, OpcionesBusqueda, PortalProvider } from './types';
 import { fetchTexto } from './http';
-import { extraerJsonLd, filtrarPorTipo, primerValor, comoTexto } from './extraer';
+import { extraerJsonLd, primerValor, comoTexto } from './extraer';
 import {
   parsearPrecio,
   slugificar,
   esCapitalDeProvincia,
   decodificarEntidades,
+  normalizarTexto,
   extraerMetros,
+  extraerSuperficieLocal,
   extraerHabitaciones,
   extraerBanos,
   extraerPlanta,
@@ -35,21 +37,41 @@ const PORTAL = 'pisos';
  * cruzando por `@id`.
  *
  * Verificar con:  npm run smoke -- pisos "Badajoz"
+ *                 npm run smoke -- pisos "Badajoz" --tipo local
+ *
+ * SECCIÓN COMERCIAL VERIFICADA CONTRA EL PORTAL EN VIVO (2026-09-10, Madrid y
+ * Badajoz, ~31 anuncios/página con precio+m²+imagen al 100%). El listado se
+ * pide en `/venta/locales-<zona>/`; las fichas vuelven con slug
+ * `local_comercial`, `oficina`, `edificio`… (ninguno en `SLUGS_RESIDENCIALES`,
+ * así que no se descartan). El JSON-LD sigue con la rareza del `@type`
+ * (`SingleFamilyResidence` para todo), ver más abajo.
  * ─────────────────────────────────────────────────────────────────────────
  */
-function construirUrl(criterios: CriteriosPortal, pagina: number): string {
+
+/** Segmento de la ruta de pisos.com según el tipo de inmueble. */
+const SECCION: Record<TipoInmueble, string> = { vivienda: 'pisos', local: 'locales' };
+
+/** Slugs de URL que en pisos.com son vivienda: si aparecen en un listado de local, se descartan. */
+const SLUGS_RESIDENCIALES = ['piso', 'atico', 'duplex', 'chalet', 'vivienda', 'apartamento', 'estudio', 'casa'];
+
+/** Expuesto para los tests: el segmento de la ruta depende del `tipo`. */
+export function construirUrl(criterios: CriteriosPortal, pagina: number): string {
   // "pisos-caceres" es la provincia; "pisos-caceres_capital" la ciudad.
   const base = slugificar(criterios.ubicacion);
   const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}_capital` : base;
+  const seccion = SECCION[criterios.tipo];
   // pisos.com pagina por segmento de ruta, no por query: /venta/pisos-badajoz/2/
-  const ruta = pagina <= 1 ? `/venta/pisos-${zona}/` : `/venta/pisos-${zona}/${pagina}/`;
+  const ruta = pagina <= 1 ? `/venta/${seccion}-${zona}/` : `/venta/${seccion}-${zona}/${pagina}/`;
 
   const params = new URLSearchParams();
   if (criterios.precioMin !== null) params.set('precioDesde', String(criterios.precioMin));
   if (criterios.precioMax !== null) params.set('precioHasta', String(criterios.precioMax));
   if (criterios.metrosMin !== null) params.set('superficieDesde', String(criterios.metrosMin));
   if (criterios.metrosMax !== null) params.set('superficieHasta', String(criterios.metrosMax));
-  if (criterios.habitacionesMin !== null) params.set('habitacionesDesde', String(criterios.habitacionesMin));
+  // `habitacionesDesde` solo en vivienda: un local no se filtra por habitaciones.
+  if (criterios.tipo === 'vivienda' && criterios.habitacionesMin !== null) {
+    params.set('habitacionesDesde', String(criterios.habitacionesMin));
+  }
   // Orden por más reciente: es toda la premisa de la app.
   params.set('orden', 'relevancia-desc');
 
@@ -83,13 +105,11 @@ interface Geo {
  */
 function mapaGeoPorId(html: string): Map<string, Geo> {
   const mapa = new Map<string, Geo>();
-  for (const objeto of filtrarPorTipo(extraerJsonLd(html), [
-    'SingleFamilyResidence',
-    'Residence',
-    'Apartment',
-    'House',
-    'Product',
-  ])) {
+  // NO se filtra por `@type`: pisos.com etiqueta también los locales como
+  // `SingleFamilyResidence` (verificado contra `/venta/locales-madrid/`,
+  // 2026-09). Basta con que el objeto tenga `@id` (= id de tarjeta) y `geo`.
+  for (const objeto of extraerJsonLd(html)) {
+    if (objeto.geo === undefined) continue;
     const id = comoTexto(primerValor(objeto, ['@id', 'identifier', 'sku', 'productID']));
     if (!id) continue;
     mapa.set(id, {
@@ -127,14 +147,17 @@ function trocearTarjetas(html: string): string[] {
   );
 }
 
-/** Expuesto para los tests: parsea una página ya descargada. */
-export function parsearPagina(html: string): AnuncioCrudo[] {
+/**
+ * Expuesto para los tests: parsea una página ya descargada. `tipo` por defecto
+ * `vivienda` para no tocar tests ni smoke existentes.
+ */
+export function parsearPagina(html: string, tipo: TipoInmueble = 'vivienda'): AnuncioCrudo[] {
   const geoPorId = mapaGeoPorId(html);
   const anuncios: AnuncioCrudo[] = [];
   const vistos = new Set<string>();
 
   for (const bloque of trocearTarjetas(html)) {
-    const anuncio = parsearTarjeta(bloque, geoPorId);
+    const anuncio = parsearTarjeta(bloque, geoPorId, tipo);
     if (!anuncio || vistos.has(anuncio.portalId)) continue;
     vistos.add(anuncio.portalId);
     anuncios.push(anuncio);
@@ -142,7 +165,11 @@ export function parsearPagina(html: string): AnuncioCrudo[] {
   return anuncios;
 }
 
-function parsearTarjeta(bloque: string, geoPorId: Map<string, Geo>): AnuncioCrudo | null {
+function parsearTarjeta(
+  bloque: string,
+  geoPorId: Map<string, Geo>,
+  tipo: TipoInmueble,
+): AnuncioCrudo | null {
   const id = bloque.match(/^<div\s+id="(\d+\.\d+)"/)?.[1];
   if (!id) return null;
 
@@ -152,13 +179,25 @@ function parsearTarjeta(bloque: string, geoPorId: Map<string, Geo>): AnuncioCrud
     primerGrupo(bloque, /href="([^"]+)"[^>]*class="[^"]*\bad-preview__title\b/);
   if (!urlBruta) return null;
 
+  // pisos.com no publica subtipo en la tarjeta: en una búsqueda de local, un
+  // anuncio de vivienda que se cuele se descarta por el slug de su URL.
+  if (tipo === 'local') {
+    const slug = normalizarTexto(urlBruta);
+    if (SLUGS_RESIDENCIALES.some((p) => slug.includes(`/${p}-`) || slug.includes(`/${p}s-`))) {
+      return null;
+    }
+  }
+
   const titulo =
     primerGrupo(bloque, /class="[^"]*\bad-preview__title\b[^"]*"[^>]*>([^<]+)</) ?? '(sin título)';
   const subtitulo = primerGrupo(bloque, /class="[^"]*\bad-preview__subtitle\b[^"]*"[^>]*>([^<]+)</);
 
   // El número limpio de data-ad-price antes que el texto "580.000 €".
+  // pisos.com sirve `data-ad-price="0"` en los anuncios "A consultar";
+  // parsearPrecio ya devuelve null para 0, así que un precio oculto cae al
+  // texto de la tarjeta (también "A consultar" → null) y no a un falso 0.
   const precio =
-    numeroONulo(primerGrupo(bloque, /data-ad-price="(\d+)"/)) ??
+    parsearPrecio(numeroONulo(primerGrupo(bloque, /data-ad-price="(\d+)"/))) ??
     parsearPrecio(primerGrupo(bloque, /class="[^"]*\bad-preview__price\b[^"]*"[^>]*>([^<]+)</));
 
   // Cada característica (m², hab, baños) es un <p class="ad-preview__char">.
@@ -169,8 +208,9 @@ function parsearTarjeta(bloque: string, geoPorId: Map<string, Geo>): AnuncioCrud
   // da el dato, se reintenta sobre el texto entero de la tarjeta.
   const chipsTexto = chars.join(' · ');
   const texto = `${titulo} ${subtitulo ?? ''} ${chipsTexto}`;
+  const extraerSuperficie = tipo === 'local' ? extraerSuperficieLocal : extraerMetros;
   const metros =
-    extraerMetros(chars.find((c) => /m²|m2|metro/.test(c)) ?? '') ?? extraerMetros(chipsTexto);
+    extraerSuperficie(chars.find((c) => /m²|m2|metro/.test(c)) ?? '') ?? extraerSuperficie(chipsTexto);
   const habitaciones =
     extraerHabitaciones(chars.find((c) => /hab|dormit/.test(c)) ?? '') ??
     extraerHabitaciones(chipsTexto);
@@ -183,6 +223,7 @@ function parsearTarjeta(bloque: string, geoPorId: Map<string, Geo>): AnuncioCrud
   const geo = geoPorId.get(id);
 
   return {
+    tipo,
     portal: PORTAL,
     portalId: id,
     url: absoluta(urlBruta),
@@ -222,7 +263,7 @@ export const pisosComProvider: PortalProvider = {
         portal: 'pisos.com',
         timeoutMs: opciones.timeoutMs,
       });
-      const anunciosPagina = parsearPagina(html);
+      const anunciosPagina = parsearPagina(html, criterios.tipo);
       // Una página sin resultados es el final del listado: seguir pidiendo
       // páginas vacías solo gasta peticiones contra el portal.
       if (anunciosPagina.length === 0) break;

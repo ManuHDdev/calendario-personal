@@ -55,3 +55,41 @@ export function getImagePath(filename: string): string | null {
   const full = path.join(IMAGES_PATH, filename);
   return fs.existsSync(full) ? full : null;
 }
+
+const MANAGED_IMAGE_PREFIX = '/paraisos/api/images/';
+
+/**
+ * Extrae el nombre de archivo de una imagen_url solo si es una de las
+ * gestionadas por este backend (generadas por saveUploadedImage/POST
+ * /images). Una URL externa (https://...) no matchea y devuelve null —
+ * nunca hay que parsear ni tocar disco por ella.
+ */
+function extractManagedFilename(imagenUrl: string): string | null {
+  if (!imagenUrl.startsWith(MANAGED_IMAGE_PREFIX)) return null;
+  const filename = imagenUrl.slice(MANAGED_IMAGE_PREFIX.length);
+  return filename || null;
+}
+
+/**
+ * Borra del disco el fichero subido al que apuntaba `imagenUrl`, pero SOLO
+ * si es una de nuestras propias imágenes gestionadas (prefijo
+ * /paraisos/api/images/<filename>). Una URL externa, null o vacía no hace
+ * nada. Reutiliza getImagePath (mismo guard anti path-traversal) para
+ * resolver la ruta. Nunca lanza: un fallo de limpieza no debe romper la
+ * petición de PATCH/DELETE de spot que la disparó.
+ */
+export function deleteImageIfManaged(imagenUrl: string | null | undefined): void {
+  if (!imagenUrl) return;
+
+  const filename = extractManagedFilename(imagenUrl);
+  if (!filename) return;
+
+  try {
+    const filePath = getImagePath(filename);
+    if (filePath) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (err) {
+    console.error(`[imageService] No se pudo borrar la imagen huérfana ${filename}:`, err);
+  }
+}

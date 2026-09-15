@@ -12,7 +12,7 @@ import {
 } from '../db/queries';
 import { normalizarFila } from '../db/filas';
 import { precioPorMetro } from '../services/criterios';
-import { PORTALES, type Anuncio, type PortalId, type ScraperState } from '../types/pisos';
+import { PORTALES, TIPOS, type Anuncio, type PortalId, type TipoInmueble, type ScraperState } from '../types/pisos';
 
 const SOLO_ADMIN = ['admin'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -32,6 +32,7 @@ export async function anunciosRoutes(app: FastifyInstance): Promise<void> {
     Querystring: {
       busqueda?: string;
       portal?: string;
+      tipo?: string;
       nuevos?: string;
       descartados?: string;
       limite?: string;
@@ -40,7 +41,7 @@ export async function anunciosRoutes(app: FastifyInstance): Promise<void> {
     '/listings',
     { preHandler: authMiddleware(SOLO_ADMIN) },
     async (request, reply: FastifyReply) => {
-      const { busqueda, portal, nuevos, descartados, limite } = request.query;
+      const { busqueda, portal, tipo, nuevos, descartados, limite } = request.query;
 
       if (busqueda && !UUID.test(busqueda)) {
         return reply.code(400).send({ error: 'busqueda no es un ID válido', statusCode: 400 });
@@ -54,11 +55,20 @@ export async function anunciosRoutes(app: FastifyInstance): Promise<void> {
           statusCode: 400,
         });
       }
+      // Mismo principio que `portal`: un tipo desconocido es un 400, no una
+      // lista vacía.
+      if (tipo && !TIPOS.includes(tipo as TipoInmueble)) {
+        return reply.code(400).send({
+          error: `tipo debe ser uno de: ${TIPOS.join(', ')}`,
+          statusCode: 400,
+        });
+      }
 
       try {
         const { text, values } = listAnuncios({
           busquedaId: busqueda,
           portal: portal as PortalId | undefined,
+          tipo: tipo as TipoInmueble | undefined,
           soloNuevos: nuevos === 'true',
           incluirDescartados: descartados === 'true',
           limite: limite ? Number(limite) : undefined,

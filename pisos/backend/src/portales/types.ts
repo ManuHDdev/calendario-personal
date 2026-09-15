@@ -1,4 +1,4 @@
-import type { AnuncioCrudo, PortalId } from '../types/pisos';
+import type { AnuncioCrudo, PortalId, TipoInmueble } from '../types/pisos';
 
 /**
  * Los criterios de una búsqueda, en la forma que necesita un portal.
@@ -10,6 +10,8 @@ import type { AnuncioCrudo, PortalId } from '../types/pisos';
  * en el servidor de cada uno daría resultados distintos según la fuente.
  */
 export interface CriteriosPortal {
+  /** Tipo de inmueble: decide la sección del portal y el filtro de subtipos. */
+  tipo: TipoInmueble;
   ubicacion: string;
   latitud: number | null;
   longitud: number | null;

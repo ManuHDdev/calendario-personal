@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import BusquedaForm from './BusquedaForm';
-import { PORTALES, NOMBRE_PORTAL, type Busqueda, type BusquedaFormData, type ResultadoRastreo } from '../types';
+import {
+  PORTALES,
+  NOMBRE_PORTAL,
+  ICONO_TIPO,
+  NOMBRE_TIPO,
+  type Busqueda,
+  type BusquedaFormData,
+  type ResultadoRastreo,
+} from '../types';
 
 interface Props {
   busquedas: Busqueda[];
@@ -81,7 +89,9 @@ export default function BusquedaList({ busquedas, onUpdate, onDelete, onToggleHa
             <>
               <div className="busqueda-cabecera">
                 <div>
-                  <h3 className="busqueda-nombre">{b.nombre}</h3>
+                  <h3 className="busqueda-nombre">
+                    <span title={NOMBRE_TIPO[b.tipo]}>{ICONO_TIPO[b.tipo]}</span> {b.nombre}
+                  </h3>
                   <p className="busqueda-ubicacion">{b.ubicacion}</p>
                 </div>
                 <div className="busqueda-portales">

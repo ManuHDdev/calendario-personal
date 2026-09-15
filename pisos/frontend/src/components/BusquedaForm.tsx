@@ -1,5 +1,16 @@
-import { useState, type FormEvent } from 'react';
-import { PORTALES, NOMBRE_PORTAL, type BusquedaFormData, type PortalesConfig, type Busqueda } from '../types';
+import { useRef, useState, type FormEvent } from 'react';
+import {
+  PORTALES,
+  NOMBRE_PORTAL,
+  TIPOS,
+  ICONO_TIPO,
+  NOMBRE_TIPO,
+  type BusquedaFormData,
+  type PortalesConfig,
+  type Busqueda,
+  type TipoInmueble,
+} from '../types';
+import { CIUDADES_PRINCIPALES, buscarCiudad } from '../data/ciudades';
 
 const PORTALES_POR_DEFECTO: PortalesConfig = {
   fotocasa: { enabled: true },
@@ -28,6 +39,7 @@ function aTexto(valor: number | null | undefined): string {
 
 export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
   const [nombre, setNombre] = useState(inicial?.nombre ?? '');
+  const [tipo, setTipo] = useState<TipoInmueble>(inicial?.tipo ?? 'vivienda');
   const [ubicacion, setUbicacion] = useState(inicial?.ubicacion ?? '');
   const [precioMin, setPrecioMin] = useState(aTexto(inicial?.precio_min));
   const [precioMax, setPrecioMax] = useState(aTexto(inicial?.precio_max));
@@ -46,7 +58,45 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
   const [portales, setPortales] = useState<PortalesConfig>(inicial?.portales ?? PORTALES_POR_DEFECTO);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  // Nombre de la ciudad cuyas coordenadas rellenamos nosotros, o `null` si las
+  // que hay ahora en los campos las escribió el usuario (o vienen de `inicial`).
+  // Solo pisamos coordenadas que sean "nuestras" y de una ciudad distinta.
+  const coordsDeCiudad = useRef<string | null>(null);
+  const [ciudadAutocompletada, setCiudadAutocompletada] = useState<string | null>(null);
 
+  const cambiarUbicacion = (valor: string) => {
+    setUbicacion(valor);
+    const ciudad = buscarCiudad(valor);
+    if (!ciudad) {
+      setCiudadAutocompletada(null);
+      return;
+    }
+    const sinCoords = !latitud.trim() && !longitud.trim();
+    const coordsMiasDeOtraCiudad =
+      coordsDeCiudad.current !== null && coordsDeCiudad.current !== ciudad.nombre;
+    if (sinCoords || coordsMiasDeOtraCiudad) {
+      setLatitud(String(ciudad.lat));
+      setLongitud(String(ciudad.lng));
+      coordsDeCiudad.current = ciudad.nombre;
+      setCiudadAutocompletada(ciudad.nombre);
+    } else {
+      setCiudadAutocompletada(null);
+    }
+  };
+
+  // Si el usuario toca lat/lng a mano, dejan de ser "nuestras": no volver a pisarlas.
+  const editarLatitud = (valor: string) => {
+    setLatitud(valor);
+    coordsDeCiudad.current = null;
+    setCiudadAutocompletada(null);
+  };
+  const editarLongitud = (valor: string) => {
+    setLongitud(valor);
+    coordsDeCiudad.current = null;
+    setCiudadAutocompletada(null);
+  };
+
+  const esLocal = tipo === 'local';
   const wallapopActivo = portales.wallapop.enabled;
   const zonaIncompleta =
     wallapopActivo && !(latitud.trim() && longitud.trim() && radioKm.trim());
@@ -74,6 +124,7 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
     try {
       await onSubmit({
         nombre: nombre.trim(),
+        tipo,
         ubicacion: ubicacion.trim(),
         latitud: hayZona ? aNumero(latitud) : null,
         longitud: hayZona ? aNumero(longitud) : null,
@@ -82,11 +133,12 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
         precio_max: aNumero(precioMax),
         metros_min: aNumero(metrosMin),
         metros_max: aNumero(metrosMax),
-        habitaciones_min: aNumero(habitaciones),
-        banos_min: aNumero(banos),
-        exige_ascensor: ascensor,
-        exige_garaje: garaje,
-        exige_terraza: terraza,
+        // Un local no se filtra por habitaciones, baños ni ascensor/garaje/terraza.
+        habitaciones_min: esLocal ? null : aNumero(habitaciones),
+        banos_min: esLocal ? null : aNumero(banos),
+        exige_ascensor: esLocal ? false : ascensor,
+        exige_garaje: esLocal ? false : garaje,
+        exige_terraza: esLocal ? false : terraza,
         excluir_palabras: excluir.trim() || null,
         portales,
         notificar,
@@ -94,6 +146,8 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
       if (!inicial) {
         setNombre('');
         setUbicacion('');
+        coordsDeCiudad.current = null;
+        setCiudadAutocompletada(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar');
@@ -107,6 +161,30 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
 
   return (
     <form className="busqueda-form" onSubmit={(e) => void handleSubmit(e)}>
+      <fieldset className="grupo">
+        <legend>Tipo de inmueble</legend>
+        <div className="chips">
+          {TIPOS.map((t) => (
+            <label
+              key={t}
+              className={`chip${tipo === t ? ' chip--on' : ''}${inicial ? ' chip--disabled' : ''}`}
+            >
+              <input
+                type="radio"
+                name="tipo"
+                checked={tipo === t}
+                disabled={Boolean(inicial)}
+                onChange={() => setTipo(t)}
+              />
+              {ICONO_TIPO[t]} {NOMBRE_TIPO[t]}
+            </label>
+          ))}
+        </div>
+        {inicial && (
+          <p className="ayuda">El tipo no se puede cambiar: crea otra búsqueda si necesitas el otro.</p>
+        )}
+      </fieldset>
+
       <div className="campo-fila">
         <label className="campo">
           <span>Nombre</span>
@@ -114,7 +192,20 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
         </label>
         <label className="campo">
           <span>Ubicación</span>
-          <input value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} placeholder="Badajoz" />
+          <input
+            value={ubicacion}
+            onChange={(e) => cambiarUbicacion(e.target.value)}
+            placeholder="Badajoz"
+            list="ciudades-principales"
+          />
+          <datalist id="ciudades-principales">
+            {CIUDADES_PRINCIPALES.map((c) => (
+              <option key={c.nombre} value={c.nombre} />
+            ))}
+          </datalist>
+          {ciudadAutocompletada && (
+            <small className="ayuda">Coordenadas de {ciudadAutocompletada} añadidas para Wallapop.</small>
+          )}
         </label>
       </div>
 
@@ -138,14 +229,18 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
       </div>
 
       <div className="campo-fila">
-        <label className="campo">
-          <span>Habitaciones mín.</span>
-          <input type="number" min="0" value={habitaciones} onChange={(e) => setHabitaciones(e.target.value)} placeholder="—" />
-        </label>
-        <label className="campo">
-          <span>Baños mín.</span>
-          <input type="number" min="0" value={banos} onChange={(e) => setBanos(e.target.value)} placeholder="—" />
-        </label>
+        {!esLocal && (
+          <label className="campo">
+            <span>Habitaciones mín.</span>
+            <input type="number" min="0" value={habitaciones} onChange={(e) => setHabitaciones(e.target.value)} placeholder="—" />
+          </label>
+        )}
+        {!esLocal && (
+          <label className="campo">
+            <span>Baños mín.</span>
+            <input type="number" min="0" value={banos} onChange={(e) => setBanos(e.target.value)} placeholder="—" />
+          </label>
+        )}
         <label className="campo campo--ancho">
           <span>Excluir si contiene (separado por comas)</span>
           <input value={excluir} onChange={(e) => setExcluir(e.target.value)} placeholder="subasta, nuda propiedad, okupa" />
@@ -172,11 +267,11 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
       <div className="campo-fila">
         <label className="campo">
           <span>Latitud {wallapopActivo && <em>(obligatoria)</em>}</span>
-          <input type="number" step="any" value={latitud} onChange={(e) => setLatitud(e.target.value)} placeholder="38.8794" />
+          <input type="number" step="any" value={latitud} onChange={(e) => editarLatitud(e.target.value)} placeholder="38.8794" />
         </label>
         <label className="campo">
           <span>Longitud {wallapopActivo && <em>(obligatoria)</em>}</span>
-          <input type="number" step="any" value={longitud} onChange={(e) => setLongitud(e.target.value)} placeholder="-6.9707" />
+          <input type="number" step="any" value={longitud} onChange={(e) => editarLongitud(e.target.value)} placeholder="-6.9707" />
         </label>
         <label className="campo">
           <span>Radio (km)</span>
@@ -185,29 +280,35 @@ export default function BusquedaForm({ inicial, onSubmit, onCancel }: Props) {
       </div>
 
       <fieldset className="grupo">
-        <legend>Requisitos</legend>
+        <legend>{esLocal ? 'Avisos' : 'Requisitos'}</legend>
         <div className="chips">
-          <label className={`chip${ascensor ? ' chip--on' : ''}`}>
-            <input type="checkbox" checked={ascensor} onChange={() => setAscensor((v) => !v)} />
-            Con ascensor
-          </label>
-          <label className={`chip${garaje ? ' chip--on' : ''}`}>
-            <input type="checkbox" checked={garaje} onChange={() => setGaraje((v) => !v)} />
-            Con garaje
-          </label>
-          <label className={`chip${terraza ? ' chip--on' : ''}`}>
-            <input type="checkbox" checked={terraza} onChange={() => setTerraza((v) => !v)} />
-            Con terraza
-          </label>
+          {!esLocal && (
+            <>
+              <label className={`chip${ascensor ? ' chip--on' : ''}`}>
+                <input type="checkbox" checked={ascensor} onChange={() => setAscensor((v) => !v)} />
+                Con ascensor
+              </label>
+              <label className={`chip${garaje ? ' chip--on' : ''}`}>
+                <input type="checkbox" checked={garaje} onChange={() => setGaraje((v) => !v)} />
+                Con garaje
+              </label>
+              <label className={`chip${terraza ? ' chip--on' : ''}`}>
+                <input type="checkbox" checked={terraza} onChange={() => setTerraza((v) => !v)} />
+                Con terraza
+              </label>
+            </>
+          )}
           <label className={`chip${notificar ? ' chip--on' : ''}`}>
             <input type="checkbox" checked={notificar} onChange={() => setNotificar((v) => !v)} />
             Avisar por Telegram
           </label>
         </div>
-        <p className="ayuda">
-          Un requisito solo descarta el anuncio si el portal dice expresamente que no lo tiene.
-          Si no lo menciona, el piso llega igualmente al listado.
-        </p>
+        {!esLocal && (
+          <p className="ayuda">
+            Un requisito solo descarta el anuncio si el portal dice expresamente que no lo tiene.
+            Si no lo menciona, el piso llega igualmente al listado.
+          </p>
+        )}
       </fieldset>
 
       {error && <div className="form-error">{error}</div>}

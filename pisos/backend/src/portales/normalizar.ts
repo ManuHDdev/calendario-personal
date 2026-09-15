@@ -51,9 +51,15 @@ export function normalizarTexto(texto: string): string {
  *
  * En España el punto es separador de millares y la coma decimal, así que
  * "145.000" son ciento cuarenta y cinco mil, no ciento cuarenta y cinco.
+ *
+ * Un importe de 0 o negativo NO es un precio: los portales lo usan como
+ * centinela de "precio a consultar" (pisos.com sirve `data-ad-price="0"` junto
+ * a un texto "A consultar"). Se devuelve `null` para que el filtro lo trate
+ * como "el portal no lo dice" y no como un piso regalado que cuela en todo
+ * `precioMax`.
  */
 export function parsearPrecio(bruto: string | number | null | undefined): number | null {
-  if (typeof bruto === 'number') return Number.isFinite(bruto) ? bruto : null;
+  if (typeof bruto === 'number') return Number.isFinite(bruto) && bruto > 0 ? bruto : null;
   if (!bruto) return null;
 
   const limpio = bruto.replace(/[^\d.,]/g, '');
@@ -65,7 +71,7 @@ export function parsearPrecio(bruto: string | number | null | undefined): number
     : limpio.replace(/\.(?=\d{3}(\D|$))/g, '');
 
   const valor = Number(normalizado);
-  return Number.isFinite(valor) ? valor : null;
+  return Number.isFinite(valor) && valor > 0 ? valor : null;
 }
 
 /** Primer entero que case con `patron` (que debe capturar el número en el grupo 1). */
@@ -89,6 +95,24 @@ export function extraerMetros(texto: string): number | null {
   // otra cosa (un precio por m², un año, un solar). Se descarta en lugar de
   // arrastrar un filtro con un dato basura.
   return metros >= 15 && metros <= 1000 ? metros : null;
+}
+
+/**
+ * Superficie de un LOCAL comercial a partir de texto libre.
+ *
+ * Igual que `extraerMetros` pero con la horquilla ampliada a `[10, 5000]` m²:
+ * un local puede ser un quiosco de 12 m² o una nave de 3.000. Sin este
+ * extractor propio, una nave grande caería a `metros: null` en silencio contra
+ * el tope de 1.000 m² de la vivienda.
+ */
+export function extraerSuperficieLocal(texto: string): number | null {
+  const t = normalizarTexto(texto).replace(/(\d)\.(\d{3})(?=\D|$)/g, '$1$2');
+  const metros =
+    primerEntero(t, /(\d{2,4})\s*(?:m2|m²|mts2|mts|metros(?:\s+cuadrados)?)\b/) ??
+    primerEntero(t, /(\d{2,4})\s*m²/) ??
+    primerEntero(t, /(\d{2,4})\s*m\b(?!\w)/);
+  if (metros === null) return null;
+  return metros >= 10 && metros <= 5000 ? metros : null;
 }
 
 /** "3 habitaciones", "3 hab", "3 hab.", "5 habs.", "3 dormitorios", "3 dorm" → 3 */

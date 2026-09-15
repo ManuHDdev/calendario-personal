@@ -1,7 +1,10 @@
 /**
  * Agrega el consumo de las APIs externas rastreadas por otras subapps
- * (Paraísos → ORS, Watchlist → TMDB/Google Books) llamando a su endpoint
- * interno `GET .../api/usage`. Ver
+ * (Paraísos → ORS, Watchlist → TMDB/Google Books, Fútbol → football_data)
+ * llamando a su endpoint interno `GET .../api/usage`. Fútbol es un repo
+ * externo al monorepo (ver sección "Fútbol" de CLAUDE.md), pero comparte el
+ * mismo contrato interno (`PANEL_INTERNAL_TOKEN`, misma forma de respuesta)
+ * que Paraísos/Watchlist, así que se agrega igual. Ver
  * openspec/changes/2026-09-09-add-api-usage-dashboard/design.md
  * ("Panel → subapp calls") para el porqué de Promise.allSettled + timeout +
  * degradación por-tarjeta en vez de fallar toda la petición.
@@ -36,6 +39,7 @@ const WATCHLIST_APIS: KnownApi[] = [
   { api: 'tmdb', label: 'TMDB' },
   { api: 'google_books', label: 'Google Books' },
 ];
+const FUTBOL_APIS: KnownApi[] = [{ api: 'football_data', label: 'Football-Data.org' }];
 
 const TIMEOUT_MS = 3000;
 
@@ -87,23 +91,26 @@ function resolveEntries(
 }
 
 /**
- * Devuelve el consumo de hoy de las tres APIs externas rastreadas
- * (ors, tmdb, google_books), siempre en ese orden. Un fallo al llamar a un
- * subapp degrada solo las entradas de ESE subapp a `unavailable: true` — el
- * resto de entradas se devuelve normalmente.
+ * Devuelve el consumo de hoy de las cuatro APIs externas rastreadas
+ * (ors, tmdb, google_books, football_data), siempre en ese orden. Un fallo al
+ * llamar a un subapp degrada solo las entradas de ESE subapp a
+ * `unavailable: true` — el resto de entradas se devuelve normalmente.
  */
 export async function getAllUsage(): Promise<ApiUsageEntry[]> {
   const token = process.env.PANEL_INTERNAL_TOKEN ?? '';
   const paraisosUrl = process.env.PARAISOS_BACKEND_URL || 'http://paraisos-backend:3007';
   const watchlistUrl = process.env.WATCHLIST_BACKEND_URL || 'http://watchlist-backend:3009';
+  const futbolUrl = process.env.FUTBOL_BACKEND_URL || 'http://football-predictor-backend-1:8000';
 
-  const [paraisosResult, watchlistResult] = await Promise.allSettled([
+  const [paraisosResult, watchlistResult, futbolResult] = await Promise.allSettled([
     fetchUsage(paraisosUrl, '/paraisos/api/usage', token),
     fetchUsage(watchlistUrl, '/watchlist/api/usage', token),
+    fetchUsage(futbolUrl, '/futbol/api/usage', token),
   ]);
 
   return [
     ...resolveEntries(PARAISOS_APIS, paraisosResult),
     ...resolveEntries(WATCHLIST_APIS, watchlistResult),
+    ...resolveEntries(FUTBOL_APIS, futbolResult),
   ];
 }

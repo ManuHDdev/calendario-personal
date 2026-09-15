@@ -1,4 +1,4 @@
-import type { AnuncioCrudo } from '../types/pisos';
+import type { AnuncioCrudo, TipoInmueble } from '../types/pisos';
 import type { CriteriosPortal, OpcionesBusqueda, PortalProvider } from './types';
 import { fetchTexto } from './http';
 import {
@@ -16,6 +16,7 @@ import {
   esCapitalDeProvincia,
   decodificarEntidades,
   extraerMetros,
+  extraerSuperficieLocal,
   extraerHabitaciones,
   extraerBanos,
   extraerPlanta,
@@ -49,20 +50,40 @@ const PORTAL = 'fotocasa';
  *   multimedia: [{ type: "image", src }]
  *
  * Verificar con:  npm run smoke -- fotocasa "Badajoz"
+ *                 npm run smoke -- fotocasa "Badajoz" --tipo local
+ *
+ * SECCIÓN COMERCIAL — VERIFICADA CONTRA EL PORTAL EN VIVO (2026-09-10, Madrid y
+ * Badajoz, 30 anuncios/página con precio+m²+imagen al 100%). Detalles reales:
+ *   - El listado se pide en `/es/comprar/locales/<zona>/…` (este segmento). Las
+ *     fichas vuelven bajo `/es/comprar/local-comercial/…` en `detail["es-ES"]`;
+ *     es solo la URL de la ficha, no la del listado.
+ *   - El nodo del estado embebido trae `buildingType: "Business"` y NO trae
+ *     `buildingSubtype`. Pasa el filtro porque `business` no está en
+ *     `SUBTIPOS_NO_LOCAL` y sí en `SUBTIPOS_NO_VIVIENDA` (se rechaza en vivienda).
+ *   - `features` mantiene la forma `[{ key, value }]` (surface, bathrooms…).
  * ─────────────────────────────────────────────────────────────────────────
  */
-function construirUrl(criterios: CriteriosPortal, pagina: number): string {
+
+/** Segmento de la ruta de Fotocasa según el tipo de inmueble. */
+const SECCION: Record<TipoInmueble, string> = { vivienda: 'viviendas', local: 'locales' };
+
+/** Expuesto para los tests: la ruta y los parámetros dependen del `tipo`. */
+export function construirUrl(criterios: CriteriosPortal, pagina: number): string {
   // En Fotocasa "caceres" es la provincia y "caceres-capital" la ciudad.
   const base = slugificar(criterios.ubicacion);
   const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}-capital` : base;
-  const ruta = `/es/comprar/viviendas/${zona}/todas-las-zonas/l/${pagina > 1 ? pagina : ''}`;
+  const ruta = `/es/comprar/${SECCION[criterios.tipo]}/${zona}/todas-las-zonas/l/${pagina > 1 ? pagina : ''}`;
 
   const params = new URLSearchParams();
   if (criterios.precioMin !== null) params.set('minPrice', String(criterios.precioMin));
   if (criterios.precioMax !== null) params.set('maxPrice', String(criterios.precioMax));
   if (criterios.metrosMin !== null) params.set('minSurface', String(criterios.metrosMin));
   if (criterios.metrosMax !== null) params.set('maxSurface', String(criterios.metrosMax));
-  if (criterios.habitacionesMin !== null) params.set('minRooms', String(criterios.habitacionesMin));
+  // `minRooms` solo tiene sentido en vivienda: un local no se filtra por
+  // habitaciones y mandar el parámetro sería un embudo inventado.
+  if (criterios.tipo === 'vivienda' && criterios.habitacionesMin !== null) {
+    params.set('minRooms', String(criterios.habitacionesMin));
+  }
   // "Lo más reciente primero": sin esto el portal ordena por relevancia y un
   // piso recién publicado puede caer en la página 7.
   params.set('sortType', 'publicationDate');
@@ -76,8 +97,24 @@ const SUBTIPOS_NO_VIVIENDA = new Set([
   'commercial', 'local', 'premises', 'building', 'storage', 'industrial',
 ]);
 
-/** ¿Este nodo del estado embebido tiene pinta de ser un anuncio de vivienda en venta? */
-function pareceAnuncio(nodo: Record<string, unknown>): boolean {
+/** Subtipos residenciales: en una búsqueda de local no interesan. */
+const SUBTIPOS_NO_LOCAL = new Set([
+  'flat', 'apartment', 'penthouse', 'duplex', 'studio', 'loft', 'house',
+  'chalet', 'villa', 'townhouse', 'countryhouse', 'rusticproperty',
+]);
+
+/**
+ * Tabla de rechazo por tipo, no dos predicados. En ambos casos un subtipo
+ * DESCONOCIDO se acepta: la URL ya filtró y rechazar por silencio perdería
+ * anuncios (principio transversal de la app).
+ */
+const SUBTIPOS_RECHAZADOS: Record<TipoInmueble, Set<string>> = {
+  vivienda: SUBTIPOS_NO_VIVIENDA,
+  local: SUBTIPOS_NO_LOCAL,
+};
+
+/** ¿Este nodo del estado embebido tiene pinta de ser un anuncio del tipo buscado? */
+function pareceAnuncio(nodo: Record<string, unknown>, tipo: TipoInmueble): boolean {
   const tieneId = typeof nodo.id === 'number' || nodo.id !== undefined || nodo.realEstateId !== undefined;
   const tienePrecio = nodo.rawPrice !== undefined || nodo.price !== undefined;
   const esListado = Array.isArray(nodo.features) || nodo.detail !== undefined || nodo.buildingSubtype !== undefined;
@@ -87,7 +124,7 @@ function pareceAnuncio(nodo: Record<string, unknown>): boolean {
   if (nodo.transactionTypeId !== undefined && nodo.transactionTypeId !== 1) return false;
 
   const subtipo = comoTexto(primerValor(nodo, ['buildingSubtype', 'buildingType']))?.toLowerCase() ?? '';
-  if ([...SUBTIPOS_NO_VIVIENDA].some((s) => subtipo.includes(s))) return false;
+  if ([...SUBTIPOS_RECHAZADOS[tipo]].some((s) => subtipo.includes(s))) return false;
 
   return true;
 }
@@ -156,7 +193,7 @@ function tieneFeature(nodo: Record<string, unknown>, clave: string): boolean | n
     : null;
 }
 
-function parsearNodo(nodo: Record<string, unknown>): AnuncioCrudo | null {
+function parsearNodo(nodo: Record<string, unknown>, tipo: TipoInmueble): AnuncioCrudo | null {
   const portalId = comoTexto(primerValor(nodo, ['id', 'realEstateId', 'realEstateAdId', 'adId']));
   if (!portalId) return null;
 
@@ -179,7 +216,7 @@ function parsearNodo(nodo: Record<string, unknown>): AnuncioCrudo | null {
   const subtipo = comoTexto(primerValor(nodo, ['buildingSubtype', 'buildingType']))?.toLowerCase() ?? '';
   const municipio = comoTexto(primerValor(nodo, ['address.municipality', 'address.city']));
   const distrito = comoTexto(primerValor(nodo, ['address.district', 'address.neighborhood']));
-  const etiquetaTipo = SUBTIPO_LEGIBLE[subtipo] ?? 'Vivienda';
+  const etiquetaTipo = SUBTIPO_LEGIBLE[subtipo] ?? (tipo === 'local' ? 'Local' : 'Vivienda');
   const titulo = decodificarEntidades(
     [etiquetaTipo, distrito || municipio ? `en ${distrito ?? municipio}` : '']
       .filter(Boolean)
@@ -192,7 +229,8 @@ function parsearNodo(nodo: Record<string, unknown>): AnuncioCrudo | null {
     comoTexto(primerValor(nodo, ['rawPrice', 'price', 'priceValue'])),
   );
 
-  const metros = leerFeature(nodo, 'surface') ?? comoEntero(nodo.surface) ?? extraerMetros(texto);
+  const extraerSuperficie = tipo === 'local' ? extraerSuperficieLocal : extraerMetros;
+  const metros = leerFeature(nodo, 'surface') ?? comoEntero(nodo.surface) ?? extraerSuperficie(texto);
   const habitaciones =
     leerFeature(nodo, 'rooms') ?? comoEntero(nodo.rooms) ?? extraerHabitaciones(texto);
   const banos =
@@ -207,6 +245,7 @@ function parsearNodo(nodo: Record<string, unknown>): AnuncioCrudo | null {
   const imagen = primerValor(nodo, ['multimedia.0.src', 'multimedia.0.url', 'photos.0.url', 'thumbnail', 'image']);
 
   return {
+    tipo,
     portal: PORTAL,
     portalId,
     url: absoluta(urlBruta),
@@ -232,14 +271,13 @@ function parsearNodo(nodo: Record<string, unknown>): AnuncioCrudo | null {
 }
 
 /** Plan B: JSON-LD de schema.org, que Fotocasa publica para los buscadores. */
-function parsearDesdeJsonLd(html: string): AnuncioCrudo[] {
-  const candidatos = filtrarPorTipo(extraerJsonLd(html), [
-    'Product',
-    'Residence',
-    'Apartment',
-    'House',
-    'RealEstateListing',
-  ]);
+function parsearDesdeJsonLd(html: string, tipo: TipoInmueble): AnuncioCrudo[] {
+  const tiposLd =
+    tipo === 'local'
+      ? ['Product', 'RealEstateListing', 'Store', 'Place', 'Offer']
+      : ['Product', 'Residence', 'Apartment', 'House', 'RealEstateListing'];
+  const candidatos = filtrarPorTipo(extraerJsonLd(html), tiposLd);
+  const extraerSuperficie = tipo === 'local' ? extraerSuperficieLocal : extraerMetros;
 
   const anuncios: AnuncioCrudo[] = [];
   for (const objeto of candidatos) {
@@ -253,12 +291,13 @@ function parsearDesdeJsonLd(html: string): AnuncioCrudo[] {
     const imagen = comoTexto(Array.isArray(imagenBruta) ? imagenBruta[0] : imagenBruta);
 
     anuncios.push({
+      tipo,
       portal: PORTAL,
       portalId,
       url: absoluta(url),
       titulo,
       precio: parsearPrecio(comoTexto(primerValor(objeto, ['offers.price', 'price']))),
-      metros: comoEntero(primerValor(objeto, ['floorSize.value', 'floorSize'])) ?? extraerMetros(texto),
+      metros: comoEntero(primerValor(objeto, ['floorSize.value', 'floorSize'])) ?? extraerSuperficie(texto),
       habitaciones:
         comoEntero(primerValor(objeto, ['numberOfRooms.value', 'numberOfRooms'])) ??
         extraerHabitaciones(texto),
@@ -276,19 +315,22 @@ function parsearDesdeJsonLd(html: string): AnuncioCrudo[] {
   return anuncios;
 }
 
-/** Expuesto para los tests y el smoke: parsea una página ya descargada. */
-export function parsearPagina(html: string): AnuncioCrudo[] {
+/**
+ * Expuesto para los tests y el smoke: parsea una página ya descargada.
+ * `tipo` por defecto `vivienda` para no tocar tests ni smoke existentes.
+ */
+export function parsearPagina(html: string, tipo: TipoInmueble = 'vivienda'): AnuncioCrudo[] {
   const estado = extraerEstadoEmbebido(html);
   const desdeEstado = estado === null
     ? []
-    : buscarNodos(estado, pareceAnuncio)
-        .map(parsearNodo)
+    : buscarNodos(estado, (nodo) => pareceAnuncio(nodo, tipo))
+        .map((nodo) => parsearNodo(nodo, tipo))
         .filter((a): a is AnuncioCrudo => a !== null);
 
   // El estado embebido es la fuente rica (extras, coordenadas, features). El
   // JSON-LD solo entra si el estado no dio nada, para no mezclar dos
   // calidades de dato distintas en el mismo listado.
-  const anuncios = desdeEstado.length > 0 ? desdeEstado : parsearDesdeJsonLd(html);
+  const anuncios = desdeEstado.length > 0 ? desdeEstado : parsearDesdeJsonLd(html, tipo);
 
   const vistos = new Set<string>();
   return anuncios.filter((a) => {
@@ -318,7 +360,7 @@ export const fotocasaProvider: PortalProvider = {
         portal: 'Fotocasa',
         timeoutMs: opciones.timeoutMs,
       });
-      const anunciosPagina = parsearPagina(html);
+      const anunciosPagina = parsearPagina(html, criterios.tipo);
       if (anunciosPagina.length === 0) break;
 
       for (const anuncio of anunciosPagina) {

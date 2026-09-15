@@ -157,14 +157,14 @@ Calendario/panel/ dentro del monorepo elbunkerdelingeniero.
 ### Rutas (`/panel/api/*`)
 - `GET/POST/PUT/DELETE /users` → CRUD de usuarios vía Keycloak Admin API
 - `GET /roles` → lista fija `['admin','familia','invitado']`
-- `GET /usage` → consumo agregado de las APIs externas rastreadas en el monorepo (ORS vía Paraísos, TMDB/Google Books vía Watchlist), admin-only (`authAdminMiddleware`). Llama al `GET /usage` interno de cada subapp en paralelo (`Promise.allSettled`, timeout 3s); si uno falla, sus entradas se marcan `unavailable: true` en vez de tumbar toda la petición — ver `panel/backend/src/services/subappUsage.ts`
+- `GET /usage` → consumo agregado de las APIs externas rastreadas en el monorepo (ORS vía Paraísos, TMDB/Google Books vía Watchlist, Football-Data.org vía Fútbol), admin-only (`authAdminMiddleware`). Llama al `GET /usage` interno de cada subapp en paralelo (`Promise.allSettled`, timeout 3s); si uno falla, sus entradas se marcan `unavailable: true` en vez de tumbar toda la petición — ver `panel/backend/src/services/subappUsage.ts`. Fútbol es un repo externo al monorepo (ver sección "Fútbol" más abajo), pero expone el mismo contrato interno (`PANEL_INTERNAL_TOKEN`, misma forma de respuesta) que Paraísos/Watchlist
 - `GET /health`
 
 ### Dashboard de uso de APIs externas
 Sección nueva en `PanelPage` (`UsageDashboard.tsx`), tarjetas con llamadas de hoy, restante (cuando la API tiene tope publicado) y hora de reinicio (medianoche UTC). Documentado en `openspec/changes/2026-09-09-add-api-usage-dashboard/`.
 
 ### Variables de entorno
-`KEYCLOAK_BASE_URL`, `KEYCLOAK_CERTS_URL`, `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `CORS_ORIGIN`, `PORT` (default 3002), `PANEL_INTERNAL_TOKEN` (compartido con Paraísos y Watchlist), `PARAISOS_BACKEND_URL` (default `http://paraisos-backend:3007`), `WATCHLIST_BACKEND_URL` (default `http://watchlist-backend:3009`)
+`KEYCLOAK_BASE_URL`, `KEYCLOAK_CERTS_URL`, `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `CORS_ORIGIN`, `PORT` (default 3002), `PANEL_INTERNAL_TOKEN` (compartido con Paraísos, Watchlist y Fútbol), `PARAISOS_BACKEND_URL` (default `http://paraisos-backend:3007`), `WATCHLIST_BACKEND_URL` (default `http://watchlist-backend:3009`), `FUTBOL_BACKEND_URL` (default `http://football-predictor-backend-1:8000` — contenedor del repo externo `football-predictor`, unido a `calendario-net`)
 
 ### Red Docker
 `calendario-net` (externa)
@@ -641,6 +641,44 @@ en cuanto aparece un piso **en venta** que cumple los criterios guardados
 (zona, precio, m², habitaciones, baños, ascensor/garaje/terraza). Solo compra:
 el alquiler queda fuera a propósito.
 
+### Tipo de inmueble: `vivienda` | `local` (excluyentes)
+
+Cada búsqueda declara un `tipo`: `vivienda` (por defecto) o `local` comercial.
+No es un interruptor de "busca las dos cosas" — son criterios, secciones de
+portal y avisos distintos. Reglas:
+
+- **Migración**: `busqueda.tipo` y `anuncio.tipo` nacen con `DEFAULT 'vivienda'`,
+  así que toda búsqueda y todo anuncio anteriores quedan `vivienda` y se
+  comportan byte a byte igual. No hay `UPDATE` de relleno.
+- **Inmutable**: el `PATCH /searches/:id` rechaza `tipo` con 400 (`.strict()` +
+  `.omit`), y la allowlist de `updateBusqueda()` tampoco lo incluye (dos capas).
+  El frontend nunca lo envía en una edición y el selector se deshabilita al
+  editar. Para cambiar de tipo se crea otra búsqueda.
+- **Fotocasa y pisos.com**: `tipo='local'` cambia el segmento de URL a la
+  sección comercial (`/es/comprar/locales/…` y `/venta/locales-<zona>/`,
+  **verificados contra el portal en vivo el 2026-09-10** — Madrid y Badajoz,
+  ~30 anuncios/página con precio+m²+imagen al 100%; en Fotocasa el nodo trae
+  `buildingType: "Business"` sin `buildingSubtype` y la ficha vuelve bajo
+  `/es/comprar/local-comercial/…`), invierte el filtro de
+  subtipos (acepta local/nave/oficina, rechaza piso/ático/chalet) y usa una
+  horquilla de superficie ampliada `[10, 5000]` m² en vez de `[15, 1000]`.
+  `minRooms`/`habitacionesDesde` no se emiten para `local`.
+- **Wallapop** se omite en las búsquedas de `local` con motivo visible
+  (`puedeBuscar → {ok:false}`): su categoría inmobiliaria no distingue local de
+  vivienda de forma fiable.
+- **Filtro fino**: para `local`, `cumpleCriterios` no evalúa habitaciones,
+  baños ni ascensor/garaje/terraza; sí ubicación, precio, metros y exclusiones.
+  Un anuncio cuyo `tipo` no coincide con el de la búsqueda se descarta.
+- **Avisos**: la cabecera es `🏪 Local nuevo` o `🏠 Piso nuevo` según el tipo.
+- **Smoke**: `npm run smoke -- <portal> "<zona>" --tipo local` (default
+  `vivienda`); en `local` la cobertura por campo omite hab/baños para no leerse
+  como avería.
+
+**Lo que NO cambia con esta feature**: no hay puerto nuevo, ni base de datos
+nueva, ni rol nuevo en Keycloak, ni entrada nueva en el AppLauncher — `pisos`
+sigue siendo una sola subapp `admin`. La tabla de puertos, la tabla de roles y
+las 15 copias del AppLauncher se quedan exactamente como están.
+
 ### El rastreador corre solo (IMPORTANTE)
 El planificador vive **dentro del propio proceso del backend**
 (`services/planificador.ts`, `setTimeout` encadenado — no `setInterval`, para
@@ -998,6 +1036,15 @@ con su propio stack, unido a `calendario-net`.
 `GET /fixtures`, `GET /fixtures/{id}`, `GET /model/performance`,
 `GET /health` (abierto). La Champions League no se predice (el modelo es
 por liga; el seed solo cubre las 5 grandes).
+
+`GET /usage` — consumo de hoy de Football-Data.org (interno, para el dashboard
+de Panel), bearer-token-gated con `PANEL_INTERNAL_TOKEN` — mismo contrato que
+`GET /usage` de Paraísos/Watchlist (comparación en tiempo constante, un JWT de
+Keycloak NO da acceso a esta ruta). Esto añade una dependencia cruzada de
+repos: `PANEL_INTERNAL_TOKEN` debe tener el mismo valor en el `.env` de
+`football-predictor` que en Panel/Paraísos/Watchlist, pese a vivir en un
+repositorio separado — ver `panel/backend/src/services/subappUsage.ts`
+(`FUTBOL_BACKEND_URL`, default `http://football-predictor-backend-1:8000`).
 
 ### Despliegue
 Pipeline propio en GitHub Actions (`football-predictor/.github/workflows/deploy.yml`,

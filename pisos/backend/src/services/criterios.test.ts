@@ -3,6 +3,7 @@ import { cumpleCriterios, parsearExclusiones, precioPorMetro, type Criterios } f
 import type { AnuncioCrudo } from '../types/pisos';
 
 const SIN_FILTROS: Criterios = {
+  tipo: 'vivienda',
   ubicacion: '', // vacío = no filtra por municipio
   precio_min: null,
   precio_max: null,
@@ -18,6 +19,7 @@ const SIN_FILTROS: Criterios = {
 
 function anuncio(overrides: Partial<AnuncioCrudo> = {}): AnuncioCrudo {
   return {
+    tipo: 'vivienda',
     portal: 'fotocasa',
     portalId: '1',
     url: 'https://example.test/1',
@@ -122,6 +124,68 @@ describe('cumpleCriterios — palabras excluidas', () => {
     const veredicto = cumpleCriterios(anuncio({ precio: 300000 }), { ...SIN_FILTROS, precio_max: 150000 });
     expect(veredicto.cumple).toBe(false);
     if (!veredicto.cumple) expect(veredicto.motivo).toContain('precio');
+  });
+});
+
+describe('cumpleCriterios — tipo de inmueble', () => {
+  const LOCAL_SIN_FILTROS: Criterios = { ...SIN_FILTROS, tipo: 'local' };
+
+  it('descarta un anuncio cuyo tipo no coincide con el de la búsqueda', () => {
+    const v = cumpleCriterios(anuncio({ tipo: 'vivienda' }), LOCAL_SIN_FILTROS);
+    expect(v.cumple).toBe(false);
+    if (!v.cumple) expect(v.motivo).toContain('local');
+    expect(cumpleCriterios(anuncio({ tipo: 'local' }), SIN_FILTROS).cumple).toBe(false);
+  });
+
+  it('para un local NO evalúa habitaciones, baños, ascensor, garaje ni terraza', () => {
+    const local = anuncio({
+      tipo: 'local',
+      habitaciones: null,
+      banos: null,
+      ascensor: false,
+      garaje: false,
+      terraza: false,
+    });
+    const exigente: Criterios = {
+      ...LOCAL_SIN_FILTROS,
+      habitaciones_min: 3,
+      banos_min: 2,
+      exige_ascensor: true,
+      exige_garaje: true,
+      exige_terraza: true,
+    };
+    expect(cumpleCriterios(local, exigente).cumple).toBe(true);
+  });
+
+  it('para un local SÍ sigue aplicando ubicación, precio, metros y palabras excluidas', () => {
+    const enBadajoz: Criterios = { ...LOCAL_SIN_FILTROS, ubicacion: 'Badajoz' };
+    // precio desconocido con rango → descarta
+    expect(
+      cumpleCriterios(anuncio({ tipo: 'local', precio: null }), { ...enBadajoz, precio_max: 200000 }).cumple,
+    ).toBe(false);
+    // precio conocido dentro de rango → pasa
+    expect(
+      cumpleCriterios(anuncio({ tipo: 'local', precio: 150000 }), { ...enBadajoz, precio_max: 200000 }).cumple,
+    ).toBe(true);
+    // fuera de rango → descarta
+    expect(
+      cumpleCriterios(anuncio({ tipo: 'local', precio: 300000 }), { ...enBadajoz, precio_max: 200000 }).cumple,
+    ).toBe(false);
+    // metros fuera de rango → descarta
+    expect(
+      cumpleCriterios(anuncio({ tipo: 'local', metros: 40 }), { ...enBadajoz, metros_min: 100 }).cumple,
+    ).toBe(false);
+    // palabra excluida → descarta
+    expect(
+      cumpleCriterios(anuncio({ tipo: 'local', titulo: 'Local en traspaso' }), {
+        ...enBadajoz,
+        excluir_palabras: 'traspaso',
+      }).cumple,
+    ).toBe(false);
+    // fuera del municipio → descarta
+    expect(
+      cumpleCriterios(anuncio({ tipo: 'local', ubicacion: 'Mérida' }), enBadajoz).cumple,
+    ).toBe(false);
   });
 });
 

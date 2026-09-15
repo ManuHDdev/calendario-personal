@@ -16,7 +16,7 @@
  */
 
 import { PROVIDERS } from './portales';
-import { PORTALES, type PortalId } from './types/pisos';
+import { PORTALES, TIPOS, type PortalId, type TipoInmueble } from './types/pisos';
 import type { CriteriosPortal } from './portales/types';
 
 function leerOpcion(args: string[], nombre: string): number | null {
@@ -24,6 +24,12 @@ function leerOpcion(args: string[], nombre: string): number | null {
   if (indice === -1 || indice === args.length - 1) return null;
   const valor = Number(args[indice + 1]);
   return Number.isFinite(valor) ? valor : null;
+}
+
+function leerTexto(args: string[], nombre: string): string | null {
+  const indice = args.indexOf(`--${nombre}`);
+  if (indice === -1 || indice === args.length - 1) return null;
+  return args[indice + 1] ?? null;
 }
 
 async function probar(portalId: PortalId, criterios: CriteriosPortal): Promise<void> {
@@ -54,9 +60,12 @@ async function probar(portalId: PortalId, criterios: CriteriosPortal): Promise<v
     // "funciona".
     const cobertura = (campo: keyof (typeof anuncios)[number]) =>
       `${anuncios.filter((a) => a[campo] !== null).length}/${anuncios.length}`;
+    // En `local` no se listan hab/baños: un local no los tiene, así que
+    // omitirlos evita que la cobertura se lea como una avería del parser.
+    const esLocal = criterios.tipo === 'local';
     console.log(
       `  📊 precio ${cobertura('precio')} · m² ${cobertura('metros')} · ` +
-        `hab ${cobertura('habitaciones')} · baños ${cobertura('banos')} · ` +
+        (esLocal ? '' : `hab ${cobertura('habitaciones')} · baños ${cobertura('banos')} · `) +
         `imagen ${cobertura('imagenUrl')}`,
     );
 
@@ -79,11 +88,19 @@ async function main(): Promise<void> {
   const ubicacion = args[1];
 
   if (!objetivo || !ubicacion) {
-    console.error('Uso: npm run smoke -- <fotocasa|pisos|wallapop|todos> "<ubicación>" [--min N] [--max N] [--lat N --lng N --radio N]');
+    console.error('Uso: npm run smoke -- <fotocasa|pisos|wallapop|todos> "<ubicación>" [--tipo vivienda|local] [--min N] [--max N] [--lat N --lng N --radio N]');
     process.exit(1);
   }
 
+  const tipoBruto = leerTexto(args, 'tipo') ?? 'vivienda';
+  if (!TIPOS.includes(tipoBruto as TipoInmueble)) {
+    console.error(`Tipo desconocido: "${tipoBruto}". Opciones: ${TIPOS.join(', ')}`);
+    process.exit(1);
+  }
+  const tipo = tipoBruto as TipoInmueble;
+
   const criterios: CriteriosPortal = {
+    tipo,
     ubicacion,
     latitud: leerOpcion(args, 'lat'),
     longitud: leerOpcion(args, 'lng'),

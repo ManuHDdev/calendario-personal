@@ -17,7 +17,17 @@ import {
   getScraperState,
   updateScraperState,
 } from '../services/api';
-import { PORTALES, NOMBRE_PORTAL, type Anuncio, type Busqueda, type BusquedaFormData, type PortalId } from '../types';
+import {
+  PORTALES,
+  NOMBRE_PORTAL,
+  TIPOS,
+  NOMBRE_TIPO,
+  type Anuncio,
+  type Busqueda,
+  type BusquedaFormData,
+  type PortalId,
+  type TipoInmueble,
+} from '../types';
 import './PisosPage.css';
 
 type Pestana = 'anuncios' | 'busquedas';
@@ -28,6 +38,7 @@ export default function PisosPage() {
   const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
   const [filtroPortal, setFiltroPortal] = useState<PortalId | ''>('');
+  const [filtroTipo, setFiltroTipo] = useState<TipoInmueble | ''>('');
   const [soloNuevos, setSoloNuevos] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -52,13 +63,14 @@ export default function PisosPage() {
         await getListings({
           busqueda: filtroBusqueda || undefined,
           portal: filtroPortal || undefined,
+          tipo: filtroTipo || undefined,
           soloNuevos,
         }),
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar los anuncios');
     }
-  }, [filtroBusqueda, filtroPortal, soloNuevos]);
+  }, [filtroBusqueda, filtroPortal, filtroTipo, soloNuevos]);
 
   useEffect(() => {
     void (async () => {
@@ -102,7 +114,10 @@ export default function PisosPage() {
   };
 
   const handleActualizar = async (id: string, data: BusquedaFormData) => {
-    await updateSearch(id, data);
+    // `tipo` es inmutable: el backend lo rechaza con 400 (.strict()) si se envía.
+    const { tipo: _tipo, ...sinTipo } = data;
+    void _tipo;
+    await updateSearch(id, sinTipo);
     await cargarBusquedas();
   };
 
@@ -210,6 +225,15 @@ export default function PisosPage() {
                 <option value="">Todas las fuentes</option>
                 {PORTALES.map((p) => (
                   <option key={p} value={p}>{NOMBRE_PORTAL[p]}</option>
+                ))}
+              </select>
+              <select
+                value={filtroTipo}
+                onChange={(e) => setFiltroTipo(e.target.value as TipoInmueble | '')}
+              >
+                <option value="">Vivienda y local</option>
+                {TIPOS.map((t) => (
+                  <option key={t} value={t}>{NOMBRE_TIPO[t]}</option>
                 ))}
               </select>
               <label className={`chip${soloNuevos ? ' chip--on' : ''}`}>

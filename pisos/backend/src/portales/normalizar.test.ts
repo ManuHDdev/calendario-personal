@@ -34,6 +34,14 @@ describe('parsearPrecio', () => {
     expect(parsearPrecio(null)).toBeNull();
     expect(parsearPrecio('')).toBeNull();
   });
+
+  it('trata 0 y negativos como "sin precio" (centinela de "a consultar")', () => {
+    // pisos.com sirve data-ad-price="0" en los anuncios con precio oculto.
+    expect(parsearPrecio(0)).toBeNull();
+    expect(parsearPrecio('0')).toBeNull();
+    expect(parsearPrecio('0 €')).toBeNull();
+    expect(parsearPrecio(-1000)).toBeNull();
+  });
 });
 
 describe('extraerMetros', () => {
