@@ -157,6 +157,7 @@ export default function InteresCompuestoCalculator() {
     <CalculatorCard
       titulo="Interés compuesto"
       descripcion="Capital final = Principal × (1 + r/n)^(n×t), sumando aportaciones periódicas opcionales."
+      ancho="amplio"
       onSubmit={handleSubmit}
       error={error}
       resultado={

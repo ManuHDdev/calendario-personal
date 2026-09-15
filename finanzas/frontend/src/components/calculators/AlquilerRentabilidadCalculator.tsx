@@ -66,6 +66,7 @@ export default function AlquilerRentabilidadCalculator() {
     <CalculatorCard
       titulo="Comprar para alquilar"
       descripcion="Rentabilidad real de una vivienda como inversión: cash-on-cash return sobre lo que realmente pones de tu bolsillo."
+      ancho="amplio"
       onSubmit={handleSubmit}
       error={error}
       resultado={
