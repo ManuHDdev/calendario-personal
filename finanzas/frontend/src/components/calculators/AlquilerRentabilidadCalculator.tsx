@@ -89,7 +89,7 @@ export default function AlquilerRentabilidadCalculator() {
               <strong>{resultado.rentabilidadBrutaAnualPct.toFixed(2)}%</strong>
             </div>
             <div className="resultado-linea resultado-principal">
-              <span>Rentabilidad neta sobre inversión (cash-on-cash)</span>
+              <span>Rentabilidad neta sobre inversión (cash-on-cash), anual</span>
               <strong>{resultado.rentabilidadNetaSobreInversionPct.toFixed(2)}%</strong>
             </div>
             <p className={`resultado-veredicto ${CLASE_VEREDICTO[resultado.veredicto]}`}>
@@ -104,10 +104,21 @@ export default function AlquilerRentabilidadCalculator() {
                   {formatEUR(proyeccion.cashflowAnualTrasHipoteca)} (
                   {formatEUR(proyeccion.cashflowMensualTrasHipoteca)}/mes) — ya no hay cuota que pagar.
                 </p>
-                <div className="resultado-linea resultado-principal">
-                  <span>Retorno total real al terminar de pagar</span>
+                <div className="resultado-linea">
+                  <span>Retorno total acumulado en {plazoHipotecaAnios} años (no es una tasa anual)</span>
                   <strong>{proyeccion.retornoTotalFinalSobreInversionPct.toFixed(2)}% sobre tu inversión inicial</strong>
                 </div>
+                <div className="resultado-linea resultado-principal">
+                  <span>Ese mismo retorno, anualizado (comparable con la rentabilidad de arriba)</span>
+                  <strong>{proyeccion.retornoTotalAnualizadoPct.toFixed(2)}% / año</strong>
+                </div>
+                <p className="calculator-help-text">
+                  El retorno acumulado suma TODOS los años de la hipoteca de golpe (incluye el préstamo entero ya
+                  amortizado, que suele ser varias veces tu inversión inicial), por eso sale un número mucho más
+                  grande que la rentabilidad anual de arriba — no son la misma magnitud. La versión anualizada sí
+                  lo es: es la tasa anual constante que, compuesta durante {plazoHipotecaAnios} años, da el mismo
+                  resultado final.
+                </p>
 
                 <details className="calculator-desglose">
                   <summary>Ver proyección año a año hasta pagar la hipoteca</summary>
