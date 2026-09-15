@@ -8,6 +8,8 @@ import CuotaMaximaCalculator from '../components/calculators/CuotaMaximaCalculat
 import PrecioMaximoCalculator from '../components/calculators/PrecioMaximoCalculator';
 import ColchonCalculator from '../components/calculators/ColchonCalculator';
 import DeudaCalculator from '../components/calculators/DeudaCalculator';
+import HipotecaTinTaeCalculator from '../components/calculators/HipotecaTinTaeCalculator';
+import AlquilerRentabilidadCalculator from '../components/calculators/AlquilerRentabilidadCalculator';
 import './FinanzasPage.css';
 
 interface CalculadoraDef {
@@ -24,6 +26,8 @@ const CALCULADORAS: CalculadoraDef[] = [
   { id: 'precio-maximo', nombre: 'Precio máximo', Componente: PrecioMaximoCalculator },
   { id: 'colchon', nombre: 'Colchón de seguridad', Componente: ColchonCalculator },
   { id: 'deuda', nombre: 'Deuda buena vs. mala', Componente: DeudaCalculator },
+  { id: 'hipoteca-tin-tae', nombre: 'Hipoteca: TIN vs. TAE', Componente: HipotecaTinTaeCalculator },
+  { id: 'alquiler-rentabilidad', nombre: 'Comprar para alquilar', Componente: AlquilerRentabilidadCalculator },
 ];
 
 export default function FinanzasPage() {

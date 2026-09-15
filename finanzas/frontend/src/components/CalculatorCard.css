@@ -229,6 +229,58 @@
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
+.calculator-crisis-generador {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.calculator-crisis-generador input {
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-width: 0;
+}
+
+.calculator-crisis-generador input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.calculator-crisis-generar {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: background 150ms ease;
+}
+
+.calculator-crisis-generar:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* Texto de ayuda corto bajo un campo (una frase), usado donde el propio
+   nombre del campo no basta para explicar qué significa. */
+.calculator-help-text {
+  margin-top: -8px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.resultado-veredicto.dudosa {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
 .calculator-desglose {
   margin-top: 8px;
 }

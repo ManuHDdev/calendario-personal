@@ -9,6 +9,9 @@ import {
   calcularDeuda,
   calcularImpuestoProgresivoAhorro,
   simularInteresCompuestoAvanzado,
+  generarAñosCrisisAleatorios,
+  calcularHipotecaTinTae,
+  calcularAlquilerRentabilidad,
 } from './calculators';
 
 describe('calcularInteresCompuesto', () => {
@@ -283,5 +286,231 @@ describe('simularInteresCompuestoAvanzado', () => {
     // Los demás años usan la tasa base normal (7%, positiva)
     expect(resultado.años[0].rendimientoAplicado).toBe(7);
     expect(resultado.años[0].gananciaDelAño).toBeGreaterThan(0);
+  });
+
+  describe('régimen "retiros_fifo"', () => {
+    it('un solo lote, retiro parcial: consume 5000€ de un lote de 11000€ con FIFO', () => {
+      const resultado = simularInteresCompuestoAvanzado({
+        capitalInicial: 10000,
+        tasaAnualBase: 10,
+        años: 1,
+        añosCrisis: [],
+        regimenFiscal: 'retiros_fifo',
+        retiroAnual: 5000,
+        añoInicioRetiros: 1,
+      });
+
+      const año1 = resultado.años[0];
+      // Rendimiento: 10000 * 1.10 = 11000. Retiro de 5000: fracción = 5000/11000,
+      // coste consumido = 10000 * (5000/11000) ≈ 4545.4545, ganancia ≈ 454.5454.
+      const gananciaEsperada = 5000 - 10000 * (5000 / 11000);
+      const impuestoEsperado = calcularImpuestoProgresivoAhorro(gananciaEsperada); // 19% (1er tramo)
+
+      expect(año1.retiroBruto).toBeCloseTo(5000, 2);
+      expect(año1.impuestoPagado).toBeCloseTo(impuestoEsperado, 2);
+      expect(impuestoEsperado).toBeCloseTo(86.3636, 2);
+      expect(año1.retiroNeto).toBeCloseTo(5000 - impuestoEsperado, 2);
+      expect(año1.retiroNeto).toBeCloseTo(4913.64, 1);
+      // Saldo del fondo restante tras el retiro: 11000 - 5000 = 6000 exacto.
+      expect(año1.saldoFinNeto).toBeCloseTo(6000, 5);
+      expect(resultado.saldoFinalFondoRestante).toBeCloseTo(6000, 5);
+    });
+
+    it('dos años, dos lotes: el retiro consume primero el lote más antiguo (FIFO, no LIFO ni proporcional)', () => {
+      const resultado = simularInteresCompuestoAvanzado({
+        capitalInicial: 10000,
+        tasaAnualBase: 10,
+        años: 2,
+        aportacionAnual: 1000,
+        añosCrisis: [],
+        regimenFiscal: 'retiros_fifo',
+        retiroAnual: 13000,
+        añoInicioRetiros: 2,
+      });
+
+      const año2 = resultado.años[1];
+      // lote0 (10000→11000→12100, coste 10000) se consume ENTERO primero:
+      // ganancia0 = 12100 - 10000 = 2100. Quedan 900€ por retirar del lote1
+      // (1000→1100→1210, coste 1000): fracción = 900/1210, ganancia1 = 900 -
+      // 1000*(900/1210) ≈ 156.1983. El lote2 (1000→1100, coste 1000, del año 2)
+      // no se toca en absoluto.
+      const gananciaEsperada = 2100 + (900 - 1000 * (900 / 1210));
+      const impuestoEsperado = calcularImpuestoProgresivoAhorro(gananciaEsperada);
+
+      expect(gananciaEsperada).toBeCloseTo(2256.1983, 3);
+      expect(año2.retiroBruto).toBeCloseTo(13000, 2);
+      expect(año2.impuestoPagado).toBeCloseTo(impuestoEsperado, 2);
+      expect(impuestoEsperado).toBeCloseTo(428.6777, 2);
+      expect(año2.retiroNeto).toBeCloseTo(13000 - impuestoEsperado, 2);
+      expect(año2.retiroNeto).toBeCloseTo(12571.32, 1);
+
+      // Fondo restante: (lote1: 1210-900=310) + (lote2 intacto: 1100) = 1410.
+      // Si el orden hubiera sido LIFO o proporcional, la ganancia realizada
+      // (y por tanto el impuesto) habría salido distinta — esta es la prueba
+      // real de que el orden es FIFO, ya que el fondo restante total no
+      // depende del orden de consumo (solo la base imponible sí).
+      expect(resultado.saldoFinalFondoRestante).toBeCloseTo(1410, 2);
+
+      // LIFO habría dado una ganancia distinta (consumiría lote2 y lote1
+      // enteros y una fracción de lote0, con más coste proporcional): lo
+      // comprobamos para dejar constancia de que el resultado NO coincide
+      // con ese orden alternativo.
+      const gananciaSiFueraLifo = 100 + 210 + (10690 - 10000 * (10690 / 12100));
+      expect(gananciaEsperada).not.toBeCloseTo(gananciaSiFueraLifo, 1);
+    });
+
+    it('rechaza un año de inicio de retiros fuera de [1, años]', () => {
+      expect(() =>
+        simularInteresCompuestoAvanzado({
+          capitalInicial: 10000,
+          tasaAnualBase: 5,
+          años: 3,
+          añosCrisis: [],
+          regimenFiscal: 'retiros_fifo',
+          retiroAnual: 1000,
+          añoInicioRetiros: 4,
+        }),
+      ).toThrow();
+    });
+  });
+});
+
+describe('generarAñosCrisisAleatorios', () => {
+  it('genera exactamente los años y magnitudes esperados con un rng de secuencia fija', () => {
+    // Secuencia consumida en orden: año1 -> [0.3 (< 0.5, hay crisis), 0.5 (magnitud)]
+    // año2 -> [0.6 (>= 0.5, sin crisis)]
+    // año3 -> [0.1 (< 0.5, hay crisis), 0.9 (magnitud)]
+    const secuencia = [0.3, 0.5, 0.6, 0.1, 0.9];
+    let i = 0;
+    const rng = () => secuencia[i++];
+
+    const resultado = generarAñosCrisisAleatorios(3, 50, 20, rng);
+
+    expect(resultado).toHaveLength(2);
+    expect(resultado[0]).toEqual({ año: 1, rendimiento: -20 }); // 20 * (0.5 + 0.5)
+    expect(resultado[1]).toEqual({ año: 3, rendimiento: -28 }); // 20 * (0.5 + 0.9)
+  });
+
+  it('sin probabilidad de crisis (0%) no genera ningún año', () => {
+    const resultado = generarAñosCrisisAleatorios(10, 0, 30, () => 0);
+    expect(resultado).toHaveLength(0);
+  });
+});
+
+describe('calcularHipotecaTinTae', () => {
+  const base = { capital: 200000, tinPct: 3, plazoAnios: 25 };
+
+  it('sin comisión, gastos ni seguros, la TAE coincide esencialmente con el TIN', () => {
+    const r = calcularHipotecaTinTae({ ...base, comisionAperturaPct: 0, gastosInicialesFijos: 0, seguroAnual: 0 });
+    expect(Math.abs(r.taeFinal - r.tinPct)).toBeLessThan(0.05);
+    expect(Math.abs(r.taeSoloTin - r.tinPct)).toBeLessThan(0.05);
+  });
+
+  it('con comisión de apertura, la TAE es estrictamente mayor que el TIN', () => {
+    const r = calcularHipotecaTinTae({ ...base, comisionAperturaPct: 1, gastosInicialesFijos: 0, seguroAnual: 0 });
+    expect(r.taeFinal).toBeGreaterThan(r.tinPct);
+  });
+
+  it('aumentar la comisión de apertura aumenta la TAE (monotonía)', () => {
+    const r1 = calcularHipotecaTinTae({ ...base, comisionAperturaPct: 1, gastosInicialesFijos: 0, seguroAnual: 0 });
+    const r2 = calcularHipotecaTinTae({ ...base, comisionAperturaPct: 2, gastosInicialesFijos: 0, seguroAnual: 0 });
+    expect(r2.taeFinal).toBeGreaterThan(r1.taeFinal);
+  });
+
+  it('añadir un seguro vinculado a un escenario con comisión sube la TAE todavía más', () => {
+    const sinSeguro = calcularHipotecaTinTae({
+      ...base,
+      comisionAperturaPct: 1,
+      gastosInicialesFijos: 500,
+      seguroAnual: 0,
+    });
+    const conSeguro = calcularHipotecaTinTae({
+      ...base,
+      comisionAperturaPct: 1,
+      gastosInicialesFijos: 500,
+      seguroAnual: 300,
+    });
+    expect(conSeguro.taeFinal).toBeGreaterThan(sinSeguro.taeFinal);
+  });
+
+  it('el desglose de impacto siempre es >= 0 cuando hay esos costes', () => {
+    const r = calcularHipotecaTinTae({
+      ...base,
+      comisionAperturaPct: 1.5,
+      gastosInicialesFijos: 800,
+      seguroAnual: 250,
+    });
+    expect(r.impactoComisionYGastosPct).toBeGreaterThanOrEqual(0);
+    expect(r.impactoSegurosPct).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('calcularAlquilerRentabilidad', () => {
+  it('caso claramente rentable ("Merece la pena")', () => {
+    // capitalPrestamo = 80000; cuotaMensual (TIN 0%, 240 cuotas) = 80000/240 = 333.33...
+    // inversionInicial = 100000 * 30/100 = 30000
+    // ingresoAlquilerAnualEfectivo = 1000*12 (sin vacío) = 12000
+    // gastosOperativosAnuales = mantenimiento 1% (default) de 100000 = 1000
+    // noiAnual = 12000 - 1000 = 11000
+    // cashflowAnualNeto = 11000 - 333.33*12 = 11000 - 4000 = 7000
+    // rentabilidadNetaSobreInversionPct = 7000/30000*100 ≈ 23.33% (>= umbral 5%)
+    const r = calcularAlquilerRentabilidad({
+      precioVivienda: 100000,
+      entradaPct: 20,
+      gastosCompraPct: 10,
+      tinHipotecaPct: 0,
+      plazoHipotecaAnios: 20,
+      alquilerMensual: 1000,
+      tasaVacioPct: 0,
+    });
+
+    expect(r.capitalPrestamo).toBeCloseTo(80000, 5);
+    expect(r.cuotaMensualHipoteca).toBeCloseTo(333.33, 1);
+    expect(r.inversionInicial).toBeCloseTo(30000, 5);
+    expect(r.gastosOperativosAnuales).toBeCloseTo(1000, 2);
+    expect(r.noiAnual).toBeCloseTo(11000, 2);
+    expect(r.cashflowAnualNeto).toBeCloseTo(7000, 1);
+    expect(r.rentabilidadNetaSobreInversionPct).toBeCloseTo(23.33, 1);
+    expect(r.veredicto).toBe('Merece la pena');
+  });
+
+  it('caso con cashflow negativo ("No merece la pena")', () => {
+    // capitalPrestamo = 80000; cuotaMensual (TIN 0%, 120 cuotas) = 80000/120 = 666.67
+    // ingresoAlquilerAnualEfectivo = 500*12 = 6000; gastos = mantenimiento 1000; noiAnual = 5000
+    // cashflowAnualNeto = 5000 - 666.67*12 = 5000 - 8000 = -3000
+    const r = calcularAlquilerRentabilidad({
+      precioVivienda: 100000,
+      entradaPct: 20,
+      gastosCompraPct: 10,
+      tinHipotecaPct: 0,
+      plazoHipotecaAnios: 10,
+      alquilerMensual: 500,
+      tasaVacioPct: 0,
+    });
+
+    expect(r.cuotaMensualHipoteca).toBeCloseTo(666.67, 1);
+    expect(r.noiAnual).toBeCloseTo(5000, 2);
+    expect(r.cashflowAnualNeto).toBeCloseTo(-3000, 1);
+    expect(r.veredicto).toBe('No merece la pena');
+  });
+
+  it('caso con cashflow positivo pero rentabilidad baja ("Dudoso")', () => {
+    // capitalPrestamo = 80000; cuotaMensual (TIN 0%, 240 cuotas) = 333.33 -> 4000€/año
+    // ingresoAlquilerAnualEfectivo = 500*12 = 6000; gastos = mantenimiento 1000; noiAnual = 5000
+    // cashflowAnualNeto = 5000 - 4000 = 1000; inversionInicial = 30000
+    // rentabilidadNetaSobreInversionPct = 1000/30000*100 ≈ 3.33% (< umbral 5%)
+    const r = calcularAlquilerRentabilidad({
+      precioVivienda: 100000,
+      entradaPct: 20,
+      gastosCompraPct: 10,
+      tinHipotecaPct: 0,
+      plazoHipotecaAnios: 20,
+      alquilerMensual: 500,
+      tasaVacioPct: 0,
+    });
+
+    expect(r.cashflowAnualNeto).toBeCloseTo(1000, 1);
+    expect(r.rentabilidadNetaSobreInversionPct).toBeCloseTo(3.33, 1);
+    expect(r.veredicto).toBe('Dudoso');
   });
 });
