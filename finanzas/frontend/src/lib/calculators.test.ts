@@ -12,6 +12,7 @@ import {
   generarAñosCrisisAleatorios,
   calcularHipotecaTinTae,
   calcularAlquilerRentabilidad,
+  simularProyeccionAlquiler,
 } from './calculators';
 
 describe('calcularInteresCompuesto', () => {
@@ -512,5 +513,95 @@ describe('calcularAlquilerRentabilidad', () => {
     expect(r.cashflowAnualNeto).toBeCloseTo(1000, 1);
     expect(r.rentabilidadNetaSobreInversionPct).toBeCloseTo(3.33, 1);
     expect(r.veredicto).toBe('Dudoso');
+  });
+});
+
+describe('simularProyeccionAlquiler', () => {
+  it('caso TIN 0% (amortización lineal, verificable a mano)', () => {
+    const input = {
+      precioVivienda: 150000,
+      entradaPct: 20,
+      gastosCompraPct: 10,
+      tinHipotecaPct: 0,
+      plazoHipotecaAnios: 10,
+      alquilerMensual: 750,
+      mantenimientoPctAnual: 0,
+      tasaVacioPct: 0,
+    };
+    const base = calcularAlquilerRentabilidad(input);
+    const resultado = simularProyeccionAlquiler(input);
+
+    // capitalPrestamo = 150000*0.8 = 120000; cuotaMensual = 120000/120 = 1000€/mes,
+    // todo capital (TIN=0, sin intereses) -> 12000€/año amortizado.
+    expect(base.capitalPrestamo).toBeCloseTo(120000, 5);
+    expect(base.cuotaMensualHipoteca).toBeCloseTo(1000, 5);
+
+    expect(resultado.años).toHaveLength(10);
+
+    const año3 = resultado.años[2];
+    expect(año3.saldoPendienteHipoteca).toBeCloseTo(120000 - 3 * 12000, 5); // 84000
+    expect(año3.capitalAmortizadoAño).toBeCloseTo(12000, 5);
+    expect(año3.interesesAño).toBeCloseTo(0, 5);
+
+    const añoFinal = resultado.años[9];
+    expect(añoFinal.saldoPendienteHipoteca).toBe(0);
+    expect(resultado.patrimonioNetoFinal).toBeCloseTo(150000, 5);
+    expect(resultado.cashflowAnualTrasHipoteca).toBeCloseTo(base.noiAnual, 5);
+    expect(resultado.cashflowMensualTrasHipoteca).toBeCloseTo(base.noiAnual / 12, 5);
+  });
+
+  it('caso general con TIN>0% (valores por defecto de la calculadora): invariantes', () => {
+    const input = {
+      precioVivienda: 150000,
+      entradaPct: 20,
+      gastosCompraPct: 10,
+      tinHipotecaPct: 3,
+      plazoHipotecaAnios: 25,
+      alquilerMensual: 750,
+      ibiAnual: 300,
+      comunidadMensual: 40,
+      seguroHogarAnual: 150,
+      mantenimientoPctAnual: 1,
+      gestoriaPctAlquiler: 0,
+      tasaVacioPct: 5,
+    };
+    const base = calcularAlquilerRentabilidad(input);
+    const resultado = simularProyeccionAlquiler(input);
+
+    expect(resultado.años).toHaveLength(25);
+
+    // 1. saldoPendiente estrictamente decreciente.
+    for (let i = 1; i < resultado.años.length; i++) {
+      expect(resultado.años[i].saldoPendienteHipoteca).toBeLessThan(
+        resultado.años[i - 1].saldoPendienteHipoteca,
+      );
+    }
+
+    // 2. último año prácticamente a 0.
+    const ultimoAño = resultado.años[resultado.años.length - 1];
+    expect(ultimoAño.saldoPendienteHipoteca).toBeCloseTo(0, 2);
+
+    // 3. suma de capital amortizado ≈ capitalPrestamo.
+    const sumaCapitalAmortizado = resultado.años.reduce((s, a) => s + a.capitalAmortizadoAño, 0);
+    expect(sumaCapitalAmortizado).toBeCloseTo(base.capitalPrestamo, 2);
+
+    // 4. suma de intereses ≈ cuotaMensual*numeroCuotas - capitalPrestamo.
+    const numeroCuotas = Math.round(input.plazoHipotecaAnios * 12);
+    const interesesTotalesEsperados = base.cuotaMensualHipoteca * numeroCuotas - base.capitalPrestamo;
+    const sumaIntereses = resultado.años.reduce((s, a) => s + a.interesesAño, 0);
+    expect(sumaIntereses).toBeCloseTo(interesesTotalesEsperados, 2);
+
+    // 5. patrimonio neto del último año ≈ precioVivienda.
+    expect(ultimoAño.patrimonioNetoAcumulado).toBeCloseTo(input.precioVivienda, 2);
+
+    // 6. retornoTotalAcumulado del último año ≈ capitalPrestamo + cashflowAcumulado.
+    expect(ultimoAño.retornoTotalAcumulado).toBeCloseTo(
+      base.capitalPrestamo + ultimoAño.cashflowAcumulado,
+      2,
+    );
+    expect(resultado.retornoTotalFinalSobreInversionPct).toBeCloseTo(
+      ultimoAño.retornoTotalSobreInversionPct,
+      5,
+    );
   });
 });
