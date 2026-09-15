@@ -92,8 +92,20 @@ export default function HipotecaTinTaeCalculator() {
       }
     >
       <NumberField label="Capital de la hipoteca" suffix="€" value={capital} onChange={setCapital} />
+      <p className="calculator-help-text">Cuánto vas a pedir prestado (el precio de la vivienda menos tu entrada).</p>
+
       <NumberField label="TIN (interés nominal)" suffix="%" value={tinPct} onChange={setTinPct} />
+      <p className="calculator-help-text">
+        El tipo de interés "de etiqueta" que te ofrece el banco. Por sí solo NO incluye comisiones ni seguros — por
+        eso casi nunca coincide con lo que realmente pagas.
+      </p>
+
       <NumberField label="Plazo" suffix="años" value={plazoAnios} onChange={setPlazoAnios} />
+      <p className="calculator-help-text">
+        Años para devolver la hipoteca. Cuanto más largo, más baja la cuota mensual pero más intereses totales
+        pagas.
+      </p>
+
       <NumberField
         label="Comisión de apertura (opcional)"
         suffix="%"
@@ -101,6 +113,12 @@ export default function HipotecaTinTaeCalculator() {
         onChange={setComisionAperturaPct}
         required={false}
       />
+      <p className="calculator-help-text">
+        Un % del capital que el banco cobra una sola vez al firmar, por formalizar el préstamo. Hoy es cada vez
+        menos habitual (0% en muchas ofertas), pero si la tuya la tiene, sube la TAE — sobre todo en hipotecas
+        cortas.
+      </p>
+
       <NumberField
         label="Gastos iniciales fijos (opcional)"
         suffix="€"
