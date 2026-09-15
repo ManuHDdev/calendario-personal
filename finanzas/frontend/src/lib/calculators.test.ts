@@ -548,6 +548,14 @@ describe('simularProyeccionAlquiler', () => {
     expect(resultado.patrimonioNetoFinal).toBeCloseTo(150000, 5);
     expect(resultado.cashflowAnualTrasHipoteca).toBeCloseTo(base.noiAnual, 5);
     expect(resultado.cashflowMensualTrasHipoteca).toBeCloseTo(base.noiAnual / 12, 5);
+
+    // Retorno acumulado en los 10 años: capital amortizado (120000) +
+    // cashflow acumulado (cashflowAnualNeto = 9000-12000 = -3000/año * 10 =
+    // -30000) = 90000, sobre una inversión inicial de 45000 -> 200%.
+    expect(resultado.retornoTotalFinalSobreInversionPct).toBeCloseTo(200, 2);
+    // Anualizado (CAGR): (1+2)^(1/10) - 1 ≈ 11.61%/año — mucho más bajo que
+    // el 200% acumulado, y es la cifra comparable con una rentabilidad anual.
+    expect(resultado.retornoTotalAnualizadoPct).toBeCloseTo(11.61, 1);
   });
 
   it('caso general con TIN>0% (valores por defecto de la calculadora): invariantes', () => {
@@ -603,5 +611,11 @@ describe('simularProyeccionAlquiler', () => {
       ultimoAño.retornoTotalSobreInversionPct,
       5,
     );
+
+    // 7. anualizado (CAGR) reconstruye el acumulado al componerlo 25 años,
+    // y es mucho menor que el acumulado en términos absolutos (25 años >> 1).
+    expect(resultado.retornoTotalAnualizadoPct).toBeLessThan(resultado.retornoTotalFinalSobreInversionPct);
+    const multiploReconstruido = Math.pow(1 + resultado.retornoTotalAnualizadoPct / 100, 25);
+    expect((multiploReconstruido - 1) * 100).toBeCloseTo(resultado.retornoTotalFinalSobreInversionPct, 2);
   });
 });

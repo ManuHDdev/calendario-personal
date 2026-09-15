@@ -959,7 +959,14 @@ export interface ProyeccionAlquilerResultado {
   cashflowAnualTrasHipoteca: number; // = noiAnual, sin cuota, una vez pagada la hipoteca
   cashflowMensualTrasHipoteca: number; // cashflowAnualTrasHipoteca / 12
   patrimonioNetoFinal: number; // = precioVivienda (deuda ya a 0)
-  retornoTotalFinalSobreInversionPct: number; // el del último año de la proyección
+  // ACUMULADO a lo largo de TODO el plazo de la hipoteca (no es una tasa
+  // anual) — por eso sale mucho más alto que "rentabilidad neta sobre
+  // inversión" de calcularAlquilerRentabilidad, que sí es anual. No son la
+  // misma magnitud y no deben compararse directamente entre sí.
+  retornoTotalFinalSobreInversionPct: number;
+  // Versión anualizada (tasa compuesta equivalente, tipo CAGR) del retorno
+  // total acumulado, para que SÍ sea comparable con una rentabilidad anual.
+  retornoTotalAnualizadoPct: number;
 }
 
 // Saldo pendiente de la hipoteca tras k años completos (k*12 cuotas pagadas
@@ -1032,12 +1039,24 @@ export function simularProyeccionAlquiler(
   }
 
   const ultimoAño = años[años.length - 1];
+  const retornoTotalFinalSobreInversionPct = ultimoAño ? ultimoAño.retornoTotalSobreInversionPct : 0;
+
+  // Anualizar el retorno acumulado (tipo CAGR): qué tasa anual constante,
+  // compuesta durante añosTotales años, habría producido el mismo múltiplo
+  // final sobre la inversión inicial. Así sí es comparable con una
+  // rentabilidad anual como "rentabilidad neta sobre inversión".
+  const multiploFinal = 1 + retornoTotalFinalSobreInversionPct / 100;
+  const retornoTotalAnualizadoPct =
+    multiploFinal > 0 && añosTotales > 0
+      ? (Math.pow(multiploFinal, 1 / añosTotales) - 1) * 100
+      : 0;
 
   return {
     años,
     cashflowAnualTrasHipoteca: noiAnual,
     cashflowMensualTrasHipoteca: noiAnual / 12,
     patrimonioNetoFinal: precioVivienda,
-    retornoTotalFinalSobreInversionPct: ultimoAño ? ultimoAño.retornoTotalSobreInversionPct : 0,
+    retornoTotalFinalSobreInversionPct,
+    retornoTotalAnualizadoPct,
   };
 }
