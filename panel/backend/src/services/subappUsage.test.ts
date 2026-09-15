@@ -8,10 +8,49 @@ describe('getAllUsage', () => {
     vi.stubEnv('PANEL_INTERNAL_TOKEN', 'test-internal-token');
     vi.stubEnv('PARAISOS_BACKEND_URL', 'http://paraisos-backend:3007');
     vi.stubEnv('WATCHLIST_BACKEND_URL', 'http://watchlist-backend:3009');
+    vi.stubEnv('FUTBOL_BACKEND_URL', 'http://football-predictor-backend-1:8000');
   });
 
-  it('flattens both subapps in the fixed order ors, tmdb, google_books', async () => {
+  it('flattens all three subapps in the fixed order ors, tmdb, google_books, football_data', async () => {
     global.fetch = vi.fn(async (url: string) => {
+      if (url.includes('paraisos')) {
+        return {
+          ok: true,
+          json: async () => [
+            { api: 'ors', label: 'OpenRouteService', callsToday: 100, dailyLimit: 2000, remaining: 1900, resetsAt: '2026-09-10T00:00:00.000Z' },
+          ],
+        };
+      }
+      if (url.includes('football-predictor')) {
+        return {
+          ok: true,
+          json: async () => [
+            { api: 'football_data', label: 'Football-Data.org', callsToday: 3, dailyLimit: null, remaining: null, resetsAt: '2026-09-16T00:00:00.000Z' },
+          ],
+        };
+      }
+      return {
+        ok: true,
+        json: async () => [
+          { api: 'tmdb', label: 'TMDB', callsToday: 5, dailyLimit: null, remaining: null, resetsAt: '2026-09-10T00:00:00.000Z' },
+          { api: 'google_books', label: 'Google Books', callsToday: 10, dailyLimit: 1000, remaining: 990, resetsAt: '2026-09-10T00:00:00.000Z' },
+        ],
+      };
+    }) as unknown as typeof fetch;
+
+    const result = await getAllUsage();
+
+    expect(result.map((e) => e.api)).toEqual(['ors', 'tmdb', 'google_books', 'football_data']);
+    expect(result.every((e) => e.unavailable === false)).toBe(true);
+    expect(result[0]).toMatchObject({ callsToday: 100, dailyLimit: 2000, remaining: 1900 });
+    expect(result[3]).toMatchObject({ callsToday: 3, dailyLimit: null, remaining: null });
+  });
+
+  it('degrades only football-predictor to unavailable when it times out, keeps paraisos and watchlist populated', async () => {
+    global.fetch = vi.fn(async (url: string) => {
+      if (url.includes('football-predictor')) {
+        throw new Error('network error');
+      }
       if (url.includes('paraisos')) {
         return {
           ok: true,
@@ -31,12 +70,21 @@ describe('getAllUsage', () => {
 
     const result = await getAllUsage();
 
-    expect(result.map((e) => e.api)).toEqual(['ors', 'tmdb', 'google_books']);
-    expect(result.every((e) => e.unavailable === false)).toBe(true);
-    expect(result[0]).toMatchObject({ callsToday: 100, dailyLimit: 2000, remaining: 1900 });
+    const futbol = result.find((e) => e.api === 'football_data')!;
+    expect(futbol.unavailable).toBe(true);
+    expect(futbol.callsToday).toBeNull();
+    expect(futbol.remaining).toBeNull();
+
+    const ors = result.find((e) => e.api === 'ors')!;
+    expect(ors.unavailable).toBe(false);
+    expect(ors.callsToday).toBe(100);
+
+    const tmdb = result.find((e) => e.api === 'tmdb')!;
+    expect(tmdb.unavailable).toBe(false);
+    expect(tmdb.callsToday).toBe(5);
   });
 
-  it('sends the internal bearer token to both subapps', async () => {
+  it('sends the internal bearer token to all three subapps', async () => {
     const fetchMock = vi.fn(async (_url: string, _options?: RequestInit) => ({
       ok: true,
       json: async () => [],
@@ -100,7 +148,7 @@ describe('getAllUsage', () => {
 
     const result = await getAllUsage();
 
-    expect(result).toHaveLength(3);
+    expect(result).toHaveLength(4);
     expect(result.every((e) => e.unavailable === true)).toBe(true);
   });
 });

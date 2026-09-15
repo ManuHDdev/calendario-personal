@@ -157,14 +157,14 @@ Calendario/panel/ dentro del monorepo elbunkerdelingeniero.
 ### Rutas (`/panel/api/*`)
 - `GET/POST/PUT/DELETE /users` → CRUD de usuarios vía Keycloak Admin API
 - `GET /roles` → lista fija `['admin','familia','invitado']`
-- `GET /usage` → consumo agregado de las APIs externas rastreadas en el monorepo (ORS vía Paraísos, TMDB/Google Books vía Watchlist), admin-only (`authAdminMiddleware`). Llama al `GET /usage` interno de cada subapp en paralelo (`Promise.allSettled`, timeout 3s); si uno falla, sus entradas se marcan `unavailable: true` en vez de tumbar toda la petición — ver `panel/backend/src/services/subappUsage.ts`
+- `GET /usage` → consumo agregado de las APIs externas rastreadas en el monorepo (ORS vía Paraísos, TMDB/Google Books vía Watchlist, Football-Data.org vía Fútbol), admin-only (`authAdminMiddleware`). Llama al `GET /usage` interno de cada subapp en paralelo (`Promise.allSettled`, timeout 3s); si uno falla, sus entradas se marcan `unavailable: true` en vez de tumbar toda la petición — ver `panel/backend/src/services/subappUsage.ts`. Fútbol es un repo externo al monorepo (ver sección "Fútbol" más abajo), pero expone el mismo contrato interno (`PANEL_INTERNAL_TOKEN`, misma forma de respuesta) que Paraísos/Watchlist
 - `GET /health`
 
 ### Dashboard de uso de APIs externas
 Sección nueva en `PanelPage` (`UsageDashboard.tsx`), tarjetas con llamadas de hoy, restante (cuando la API tiene tope publicado) y hora de reinicio (medianoche UTC). Documentado en `openspec/changes/2026-09-09-add-api-usage-dashboard/`.
 
 ### Variables de entorno
-`KEYCLOAK_BASE_URL`, `KEYCLOAK_CERTS_URL`, `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `CORS_ORIGIN`, `PORT` (default 3002), `PANEL_INTERNAL_TOKEN` (compartido con Paraísos y Watchlist), `PARAISOS_BACKEND_URL` (default `http://paraisos-backend:3007`), `WATCHLIST_BACKEND_URL` (default `http://watchlist-backend:3009`)
+`KEYCLOAK_BASE_URL`, `KEYCLOAK_CERTS_URL`, `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `CORS_ORIGIN`, `PORT` (default 3002), `PANEL_INTERNAL_TOKEN` (compartido con Paraísos, Watchlist y Fútbol), `PARAISOS_BACKEND_URL` (default `http://paraisos-backend:3007`), `WATCHLIST_BACKEND_URL` (default `http://watchlist-backend:3009`), `FUTBOL_BACKEND_URL` (default `http://football-predictor-backend-1:8000` — contenedor del repo externo `football-predictor`, unido a `calendario-net`)
 
 ### Red Docker
 `calendario-net` (externa)
@@ -1036,6 +1036,15 @@ con su propio stack, unido a `calendario-net`.
 `GET /fixtures`, `GET /fixtures/{id}`, `GET /model/performance`,
 `GET /health` (abierto). La Champions League no se predice (el modelo es
 por liga; el seed solo cubre las 5 grandes).
+
+`GET /usage` — consumo de hoy de Football-Data.org (interno, para el dashboard
+de Panel), bearer-token-gated con `PANEL_INTERNAL_TOKEN` — mismo contrato que
+`GET /usage` de Paraísos/Watchlist (comparación en tiempo constante, un JWT de
+Keycloak NO da acceso a esta ruta). Esto añade una dependencia cruzada de
+repos: `PANEL_INTERNAL_TOKEN` debe tener el mismo valor en el `.env` de
+`football-predictor` que en Panel/Paraísos/Watchlist, pese a vivir en un
+repositorio separado — ver `panel/backend/src/services/subappUsage.ts`
+(`FUTBOL_BACKEND_URL`, default `http://football-predictor-backend-1:8000`).
 
 ### Despliegue
 Pipeline propio en GitHub Actions (`football-predictor/.github/workflows/deploy.yml`,
