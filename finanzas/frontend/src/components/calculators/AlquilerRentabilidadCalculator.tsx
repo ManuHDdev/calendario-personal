@@ -94,12 +94,35 @@ export default function AlquilerRentabilidadCalculator() {
       }
     >
       <NumberField label="Precio de la vivienda" suffix="€" value={precioVivienda} onChange={setPrecioVivienda} />
+      <p className="calculator-help-text">El precio de compra del inmueble que quieres alquilar.</p>
+
       <NumberField label="Entrada" suffix="%" value={entradaPct} onChange={setEntradaPct} />
+      <p className="calculator-help-text">
+        % del precio que pagas al contado (el banco financia el resto). A más entrada, menos hipoteca y menos
+        cuota, pero también más dinero tuyo inmovilizado.
+      </p>
+
       <NumberField label="Gastos de compra" suffix="%" value={gastosCompraPct} onChange={setGastosCompraPct} />
+      <p className="calculator-help-text">
+        Notaría, registro, impuestos de transmisión y gestoría de la compra. El 10% es una estimación habitual
+        (mismo criterio que la calculadora "Ahorro necesario").
+      </p>
+
       <NumberField label="TIN de la hipoteca" suffix="%" value={tinHipotecaPct} onChange={setTinHipotecaPct} />
+      <p className="calculator-help-text">
+        El interés que te cobra el banco por la parte financiada. Usa la calculadora "Hipoteca — TIN vs. TAE" si
+        quieres afinar este número con comisiones y seguros incluidos.
+      </p>
+
       <NumberField label="Plazo de la hipoteca" suffix="años" value={plazoHipotecaAnios} onChange={setPlazoHipotecaAnios} />
+      <p className="calculator-help-text">Años para devolver la hipoteca de esta vivienda.</p>
+
       <NumberField label="Alquiler mensual esperado" suffix="€" value={alquilerMensual} onChange={setAlquilerMensual} />
+      <p className="calculator-help-text">Lo que cobrarías de renta cada mes si la vivienda estuviera siempre alquilada.</p>
+
       <NumberField label="IBI anual (opcional)" suffix="€" value={ibiAnual} onChange={setIbiAnual} required={false} />
+      <p className="calculator-help-text">El impuesto municipal sobre bienes inmuebles, lo paga el propietario cada año.</p>
+
       <NumberField
         label="Comunidad mensual (opcional)"
         suffix="€"
@@ -107,6 +130,8 @@ export default function AlquilerRentabilidadCalculator() {
         onChange={setComunidadMensual}
         required={false}
       />
+      <p className="calculator-help-text">La cuota mensual de la comunidad de vecinos, si el edificio la tiene.</p>
+
       <NumberField
         label="Seguro de hogar anual (opcional)"
         suffix="€"
@@ -114,25 +139,46 @@ export default function AlquilerRentabilidadCalculator() {
         onChange={setSeguroHogarAnual}
         required={false}
       />
+      <p className="calculator-help-text">El seguro del inmueble (no confundir con el seguro de vida vinculado a la hipoteca).</p>
+
       <NumberField
         label="Mantenimiento/reparaciones"
         suffix="% del valor/año"
         value={mantenimientoPctAnual}
         onChange={setMantenimientoPctAnual}
       />
+      <p className="calculator-help-text">
+        Lo que estimas gastar al año en arreglos y desgaste (grifería, pintura, electrodomésticos…). El 1% del
+        valor de la vivienda es una regla habitual del sector.
+      </p>
+
       <NumberField
         label="Gestoría de alquileres"
         suffix="% del alquiler"
         value={gestoriaPctAlquiler}
         onChange={setGestoriaPctAlquiler}
       />
+      <p className="calculator-help-text">
+        Si contratas a una agencia para que gestione el alquiler (buscar inquilino, cobros, incidencias), su
+        comisión suele ser un % de la renta. Déjalo a 0 si lo gestionas tú mismo.
+      </p>
+
       <NumberField label="Tasa de vacío esperada" suffix="%" value={tasaVacioPct} onChange={setTasaVacioPct} />
+      <p className="calculator-help-text">
+        % del año que esperas que la vivienda esté vacía entre inquilinos (buscando uno nuevo, reformando…). El
+        5% equivale a, aproximadamente, medio mes sin alquilar al año.
+      </p>
+
       <NumberField
         label="Rentabilidad mínima aceptable"
         suffix="%"
         value={umbralRentabilidadAceptablePct}
         onChange={setUmbralRentabilidadAceptablePct}
       />
+      <p className="calculator-help-text">
+        El listón que tú decides: por debajo de este % de rentabilidad sobre lo que pones de tu bolsillo, la
+        calculadora marcará la inversión como "Dudosa" aunque tenga cashflow positivo.
+      </p>
     </CalculatorCard>
   );
 }
