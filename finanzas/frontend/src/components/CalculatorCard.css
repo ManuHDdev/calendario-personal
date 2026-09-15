@@ -1,0 +1,133 @@
+.calculator-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  max-width: 560px;
+}
+
+.calculator-card-titulo {
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.calculator-card-descripcion {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.calculator-card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.calculator-card-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.calculator-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.calculator-select span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.calculator-select select {
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 150ms ease;
+}
+
+.calculator-select select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.calculator-card-boton {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease;
+}
+
+.calculator-card-boton:hover {
+  background: var(--accent-hover);
+}
+
+.calculator-card-error {
+  margin-top: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.calculator-card-resultado {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calculator-card-resultado .resultado-linea {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.calculator-card-resultado .resultado-linea strong {
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.calculator-card-resultado .resultado-linea.resultado-principal strong {
+  font-size: 22px;
+  color: var(--accent);
+}
+
+.calculator-card-resultado .resultado-veredicto {
+  margin-top: 4px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.calculator-card-resultado .resultado-veredicto.buena {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+}
+
+.calculator-card-resultado .resultado-veredicto.mala {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}

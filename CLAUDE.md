@@ -1073,6 +1073,46 @@ los tenga, y no hace nada si ya están.
 
 ---
 
+## Finanzas — calculadoras financieras
+
+### Ubicación
+Calendario/finanzas/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Frontend: React + Vite + TypeScript. **Sin backend propio y sin base de
+  datos**: las 7 calculadoras son funciones puras (`frontend/src/lib/calculators.ts`)
+  que corren enteramente en el navegador.
+- Tests: vitest sobre las funciones de cálculo (`calculators.test.ts`), sin
+  necesidad de red ni de servidor — primer frontend del monorepo con tests.
+
+### Roles
+Reutiliza los roles globales `admin` e `invitado` — **no crea ningún rol nuevo
+en Keycloak, no toca `realm-export.json`**. Visible en el AppLauncher para
+cualquier usuario autenticado con alguno de esos dos roles.
+
+### Calculadoras
+1. Interés compuesto (con aportaciones periódicas opcionales)
+2. Regla del ×4 — préstamo máximo saludable
+3. Ahorro necesario para comprar (20% entrada + 10% gastos)
+4. Cuota máxima de hipoteca ("llave de la cuota", 35% del sueldo neto)
+5. Precio máximo de vivienda según ahorros ("llave del ahorro")
+6. Colchón de seguridad post-compra ("llave del colchón", 3× gastos fijos)
+7. Deuda buena vs. deuda mala (amortización francesa + fondo de reserva)
+
+### Rutas
+`/finanzas/` — SPA estática, sin API propia.
+
+### Puerto local
+`:5187` (solo frontend, sin backend ni base de datos).
+
+### Red Docker
+`calendario-net` (externa).
+
+### Imagen Docker
+`ghcr.io/manuhddev/finanzas-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los ocho roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
@@ -1083,7 +1123,7 @@ exactamente estos nombres.
 |-------------------|----------------------------------------------------------------|
 | admin             | Todas las apps + gestión completa                               |
 | familia           | Storage (lectura), MapaCYD (lectura), Juegos (completo)         |
-| invitado          | Juegos (completo) — sin acceso a ninguna otra app                |
+| invitado          | Juegos (completo), Finanzas (completo) — sin acceso a ninguna otra app |
 | paraisos_admin    | Gestión de spots en Paraísos (CRUD)                             |
 | mapacyd_admin     | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
 | mapacyd_invitado  | Consulta de zonas y horarios en MapaCYD (solo lectura)          |
@@ -1096,9 +1136,10 @@ Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
 Ofertas, Ruta, Pisos, Locales, Trader, Fútbol y Calendario solo son accesibles para `admin` (uso exclusivo del
 propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
-llamar a su API. Juegos es la única excepción a ese último punto: es la primera
-subapp visible y utilizable por los tres roles por igual (ver sección "Juegos"
-arriba). Reparto añade un matiz más: es accesible para `admin` y, además,
+llamar a su API. Juegos y Finanzas son la excepción a ese último punto: Juegos es
+utilizable por los tres roles por igual (ver sección "Juegos" arriba) y Finanzas
+por `admin` e `invitado` (ver sección "Finanzas" arriba) — `familia` no tiene
+acceso a Finanzas. Reparto añade un matiz más: es accesible para `admin` y, además,
 delegable vía `reparto_admin` (gestión completa) y `reparto_invitado` (solo
 consulta) — sin necesitar acceso `admin` global, igual que ya ocurría con
 Paraísos y MapaCYD.
@@ -1167,6 +1208,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Pisos              | :5184    | :3012   |
 | Locales            | :5185    | :3013   |
 | Fútbol (repo externo, stack propio) | :5186 | :8000 |
+| Finanzas           | :5187    | — (sin backend) |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -1183,8 +1225,9 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 
 - **Sin tests**: Panel (backend) tiene vitest desde el dashboard de uso de APIs (`subappUsage.ts`, `routes/usage.ts`) pero el resto del backend (`users.ts`, `me.ts`, `keycloakAdmin.ts`) y todo el frontend siguen sin cobertura; mapacyd (backend y frontend) sigue sin ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 14 Dockerfiles y 14 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 15 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 15 Dockerfiles y 15 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 15 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
 
-`locales` ya está en las 14 copias del AppLauncher (`roles: ['admin']`), añadido
-junto con su frontend (fase 9). `crypto-trader/frontend` sigue fuera de este
+`locales` ya está en las 15 copias del AppLauncher (`roles: ['admin']`), añadido
+junto con su frontend (fase 9). `finanzas` ya está en las 15 copias
+(`roles: ['admin', 'invitado']`). `crypto-trader/frontend` sigue fuera de este
 repo y se actualiza aparte.

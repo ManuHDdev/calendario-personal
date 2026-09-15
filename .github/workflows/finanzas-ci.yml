@@ -1,0 +1,108 @@
+name: CI/CD Finanzas
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'finanzas/**'
+      - '.github/workflows/finanzas-ci.yml'
+
+jobs:
+  # ─── 1. Build & test frontend ────────────────────────────────────────────────
+  lint-and-build-frontend:
+    name: Finanzas · Build frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install
+        working-directory: finanzas/frontend
+        run: npm ci
+
+      # Las 7 calculadoras son funciones puras — sus tests corren enteramente
+      # en CI sin necesidad de red ni base de datos.
+      - name: Test
+        working-directory: finanzas/frontend
+        run: npm test
+
+      - name: Build
+        working-directory: finanzas/frontend
+        run: npm run build
+
+  # ─── 2. Docker build & push to GHCR ─────────────────────────────────────────
+  docker-build-and-push:
+    name: Finanzas · Docker build & push
+    runs-on: ubuntu-latest
+    needs: lint-and-build-frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build & push finanzas-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./finanzas/frontend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/finanzas-frontend:latest
+            ghcr.io/${{ env.OWNER }}/finanzas-frontend:${{ github.sha }}
+
+  # ─── 3. Deploy al VPS ────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy · Finanzas VPS
+    runs-on: ubuntu-latest
+    needs: docker-build-and-push
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar docker-compose al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "finanzas/infra/docker-compose.prod.yml"
+          target: /home/manu/finanzas
+          strip_components: 2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /home/manu/finanzas
+
+            docker compose -f docker-compose.prod.yml pull finanzas-frontend
+            docker compose -f docker-compose.prod.yml up -d --no-deps finanzas-frontend
+            docker compose -f docker-compose.prod.yml ps
+
+            # El bloque `location /finanzas/` de nginx vive en
+            # nginx/calendario.conf y lo despliega el pipeline de Calendario
+            # (.github/workflows/ci.yml), no este workflow.
