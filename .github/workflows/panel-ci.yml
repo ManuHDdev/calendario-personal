@@ -123,7 +123,10 @@ jobs:
             cd /home/manu/panel
 
             # Escribir .env con las variables de entorno necesarias
-            echo "KEYCLOAK_ADMIN_PASSWORD=${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}" > .env
+            {
+              echo "KEYCLOAK_ADMIN_PASSWORD=${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}"
+              echo "PANEL_INTERNAL_TOKEN=${{ secrets.PANEL_INTERNAL_TOKEN }}"
+            } > .env
 
             # Parar y eliminar contenedores existentes
             docker stop panel-frontend panel-backend 2>/dev/null || true
