@@ -3,7 +3,9 @@ import CalculatorCard from '../CalculatorCard';
 import NumberField from '../NumberField';
 import {
   calcularAlquilerRentabilidad,
+  simularProyeccionAlquiler,
   type AlquilerRentabilidadResultado,
+  type ProyeccionAlquilerResultado,
 } from '../../lib/calculators';
 import { formatEUR } from '../../lib/format';
 
@@ -28,13 +30,14 @@ export default function AlquilerRentabilidadCalculator() {
   const [tasaVacioPct, setTasaVacioPct] = useState('5');
   const [umbralRentabilidadAceptablePct, setUmbralRentabilidadAceptablePct] = useState('5');
   const [resultado, setResultado] = useState<AlquilerRentabilidadResultado | null>(null);
+  const [proyeccion, setProyeccion] = useState<ProyeccionAlquilerResultado | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     try {
-      const r = calcularAlquilerRentabilidad({
+      const input = {
         precioVivienda: Number(precioVivienda),
         entradaPct: Number(entradaPct),
         gastosCompraPct: Number(gastosCompraPct),
@@ -48,10 +51,13 @@ export default function AlquilerRentabilidadCalculator() {
         gestoriaPctAlquiler: Number(gestoriaPctAlquiler),
         tasaVacioPct: Number(tasaVacioPct),
         umbralRentabilidadAceptablePct: Number(umbralRentabilidadAceptablePct),
-      });
+      };
+      const r = calcularAlquilerRentabilidad(input);
       setResultado(r);
+      setProyeccion(simularProyeccionAlquiler(input));
     } catch (err) {
       setResultado(null);
+      setProyeccion(null);
       setError(err instanceof Error ? err.message : 'Datos inválidos');
     }
   };
@@ -89,6 +95,50 @@ export default function AlquilerRentabilidadCalculator() {
               {resultado.veredicto}
             </p>
             <p className="calculator-help-text">{resultado.mensaje}</p>
+
+            {proyeccion && (
+              <>
+                <p className="calculator-help-text">
+                  Cuando termines de pagar (año {plazoHipotecaAnios}), el cashflow anual sube a{' '}
+                  {formatEUR(proyeccion.cashflowAnualTrasHipoteca)} (
+                  {formatEUR(proyeccion.cashflowMensualTrasHipoteca)}/mes) — ya no hay cuota que pagar.
+                </p>
+                <div className="resultado-linea resultado-principal">
+                  <span>Retorno total real al terminar de pagar</span>
+                  <strong>{proyeccion.retornoTotalFinalSobreInversionPct.toFixed(2)}% sobre tu inversión inicial</strong>
+                </div>
+
+                <details className="calculator-desglose">
+                  <summary>Ver proyección año a año hasta pagar la hipoteca</summary>
+                  <div className="calculator-desglose-tabla-wrap">
+                    <table className="calculator-desglose-tabla">
+                      <thead>
+                        <tr>
+                          <th>Año</th>
+                          <th>Cashflow del año</th>
+                          <th>Capital amortizado</th>
+                          <th>Patrimonio neto acumulado</th>
+                          <th>Retorno total acumulado</th>
+                          <th>Retorno sobre inversión</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {proyeccion.años.map((añoProyeccion) => (
+                          <tr key={añoProyeccion.año}>
+                            <td>{añoProyeccion.año}</td>
+                            <td>{formatEUR(añoProyeccion.cashflowAnualNeto)}</td>
+                            <td>{formatEUR(añoProyeccion.capitalAmortizadoAño)}</td>
+                            <td>{formatEUR(añoProyeccion.patrimonioNetoAcumulado)}</td>
+                            <td>{formatEUR(añoProyeccion.retornoTotalAcumulado)}</td>
+                            <td>{añoProyeccion.retornoTotalSobreInversionPct.toFixed(2)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              </>
+            )}
           </>
         )
       }

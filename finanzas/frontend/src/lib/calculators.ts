@@ -929,3 +929,115 @@ export function calcularAlquilerRentabilidad(
     mensaje,
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// 9b. Comprar para alquilar — proyección año a año hasta pagar la hipoteca
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Escenario deliberadamente conservador: alquiler y precio de la vivienda
+// constantes durante toda la proyección (sin revalorización ni subida de
+// alquiler). Todo el retorno viene de dos sitios: el capital de la hipoteca
+// que se va amortizando (equity, "ahorro forzoso") y el cashflow acumulado
+// (que es el mismo cada año en calcularAlquilerRentabilidad, ya que no hay
+// inflación de rentas ni de gastos en este modelo). Reutiliza
+// calcularAlquilerRentabilidad para no duplicar esa lógica.
+
+export interface AñoProyeccionAlquiler {
+  año: number;
+  saldoPendienteHipoteca: number; // al final de ese año
+  capitalAmortizadoAño: number; // saldoPendiente(k-1) - saldoPendiente(k)
+  interesesAño: number; // cuotaMensualHipoteca*12 - capitalAmortizadoAño
+  cashflowAnualNeto: number; // igual cada año en este escenario conservador
+  patrimonioNetoAcumulado: number; // precioVivienda - saldoPendienteHipoteca
+  cashflowAcumulado: number; // suma de cashflowAnualNeto desde el año 1 hasta este, inclusive
+  retornoTotalAcumulado: number; // (capitalPrestamo - saldoPendienteHipoteca) + cashflowAcumulado
+  retornoTotalSobreInversionPct: number; // retornoTotalAcumulado / inversionInicial * 100
+}
+
+export interface ProyeccionAlquilerResultado {
+  años: AñoProyeccionAlquiler[];
+  cashflowAnualTrasHipoteca: number; // = noiAnual, sin cuota, una vez pagada la hipoteca
+  cashflowMensualTrasHipoteca: number; // cashflowAnualTrasHipoteca / 12
+  patrimonioNetoFinal: number; // = precioVivienda (deuda ya a 0)
+  retornoTotalFinalSobreInversionPct: number; // el del último año de la proyección
+}
+
+// Saldo pendiente de la hipoteca tras k años completos (k*12 cuotas pagadas
+// de un total de n = plazoHipotecaAnios*12), amortización francesa estándar.
+// Caso borde TIN 0%: amortización lineal.
+function saldoPendienteHipotecaTrasAnios(
+  capitalPrestamo: number,
+  tinHipotecaPct: number,
+  plazoHipotecaAnios: number,
+  k: number,
+): number {
+  const n = Math.round(plazoHipotecaAnios * 12);
+  const cuotasPagadas = k * 12;
+
+  if (k <= 0) return capitalPrestamo;
+  if (k >= plazoHipotecaAnios) return 0;
+
+  const r = tinHipotecaPct / 100 / 12;
+  if (r === 0) {
+    return capitalPrestamo * (1 - cuotasPagadas / n);
+  }
+
+  const factorTotal = Math.pow(1 + r, n);
+  const factorPagado = Math.pow(1 + r, cuotasPagadas);
+  return (capitalPrestamo * (factorTotal - factorPagado)) / (factorTotal - 1);
+}
+
+export function simularProyeccionAlquiler(
+  input: AlquilerRentabilidadInput,
+): ProyeccionAlquilerResultado {
+  const base = calcularAlquilerRentabilidad(input);
+  const { precioVivienda, tinHipotecaPct, plazoHipotecaAnios } = input;
+  const { capitalPrestamo, cuotaMensualHipoteca, cashflowAnualNeto, inversionInicial, noiAnual } = base;
+
+  const añosTotales = Math.round(plazoHipotecaAnios);
+  const años: AñoProyeccionAlquiler[] = [];
+
+  let saldoAnterior = capitalPrestamo;
+  let cashflowAcumulado = 0;
+
+  for (let k = 1; k <= añosTotales; k++) {
+    const esUltimoAño = k === añosTotales;
+    const saldoPendienteHipoteca = esUltimoAño
+      ? 0
+      : saldoPendienteHipotecaTrasAnios(capitalPrestamo, tinHipotecaPct, plazoHipotecaAnios, k);
+
+    const capitalAmortizadoAño = saldoAnterior - saldoPendienteHipoteca;
+    const interesesAño = cuotaMensualHipoteca * 12 - capitalAmortizadoAño;
+
+    cashflowAcumulado += cashflowAnualNeto;
+
+    const patrimonioNetoAcumulado = precioVivienda - saldoPendienteHipoteca;
+    const retornoTotalAcumulado = capitalPrestamo - saldoPendienteHipoteca + cashflowAcumulado;
+    const retornoTotalSobreInversionPct =
+      inversionInicial > 0 ? (retornoTotalAcumulado / inversionInicial) * 100 : 0;
+
+    años.push({
+      año: k,
+      saldoPendienteHipoteca,
+      capitalAmortizadoAño,
+      interesesAño,
+      cashflowAnualNeto,
+      patrimonioNetoAcumulado,
+      cashflowAcumulado,
+      retornoTotalAcumulado,
+      retornoTotalSobreInversionPct,
+    });
+
+    saldoAnterior = saldoPendienteHipoteca;
+  }
+
+  const ultimoAño = años[años.length - 1];
+
+  return {
+    años,
+    cashflowAnualTrasHipoteca: noiAnual,
+    cashflowMensualTrasHipoteca: noiAnual / 12,
+    patrimonioNetoFinal: precioVivienda,
+    retornoTotalFinalSobreInversionPct: ultimoAño ? ultimoAño.retornoTotalSobreInversionPct : 0,
+  };
+}
