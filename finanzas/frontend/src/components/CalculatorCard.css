@@ -131,3 +131,142 @@
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 14%, transparent);
 }
+
+/* Modo avanzado (interés compuesto): toggle, panel condicional, filas de
+   años de crisis y desglose año a año. */
+
+.calculator-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.calculator-checkbox input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.calculator-checkbox span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.calculator-avanzado {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.calculator-crisis {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calculator-crisis-titulo {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.calculator-crisis-fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.calculator-crisis-fila input {
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-width: 0;
+}
+
+.calculator-crisis-fila input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.calculator-crisis-eliminar {
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease;
+}
+
+.calculator-crisis-eliminar:hover {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.calculator-crisis-anadir {
+  align-self: flex-start;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  background: transparent;
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease;
+}
+
+.calculator-crisis-anadir:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.calculator-desglose {
+  margin-top: 8px;
+}
+
+.calculator-desglose summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.calculator-desglose-tabla-wrap {
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.calculator-desglose-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.calculator-desglose-tabla th,
+.calculator-desglose-tabla td {
+  padding: 6px 8px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.calculator-desglose-tabla th:first-child,
+.calculator-desglose-tabla td:first-child {
+  text-align: left;
+  color: var(--text-primary);
+}
+
+.calculator-desglose-tabla thead th {
+  font-weight: 600;
+  color: var(--text-primary);
+}
