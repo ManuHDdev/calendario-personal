@@ -8,12 +8,16 @@ interface CalculatorCardProps {
   children: ReactNode; // campos del formulario (NumberField, selects, etc.)
   error?: string | null;
   resultado?: ReactNode;
+  // 'amplio' es para las calculadoras con tabla año a año (Interés compuesto
+  // avanzado, proyección de alquiler): a 560px esa tabla no cabe y obliga a
+  // hacer scroll horizontal. El resto se queda en el ancho normal.
+  ancho?: 'normal' | 'amplio';
 }
 
-// Contenedor genérico container/presentational para las 7 calculadoras: cada
+// Contenedor genérico container/presentational para las calculadoras: cada
 // una aporta solo sus campos y su lógica de cálculo (container), y este
 // componente se encarga de la presentación común (tarjeta, formulario,
-// botón, hueco de error/resultado) para no duplicarla siete veces.
+// botón, hueco de error/resultado) para no duplicarla en cada una.
 export default function CalculatorCard({
   titulo,
   descripcion,
@@ -21,9 +25,10 @@ export default function CalculatorCard({
   children,
   error,
   resultado,
+  ancho = 'normal',
 }: CalculatorCardProps) {
   return (
-    <div className="calculator-card">
+    <div className={`calculator-card${ancho === 'amplio' ? ' calculator-card--amplio' : ''}`}>
       <h2 className="calculator-card-titulo">{titulo}</h2>
       {descripcion && <p className="calculator-card-descripcion">{descripcion}</p>}
 

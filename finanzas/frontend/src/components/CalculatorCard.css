@@ -7,6 +7,13 @@
   max-width: 560px;
 }
 
+/* Para calculadoras con tabla año a año: el contenedor de la página
+   (.finanzas-body) admite hasta 900px, así que hay hueco de sobra para que
+   la tabla quepa sin scroll horizontal. */
+.calculator-card--amplio {
+  max-width: 840px;
+}
+
 .calculator-card-titulo {
   font-size: 19px;
   font-weight: 600;
