@@ -4,6 +4,7 @@ import NumberField from '../NumberField';
 import {
   calcularInteresCompuesto,
   simularInteresCompuestoAvanzado,
+  generarAñosCrisisAleatorios,
   type InteresCompuestoResultado,
   type Frecuencia,
   type AñoCrisis,
@@ -39,6 +40,14 @@ export default function InteresCompuestoCalculator() {
   const [filasCrisis, setFilasCrisis] = useState<FilaAñoCrisis[]>([]);
   const [resultadoAvanzado, setResultadoAvanzado] = useState<SimulacionAvanzadaResult | null>(null);
 
+  // Régimen 'retiros_fifo'
+  const [retiroAnual, setRetiroAnual] = useState('');
+  const [añoInicioRetiros, setAñoInicioRetiros] = useState('1');
+
+  // Generador aleatorio de años de crisis
+  const [probabilidadCrisis, setProbabilidadCrisis] = useState('20');
+  const [intensidadMediaCrisis, setIntensidadMediaCrisis] = useState('30');
+
   const anadirFilaCrisis = () => {
     setFilasCrisis((filas) => [...filas, { id: siguienteIdFila++, año: '', rendimiento: '' }]);
   };
@@ -49,6 +58,29 @@ export default function InteresCompuestoCalculator() {
 
   const actualizarFilaCrisis = (id: number, campo: 'año' | 'rendimiento', valor: string) => {
     setFilasCrisis((filas) => filas.map((f) => (f.id === id ? { ...f, [campo]: valor } : f)));
+  };
+
+  // Sustituye por completo la lista de años de crisis actual — no añade a
+  // lo que ya hubiera, para que el usuario no se lleve una sorpresa al ver
+  // filas mezcladas de origen distinto.
+  const generarCrisisAleatorias = () => {
+    const aniosNum = Number(anios);
+    if (!Number.isInteger(aniosNum) || aniosNum <= 0) {
+      setError('Introduce primero un número de años válido para generar años de crisis');
+      return;
+    }
+    const generadas = generarAñosCrisisAleatorios(
+      aniosNum,
+      Number(probabilidadCrisis) || 0,
+      Number(intensidadMediaCrisis) || 0,
+    );
+    setFilasCrisis(
+      generadas.map((c) => ({
+        id: siguienteIdFila++,
+        año: String(c.año),
+        rendimiento: c.rendimiento.toFixed(2),
+      })),
+    );
   };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -112,6 +144,8 @@ export default function InteresCompuestoCalculator() {
         aportacionAnual,
         añosCrisis: añosCrisisValidados,
         regimenFiscal,
+        retiroAnual: regimenFiscal === 'retiros_fifo' ? Number(retiroAnual) || 0 : undefined,
+        añoInicioRetiros: regimenFiscal === 'retiros_fifo' ? Number(añoInicioRetiros) || 1 : undefined,
       });
       setResultadoAvanzado(rAvanzado);
     } catch (err) {
@@ -144,30 +178,57 @@ export default function InteresCompuestoCalculator() {
         ) : (
           resultadoAvanzado && (
             <>
-              <div className="resultado-linea resultado-principal">
-                <span>Saldo final neto</span>
-                <strong>{formatEUR(resultadoAvanzado.saldoFinalNeto)}</strong>
-              </div>
-              <div className="resultado-linea">
-                <span>Saldo final bruto</span>
-                <strong>{formatEUR(resultadoAvanzado.saldoFinalBruto)}</strong>
-              </div>
-              <div className="resultado-linea">
-                <span>Total aportado (incl. capital inicial)</span>
-                <strong>{formatEUR(resultadoAvanzado.totalAportado)}</strong>
-              </div>
-              <div className="resultado-linea">
-                <span>Ganancia bruta total</span>
-                <strong>{formatEUR(resultadoAvanzado.gananciaTotalBruta)}</strong>
-              </div>
-              <div className="resultado-linea">
-                <span>Impuestos totales pagados</span>
-                <strong>{formatEUR(resultadoAvanzado.impuestosTotales)}</strong>
-              </div>
-              <div className="resultado-linea">
-                <span>Rentabilidad neta total</span>
-                <strong>{resultadoAvanzado.rentabilidadNetaTotal.toFixed(2)}%</strong>
-              </div>
+              {regimenFiscal === 'retiros_fifo' ? (
+                <>
+                  <div className="resultado-linea resultado-principal">
+                    <span>Total retirado neto</span>
+                    <strong>{formatEUR(resultadoAvanzado.totalRetiradoNeto ?? 0)}</strong>
+                  </div>
+                  <div className="resultado-linea">
+                    <span>Total retirado bruto</span>
+                    <strong>{formatEUR(resultadoAvanzado.totalRetiradoBruto ?? 0)}</strong>
+                  </div>
+                  <div className="resultado-linea">
+                    <span>Impuestos totales pagados</span>
+                    <strong>{formatEUR(resultadoAvanzado.impuestosTotales)}</strong>
+                  </div>
+                  <div className="resultado-linea">
+                    <span>Saldo del fondo restante</span>
+                    <strong>{formatEUR(resultadoAvanzado.saldoFinalFondoRestante ?? 0)}</strong>
+                  </div>
+                  <div className="resultado-linea">
+                    <span>Rentabilidad neta total (retirado + fondo restante)</span>
+                    <strong>{resultadoAvanzado.rentabilidadNetaTotal.toFixed(2)}%</strong>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="resultado-linea resultado-principal">
+                    <span>Saldo final neto</span>
+                    <strong>{formatEUR(resultadoAvanzado.saldoFinalNeto)}</strong>
+                  </div>
+                  <div className="resultado-linea">
+                    <span>Saldo final bruto</span>
+                    <strong>{formatEUR(resultadoAvanzado.saldoFinalBruto)}</strong>
+                  </div>
+                  <div className="resultado-linea">
+                    <span>Total aportado (incl. capital inicial)</span>
+                    <strong>{formatEUR(resultadoAvanzado.totalAportado)}</strong>
+                  </div>
+                  <div className="resultado-linea">
+                    <span>Ganancia bruta total</span>
+                    <strong>{formatEUR(resultadoAvanzado.gananciaTotalBruta)}</strong>
+                  </div>
+                  <div className="resultado-linea">
+                    <span>Impuestos totales pagados</span>
+                    <strong>{formatEUR(resultadoAvanzado.impuestosTotales)}</strong>
+                  </div>
+                  <div className="resultado-linea">
+                    <span>Rentabilidad neta total</span>
+                    <strong>{resultadoAvanzado.rentabilidadNetaTotal.toFixed(2)}%</strong>
+                  </div>
+                </>
+              )}
 
               <details className="calculator-desglose">
                 <summary>Ver desglose año a año</summary>
@@ -180,8 +241,10 @@ export default function InteresCompuestoCalculator() {
                         <th>Saldo inicio</th>
                         <th>Aportación</th>
                         <th>Ganancia</th>
+                        {regimenFiscal === 'retiros_fifo' && <th>Retiro bruto</th>}
+                        {regimenFiscal === 'retiros_fifo' && <th>Retiro neto</th>}
                         <th>Impuesto</th>
-                        <th>Saldo fin (neto)</th>
+                        <th>{regimenFiscal === 'retiros_fifo' ? 'Fondo restante' : 'Saldo fin (neto)'}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -192,6 +255,12 @@ export default function InteresCompuestoCalculator() {
                           <td>{formatEUR(añoSimulado.saldoInicio)}</td>
                           <td>{formatEUR(añoSimulado.aportacion)}</td>
                           <td>{formatEUR(añoSimulado.gananciaDelAño)}</td>
+                          {regimenFiscal === 'retiros_fifo' && (
+                            <td>{añoSimulado.retiroBruto ? formatEUR(añoSimulado.retiroBruto) : '—'}</td>
+                          )}
+                          {regimenFiscal === 'retiros_fifo' && (
+                            <td>{añoSimulado.retiroNeto ? formatEUR(añoSimulado.retiroNeto) : '—'}</td>
+                          )}
                           <td>{formatEUR(añoSimulado.impuestoPagado)}</td>
                           <td>{formatEUR(añoSimulado.saldoFinNeto)}</td>
                         </tr>
@@ -257,11 +326,60 @@ export default function InteresCompuestoCalculator() {
               <option value="ninguno">Ninguno</option>
               <option value="anual">Anual (tipo cripto — tributa cada año)</option>
               <option value="diferido">Diferido (tipo fondo indexado — tributa solo al final)</option>
+              <option value="retiros_fifo">
+                Retiros programados (FIFO) — vendo poco a poco para pagar menos impuestos
+              </option>
             </select>
           </label>
 
+          {regimenFiscal === 'retiros_fifo' && (
+            <>
+              <NumberField
+                label="Retiro anual deseado"
+                suffix="€"
+                value={retiroAnual}
+                onChange={setRetiroAnual}
+                required={false}
+              />
+              <NumberField
+                label="Año de inicio de los retiros"
+                value={añoInicioRetiros}
+                onChange={setAñoInicioRetiros}
+                min={1}
+                step="1"
+              />
+            </>
+          )}
+
           <div className="calculator-crisis">
             <span className="calculator-crisis-titulo">Años de crisis (sustituyen la tasa base)</span>
+
+            <div className="calculator-crisis-generador">
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="Probabilidad %"
+                step="any"
+                min={0}
+                value={probabilidadCrisis}
+                onChange={(e) => setProbabilidadCrisis(e.target.value)}
+              />
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="Intensidad media %"
+                step="any"
+                min={0}
+                value={intensidadMediaCrisis}
+                onChange={(e) => setIntensidadMediaCrisis(e.target.value)}
+              />
+              <button type="button" className="calculator-crisis-generar" onClick={generarCrisisAleatorias}>
+                Generar años de crisis aleatorios
+              </button>
+            </div>
+            <p className="calculator-help-text">
+              Sustituye por completo la lista de años de crisis de abajo — no la añade a lo que ya hubiera.
+            </p>
 
             {filasCrisis.map((fila) => (
               <div className="calculator-crisis-fila" key={fila.id}>

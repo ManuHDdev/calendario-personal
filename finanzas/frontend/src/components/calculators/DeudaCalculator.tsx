@@ -4,23 +4,41 @@ import NumberField from '../NumberField';
 import { calcularDeuda, type DeudaResultado } from '../../lib/calculators';
 import { formatEUR } from '../../lib/format';
 
+type ModoBeneficio = 'total' | 'mensual';
+
 export default function DeudaCalculator() {
   const [capital, setCapital] = useState('5000');
   const [tasaAnual, setTasaAnual] = useState('6');
   const [plazoAnios, setPlazoAnios] = useState('4');
   const [beneficioEsperado, setBeneficioEsperado] = useState('');
+  const [modoBeneficio, setModoBeneficio] = useState<ModoBeneficio>('total');
   const [resultado, setResultado] = useState<DeudaResultado | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Si el beneficio es mensual, la conversión a total del periodo (× plazo en
+  // meses) se hace aquí, en el componente — calcularDeuda sigue recibiendo
+  // siempre el total, sin cambiar su firma.
+  const plazoAniosNum = Number(plazoAnios);
+  const beneficioTotalEquivalente =
+    modoBeneficio === 'mensual' && beneficioEsperado && Number.isFinite(plazoAniosNum) && plazoAniosNum > 0
+      ? Number(beneficioEsperado) * plazoAniosNum * 12
+      : null;
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     try {
+      const beneficioTotal = beneficioEsperado
+        ? modoBeneficio === 'mensual'
+          ? Number(beneficioEsperado) * Number(plazoAnios) * 12
+          : Number(beneficioEsperado)
+        : undefined;
+
       const r = calcularDeuda({
         capital: Number(capital),
         tasaAnualPct: Number(tasaAnual),
         plazoAnios: Number(plazoAnios),
-        beneficioEsperado: beneficioEsperado ? Number(beneficioEsperado) : undefined,
+        beneficioEsperado: beneficioTotal,
       });
       setResultado(r);
     } catch (err) {
@@ -70,15 +88,36 @@ export default function DeudaCalculator() {
       }
     >
       <NumberField label="Capital del préstamo" suffix="€" value={capital} onChange={setCapital} />
+      <p className="calculator-help-text">Cuánto pides prestado.</p>
+
       <NumberField label="Tasa anual (TIN)" suffix="%" value={tasaAnual} onChange={setTasaAnual} />
+      <p className="calculator-help-text">El interés que te cobra el banco (TIN aproximado).</p>
+
       <NumberField label="Plazo" suffix="años" value={plazoAnios} onChange={setPlazoAnios} />
+      <p className="calculator-help-text">Años para devolverlo.</p>
+
+      <label className="calculator-select">
+        <span>¿Cómo indicas el beneficio esperado?</span>
+        <select value={modoBeneficio} onChange={(e) => setModoBeneficio(e.target.value as ModoBeneficio)}>
+          <option value="total">Total del periodo</option>
+          <option value="mensual">Mensual</option>
+        </select>
+      </label>
+
       <NumberField
         label="Beneficio/ingreso extra esperado (opcional)"
-        suffix="€"
+        suffix={modoBeneficio === 'mensual' ? '€/mes' : '€'}
         value={beneficioEsperado}
         onChange={setBeneficioEsperado}
         required={false}
       />
+      <p className="calculator-help-text">
+        Cuánto vas a ganar gracias a este dinero — ej. el alquiler que vas a cobrar, o el sueldo extra de una
+        formación — para que la calculadora te diga si compensa pedirlo prestado.
+        {beneficioTotalEquivalente !== null && (
+          <> Equivale a {formatEUR(beneficioTotalEquivalente)} en total durante {plazoAnios} años.</>
+        )}
+      </p>
     </CalculatorCard>
   );
 }
