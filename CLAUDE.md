@@ -1045,6 +1045,10 @@ repos: `PANEL_INTERNAL_TOKEN` debe tener el mismo valor en el `.env` de
 `football-predictor` que en Panel/Paraísos/Watchlist, pese a vivir en un
 repositorio separado — ver `panel/backend/src/services/subappUsage.ts`
 (`FUTBOL_BACKEND_URL`, default `http://football-predictor-backend-1:8000`).
+**Path interno distinto al de Paraísos/Watchlist**: el backend FastAPI registra
+la ruta como `/usage` a secas (no `/futbol/api/usage`) — ese prefijo solo lo
+añade nginx para el dominio público. Panel llama a `/usage` directamente
+contra el contenedor, sin pasar por nginx.
 
 ### Despliegue
 Pipeline propio en GitHub Actions (`football-predictor/.github/workflows/deploy.yml`,

@@ -105,7 +105,12 @@ export async function getAllUsage(): Promise<ApiUsageEntry[]> {
   const [paraisosResult, watchlistResult, futbolResult] = await Promise.allSettled([
     fetchUsage(paraisosUrl, '/paraisos/api/usage', token),
     fetchUsage(watchlistUrl, '/watchlist/api/usage', token),
-    fetchUsage(futbolUrl, '/futbol/api/usage', token),
+    // Unlike Paraísos/Watchlist (Fastify apps that register their own
+    // `/<app>/api/...` prefix), football-predictor's FastAPI backend
+    // registers a bare `/usage` — the `/futbol/api` prefix is added by
+    // nginx only for the public domain, and does not apply to this
+    // direct container-to-container call on calendario-net.
+    fetchUsage(futbolUrl, '/usage', token),
   ]);
 
   return [
