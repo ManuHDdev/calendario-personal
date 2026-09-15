@@ -166,6 +166,16 @@ Sección nueva en `PanelPage` (`UsageDashboard.tsx`), tarjetas con llamadas de h
 ### Variables de entorno
 `KEYCLOAK_BASE_URL`, `KEYCLOAK_CERTS_URL`, `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `CORS_ORIGIN`, `PORT` (default 3002), `PANEL_INTERNAL_TOKEN` (compartido con Paraísos, Watchlist y Fútbol), `PARAISOS_BACKEND_URL` (default `http://paraisos-backend:3007`), `WATCHLIST_BACKEND_URL` (default `http://watchlist-backend:3009`), `FUTBOL_BACKEND_URL` (default `http://football-predictor-backend-1:8000` — contenedor del repo externo `football-predictor`, unido a `calendario-net`)
 
+**`.env` gestionado por CI, no a mano**: a diferencia de Paraísos/Watchlist (cuyo
+deploy no toca `.env`, confía en lo que ya haya en el servidor), el deploy de
+Panel (`panel-ci.yml`) **regenera `~/panel/.env` desde cero en cada push a
+main**, con las variables que el propio workflow conoce como secrets de GitHub
+(`KEYCLOAK_ADMIN_PASSWORD`, `PANEL_INTERNAL_TOKEN`). Cualquier variable añadida
+a mano por SSH que el workflow no escriba se pierde en el siguiente deploy —
+si Panel necesita una variable nueva, añadirla también en `panel-ci.yml`, no
+solo en el servidor (bug real: `PANEL_INTERNAL_TOKEN` se borró dos veces el
+2026-09-15 hasta que se corrigió aquí).
+
 ### Red Docker
 `calendario-net` (externa)
 
