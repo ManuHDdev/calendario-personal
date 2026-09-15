@@ -34,6 +34,7 @@
 #   pisos backend       →  :3012
 #   pisos frontend      →  :5184
 #   locales backend     →  :3013
+#   finanzas frontend   →  :5187  (sin backend)
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -471,6 +472,10 @@ ensure_deps "$SCRIPT_DIR/pisos/frontend"
 start_bg "pisos-frontend     :5184" "pisos-frontend.log" "$SCRIPT_DIR/pisos/frontend" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/finanzas/frontend"
+start_bg "finanzas-frontend  :5187" "finanzas-frontend.log" "$SCRIPT_DIR/finanzas/frontend" \
+  npm run dev
+
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
 start_bg "calendario-frontend :4200" "calendario-frontend.log" "$SCRIPT_DIR/calendario-frontend" \
   npm start
@@ -549,6 +554,9 @@ echo -e "    ${YELLOW}ℹ  Comprobar los portales reales:  cd pisos/backend && n
 echo -e "\n  ${BOLD}Locales${NC} (sin frontend todavia)"
 echo -e "    Backend health   →  http://localhost:3013/locales/api/health"
 echo -e "    ${YELLOW}ℹ  Importar el padron antes de usarlo:  cd locales/backend && npm run padron -- madrid${NC}"
+echo ""
+echo -e "  ${CYAN}Finanzas${NC} (sin backend, calculadoras puras en el navegador)"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5187/finanzas/${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

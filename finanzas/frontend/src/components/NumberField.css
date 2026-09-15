@@ -1,0 +1,47 @@
+.number-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.number-field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.number-field-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  transition: border-color 150ms ease;
+}
+
+.number-field-input-wrap:focus-within {
+  border-color: var(--accent);
+}
+
+.number-field-input-wrap input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+  font-size: 15px;
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.number-field-input-wrap input::-webkit-outer-spin-button,
+.number-field-input-wrap input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.number-field-suffix {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-left: 8px;
+  white-space: nowrap;
+}

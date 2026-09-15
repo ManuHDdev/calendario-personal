@@ -29,6 +29,7 @@ function appUrls(): Record<string, string> {
     locales:    local ? 'http://localhost:5185/locales/'  : '/locales/',
     trader:     local ? 'http://localhost:5183/trader/'    : '/trader/',
     futbol:     local ? 'http://localhost:5186/futbol/'    : '/futbol/',
+    finanzas:   local ? 'http://localhost:5187/finanzas/'  : '/finanzas/',
   };
 }
 
@@ -65,6 +66,9 @@ export class AppLauncher {
     { id: 'locales',    nombre: 'Locales',    color: '#c97b3c', roles: ['admin'],           url: '' },
     { id: 'trader',     nombre: 'Trader',     color: '#32d74b', roles: ['admin'], url: '' },
     { id: 'futbol',     nombre: 'Fútbol',     color: '#009b48', roles: ['admin'], url: '' },
+    // finanzas: calculadoras financieras sin backend propio, reutiliza los
+    // roles globales admin/invitado (no crea rol nuevo en Keycloak).
+    { id: 'finanzas',   nombre: 'Finanzas',   color: '#eab308', roles: ['admin', 'invitado'], url: '' },
   ];
 
   get apps(): App[] {

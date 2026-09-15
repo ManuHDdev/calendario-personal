@@ -33,6 +33,7 @@
 #   pisos backend       →  :3012
 #   pisos frontend      →  :5184
 #   locales backend     →  :3013
+#   finanzas frontend   →  :5187  (sin backend)
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -485,6 +486,10 @@ EnsureDeps (Join-Path $SCRIPT_DIR "pisos\frontend")
 StartBackground "pisos-frontend     :5184" "pisos-frontend.log" `
   (Join-Path $SCRIPT_DIR "pisos\frontend") "npm run dev"
 
+EnsureDeps (Join-Path $SCRIPT_DIR "finanzas\frontend")
+StartBackground "finanzas-frontend  :5187" "finanzas-frontend.log" `
+  (Join-Path $SCRIPT_DIR "finanzas\frontend") "npm run dev"
+
 EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
 StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
   (Join-Path $SCRIPT_DIR "calendario-frontend") "npm start"
@@ -565,6 +570,9 @@ Write-Host ""
 Write-Host "  Locales (sin frontend todavia)"
 Write-Host "    Backend health   ->  http://localhost:3013/locales/api/health"
 Write-Host "    Importar el padron antes de usarlo:  cd locales\backend; npm run padron -- madrid" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  Finanzas (sin backend, calculadoras puras en el navegador)" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5187/finanzas/"
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow

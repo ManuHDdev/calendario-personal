@@ -1,0 +1,12 @@
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  finanzas-frontend:
+    image: ghcr.io/manuhddev/finanzas-frontend:latest
+    container_name: finanzas-frontend
+    restart: unless-stopped
+    networks:
+      - calendario-net
