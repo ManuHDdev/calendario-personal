@@ -7,6 +7,8 @@ import {
   calcularPrecioMaximoVivienda,
   calcularColchonSeguridad,
   calcularDeuda,
+  calcularImpuestoProgresivoAhorro,
+  simularInteresCompuestoAvanzado,
 } from './calculators';
 
 describe('calcularInteresCompuesto', () => {
@@ -132,5 +134,154 @@ describe('calcularDeuda (comparador deuda buena vs. deuda mala)', () => {
 
   it('rechaza un plazo de cero años', () => {
     expect(() => calcularDeuda({ capital: 5000, tasaAnualPct: 6, plazoAnios: 0 })).toThrow();
+  });
+});
+
+describe('calcularImpuestoProgresivoAhorro', () => {
+  it('con una base de 60000€ tributa 12680€ (tramos 19/21/23%)', () => {
+    expect(calcularImpuestoProgresivoAhorro(60000)).toBeCloseTo(12680, 5);
+  });
+
+  it('con una base de 3000€ (dentro del primer tramo) tributa al 19%', () => {
+    expect(calcularImpuestoProgresivoAhorro(3000)).toBeCloseTo(570, 5);
+  });
+
+  it('con una base de 0€ no tributa nada', () => {
+    expect(calcularImpuestoProgresivoAhorro(0)).toBe(0);
+  });
+});
+
+describe('simularInteresCompuestoAvanzado', () => {
+  it('régimen "anual" sin años de crisis: tributa cada año sobre la ganancia de ese año', () => {
+    const resultado = simularInteresCompuestoAvanzado({
+      capitalInicial: 10000,
+      tasaAnualBase: 10,
+      años: 1,
+      añosCrisis: [],
+      regimenFiscal: 'anual',
+    });
+    expect(resultado.años[0].gananciaDelAño).toBeCloseTo(1000, 5);
+    expect(resultado.años[0].impuestoPagado).toBeCloseTo(190, 5); // 1000 * 0.19
+    expect(resultado.saldoFinalNeto).toBeCloseTo(10810, 5);
+  });
+
+  it('compensa una pérdida de un año contra la ganancia de un año posterior (régimen "anual")', () => {
+    const resultado = simularInteresCompuestoAvanzado({
+      capitalInicial: 10000,
+      tasaAnualBase: 5,
+      años: 2,
+      añosCrisis: [{ año: 1, rendimiento: -10 }], // -1000€ el año 1 → 0 impuesto
+      regimenFiscal: 'anual',
+    });
+    expect(resultado.años[0].gananciaDelAño).toBeCloseTo(-1000, 5);
+    expect(resultado.años[0].impuestoPagado).toBe(0);
+
+    // Año 2: saldo tras la pérdida = 9000, +5% = 450€ de ganancia bruta.
+    // Se compensan 450€... para que la ganancia bruta del año 2 sea de 5000€
+    // (y así la base compensada quede en 4000€) forzamos el escenario con una
+    // tasa base más alta sobre un saldo mayor.
+    const resultado2 = simularInteresCompuestoAvanzado({
+      capitalInicial: 100000,
+      tasaAnualBase: 5,
+      años: 2,
+      añosCrisis: [{ año: 1, rendimiento: -1 }], // -1000€ el año 1
+      regimenFiscal: 'anual',
+    });
+    expect(resultado2.años[0].gananciaDelAño).toBeCloseTo(-1000, 5);
+    // Año 2: saldo tras el año 1 = 99000; ganancia = 99000 * 5% = 4950€.
+    // Compensada contra la pérdida de 1000€ → base imponible 3950€.
+    const baseCompensada = resultado2.años[1].gananciaDelAño - 1000;
+    expect(resultado2.años[1].impuestoPagado).toBeCloseTo(
+      calcularImpuestoProgresivoAhorro(baseCompensada),
+      5,
+    );
+    expect(resultado2.años[1].impuestoPagado).toBeLessThan(
+      calcularImpuestoProgresivoAhorro(resultado2.años[1].gananciaDelAño),
+    );
+  });
+
+  it('compensa exactamente 1000€ de pérdida contra una ganancia de 5000€ (base imponible 4000€)', () => {
+    // Año 1: capital 10000 al -10% → pérdida exacta de 1000€, impuesto 0.
+    // Año 2: sobre el saldo de 9000€ forzamos una ganancia bruta de 5000€
+    // usando un año de "crisis" (en realidad una subida) que da justo esa cifra.
+    const resultado = simularInteresCompuestoAvanzado({
+      capitalInicial: 10000,
+      tasaAnualBase: 0,
+      años: 2,
+      añosCrisis: [
+        { año: 1, rendimiento: -10 },
+        { año: 2, rendimiento: (5000 / 9000) * 100 },
+      ],
+      regimenFiscal: 'anual',
+    });
+    expect(resultado.años[0].impuestoPagado).toBe(0);
+    expect(resultado.años[1].gananciaDelAño).toBeCloseTo(5000, 2);
+    expect(resultado.años[1].impuestoPagado).toBeCloseTo(
+      calcularImpuestoProgresivoAhorro(4000),
+      2,
+    ); // 760€, no sobre los 5000€ completos
+  });
+
+  it('una pérdida caduca a los 4 años y no compensa una ganancia posterior', () => {
+    const resultado = simularInteresCompuestoAvanzado({
+      capitalInicial: 10000,
+      tasaAnualBase: 5,
+      años: 6,
+      añosCrisis: [{ año: 1, rendimiento: -10 }],
+      regimenFiscal: 'anual',
+    });
+    const añoConGanancia = resultado.años[5]; // año 6, más de 4 años tras el año 1
+    expect(añoConGanancia.gananciaDelAño).toBeGreaterThan(0);
+    expect(añoConGanancia.impuestoPagado).toBeCloseTo(
+      calcularImpuestoProgresivoAhorro(añoConGanancia.gananciaDelAño),
+      5,
+    ); // tributa la ganancia completa, la pérdida del año 1 ya caducó
+  });
+
+  it('régimen "diferido": no tributa en años intermedios, solo al final sobre la ganancia total', () => {
+    const resultado = simularInteresCompuestoAvanzado({
+      capitalInicial: 10000,
+      tasaAnualBase: 7,
+      años: 5,
+      añosCrisis: [{ año: 3, rendimiento: -30 }],
+      regimenFiscal: 'diferido',
+    });
+
+    for (let i = 0; i < resultado.años.length - 1; i++) {
+      expect(resultado.años[i].impuestoPagado).toBe(0);
+    }
+
+    const ultimoAño = resultado.años[resultado.años.length - 1];
+    const gananciaTotal = resultado.saldoFinalBruto - resultado.totalAportado;
+    expect(ultimoAño.impuestoPagado).toBeCloseTo(calcularImpuestoProgresivoAhorro(gananciaTotal), 5);
+    expect(resultado.saldoFinalNeto).toBeCloseTo(resultado.saldoFinalBruto - ultimoAño.impuestoPagado, 5);
+  });
+
+  it('régimen "ninguno": el saldo final bruto y neto coinciden y no hay impuestos', () => {
+    const resultado = simularInteresCompuestoAvanzado({
+      capitalInicial: 10000,
+      tasaAnualBase: 7,
+      años: 5,
+      añosCrisis: [{ año: 3, rendimiento: -30 }],
+      regimenFiscal: 'ninguno',
+    });
+    expect(resultado.saldoFinalBruto).toBeCloseTo(resultado.saldoFinalNeto, 5);
+    expect(resultado.impuestosTotales).toBe(0);
+  });
+
+  it('un año de crisis sustituye la tasa base (7% base, -30% el año 3)', () => {
+    const resultado = simularInteresCompuestoAvanzado({
+      capitalInicial: 10000,
+      tasaAnualBase: 7,
+      años: 5,
+      añosCrisis: [{ año: 3, rendimiento: -30 }],
+      regimenFiscal: 'ninguno',
+    });
+    expect(resultado.años[2].rendimientoAplicado).toBe(-30);
+    expect(resultado.años[2].gananciaDelAño).toBeLessThan(0);
+    expect(resultado.años[2].saldoFinBruto).toBeLessThan(resultado.años[2].saldoInicio);
+    // Los demás años usan la tasa base normal (7%, positiva)
+    expect(resultado.años[0].rendimientoAplicado).toBe(7);
+    expect(resultado.años[0].gananciaDelAño).toBeGreaterThan(0);
   });
 });
