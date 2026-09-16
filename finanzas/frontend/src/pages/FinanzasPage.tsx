@@ -10,6 +10,7 @@ import ColchonCalculator from '../components/calculators/ColchonCalculator';
 import DeudaCalculator from '../components/calculators/DeudaCalculator';
 import HipotecaTinTaeCalculator from '../components/calculators/HipotecaTinTaeCalculator';
 import AlquilerRentabilidadCalculator from '../components/calculators/AlquilerRentabilidadCalculator';
+import PreciosViviendaProvincia from '../components/PreciosViviendaProvincia';
 import './FinanzasPage.css';
 
 interface CalculadoraDef {
@@ -28,6 +29,7 @@ const CALCULADORAS: CalculadoraDef[] = [
   { id: 'deuda', nombre: 'Deuda buena vs. mala', Componente: DeudaCalculator },
   { id: 'hipoteca-tin-tae', nombre: 'Hipoteca: TIN vs. TAE', Componente: HipotecaTinTaeCalculator },
   { id: 'alquiler-rentabilidad', nombre: 'Comprar para alquilar', Componente: AlquilerRentabilidadCalculator },
+  { id: 'precios-vivienda', nombre: 'Precios de vivienda por provincia', Componente: PreciosViviendaProvincia },
 ];
 
 export default function FinanzasPage() {

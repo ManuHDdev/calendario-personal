@@ -1,0 +1,30 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# finanzas — Base de datos PostgreSQL para desarrollo local
+# Puerto expuesto: 5443 en localhost (siguiente libre tras el de locales :5442)
+# El backend de finanzas se conecta via localhost:5443, no necesita red compartida.
+# Uso: gestionado automáticamente por start-local.sh
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  finanzas-db:
+    image: postgres:15
+    container_name: finanzas-db-local
+    ports:
+      - "5443:5432"
+    environment:
+      POSTGRES_DB: finanzas
+      POSTGRES_USER: finanzas
+      POSTGRES_PASSWORD: finanzas123
+    volumes:
+      - finanzas_local_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finanzas -d finanzas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  finanzas_local_data:

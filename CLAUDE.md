@@ -1073,24 +1073,36 @@ los tenga, y no hace nada si ya están.
 
 ---
 
-## Finanzas — calculadoras financieras
+## Finanzas — calculadoras financieras + histórico de precio de vivienda
 
 ### Ubicación
 Calendario/finanzas/ dentro del monorepo elbunkerdelingeniero.
 
 ### Stack
-- Frontend: React + Vite + TypeScript. **Sin backend propio y sin base de
-  datos**: las 7 calculadoras son funciones puras (`frontend/src/lib/calculators.ts`)
-  que corren enteramente en el navegador.
-- Tests: vitest sobre las funciones de cálculo (`calculators.test.ts`), sin
-  necesidad de red ni de servidor — primer frontend del monorepo con tests.
+- Frontend: React + Vite + TypeScript. Las calculadoras son funciones puras
+  (`frontend/src/lib/calculators.ts`) que corren enteramente en el navegador.
+- Backend: Fastify + Node.js + TypeScript (igual que el resto de subapps
+  Node del monorepo) — **primer backend y primera base de datos de
+  Finanzas**, añadido para la sección de histórico de precio de vivienda.
+- Base de datos: PostgreSQL 15, propia (`finanzas`), tabla `precio_vivienda`
+  + singleton `importacion_estado` (patrón `scraper_state` de pisos/locales)
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano
+  (mismo patrón que panel/storage/mapacyd/ytdl/gastos)
+- Parseo de XLS: `xlsx` (SheetJS), leyendo con `codepage: 1252` para que los
+  acentos del origen (fichero legado en Windows-1252, no UTF-8) salgan bien
+- Validaciones: Zod en los endpoints que reciben query params
+- Sin ORM — queries directas con el cliente pg
+- Tests: vitest en frontend (`calculators.test.ts`, `preciosVivienda.test.ts`)
+  y **primeros tests de backend de Finanzas** (`xlsParser.test.ts`,
+  `importador.test.ts`)
 
 ### Roles
 Reutiliza los roles globales `admin` e `invitado` — **no crea ningún rol nuevo
 en Keycloak, no toca `realm-export.json`**. Visible en el AppLauncher para
-cualquier usuario autenticado con alguno de esos dos roles.
+cualquier usuario autenticado con alguno de esos dos roles. Todas las rutas
+del backend excepto `/health` exigen JWT válido con rol `admin` o `invitado`.
 
-### Calculadoras
+### Calculadoras (funciones puras, sin red)
 1. Interés compuesto (con aportaciones periódicas opcionales)
 2. Regla del ×4 — préstamo máximo saludable
 3. Ahorro necesario para comprar (20% entrada + 10% gastos)
@@ -1098,18 +1110,83 @@ cualquier usuario autenticado con alguno de esos dos roles.
 5. Precio máximo de vivienda según ahorros ("llave del ahorro")
 6. Colchón de seguridad post-compra ("llave del colchón", 3× gastos fijos)
 7. Deuda buena vs. deuda mala (amortización francesa + fondo de reserva)
+8. Hipoteca: TIN vs. TAE
+9. Comprar para alquilar (rentabilidad)
 
-### Rutas
-`/finanzas/` — SPA estática, sin API propia.
+### Histórico de precio de vivienda por provincia (nuevo)
+Gráfica de línea temporal (Recharts) del precio medio de vivienda libre
+(€/m²) por provincia/comunidad autónoma/total nacional, con datos reales del
+Ministerio de Transportes y Movilidad Sostenible, actualizados
+periódicamente. Fuente: `https://apps.fomento.gob.es/BoletinOnline2/sedal/35101000.XLS`
+("Tabla 1: Valor tasado medio de vivienda libre"), histórico trimestral
+desde 1995, 8 hojas (~4 años cada una).
+
+**Clasificación de filas (ambito nacional/ccaa/provincia) — NO se hace por
+heurística de formato.** Se verificó contra el fichero real que "provincia =
+nombre con relleno de espacios a la derecha" es falso: Barcelona, Girona,
+Lleida, Tarragona (Cataluña), Coruña (A)/Lugo/Ourense/Pontevedra (Galicia) y
+Araba/Alava/Gipuzkoa/Bizkaia (País Vasco) son provincias sin ningún relleno,
+indistinguibles por formato de una fila de comunidad autónoma. En su lugar,
+`backend/src/services/xlsParser.ts` usa un mapa canónico fijo de comunidad
+autónoma → provincias (la geografía de España no cambia), con la ortografía
+exacta verificada contra el fichero. Las 7 comunidades uniprovinciales
+(Asturias, Balears, Cantabria, Madrid, Murcia, Navarra, Rioja) se importan
+dos veces (`ambito='ccaa'` y `ambito='provincia'`) para que también
+aparezcan en el desplegable de provincias del frontend. Total verificado: 1
+nacional + 18 filas de comunidad autónoma (incluye el agrupador "Ceuta y
+Melilla") + 52 provincias.
+
+### Importador programado
+`backend/src/services/importador.ts`, patrón calcado del planificador de
+`pisos`/`locales`: `setTimeout` encadenado (nunca `setInterval`) cada
+`FINANZAS_INTERVALO_IMPORTACION_HORAS` (default 24h, jitter ±10% — el origen
+solo cambia una vez por trimestre, así que no hace falta jitter agresivo).
+Al arrancar, si la tabla `precio_vivienda` está vacía lanza una importación
+inicial inmediata; si no, espera al primer intervalo. Descarga con
+User-Agent de navegador (el Ministerio devuelve 403 sin uno). Una
+importación fallida (red caída, fichero cambiado de formato) no vacía la
+tabla ni tumba el backend: se loguea y se deja constancia en
+`importacion_estado`, reintentando en el siguiente ciclo. Upsert idempotente
+por `(ambito, nombre, anio, trimestre)` — reimportar el fichero entero nunca
+duplica, y actualiza el valor si el Ministerio revisa un dato pasado.
+
+### Rutas (`/finanzas/api/*`)
+- `GET /precios-vivienda/provincias` — nombres distintos con
+  `ambito='provincia'`, ordenados alfabéticamente (para el desplegable)
+- `GET /precios-vivienda?nombre=<provincia|ccaa|TOTAL NACIONAL>` — serie
+  histórica completa para ese nombre exacto, ordenada por año/trimestre. Un
+  `nombre` desconocido es 400, no una lista vacía (mismo criterio que un
+  `portal` desconocido en `pisos`)
+- `GET /precios-vivienda/estado` — última ejecución del importador (cuándo,
+  si salió bien, cuántas filas)
+- `GET /health`
+
+### Variables de entorno del backend
+`FINANZAS_DB_HOST`, `FINANZAS_DB_NAME`, `FINANZAS_DB_USER`,
+`FINANZAS_DB_PASSWORD`, `FINANZAS_DB_PORT`, `KEYCLOAK_CERTS_URL`,
+`CORS_ORIGIN`, `PORT` (default `3014`),
+`FINANZAS_INTERVALO_IMPORTACION_HORAS` (default `24`)
+
+### nginx — sin bloque `/finanzas/api/` en `nginx/calendario.conf`
+A diferencia de lo que un primer vistazo a `mapacyd` podría sugerir,
+`nginx/calendario.conf` (el nginx de dominio) **no** tiene un bloque por
+subapp para su API — solo un único `location /finanzas/` que reenvía todo a
+`finanzas-frontend`. El split entre estáticos (`/finanzas/`) y API
+(`/finanzas/api/` → `finanzas-backend:3014`) vive en el nginx que se
+empaqueta DENTRO de la propia imagen de `finanzas-frontend`
+(`frontend/nginx.conf`) — mismo patrón que gastos/ofertas/paraisos/pisos/etc.
+No confundir con mapacyd, que tampoco tiene ese split porque no tiene
+backend propio expuesto tras `/mapacyd/api/` en absoluto.
 
 ### Puerto local
-`:5187` (solo frontend, sin backend ni base de datos).
+Frontend `:5187`, backend `:3014`.
 
 ### Red Docker
 `calendario-net` (externa).
 
-### Imagen Docker
-`ghcr.io/manuhddev/finanzas-frontend:latest`
+### Imágenes Docker
+`ghcr.io/manuhddev/finanzas-frontend:latest`,
+`ghcr.io/manuhddev/finanzas-backend:latest`
 
 ---
 
@@ -1208,7 +1285,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Pisos              | :5184    | :3012   |
 | Locales            | :5185    | :3013   |
 | Fútbol (repo externo, stack propio) | :5186 | :8000 |
-| Finanzas           | :5187    | — (sin backend) |
+| Finanzas           | :5187    | :3014   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -1220,6 +1297,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | PostgreSQL (ruta)  | :5440   | —       |
 | PostgreSQL (pisos) | :5441   | —       |
 | PostgreSQL (locales)| :5442  | —       |
+| PostgreSQL (finanzas)| :5443 | —       |
 
 ## Deuda técnica conocida
 

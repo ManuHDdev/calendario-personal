@@ -1,0 +1,68 @@
+.precios-vivienda {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  max-width: 900px;
+}
+
+.precios-vivienda-cabecera {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.precios-vivienda-cabecera .calculator-select {
+  min-width: 240px;
+}
+
+.precios-vivienda-ultimo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.precios-vivienda-ultimo-valor {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.precios-vivienda-ultimo-periodo {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.precios-vivienda-grafica {
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.precios-vivienda-cargando {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.precios-vivienda-nota {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+.precios-vivienda-nota strong {
+  color: var(--text-secondary);
+}
+
+.precios-vivienda-aviso {
+  color: var(--danger);
+}

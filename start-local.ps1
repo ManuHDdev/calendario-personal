@@ -33,7 +33,9 @@
 #   pisos backend       →  :3012
 #   pisos frontend      →  :5184
 #   locales backend     →  :3013
-#   finanzas frontend   →  :5187  (sin backend)
+#   finanzas backend    →  :3014
+#   finanzas frontend   →  :5187
+#   PostgreSQL          →  :5443   (finanzas)
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -63,6 +65,7 @@ function Cleanup {
   warn "  cd ruta\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd pisos\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd locales\infra; docker compose -f docker-compose.local.yml down"
+  warn "  cd finanzas\infra; docker compose -f docker-compose.local.yml down"
 }
 
 # Registrar cleanup al salir
@@ -139,6 +142,10 @@ docker compose -f docker-compose.local.yml up -d
 
 info "PostgreSQL (locales :5442)..."
 Set-Location (Join-Path $SCRIPT_DIR "locales\infra")
+docker compose -f docker-compose.local.yml up -d
+
+info "PostgreSQL (finanzas :5443)..."
+Set-Location (Join-Path $SCRIPT_DIR "finanzas\infra")
 docker compose -f docker-compose.local.yml up -d
 
 Set-Location $SCRIPT_DIR
@@ -263,6 +270,18 @@ do {
   Write-Host -NoNewline "."; Start-Sleep -Seconds 2
 } while ($true)
 Write-Host ""; info "  ✓ PostgreSQL (locales) listo."
+
+# ── 5j. Esperar a PostgreSQL (finanzas) ─────────────────────────
+info "PostgreSQL finanzas..."
+$retries = 30
+do {
+  $r = docker compose -f "$SCRIPT_DIR\finanzas\infra\docker-compose.local.yml" exec -T finanzas-db pg_isready -U finanzas -d finanzas 2>$null
+  if ($LASTEXITCODE -eq 0) { break }
+  $retries--
+  if ($retries -le 0) { err "PostgreSQL (finanzas) no arrancó." }
+  Write-Host -NoNewline "."; Start-Sleep -Seconds 2
+} while ($true)
+Write-Host ""; info "  ✓ PostgreSQL (finanzas) listo."
 
 # ── 6. Esperar a Keycloak ────────────────────────────────────────────────────
 info "Keycloak (puede tardar ~30s la primera vez)..."
@@ -430,6 +449,16 @@ StartBackground "locales-backend   :3013" "locales-backend.log" `
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ORIGIN="http://localhost:5185" }
 
+EnsureDeps (Join-Path $SCRIPT_DIR "finanzas\backend")
+StartBackground "finanzas-backend  :3014" "finanzas-backend.log" `
+  (Join-Path $SCRIPT_DIR "finanzas\backend") `
+  "npm run dev" `
+  @{ PORT="3014"; FINANZAS_DB_HOST="localhost"; FINANZAS_DB_PORT="5443";
+     FINANZAS_DB_NAME="finanzas"; FINANZAS_DB_USER="finanzas"; FINANZAS_DB_PASSWORD="finanzas123";
+     FINANZAS_INTERVALO_IMPORTACION_HORAS=$(if ($env:FINANZAS_INTERVALO_IMPORTACION_HORAS) { $env:FINANZAS_INTERVALO_IMPORTACION_HORAS } else { "24" });
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5187" }
+
 # Calendario backend (Spring Boot)
 StartBackground "calendario-backend :8081" "calendario-backend.log" `
   (Join-Path $SCRIPT_DIR "backend") `
@@ -571,8 +600,10 @@ Write-Host "  Locales (sin frontend todavia)"
 Write-Host "    Backend health   ->  http://localhost:3013/locales/api/health"
 Write-Host "    Importar el padron antes de usarlo:  cd locales\backend; npm run padron -- madrid" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "  Finanzas (sin backend, calculadoras puras en el navegador)" -ForegroundColor Cyan
+Write-Host "  Finanzas" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5187/finanzas/"
+Write-Host "    Backend health   ->  http://localhost:3014/health"
+Write-Host "    El historico de precio de vivienda se importa al arrancar si la tabla esta vacia (Ministerio de Transportes)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow
