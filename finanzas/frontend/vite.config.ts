@@ -5,7 +5,12 @@ export default defineConfig({
   plugins: [react()],
   base: '/finanzas/',
   server: {
+    port: 5187,
     proxy: {
+      '/finanzas/api': {
+        target: 'http://localhost:3014',
+        changeOrigin: true,
+      },
       // Proxy para Keycloak: strips /keycloak prefix (Keycloak en local está en raíz)
       '/keycloak': {
         target: 'http://localhost:8080',

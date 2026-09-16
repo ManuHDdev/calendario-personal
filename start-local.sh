@@ -34,7 +34,9 @@
 #   pisos backend       →  :3012
 #   pisos frontend      →  :5184
 #   locales backend     →  :3013
-#   finanzas frontend   →  :5187  (sin backend)
+#   finanzas backend    →  :3014
+#   finanzas frontend   →  :5187
+#   PostgreSQL          →  :5443   (finanzas)
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -79,6 +81,7 @@ cleanup() {
   warn "  cd ruta/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd pisos/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd locales/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd finanzas/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -164,6 +167,9 @@ info "PostgreSQL (pisos :5441)..."
 info "PostgreSQL (locales :5442)..."
 (cd "$SCRIPT_DIR/locales/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (finanzas :5443)..."
+(cd "$SCRIPT_DIR/finanzas/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -226,6 +232,12 @@ wait_for_container \
   "PostgreSQL locales" \
   "locales-db-local" \
   "docker exec locales-db-local pg_isready -U locales -d locales" \
+  30
+
+wait_for_container \
+  "PostgreSQL finanzas" \
+  "finanzas-db-local" \
+  "docker exec finanzas-db-local pg_isready -U finanzas -d finanzas" \
   30
 
 wait_for_container \
@@ -418,6 +430,19 @@ start_bg "locales-backend    :3013" "locales-backend.log" "$SCRIPT_DIR/locales/b
       CORS_ORIGIN="http://localhost:5185" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/finanzas/backend"
+start_bg "finanzas-backend   :3014" "finanzas-backend.log" "$SCRIPT_DIR/finanzas/backend" \
+  env PORT=3014 \
+      FINANZAS_DB_HOST="localhost" \
+      FINANZAS_DB_PORT="5443" \
+      FINANZAS_DB_NAME="finanzas" \
+      FINANZAS_DB_USER="finanzas" \
+      FINANZAS_DB_PASSWORD="finanzas123" \
+      FINANZAS_INTERVALO_IMPORTACION_HORAS="${FINANZAS_INTERVALO_IMPORTACION_HORAS:-24}" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5187" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -555,8 +580,10 @@ echo -e "\n  ${BOLD}Locales${NC} (sin frontend todavia)"
 echo -e "    Backend health   →  http://localhost:3013/locales/api/health"
 echo -e "    ${YELLOW}ℹ  Importar el padron antes de usarlo:  cd locales/backend && npm run padron -- madrid${NC}"
 echo ""
-echo -e "  ${CYAN}Finanzas${NC} (sin backend, calculadoras puras en el navegador)"
+echo -e "  ${CYAN}Finanzas${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5187/finanzas/${NC}"
+echo -e "    Backend health   →  http://localhost:3014/health"
+echo -e "    ${YELLOW}ℹ  El historico de precio de vivienda se importa al arrancar si la tabla esta vacia (Ministerio de Transportes)${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"
