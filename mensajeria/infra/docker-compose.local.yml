@@ -1,0 +1,30 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# mensajeria — Base de datos PostgreSQL para desarrollo local
+# Puerto expuesto: 5444 en localhost (siguiente libre tras el de finanzas :5443)
+# El backend de mensajeria se conecta via localhost:5444, no necesita red compartida.
+# Uso: gestionado automáticamente por start-local.sh
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  mensajeria-db:
+    image: postgres:15
+    container_name: mensajeria-db-local
+    ports:
+      - "5444:5432"
+    environment:
+      POSTGRES_DB: mensajeria
+      POSTGRES_USER: mensajeria
+      POSTGRES_PASSWORD: mensajeria123
+    volumes:
+      - mensajeria_local_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mensajeria -d mensajeria"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  mensajeria_local_data:
