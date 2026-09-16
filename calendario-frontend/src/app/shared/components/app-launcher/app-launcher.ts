@@ -30,6 +30,7 @@ function appUrls(): Record<string, string> {
     trader:     local ? 'http://localhost:5183/trader/'    : '/trader/',
     futbol:     local ? 'http://localhost:5186/futbol/'    : '/futbol/',
     finanzas:   local ? 'http://localhost:5187/finanzas/'  : '/finanzas/',
+    mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
   };
 }
 
@@ -69,6 +70,9 @@ export class AppLauncher {
     // finanzas: calculadoras financieras sin backend propio, reutiliza los
     // roles globales admin/invitado (no crea rol nuevo en Keycloak).
     { id: 'finanzas',   nombre: 'Finanzas',   color: '#eab308', roles: ['admin', 'invitado'], url: '' },
+    // mensajeria: mensajes de prueba (email/sms/llamada) para test de OTP,
+    // uso exclusivo del propietario.
+    { id: 'mensajeria', nombre: 'Mensajería', color: '#5ac8fa', roles: ['admin', 'mensajeria_admin', 'mensajeria_invitado'], url: '' },
   ];
 
   get apps(): App[] {

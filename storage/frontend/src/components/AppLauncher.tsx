@@ -33,6 +33,9 @@ const APPS: AppDef[] = [
   // finanzas: calculadoras financieras sin backend propio, reutiliza los
   // roles globales admin/invitado (no crea rol nuevo en Keycloak).
   { id: 'finanzas',   nombre: 'Finanzas',   color: '#eab308', roles: ['admin', 'invitado'] },
+  // mensajeria: mensajes de prueba (email/sms/llamada) para test de OTP,
+  // uso exclusivo del propietario.
+  { id: 'mensajeria', nombre: 'Mensajería', color: '#5ac8fa', roles: ['admin', 'mensajeria_admin', 'mensajeria_invitado'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -55,6 +58,7 @@ function getUrls(): Record<string, string> {
     trader:     local ? 'http://localhost:5183/trader/'   : '/trader/',
     futbol:     local ? 'http://localhost:5186/futbol/'   : '/futbol/',
     finanzas:   local ? 'http://localhost:5187/finanzas/' : '/finanzas/',
+    mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
   };
 }
 
@@ -189,6 +193,14 @@ function AppIcon({ id }: { id: string }) {
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
           <circle cx="12" cy="12" r="9"/>
           <path d="M12 7v10M15 9.8c0-1.5-1.5-2.3-3-2.3s-3 .8-3 2.3 1.5 2.2 3 2.2 3 .8 3 2.2-1.5 2.3-3 2.3-3-.8-3-2.3" strokeWidth="1.6"/>
+        </svg>
+      );
+    case 'mensajeria':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <path d="M4 5h16v12H8l-4 4V5z"/>
+          <line x1="8" y1="10" x2="16" y2="10"/>
+          <line x1="8" y1="14" x2="13" y2="14"/>
         </svg>
       );
     default:

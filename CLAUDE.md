@@ -1190,22 +1190,103 @@ Frontend `:5187`, backend `:3014`.
 
 ---
 
+## Mensajería — mensajes de prueba (email/SMS/llamada) para probar OTP
+
+### Ubicación
+Calendario/mensajeria/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que el resto de subapps
+  Node del monorepo)
+- Frontend: React + Vite + TypeScript
+- Base de datos: PostgreSQL 15, propia (`mensajeria`), tablas
+  `mensajeria_captured_emails` y `mensajeria_message_log`
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano
+  (mismo patrón que el resto de subapps)
+- Validaciones: Zod en los endpoints que reciben body
+- Sin ORM — queries directas con el cliente pg
+
+### Qué hace
+Envía un único mensaje de prueba (email, SMS o llamada) a un destinatario
+elegido por el propietario, para probar flujos de registro/OTP en otros
+sitios sin infraestructura de pago. Sin envío masivo, sin listas de
+contactos, sin plantillas: un formulario, un destinatario, un envío.
+
+### Modo mock/real, por canal
+`MENSAJERIA_MODE=mock` (por defecto) | `real` — interruptor EXPLÍCITO, nunca
+se autodetecta por la presencia de credenciales. Cada canal (email, sms,
+call) decide su adaptador de forma INDEPENDIENTE en
+`backend/src/services/adapterFactory.ts`: en modo `real`, un canal cuyas
+variables reales no estén completas se queda en su adaptador mock EN
+SILENCIO, nunca lanza ni envía a medias.
+
+- **Mock** (siempre disponible, coste cero): el email "enviado" se captura
+  en `mensajeria_captured_emails` en vez de relayarse — la infraestructura es
+  un SMTP falso en proceso (`smtp-server`, `services/fakeSmtpServer.ts`); el
+  adaptador de email llama directamente a la misma función de captura que
+  usa ese servidor, sin depender de un round-trip de socket. SMS y llamada
+  se registran en `mensajeria_message_log` con `status='mock-logged'`.
+- **Real** (bring-your-own-credentials): SMS/llamada vía Twilio
+  (`TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_FROM_NUMBER`), email vía
+  SendGrid (`SENDGRID_API_KEY`). La llamada real lee el cuerpo del mensaje en
+  voz alta con TwiML inline (`<Say>`), sin necesitar una URL pública de
+  callback.
+
+### Roles
+- `admin` o `mensajeria_admin` → envío de mensajes de prueba (escritura)
+- `admin`, `mensajeria_admin` o `mensajeria_invitado` → consulta del
+  inbox/log (solo lectura)
+
+### Rutas (`/mensajeria/api/*`)
+- `POST /send` — envía un único mensaje de prueba (`channel: email|sms|call`)
+- `GET /inbox/emails` — lista de emails capturados en modo mock
+- `GET /inbox/emails/:id` — detalle de un email capturado (para copiar un OTP)
+- `GET /inbox/log` — log de SMS/llamadas (mock y real), filtro `?channel=`
+- `GET /inbox/log/:id` — detalle de una entrada del log
+- `GET /health`
+
+### Variables de entorno del backend
+`MENSAJERIA_DB_HOST`, `MENSAJERIA_DB_NAME`, `MENSAJERIA_DB_USER`,
+`MENSAJERIA_DB_PASSWORD`, `MENSAJERIA_DB_PORT`, `KEYCLOAK_CERTS_URL`,
+`CORS_ORIGIN`, `PORT` (default `3015`), `MENSAJERIA_MODE` (`mock`|`real`,
+default `mock`), `MENSAJERIA_SMTP_PORT` (default `2525`, SMTP falso en
+proceso), `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`
+(las tres para SMS/llamada real), `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`
+(para email real). Ver `mensajeria/backend/.env.example` para el detalle
+comentado — nota: ese fichero no pudo crearse en la sesión que implementó
+esta feature por una restricción del sandbox de esa sesión sobre ficheros
+`.env*`; las variables están documentadas aquí íntegramente mientras tanto.
+
+### Puerto local
+Frontend `:5188`, backend `:3015`.
+
+### Red Docker
+`calendario-net` (externa).
+
+### Imágenes Docker
+`ghcr.io/manuhddev/mensajeria-frontend:latest`,
+`ghcr.io/manuhddev/mensajeria-backend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
-Los ocho roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
-`mapacyd_invitado`, `reparto_admin`, `reparto_invitado`. Cualquier código que filtre por rol DEBE usar
+Los diez roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
+`mapacyd_invitado`, `reparto_admin`, `reparto_invitado`, `mensajeria_admin`, `mensajeria_invitado`. Cualquier código que filtre por rol DEBE usar
 exactamente estos nombres.
 
-| Rol               | Acceso                                                       |
-|-------------------|----------------------------------------------------------------|
-| admin             | Todas las apps + gestión completa                               |
-| familia           | Storage (lectura), MapaCYD (lectura), Juegos (completo)         |
-| invitado          | Juegos (completo), Finanzas (completo) — sin acceso a ninguna otra app |
-| paraisos_admin    | Gestión de spots en Paraísos (CRUD)                             |
-| mapacyd_admin     | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
-| mapacyd_invitado  | Consulta de zonas y horarios en MapaCYD (solo lectura)          |
-| reparto_admin     | Gestión completa de grupos de gasto compartido en Reparto (CRUD) |
-| reparto_invitado  | Consulta de todos los grupos de Reparto (solo lectura, sin crear/editar) |
+| Rol                 | Acceso                                                       |
+|---------------------|----------------------------------------------------------------|
+| admin               | Todas las apps + gestión completa                               |
+| familia             | Storage (lectura), MapaCYD (lectura), Juegos (completo)         |
+| invitado            | Juegos (completo), Finanzas (completo) — sin acceso a ninguna otra app |
+| paraisos_admin      | Gestión de spots en Paraísos (CRUD)                             |
+| mapacyd_admin       | Gestión de zonas y horarios en MapaCYD (CRUD)                   |
+| mapacyd_invitado    | Consulta de zonas y horarios en MapaCYD (solo lectura)          |
+| reparto_admin       | Gestión completa de grupos de gasto compartido en Reparto (CRUD) |
+| reparto_invitado    | Consulta de todos los grupos de Reparto (solo lectura, sin crear/editar) |
+| mensajeria_admin    | Envío de mensajes de prueba (email/SMS/llamada) en Mensajería    |
+| mensajeria_invitado | Consulta del inbox/log de Mensajería (solo lectura)             |
 
 Locales tampoco añade rol: solo `admin`, como Gastos/Ofertas/Ruta/Pisos.
 
@@ -1221,23 +1302,25 @@ delegable vía `reparto_admin` (gestión completa) y `reparto_invitado` (solo
 consulta) — sin necesitar acceso `admin` global, igual que ya ocurría con
 Paraísos y MapaCYD.
 
-Los roles `paraisos_admin`, `mapacyd_admin` y `reparto_admin` son roles
-delegados: permiten gestionar una subapp concreta sin tener acceso `admin`
-global. Un usuario con `paraisos_admin` puede crear, editar y borrar spots en
-Paraísos; con `mapacyd_admin` puede gestionar zonas y horarios en MapaCYD; con
-`reparto_admin` puede crear y administrar grupos de gasto compartido en
-Reparto. Los tres se asignan automáticamente al usuario `propietario` por el
-script de realm.
+Los roles `paraisos_admin`, `mapacyd_admin`, `reparto_admin` y `mensajeria_admin`
+son roles delegados: permiten gestionar una subapp concreta sin tener acceso
+`admin` global. Un usuario con `paraisos_admin` puede crear, editar y borrar
+spots en Paraísos; con `mapacyd_admin` puede gestionar zonas y horarios en
+MapaCYD; con `reparto_admin` puede crear y administrar grupos de gasto
+compartido en Reparto; con `mensajeria_admin` puede enviar mensajes de prueba
+en Mensajería. Los cuatro se asignan automáticamente al usuario `propietario`
+por el script de realm.
 
-`mapacyd_invitado` y `reparto_invitado` son roles delegados de solo lectura
-(consulta sin poder gestionar) — `mapacyd_invitado` fue el primer caso real de
-la convención `<app>_invitado` (documentada en memoria pero no aplicada a
-ninguna subapp hasta entonces); `reparto_invitado` es el segundo. A diferencia
-de los roles `_admin`, ninguno de los dos se asigna automáticamente a
-`propietario` — ambos se crean en el realm pero quedan sin asignar, delegables
-manualmente desde Panel cuando haga falta.
+`mapacyd_invitado`, `reparto_invitado` y `mensajeria_invitado` son roles
+delegados de solo lectura (consulta sin poder gestionar) — `mapacyd_invitado`
+fue el primer caso real de la convención `<app>_invitado` (documentada en
+memoria pero no aplicada a ninguna subapp hasta entonces); `reparto_invitado`
+fue el segundo y `mensajeria_invitado` el tercero. A diferencia de los roles
+`_admin`, ninguno de los tres se asigna automáticamente a `propietario` —
+los tres se crean en el realm pero quedan sin asignar, delegables manualmente
+desde Panel cuando haga falta.
 
-El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin` y `reparto_admin`.
+El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin`, `reparto_admin` y `mensajeria_admin`.
 
 ## Keycloak — configuración y despliegue
 
@@ -1286,6 +1369,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Locales            | :5185    | :3013   |
 | Fútbol (repo externo, stack propio) | :5186 | :8000 |
 | Finanzas           | :5187    | :3014   |
+| Mensajería         | :5188    | :3015   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -1298,14 +1382,16 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | PostgreSQL (pisos) | :5441   | —       |
 | PostgreSQL (locales)| :5442  | —       |
 | PostgreSQL (finanzas)| :5443 | —       |
+| PostgreSQL (mensajeria)| :5444 | —     |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel (backend) tiene vitest desde el dashboard de uso de APIs (`subappUsage.ts`, `routes/usage.ts`) pero el resto del backend (`users.ts`, `me.ts`, `keycloakAdmin.ts`) y todo el frontend siguen sin cobertura; mapacyd (backend y frontend) sigue sin ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 15 Dockerfiles y 15 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 15 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `crypto-trader/frontend/src/components/AppLauncher.tsx` (fuera de este monorepo, ver Trader abajo) y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 16 Dockerfiles y 16 pipelines de CI. **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 16 copias de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes.
 
-`locales` ya está en las 15 copias del AppLauncher (`roles: ['admin']`), añadido
-junto con su frontend (fase 9). `finanzas` ya está en las 15 copias
-(`roles: ['admin', 'invitado']`). `crypto-trader/frontend` sigue fuera de este
+`locales` ya está en las copias del AppLauncher (`roles: ['admin']`), añadido
+junto con su frontend (fase 9). `finanzas` ya está en las copias
+(`roles: ['admin', 'invitado']`). `mensajeria` ya está en las 16 copias
+(`roles: ['admin']`). `crypto-trader/frontend` sigue fuera de este
 repo y se actualiza aparte.

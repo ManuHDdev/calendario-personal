@@ -4,10 +4,12 @@
 #
 # Actualiza el realm "calendario" en Keycloak con los roles correctos
 # (admin / familia / invitado / paraisos_admin / mapacyd_admin / mapacyd_invitado /
-# reparto_admin / reparto_invitado) y asigna los roles admin, paraisos_admin,
-# mapacyd_admin y reparto_admin al usuario "propietario". mapacyd_invitado y
-# reparto_invitado se crean pero NO se asignan a nadie automáticamente — existen
-# para asignarse desde Panel (convención documentada para roles "_invitado").
+# reparto_admin / reparto_invitado / mensajeria_admin / mensajeria_invitado) y
+# asigna los roles admin, paraisos_admin, mapacyd_admin, reparto_admin y
+# mensajeria_admin al usuario "propietario". mapacyd_invitado, reparto_invitado
+# y mensajeria_invitado se crean pero NO se asignan a nadie automáticamente —
+# existen para asignarse desde Panel (convención documentada para roles
+# "_invitado").
 #
 # Uso:
 #   bash scripts/keycloak-update-realm.sh [host] [admin_user] [admin_password]
@@ -52,7 +54,7 @@ TOKEN=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).access_token)"
 ok "Token de admin obtenido"
 
 # ── 2. Crear roles si no existen ──────────────────────────────────────────────
-for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin mapacyd_invitado reparto_admin reparto_invitado; do
+for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin mapacyd_invitado reparto_admin reparto_invitado mensajeria_admin mensajeria_invitado; do
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     "$HOST/admin/realms/$REALM/roles" \
     -H "Authorization: Bearer $TOKEN" \
@@ -165,6 +167,30 @@ fi
 # NOTA: 'reparto_invitado' se crea en el bucle de arriba pero NO se asigna a
 # nadie aquí — solo lectura, delegable desde Panel cuando haga falta.
 
+# ── 4e. Asignar rol "mensajeria_admin" al usuario ───────────────────────────
+MENSAJERIA_ADMIN_ROLE_JSON=$(curl -sf \
+  "$HOST/admin/realms/$REALM/roles/mensajeria_admin" \
+  -H "Authorization: Bearer $TOKEN")
+
+MENSAJERIA_ADMIN_ROLE_ID=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).id)" "$MENSAJERIA_ADMIN_ROLE_JSON")
+
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+  "$HOST/admin/realms/$REALM/users/$USER_ID/role-mappings/realm" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "[{\"id\":\"$MENSAJERIA_ADMIN_ROLE_ID\",\"name\":\"mensajeria_admin\"}]")
+
+if [ "$HTTP_STATUS" = "204" ]; then
+  ok "Rol 'mensajeria_admin' asignado a 'propietario'"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  warn "Rol 'mensajeria_admin' ya estaba asignado (OK)"
+else
+  warn "Respuesta $HTTP_STATUS al asignar rol (puede que ya lo tenga)"
+fi
+
+# NOTA: 'mensajeria_invitado' se crea en el bucle de arriba pero NO se asigna
+# a nadie aquí — solo lectura del inbox, delegable desde Panel cuando haga falta.
+
 # ── 5. Actualizar redirect URIs del cliente calendario-frontend ───────────────
 CLIENTS_JSON=$(curl -sf \
   "$HOST/admin/realms/$REALM/clients?clientId=calendario-frontend" \
@@ -184,8 +210,8 @@ CLIENT_ID=$(node -e "const a=JSON.parse(process.argv[1]); process.stdout.write(a
 # la lista de solo-desarrollo, rompiendo el login de todas las apps. Al no
 # haber distinción de entorno, unificar la lista es la forma segura de
 # evitar esa clase de bug sin depender de cómo se invoque el script.
-REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*","http://localhost:5180/*","http://localhost:5181/*","http://localhost:5182/*","http://localhost:5183/*","http://localhost:5184/*","https://elbunkerdelingeniero.duckdns.org/*"]'
-WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179","http://localhost:5180","http://localhost:5181","http://localhost:5182","http://localhost:5183","http://localhost:5184","https://elbunkerdelingeniero.duckdns.org"]'
+REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*","http://localhost:5180/*","http://localhost:5181/*","http://localhost:5182/*","http://localhost:5183/*","http://localhost:5184/*","http://localhost:5185/*","http://localhost:5187/*","http://localhost:5188/*","https://elbunkerdelingeniero.duckdns.org/*"]'
+WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179","http://localhost:5180","http://localhost:5181","http://localhost:5182","http://localhost:5183","http://localhost:5184","http://localhost:5185","http://localhost:5187","http://localhost:5188","https://elbunkerdelingeniero.duckdns.org"]'
 
 # Obtener la configuración actual del cliente y parchearla
 CLIENT_JSON=$(curl -sf \
@@ -216,7 +242,7 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Realm actualizado correctamente ✓${NC}"
 echo -e "${GREEN}════════════════════════════════════════${NC}"
 echo ""
-echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, mapacyd_invitado, reparto_admin, reparto_invitado"
-echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin, reparto_admin"
+echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, mapacyd_invitado, reparto_admin, reparto_invitado, mensajeria_admin, mensajeria_invitado"
+echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin, reparto_admin, mensajeria_admin"
 echo "  Redirect URIs actualizadas para todos los puertos locales"
 echo ""
