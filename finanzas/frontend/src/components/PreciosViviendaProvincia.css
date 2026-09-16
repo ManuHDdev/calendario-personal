@@ -38,51 +38,31 @@
   color: var(--text-secondary);
 }
 
-.precios-vivienda-grafica-barra {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-
 .precios-vivienda-ayuda-zoom {
   font-size: 11px;
   color: var(--text-tertiary);
-}
-
-.precios-vivienda-reset-zoom {
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--accent);
-  background: transparent;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
-  transition: background 150ms ease;
-}
-
-.precios-vivienda-reset-zoom:hover {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  margin-bottom: 6px;
 }
 
 .precios-vivienda-grafica {
-  min-height: 360px;
+  position: relative;
+}
+
+.precios-vivienda-lienzo {
+  width: 100%;
+  height: 360px;
+}
+
+.precios-vivienda-cargando--flotante {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: grab;
-  user-select: none;
-}
-
-.precios-vivienda-grafica--arrastrando {
-  cursor: grabbing;
-}
-
-.precios-vivienda-cargando {
   font-size: 14px;
   color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
+  z-index: 1;
 }
 
 .precios-vivienda-nota {

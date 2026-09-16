@@ -1,29 +1,20 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+  AreaSeries,
+  createChart,
+  type IChartApi,
+  type ISeriesApi,
+  type UTCTimestamp,
+} from 'lightweight-charts';
 import { getProvincias, getPreciosVivienda, getEstadoImportacion, TOTAL_NACIONAL } from '../services/api';
 import type { PrecioViviendaPunto, ImportacionEstado } from '../services/api';
-import { aDatosGrafica, formatearHace } from '../lib/preciosVivienda';
+import { formatearHace, trimestreATimestamp } from '../lib/preciosVivienda';
 import { formatEUR } from '../lib/format';
 import './PreciosViviendaProvincia.css';
 
-// Ventana de índices visible sobre `datosGrafica` — el zoom/pan no filtra los
-// datos en la API, solo recorta qué porción del array ya cargado se pinta.
-interface Ventana {
-  inicio: number;
-  fin: number; // inclusive
+function leerVariableCss(nombre: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
 }
-
-type DominioY = [number, number];
-
-const PUNTOS_MINIMOS_VENTANA = 4;
 
 export default function PreciosViviendaProvincia() {
   const [provincias, setProvincias] = useState<string[]>([]);
@@ -33,18 +24,10 @@ export default function PreciosViviendaProvincia() {
   const [cargandoLista, setCargandoLista] = useState(true);
   const [cargandoSerie, setCargandoSerie] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ventana, setVentana] = useState<Ventana | null>(null);
-  const [dominioY, setDominioY] = useState<DominioY | null>(null);
-  const [dominioYBase, setDominioYBase] = useState<DominioY | null>(null);
 
   const contenedorRef = useRef<HTMLDivElement | null>(null);
-  const arrastreRef = useRef<{
-    xInicial: number;
-    yInicial: number;
-    ventanaInicial: Ventana;
-    dominioYInicial: DominioY;
-  } | null>(null);
-  const [arrastrando, setArrastrando] = useState(false);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -84,165 +67,89 @@ export default function PreciosViviendaProvincia() {
     };
   }, [seleccion]);
 
-  const datosGrafica = aDatosGrafica(serie);
-  const ultimoPunto = [...serie].reverse().find((p) => p.precio_m2 !== null);
-
-  // Cada vez que cambian los datos (nueva selección de provincia/ámbito) se
-  // resetea la ventana visible (X) y el dominio vertical (Y) — un zoom/pan
-  // aplicado a la serie anterior no tendría sentido sobre la nueva.
+  // Crea el gráfico UNA sola vez (mismo patrón que EquityChart/PriceChart de
+  // Trader: lightweight-charts, no Recharts — trae zoom con la rueda y
+  // arrastre para desplazarse ya integrados, sin reinventarlos a mano).
   useEffect(() => {
-    if (datosGrafica.length === 0) {
-      setVentana(null);
-      setDominioY(null);
-      setDominioYBase(null);
-      return;
-    }
-    setVentana({ inicio: 0, fin: datosGrafica.length - 1 });
+    if (!contenedorRef.current) return;
 
-    const valores = datosGrafica
-      .map((p) => p.precio)
-      .filter((v): v is number => v !== null && Number.isFinite(v));
-    if (valores.length === 0) {
-      setDominioY(null);
-      setDominioYBase(null);
-      return;
-    }
-    const min = Math.min(...valores);
-    const max = Math.max(...valores);
-    const relleno = Math.max((max - min) * 0.1, 1);
-    // Redondeado a € enteros: al fijar un dominio numérico explícito,
-    // Recharts pinta el min/max exactos como ticks del eje, y sin redondear
-    // aquí saldría ruido de coma flotante (ej. "506.30999999999995€").
-    const base: DominioY = [Math.round(min - relleno), Math.round(max + relleno)];
-    setDominioY(base);
-    setDominioYBase(base);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seleccion, datosGrafica.length]);
+    const colorTexto = leerVariableCss('--text-secondary');
+    const colorBorde = leerVariableCss('--border');
+    const colorAcento = leerVariableCss('--accent');
 
-  const totalPuntos = datosGrafica.length;
-  const ventanaCompleta = ventana !== null && ventana.inicio === 0 && ventana.fin === totalPuntos - 1;
-  const yEnBase =
-    dominioY !== null &&
-    dominioYBase !== null &&
-    Math.abs(dominioY[0] - dominioYBase[0]) < 1e-6 &&
-    Math.abs(dominioY[1] - dominioYBase[1]) < 1e-6;
-  const vistaCompleta = ventanaCompleta && yEnBase;
-  const datosVisibles =
-    ventana !== null ? datosGrafica.slice(ventana.inicio, ventana.fin + 1) : datosGrafica;
+    const chart = createChart(contenedorRef.current, {
+      layout: {
+        background: { color: 'transparent' },
+        textColor: colorTexto,
+        fontSize: 11,
+      },
+      grid: {
+        vertLines: { color: colorBorde },
+        horzLines: { color: colorBorde },
+      },
+      rightPriceScale: { borderColor: colorBorde },
+      timeScale: { borderColor: colorBorde, timeVisible: false },
+      autoSize: true,
+      localization: {
+        priceFormatter: (v: number) => formatEUR(v),
+      },
+    });
 
-  const clampVentana = (v: Ventana): Ventana => {
-    let { inicio, fin } = v;
-    inicio = Math.max(0, Math.min(inicio, totalPuntos - PUNTOS_MINIMOS_VENTANA));
-    fin = Math.min(totalPuntos - 1, Math.max(fin, inicio + PUNTOS_MINIMOS_VENTANA - 1));
-    return { inicio, fin };
-  };
+    const series = chart.addSeries(AreaSeries, {
+      lineColor: colorAcento,
+      topColor: `${colorAcento}33`,
+      bottomColor: `${colorAcento}05`,
+      lineWidth: 2,
+    });
 
-  // El pan vertical mantiene la misma anchura de dominio (no hay zoom en Y,
-  // solo desplazamiento), pero no deja alejarse tanto que el rango visible
-  // deje de solapar con los datos reales — evita quedarse "perdido" en un
-  // hueco vacío.
-  const clampDominioY = (d: DominioY): DominioY => {
-    if (!dominioYBase) return d;
-    const anchura = d[1] - d[0];
-    const [baseMin, baseMax] = dominioYBase;
-    let [min, max] = d;
-    if (max < baseMin) {
-      min = baseMin - anchura * 0.2;
-      max = min + anchura;
-    }
-    if (min > baseMax) {
-      max = baseMax + anchura * 0.2;
-      min = max - anchura;
-    }
-    return [min, max];
-  };
+    chartRef.current = chart;
+    seriesRef.current = series;
 
-  // Rueda del ratón: acerca (deltaY negativo, scroll "hacia arriba"/hacia la
-  // pantalla) o aleja (deltaY positivo) la ventana horizontal, manteniendo el
-  // centro actual fijo.
-  //
-  // Se engancha como listener NATIVO (no como prop `onWheel` de React) con
-  // `{ passive: false }`: React 17+ registra los listeners de wheel/touch
-  // como pasivos por defecto, y ahí `e.preventDefault()` no hace nada (el
-  // navegador avisa en consola "Unable to preventDefault inside passive
-  // event listener invocation") — la página se desplazaría a la vez que se
-  // hace zoom en la gráfica.
-  useEffect(() => {
-    const el = contenedorRef.current;
-    if (!el) return;
-
-    const onWheelNativo = (e: globalThis.WheelEvent) => {
-      if (!ventana || totalPuntos <= PUNTOS_MINIMOS_VENTANA) return;
-      e.preventDefault();
-
-      const anchoActual = ventana.fin - ventana.inicio;
-      const factor = e.deltaY < 0 ? 0.82 : 1.22;
-      const anchoNuevo = Math.max(
-        PUNTOS_MINIMOS_VENTANA - 1,
-        Math.min(totalPuntos - 1, Math.round(anchoActual * factor)),
-      );
-      const centro = (ventana.inicio + ventana.fin) / 2;
-      const nueva = clampVentana({
-        inicio: Math.round(centro - anchoNuevo / 2),
-        fin: Math.round(centro + anchoNuevo / 2),
+    // El toggle de tema claro/oscuro cambia `data-theme` en <html> — el
+    // gráfico no se entera solo porque sus colores son valores fijos, no
+    // variables CSS (pinta en un <canvas>), así que se reaplican a mano.
+    const observador = new MutationObserver(() => {
+      const texto = leerVariableCss('--text-secondary');
+      const borde = leerVariableCss('--border');
+      const acento = leerVariableCss('--accent');
+      chart.applyOptions({
+        layout: { textColor: texto },
+        grid: { vertLines: { color: borde }, horzLines: { color: borde } },
+        rightPriceScale: { borderColor: borde },
+        timeScale: { borderColor: borde },
       });
-      setVentana(nueva);
+      series.applyOptions({
+        lineColor: acento,
+        topColor: `${acento}33`,
+        bottomColor: `${acento}05`,
+      });
+    });
+    observador.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return () => {
+      observador.disconnect();
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
     };
+  }, []);
 
-    el.addEventListener('wheel', onWheelNativo, { passive: false });
-    return () => el.removeEventListener('wheel', onWheelNativo);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ventana, totalPuntos]);
+  // Actualiza los datos pintados cuando cambia la serie cargada. Los
+  // trimestres sin dato ("n.r" en el origen) se omiten en vez de
+  // interpolarse — se ve como un hueco real en la línea.
+  useEffect(() => {
+    if (!seriesRef.current) return;
+    const datos = serie
+      .filter((p) => p.precio_m2 !== null)
+      .map((p) => ({
+        time: trimestreATimestamp(p.anio, p.trimestre) as UTCTimestamp,
+        value: Number(p.precio_m2),
+      }));
+    seriesRef.current.setData(datos);
+    chartRef.current?.timeScale().fitContent();
+  }, [serie]);
 
-  // Arrastrar con el botón izquierdo del ratón mueve la gráfica en las dos
-  // direcciones: horizontal cambia qué tramo de tiempo se ve (pan de la
-  // ventana de índices), vertical desplaza el rango de precios visible sin
-  // cambiar su amplitud — igual que arrastrar un mapa.
-  const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (!ventana || !dominioY) return;
-    arrastreRef.current = {
-      xInicial: e.clientX,
-      yInicial: e.clientY,
-      ventanaInicial: ventana,
-      dominioYInicial: dominioY,
-    };
-    setArrastrando(true);
-  };
-
-  const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (!arrastreRef.current || !contenedorRef.current) return;
-    const rect = contenedorRef.current.getBoundingClientRect();
-    const { xInicial, yInicial, ventanaInicial, dominioYInicial } = arrastreRef.current;
-
-    const anchoContenedorPx = rect.width || 1;
-    const anchoVentana = ventanaInicial.fin - ventanaInicial.inicio;
-    const dx = e.clientX - xInicial;
-    const deltaIndices = Math.round((-dx / anchoContenedorPx) * anchoVentana);
-    setVentana(
-      clampVentana({
-        inicio: ventanaInicial.inicio + deltaIndices,
-        fin: ventanaInicial.fin + deltaIndices,
-      }),
-    );
-
-    const altoContenedorPx = rect.height || 1;
-    const anchoDominioY = dominioYInicial[1] - dominioYInicial[0];
-    const dy = e.clientY - yInicial;
-    // Arrastrar hacia abajo revela valores más bajos (como desplazarse hacia
-    // abajo por una lista) — el eje Y del gráfico crece hacia arriba.
-    const deltaValor = (dy / altoContenedorPx) * anchoDominioY;
-    setDominioY(clampDominioY([dominioYInicial[0] - deltaValor, dominioYInicial[1] - deltaValor]));
-  };
-
-  const detenerArrastre = () => {
-    arrastreRef.current = null;
-    setArrastrando(false);
-  };
-
-  const resetearZoom = () => {
-    if (totalPuntos > 0) setVentana({ inicio: 0, fin: totalPuntos - 1 });
-    if (dominioYBase) setDominioY(dominioYBase);
-  };
+  const ultimoPunto = [...serie].reverse().find((p) => p.precio_m2 !== null);
 
   return (
     <div className="precios-vivienda">
@@ -275,66 +182,13 @@ export default function PreciosViviendaProvincia() {
 
       {error && <div className="calculator-card-error">{error}</div>}
 
-      <div className="precios-vivienda-grafica-barra">
-        <p className="precios-vivienda-ayuda-zoom">
-          Rueda del ratón para acercar/alejar · arrastra (horizontal o vertical) para desplazarte
-        </p>
-        {!vistaCompleta && (
-          <button type="button" className="precios-vivienda-reset-zoom" onClick={resetearZoom}>
-            Ver todo el histórico
-          </button>
-        )}
-      </div>
+      <p className="precios-vivienda-ayuda-zoom">
+        Rueda del ratón para acercar/alejar · arrastra para desplazarte
+      </p>
 
-      <div
-        ref={contenedorRef}
-        className={`precios-vivienda-grafica${arrastrando ? ' precios-vivienda-grafica--arrastrando' : ''}`}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={detenerArrastre}
-        onMouseLeave={detenerArrastre}
-      >
-        {cargandoSerie ? (
-          <p className="precios-vivienda-cargando">Cargando…</p>
-        ) : datosVisibles.length === 0 ? (
-          <p className="precios-vivienda-cargando">Sin datos todavía para esta selección.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={360}>
-            <LineChart data={datosVisibles} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis
-                dataKey="etiqueta"
-                tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
-                width={60}
-                tickFormatter={(v: number) => `${Math.round(v)}€`}
-                domain={dominioY ?? ['auto', 'auto']}
-                allowDataOverflow
-              />
-              <Tooltip
-                formatter={(value) => (value === null || value === undefined ? 'sin dato' : formatEUR(Number(value)))}
-                contentStyle={{
-                  background: 'var(--bg-primary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 8,
-                  fontSize: 13,
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="precio"
-                stroke="var(--accent)"
-                strokeWidth={2}
-                dot={false}
-                connectNulls
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
+      <div className="precios-vivienda-grafica">
+        {cargandoSerie && <p className="precios-vivienda-cargando precios-vivienda-cargando--flotante">Cargando…</p>}
+        <div ref={contenedorRef} className="precios-vivienda-lienzo" />
       </div>
 
       <p className="precios-vivienda-nota">

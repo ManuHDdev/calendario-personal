@@ -1,23 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { etiquetaTrimestre, aDatosGrafica, formatearHace } from './preciosVivienda';
+import { formatearHace, trimestreATimestamp } from './preciosVivienda';
 
-describe('etiquetaTrimestre', () => {
-  it('formatea año y trimestre', () => {
-    expect(etiquetaTrimestre(2024, 1)).toBe('T1 2024');
-    expect(etiquetaTrimestre(1995, 4)).toBe('T4 1995');
+describe('trimestreATimestamp', () => {
+  it('convierte T1 2024 al 1 de enero de 2024 en segundos UTC', () => {
+    expect(trimestreATimestamp(2024, 1)).toBe(Date.UTC(2024, 0, 1) / 1000);
   });
-});
 
-describe('aDatosGrafica', () => {
-  it('adapta la serie de la API al formato de Recharts, preservando null', () => {
-    const resultado = aDatosGrafica([
-      { ambito: 'provincia', nombre: 'Almería', comunidad_autonoma: 'Andalucía', anio: 2024, trimestre: 1, precio_m2: 1218.1 },
-      { ambito: 'provincia', nombre: 'Almería', comunidad_autonoma: 'Andalucía', anio: 2024, trimestre: 2, precio_m2: null },
-    ]);
-    expect(resultado).toEqual([
-      { etiqueta: 'T1 2024', precio: 1218.1 },
-      { etiqueta: 'T2 2024', precio: null },
-    ]);
+  it('convierte T4 1995 al 1 de octubre de 1995', () => {
+    expect(trimestreATimestamp(1995, 4)).toBe(Date.UTC(1995, 9, 1) / 1000);
   });
 });
 
