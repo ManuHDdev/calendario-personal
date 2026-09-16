@@ -1112,6 +1112,7 @@ del backend excepto `/health` exigen JWT válido con rol `admin` o `invitado`.
 7. Deuda buena vs. deuda mala (amortización francesa + fondo de reserva)
 8. Hipoteca: TIN vs. TAE
 9. Comprar para alquilar (rentabilidad)
+10. Pérdida de poder adquisitivo por inflación (dinero parado, sin invertir)
 
 ### Histórico de precio de vivienda por provincia (nuevo)
 Gráfica de línea temporal (Recharts) del precio medio de vivienda libre

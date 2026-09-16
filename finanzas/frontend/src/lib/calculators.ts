@@ -1060,3 +1060,45 @@ export function simularProyeccionAlquiler(
     retornoTotalAnualizadoPct,
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// 10. Pérdida de poder adquisitivo por inflación (dinero parado, sin invertir)
+// ─────────────────────────────────────────────────────────────────────────
+
+export interface PerdidaPoderAdquisitivoInput {
+  capitalInicial: number;
+  inflacionAnualPct: number;
+  anios: number;
+}
+
+export interface PerdidaPoderAdquisitivoResultado {
+  valorRealFuturo: number; // poder de compra del capital dentro de `anios`, en euros de hoy
+  perdidaPoderAdquisitivo: number; // capitalInicial - valorRealFuturo
+  perdidaPorcentual: number; // % del capital que se pierde en poder de compra
+  nominalNecesarioParaIgualarHoy: number; // lo que haría falta tener entonces, en euros nominales, para comprar lo mismo que hoy
+}
+
+export function calcularPerdidaPoderAdquisitivo(
+  input: PerdidaPoderAdquisitivoInput,
+): PerdidaPoderAdquisitivoResultado {
+  const { capitalInicial, inflacionAnualPct, anios } = input;
+
+  validarNoNegativo(capitalInicial, 'El capital inicial');
+  validarNoNegativo(inflacionAnualPct, 'La inflación anual');
+  if (!Number.isFinite(anios) || anios <= 0) {
+    throw new Error('Los años deben ser mayor que cero');
+  }
+
+  const factor = Math.pow(1 + inflacionAnualPct / 100, anios);
+  const valorRealFuturo = capitalInicial / factor;
+  const perdidaPoderAdquisitivo = capitalInicial - valorRealFuturo;
+  const perdidaPorcentual = capitalInicial > 0 ? (perdidaPoderAdquisitivo / capitalInicial) * 100 : 0;
+  const nominalNecesarioParaIgualarHoy = capitalInicial * factor;
+
+  return {
+    valorRealFuturo,
+    perdidaPoderAdquisitivo,
+    perdidaPorcentual,
+    nominalNecesarioParaIgualarHoy,
+  };
+}
