@@ -20,6 +20,52 @@
   min-width: 240px;
 }
 
+.precios-vivienda-cabecera-derecha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.precios-vivienda-ampliar {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: background 150ms ease;
+}
+
+.precios-vivienda-ampliar:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* Overlay de pantalla casi completa para leer la gráfica con muchos puntos
+   (histórico trimestral desde 1995) sin el corsé de la tarjeta normal. */
+.precios-vivienda-overlay-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: color-mix(in srgb, black 55%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.precios-vivienda-overlay {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 1400px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+
 .precios-vivienda-ultimo {
   display: flex;
   flex-direction: column;
