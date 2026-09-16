@@ -22,6 +22,19 @@ export default function PreciosViviendaProvincia() {
   const [cargandoLista, setCargandoLista] = useState(true);
   const [cargandoSerie, setCargandoSerie] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ampliada, setAmpliada] = useState(false);
+
+  // Con ~30 años de histórico trimestral hay muchos puntos: en el tamaño
+  // normal de la tarjeta cuesta leerlos. "Ampliar" abre la gráfica en un
+  // overlay a pantalla casi completa; Escape la cierra igual que el botón.
+  useEffect(() => {
+    if (!ampliada) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAmpliada(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [ampliada]);
 
   useEffect(() => {
     let cancelado = false;
@@ -64,25 +77,64 @@ export default function PreciosViviendaProvincia() {
   const datosGrafica = aDatosGrafica(serie);
   const ultimoPunto = [...serie].reverse().find((p) => p.precio_m2 !== null);
 
-  return (
-    <div className="precios-vivienda">
-      <div className="precios-vivienda-cabecera">
-        <div className="calculator-select">
-          <span>Provincia / ámbito</span>
-          <select
-            value={seleccion}
-            onChange={(e) => setSeleccion(e.target.value)}
-            disabled={cargandoLista}
-          >
-            <option value={TOTAL_NACIONAL}>Total nacional</option>
-            {provincias.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </div>
+  const grafica = (alturaChart: number) => (
+    <div className="precios-vivienda-grafica" style={{ minHeight: alturaChart }}>
+      {cargandoSerie ? (
+        <p className="precios-vivienda-cargando">Cargando…</p>
+      ) : datosGrafica.length === 0 ? (
+        <p className="precios-vivienda-cargando">Sin datos todavía para esta selección.</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={alturaChart}>
+          <LineChart data={datosGrafica} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis
+              dataKey="etiqueta"
+              tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
+              width={60}
+              tickFormatter={(v: number) => `${v}€`}
+            />
+            <Tooltip
+              formatter={(value) => (value === null || value === undefined ? 'sin dato' : formatEUR(Number(value)))}
+              contentStyle={{
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                fontSize: 13,
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="precio"
+              stroke="var(--accent)"
+              strokeWidth={2}
+              dot={false}
+              connectNulls
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
 
+  const cabecera = (
+    <div className="precios-vivienda-cabecera">
+      <div className="calculator-select">
+        <span>Provincia / ámbito</span>
+        <select value={seleccion} onChange={(e) => setSeleccion(e.target.value)} disabled={cargandoLista}>
+          <option value={TOTAL_NACIONAL}>Total nacional</option>
+          {provincias.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="precios-vivienda-cabecera-derecha">
         {ultimoPunto && (
           <div className="precios-vivienda-ultimo">
             <span className="precios-vivienda-ultimo-valor">{formatEUR(ultimoPunto.precio_m2 ?? 0)}/m²</span>
@@ -91,63 +143,52 @@ export default function PreciosViviendaProvincia() {
             </span>
           </div>
         )}
+        <button
+          type="button"
+          className="precios-vivienda-ampliar"
+          onClick={() => setAmpliada((a) => !a)}
+          aria-label={ampliada ? 'Reducir gráfica' : 'Ampliar gráfica'}
+        >
+          {ampliada ? '⤡ Reducir' : '⤢ Ampliar'}
+        </button>
       </div>
-
-      {error && <div className="calculator-card-error">{error}</div>}
-
-      <div className="precios-vivienda-grafica">
-        {cargandoSerie ? (
-          <p className="precios-vivienda-cargando">Cargando…</p>
-        ) : datosGrafica.length === 0 ? (
-          <p className="precios-vivienda-cargando">Sin datos todavía para esta selección.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={360}>
-            <LineChart data={datosGrafica} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis
-                dataKey="etiqueta"
-                tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
-                width={60}
-                tickFormatter={(v: number) => `${v}€`}
-              />
-              <Tooltip
-                formatter={(value) => (value === null || value === undefined ? 'sin dato' : formatEUR(Number(value)))}
-                contentStyle={{
-                  background: 'var(--bg-primary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 8,
-                  fontSize: 13,
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="precio"
-                stroke="var(--accent)"
-                strokeWidth={2}
-                dot={false}
-                connectNulls
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      <p className="precios-vivienda-nota">
-        Fuente: Ministerio de Transportes y Movilidad Sostenible (valor tasado medio de vivienda
-        libre, €/m²). No es un dato en directo — se actualiza periódicamente.{' '}
-        {estado && (
-          <>
-            Última actualización: <strong>{formatearHace(estado.ultima_ejecucion)}</strong>
-            {estado.ultima_ejecucion_ok === false && (
-              <span className="precios-vivienda-aviso"> (la última importación falló, mostrando el último dato disponible)</span>
-            )}
-          </>
-        )}
-      </p>
     </div>
+  );
+
+  const nota = (
+    <p className="precios-vivienda-nota">
+      Fuente: Ministerio de Transportes y Movilidad Sostenible (valor tasado medio de vivienda
+      libre, €/m²). No es un dato en directo — se actualiza periódicamente.{' '}
+      {estado && (
+        <>
+          Última actualización: <strong>{formatearHace(estado.ultima_ejecucion)}</strong>
+          {estado.ultima_ejecucion_ok === false && (
+            <span className="precios-vivienda-aviso"> (la última importación falló, mostrando el último dato disponible)</span>
+          )}
+        </>
+      )}
+    </p>
+  );
+
+  return (
+    <>
+      <div className="precios-vivienda">
+        {cabecera}
+        {error && <div className="calculator-card-error">{error}</div>}
+        {grafica(360)}
+        {nota}
+      </div>
+
+      {ampliada && (
+        <div className="precios-vivienda-overlay-fondo" onClick={() => setAmpliada(false)}>
+          <div className="precios-vivienda-overlay" onClick={(e) => e.stopPropagation()}>
+            {cabecera}
+            {error && <div className="calculator-card-error">{error}</div>}
+            {grafica(window.innerHeight - 260)}
+            {nota}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
