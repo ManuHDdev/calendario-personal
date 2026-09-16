@@ -3,7 +3,7 @@ import type { UserOut, UserFormData } from '../types';
 import PasswordInput from './PasswordInput';
 import './UserModal.css';
 
-const ALL_ROLES = ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'mapacyd_invitado', 'reparto_admin', 'reparto_invitado'];
+const ALL_ROLES = ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'mapacyd_invitado', 'reparto_admin', 'reparto_invitado', 'mensajeria_admin', 'mensajeria_invitado'];
 
 interface Props {
   user: UserOut | null; // null = crear
@@ -60,6 +60,8 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
     mapacyd_invitado: 'Invitado MapaCYD',
     reparto_admin: 'Admin Reparto',
     reparto_invitado: 'Invitado Reparto',
+    mensajeria_admin: 'Admin Mensajería',
+    mensajeria_invitado: 'Invitado Mensajería',
   };
   const roleColors: Record<string, string> = {
     admin: '#0071e3',
@@ -70,6 +72,8 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
     mapacyd_invitado: '#8fd9a8',
     reparto_admin: '#a2845e',
     reparto_invitado: '#c7ab8c',
+    mensajeria_admin: '#0a84c7',
+    mensajeria_invitado: '#8ecdea',
   };
 
   return (

@@ -66,6 +66,20 @@
         "composite": false,
         "clientRole": false,
         "containerId": "calendario"
+      },
+      {
+        "name": "mensajeria_admin",
+        "description": "Administrador de Mensajería — envío de mensajes de prueba (email/SMS/llamada)",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
+      },
+      {
+        "name": "mensajeria_invitado",
+        "description": "Invitado de Mensajería — solo consulta del inbox/log",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
       }
     ],
     "client": {
