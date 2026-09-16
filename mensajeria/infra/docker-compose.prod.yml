@@ -1,0 +1,67 @@
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  mensajeria-db:
+    image: postgres:15
+    container_name: mensajeria-db
+    environment:
+      POSTGRES_DB:       ${MENSAJERIA_DB_NAME}
+      POSTGRES_USER:     ${MENSAJERIA_DB_USER}
+      POSTGRES_PASSWORD: ${MENSAJERIA_DB_PASSWORD}
+    volumes:
+      - mensajeria_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MENSAJERIA_DB_USER} -d ${MENSAJERIA_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calendario-net
+
+  mensajeria-backend:
+    image: ghcr.io/manuhddev/mensajeria-backend:latest
+    container_name: mensajeria-backend
+    environment:
+      PORT:                     3015
+      MENSAJERIA_DB_HOST:       mensajeria-db
+      MENSAJERIA_DB_NAME:       ${MENSAJERIA_DB_NAME}
+      MENSAJERIA_DB_USER:       ${MENSAJERIA_DB_USER}
+      MENSAJERIA_DB_PASSWORD:   ${MENSAJERIA_DB_PASSWORD}
+      KEYCLOAK_CERTS_URL:       ${KEYCLOAK_CERTS_URL}
+      CORS_ORIGIN:              ${CORS_ORIGIN}
+      MENSAJERIA_MODE:          ${MENSAJERIA_MODE:-mock}
+      MENSAJERIA_SMTP_PORT:     ${MENSAJERIA_SMTP_PORT:-2525}
+      TWILIO_ACCOUNT_SID:       ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN:        ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER:       ${TWILIO_FROM_NUMBER:-}
+      SENDGRID_API_KEY:         ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL:      ${SENDGRID_FROM_EMAIL:-}
+      NODE_ENV:                 production
+    depends_on:
+      mensajeria-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3015/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - calendario-net
+
+  mensajeria-frontend:
+    image: ghcr.io/manuhddev/mensajeria-frontend:latest
+    container_name: mensajeria-frontend
+    depends_on:
+      - mensajeria-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+volumes:
+  mensajeria_pgdata:
