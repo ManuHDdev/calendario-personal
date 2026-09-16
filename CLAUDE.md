@@ -1115,12 +1115,28 @@ del backend excepto `/health` exigen JWT válido con rol `admin` o `invitado`.
 10. Pérdida de poder adquisitivo por inflación (dinero parado, sin invertir)
 
 ### Histórico de precio de vivienda por provincia (nuevo)
-Gráfica de línea temporal (Recharts) del precio medio de vivienda libre
-(€/m²) por provincia/comunidad autónoma/total nacional, con datos reales del
+Gráfica de línea temporal del precio medio de vivienda libre (€/m²) por
+provincia/comunidad autónoma/total nacional, con datos reales del
 Ministerio de Transportes y Movilidad Sostenible, actualizados
 periódicamente. Fuente: `https://apps.fomento.gob.es/BoletinOnline2/sedal/35101000.XLS`
 ("Tabla 1: Valor tasado medio de vivienda libre"), histórico trimestral
 desde 1995, 8 hojas (~4 años cada una).
+
+**Gráfica: `lightweight-charts` (TradingView), no Recharts.** Primera
+versión usaba Recharts con zoom/pan hecho a mano (rueda del ratón +
+arrastre reimplementados desde cero) — quedó con varios bugs sutiles
+(dominio Y mal calculado, ticks con ruido de coma flotante,
+`preventDefault` roto por el modo pasivo de `onWheel` en React 17+) y una
+UX peor que la ya resuelta en `crypto-trader` (`PriceChart.tsx`/
+`EquityChart.tsx`), que usa `lightweight-charts` con zoom/pan, autoescala
+del eje de precio y ajuste al contenedor ya integrados de fábrica.
+Sustituida por completo por esa misma librería, mismo patrón que Trader:
+`createChart` + `AreaSeries`, `autoSize: true`, `timeScale().fitContent()`
+tras cargar datos. Los colores se leen de las variables CSS del
+tema (`--accent`, `--border`, `--text-secondary`) en la creación y se
+reaplican con un `MutationObserver` sobre `data-theme` cuando el usuario
+cambia de claro a oscuro, porque el gráfico pinta en un `<canvas>` y no
+sigue las variables CSS por sí solo.
 
 **Clasificación de filas (ambito nacional/ccaa/provincia) — NO se hace por
 heurística de formato.** Se verificó contra el fichero real que "provincia =

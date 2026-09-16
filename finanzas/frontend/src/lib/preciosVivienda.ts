@@ -1,27 +1,10 @@
-import type { PrecioViviendaPunto } from '../services/api';
-
-/** "T1 2024" — etiqueta corta para el eje X de la gráfica. */
-export function etiquetaTrimestre(anio: number, trimestre: number): string {
-  return `T${trimestre} ${anio}`;
-}
-
-export interface PuntoGrafica {
-  etiqueta: string;
-  precio: number | null;
-}
-
-/** Adapta la serie que devuelve la API al formato que consume Recharts. */
-export function aDatosGrafica(puntos: PrecioViviendaPunto[]): PuntoGrafica[] {
-  return puntos.map((p) => ({
-    etiqueta: etiquetaTrimestre(p.anio, p.trimestre),
-    // Postgres devuelve NUMERIC como string en el JSON (p.ej. "670.80"), no
-    // como number, aunque el tipo `PrecioViviendaPunto.precio_m2: number |
-    // null` diga lo contrario — hay que convertirlo explícitamente. Antes
-    // pasaba desapercibido porque Recharts renderiza la línea igual con un
-    // string (coerción implícita), pero cualquier cálculo propio que use
-    // Number.isFinite(...) sobre ese valor falla siempre con un string.
-    precio: p.precio_m2 === null ? null : Number(p.precio_m2),
-  }));
+/**
+ * El origen es trimestral (año + trimestre), no una fecha exacta — se
+ * representa cada punto como el primer día de ese trimestre, en segundos
+ * UTC (formato que espera `lightweight-charts` para el eje de tiempo).
+ */
+export function trimestreATimestamp(anio: number, trimestre: number): number {
+  return Date.UTC(anio, (trimestre - 1) * 3, 1) / 1000;
 }
 
 /** "hace 3 días" / "hace 2 meses" — para mostrar cuándo se actualizó por última vez. */
