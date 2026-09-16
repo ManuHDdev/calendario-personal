@@ -10,6 +10,7 @@ import ColchonCalculator from '../components/calculators/ColchonCalculator';
 import DeudaCalculator from '../components/calculators/DeudaCalculator';
 import HipotecaTinTaeCalculator from '../components/calculators/HipotecaTinTaeCalculator';
 import AlquilerRentabilidadCalculator from '../components/calculators/AlquilerRentabilidadCalculator';
+import PerdidaPoderAdquisitivoCalculator from '../components/calculators/PerdidaPoderAdquisitivoCalculator';
 import PreciosViviendaProvincia from '../components/PreciosViviendaProvincia';
 import './FinanzasPage.css';
 
@@ -29,6 +30,11 @@ const CALCULADORAS: CalculadoraDef[] = [
   { id: 'deuda', nombre: 'Deuda buena vs. mala', Componente: DeudaCalculator },
   { id: 'hipoteca-tin-tae', nombre: 'Hipoteca: TIN vs. TAE', Componente: HipotecaTinTaeCalculator },
   { id: 'alquiler-rentabilidad', nombre: 'Comprar para alquilar', Componente: AlquilerRentabilidadCalculator },
+  {
+    id: 'perdida-poder-adquisitivo',
+    nombre: 'Pérdida de poder adquisitivo',
+    Componente: PerdidaPoderAdquisitivoCalculator,
+  },
   { id: 'precios-vivienda', nombre: 'Precios de vivienda por provincia', Componente: PreciosViviendaProvincia },
 ];
 

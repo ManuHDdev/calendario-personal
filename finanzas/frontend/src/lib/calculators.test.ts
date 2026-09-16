@@ -13,6 +13,7 @@ import {
   calcularHipotecaTinTae,
   calcularAlquilerRentabilidad,
   simularProyeccionAlquiler,
+  calcularPerdidaPoderAdquisitivo,
 } from './calculators';
 
 describe('calcularInteresCompuesto', () => {
@@ -617,5 +618,37 @@ describe('simularProyeccionAlquiler', () => {
     expect(resultado.retornoTotalAnualizadoPct).toBeLessThan(resultado.retornoTotalFinalSobreInversionPct);
     const multiploReconstruido = Math.pow(1 + resultado.retornoTotalAnualizadoPct / 100, 25);
     expect((multiploReconstruido - 1) * 100).toBeCloseTo(resultado.retornoTotalFinalSobreInversionPct, 2);
+  });
+});
+
+describe('calcularPerdidaPoderAdquisitivo', () => {
+  it('10.000€ al 3% de inflación durante 10 años (verificado a mano)', () => {
+    // 1.03^10 ≈ 1.343916379
+    const r = calcularPerdidaPoderAdquisitivo({
+      capitalInicial: 10000,
+      inflacionAnualPct: 3,
+      anios: 10,
+    });
+    expect(r.valorRealFuturo).toBeCloseTo(7440.94, 2);
+    expect(r.perdidaPoderAdquisitivo).toBeCloseTo(2559.06, 2);
+    expect(r.perdidaPorcentual).toBeCloseTo(25.59, 2);
+    expect(r.nominalNecesarioParaIgualarHoy).toBeCloseTo(13439.16, 2);
+  });
+
+  it('sin inflación (0%), el valor real no cambia', () => {
+    const r = calcularPerdidaPoderAdquisitivo({ capitalInicial: 5000, inflacionAnualPct: 0, anios: 20 });
+    expect(r.valorRealFuturo).toBeCloseTo(5000, 5);
+    expect(r.perdidaPoderAdquisitivo).toBeCloseTo(0, 5);
+    expect(r.perdidaPorcentual).toBeCloseTo(0, 5);
+  });
+
+  it('rechaza un plazo de cero años', () => {
+    expect(() => calcularPerdidaPoderAdquisitivo({ capitalInicial: 1000, inflacionAnualPct: 3, anios: 0 })).toThrow();
+  });
+
+  it('rechaza una inflación negativa', () => {
+    expect(() =>
+      calcularPerdidaPoderAdquisitivo({ capitalInicial: 1000, inflacionAnualPct: -1, anios: 5 }),
+    ).toThrow();
   });
 });
