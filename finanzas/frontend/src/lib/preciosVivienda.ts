@@ -14,7 +14,13 @@ export interface PuntoGrafica {
 export function aDatosGrafica(puntos: PrecioViviendaPunto[]): PuntoGrafica[] {
   return puntos.map((p) => ({
     etiqueta: etiquetaTrimestre(p.anio, p.trimestre),
-    precio: p.precio_m2,
+    // Postgres devuelve NUMERIC como string en el JSON (p.ej. "670.80"), no
+    // como number, aunque el tipo `PrecioViviendaPunto.precio_m2: number |
+    // null` diga lo contrario — hay que convertirlo explícitamente. Antes
+    // pasaba desapercibido porque Recharts renderiza la línea igual con un
+    // string (coerción implícita), pero cualquier cálculo propio que use
+    // Number.isFinite(...) sobre ese valor falla siempre con un string.
+    precio: p.precio_m2 === null ? null : Number(p.precio_m2),
   }));
 }
 
