@@ -69,7 +69,7 @@ export async function preciosViviendaRoutes(app: FastifyInstance): Promise<void>
         // incluya, ver xlsParser.ts). Sin este filtro, esas 7 regiones
         // devolverían cada punto dos veces. Se prefiere 'provincia' cuando
         // existen ambas variantes.
-        const result = await pool.query(
+        const result = await pool.query<{ precio_m2: string | null; [key: string]: unknown }>(
           `SELECT DISTINCT ON (anio, trimestre)
              ambito, nombre, comunidad_autonoma, anio, trimestre, precio_m2
            FROM precio_vivienda
@@ -77,7 +77,15 @@ export async function preciosViviendaRoutes(app: FastifyInstance): Promise<void>
            ORDER BY anio, trimestre, (ambito = 'provincia') DESC`,
           [parsed.data.nombre],
         );
-        return reply.send(result.rows);
+        // node-pg devuelve NUMERIC como string (para no perder precisión) —
+        // hay que convertirlo a number explícitamente, si no el frontend
+        // recibe "670.80" entre comillas y cualquier cálculo con
+        // Number.isFinite/Math.min/Math.max sobre ese valor falla en silencio.
+        const filas = result.rows.map((r) => ({
+          ...r,
+          precio_m2: r.precio_m2 === null ? null : Number(r.precio_m2),
+        }));
+        return reply.send(filas);
       } catch (err) {
         return reply.code(500).send({ error: err instanceof Error ? err.message : 'Error interno', statusCode: 500 });
       }
