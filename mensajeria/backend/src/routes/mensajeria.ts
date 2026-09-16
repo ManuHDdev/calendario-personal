@@ -38,6 +38,10 @@ export async function mensajeriaRoutes(app: FastifyInstance): Promise<void> {
         const result = await adapter.send(input);
         return reply.send({ channel: 'call', ...result });
       } catch (err) {
+        request.log.error(
+          { channel: parsed.data.channel, to: parsed.data.to, err: err instanceof Error ? err.message : err },
+          'mensajeria: fallo al enviar mensaje de prueba',
+        );
         return reply.code(500).send({
           error: err instanceof Error ? err.message : 'Error interno',
           statusCode: 500,

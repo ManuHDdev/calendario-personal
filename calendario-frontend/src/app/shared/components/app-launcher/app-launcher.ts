@@ -72,7 +72,7 @@ export class AppLauncher {
     { id: 'finanzas',   nombre: 'Finanzas',   color: '#eab308', roles: ['admin', 'invitado'], url: '' },
     // mensajeria: mensajes de prueba (email/sms/llamada) para test de OTP,
     // uso exclusivo del propietario.
-    { id: 'mensajeria', nombre: 'Mensajería', color: '#5ac8fa', roles: ['admin'], url: '' },
+    { id: 'mensajeria', nombre: 'Mensajería', color: '#5ac8fa', roles: ['admin', 'mensajeria_admin', 'mensajeria_invitado'], url: '' },
   ];
 
   get apps(): App[] {

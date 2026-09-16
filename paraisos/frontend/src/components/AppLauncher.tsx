@@ -35,7 +35,7 @@ const APPS: AppDef[] = [
   { id: 'finanzas',   nombre: 'Finanzas',   color: '#eab308', roles: ['admin', 'invitado'] },
   // mensajeria: mensajes de prueba (email/sms/llamada) para test de OTP,
   // uso exclusivo del propietario.
-  { id: 'mensajeria', nombre: 'Mensajería', color: '#5ac8fa', roles: ['admin'] },
+  { id: 'mensajeria', nombre: 'Mensajería', color: '#5ac8fa', roles: ['admin', 'mensajeria_admin', 'mensajeria_invitado'] },
 ];
 
 function getUrls(): Record<string, string> {
