@@ -85,6 +85,17 @@ function normalizarNombre(raw: string): string {
   return raw.replace(/\s+/g, ' ').trim();
 }
 
+// Variantes de nombre que aparecen en ALGUNAS hojas históricas del mismo
+// fichero pero no en otras (el propio Ministerio no es consistente consigo
+// mismo entre décadas). Verificado contra las 8 hojas del fichero real
+// (2026-09-16): de 65 nombres distintos, esta es la ÚNICA inconsistencia —
+// la hoja "2015, 2016, 2017, 2018" abrevia Navarra como "(Com. Foral de)"
+// mientras las otras 7 hojas usan "(Comunidad Foral de)". El alias resuelve
+// a la MISMA fila canónica, así que no crea una serie separada en la BD.
+const ALIAS: Record<string, string> = {
+  'Navarra (Com. Foral de)': 'Navarra (Comunidad Foral de)',
+};
+
 function construirLookup(): Map<string, Clasificacion[]> {
   const lookup = new Map<string, Clasificacion[]>();
 
@@ -107,6 +118,11 @@ function construirLookup(): Map<string, Clasificacion[]> {
         add(provincia, { ambito: 'provincia', nombre: provincia, comunidad_autonoma: ccaa });
       }
     }
+  }
+
+  for (const [alias, canonico] of Object.entries(ALIAS)) {
+    const clasificaciones = lookup.get(canonico);
+    if (clasificaciones) lookup.set(alias, clasificaciones);
   }
 
   return lookup;

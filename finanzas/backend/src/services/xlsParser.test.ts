@@ -47,6 +47,12 @@ function construirWorkbookSintetico(): Buffer {
     // ese espacio exacto, esta fila no hace match y Asturias desaparece en
     // silencio de cada importación (bug real encontrado y corregido).
     ['', 'Asturias (Principado de )', 1600, 1610, 1620, 1630, 1640, 1650, 1660, 1670],
+    // El propio fichero real NO es consistente consigo mismo entre hojas:
+    // la hoja "2015-2018" abrevia Navarra así, mientras las otras 7 hojas
+    // usan "Navarra (Comunidad Foral de)" — verificado contra las 8 hojas
+    // del fichero real el 2026-09-16 (bug real detectado en producción:
+    // Navarra desaparecía de esa franja de años en cada importación).
+    ['', 'Navarra (Com. Foral de)', 1700, 1710, 1720, 1730, 1740, 1750, 1760, 1770],
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(filas);
@@ -119,5 +125,15 @@ describe('xlsParser', () => {
     );
     expect(comoComunidad).toBeDefined();
     expect(comoProvincia).toBeDefined();
+  });
+
+  it('reconoce Navarra abreviada ("Com. Foral de") y la resuelve al nombre canónico completo', () => {
+    const comoAlias = filas.filter((f) => f.nombre === 'Navarra (Com. Foral de)');
+    const comoCanonico = filas.filter((f) => f.nombre === 'Navarra (Comunidad Foral de)');
+    // El alias nunca debe aparecer como nombre propio en el resultado — se
+    // resuelve siempre al nombre canónico, para no crear una serie separada.
+    expect(comoAlias.length).toBe(0);
+    expect(comoCanonico.some((f) => f.ambito === 'ccaa')).toBe(true);
+    expect(comoCanonico.some((f) => f.ambito === 'provincia')).toBe(true);
   });
 });
