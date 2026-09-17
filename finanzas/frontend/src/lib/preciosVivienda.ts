@@ -7,6 +7,16 @@ export function trimestreATimestamp(anio: number, trimestre: number): number {
   return Date.UTC(anio, (trimestre - 1) * 3, 1) / 1000;
 }
 
+/**
+ * La variante "por capital" trae un punto por `fecha_captura` (columna DATE,
+ * "YYYY-MM-DD"), no por año+trimestre — se parsea a segundos UTC igual que
+ * `trimestreATimestamp`, para el mismo eje de tiempo de `lightweight-charts`.
+ */
+export function fechaCapturaATimestamp(fechaCaptura: string): number {
+  const [anio, mes, dia] = fechaCaptura.split('-').map(Number);
+  return Date.UTC(anio, mes - 1, dia) / 1000;
+}
+
 /** "hace 3 días" / "hace 2 meses" — para mostrar cuándo se actualizó por última vez. */
 export function formatearHace(fechaIso: string | null): string {
   if (!fechaIso) return 'nunca';

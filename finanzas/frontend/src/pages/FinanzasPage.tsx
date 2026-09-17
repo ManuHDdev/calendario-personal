@@ -11,7 +11,7 @@ import DeudaCalculator from '../components/calculators/DeudaCalculator';
 import HipotecaTinTaeCalculator from '../components/calculators/HipotecaTinTaeCalculator';
 import AlquilerRentabilidadCalculator from '../components/calculators/AlquilerRentabilidadCalculator';
 import PerdidaPoderAdquisitivoCalculator from '../components/calculators/PerdidaPoderAdquisitivoCalculator';
-import PreciosViviendaProvincia from '../components/PreciosViviendaProvincia';
+import PreciosVivienda from '../components/PreciosVivienda';
 import './FinanzasPage.css';
 
 interface CalculadoraDef {
@@ -35,7 +35,7 @@ const CALCULADORAS: CalculadoraDef[] = [
     nombre: 'Pérdida de poder adquisitivo',
     Componente: PerdidaPoderAdquisitivoCalculator,
   },
-  { id: 'precios-vivienda', nombre: 'Precios de vivienda por provincia', Componente: PreciosViviendaProvincia },
+  { id: 'precios-vivienda', nombre: 'Precios de vivienda por provincia', Componente: PreciosVivienda },
 ];
 
 export default function FinanzasPage() {

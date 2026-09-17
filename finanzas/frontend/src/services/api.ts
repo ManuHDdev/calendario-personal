@@ -56,3 +56,42 @@ export async function getEstadoImportacion(): Promise<ImportacionEstado> {
 }
 
 export const TOTAL_NACIONAL = 'TOTAL NACIONAL';
+
+// ───────────────────────────────────────────────────────────────────────────
+// Variante "por capital" (anuncios de Fotocasa/pisos.com) — mismo shape de
+// cliente que las funciones de arriba, contra las rutas nuevas del backend.
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface PrecioViviendaCapitalPunto {
+  fecha_captura: string;
+  precio_m2: number | null;
+  num_anuncios_total: number;
+}
+
+export interface CapitalScraperEstado {
+  ultima_ejecucion: string | null;
+  ultima_ejecucion_ok: boolean | null;
+  capitales_ok: number | null;
+  capitales_fallidas: number | null;
+  error: string | null;
+}
+
+export async function getCapitales(): Promise<string[]> {
+  const res = await fetch(`${BASE}/precios-vivienda/capitales`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<string[]>;
+}
+
+export async function getPreciosViviendaCapital(nombre: string): Promise<PrecioViviendaCapitalPunto[]> {
+  const res = await fetch(`${BASE}/precios-vivienda/capital?nombre=${encodeURIComponent(nombre)}`, {
+    headers: headers(),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<PrecioViviendaCapitalPunto[]>;
+}
+
+export async function getEstadoScraperCapital(): Promise<CapitalScraperEstado> {
+  const res = await fetch(`${BASE}/precios-vivienda/capital/estado`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<CapitalScraperEstado>;
+}

@@ -1176,13 +1176,81 @@ duplica, y actualiza el valor si el Ministerio revisa un dato pasado.
   `portal` desconocido en `pisos`)
 - `GET /precios-vivienda/estado` — última ejecución del importador (cuándo,
   si salió bien, cuántas filas)
+- `GET /precios-vivienda/capitales` — nombres distintos de capital con datos,
+  ordenados alfabéticamente (variante "por capital", ver subsección de abajo)
+- `GET /precios-vivienda/capital?nombre=<capital>` — serie histórica de esa
+  capital, un punto por `fecha_captura`, media ponderada por `num_anuncios`
+  entre los portales que tengan fila ese día. `nombre` desconocido es 400.
+- `GET /precios-vivienda/capital/estado` — última vuelta del scraper de
+  capitales (cuándo, capitales con dato/sin dato, error si la vuelta entera
+  falló)
 - `GET /health`
 
 ### Variables de entorno del backend
 `FINANZAS_DB_HOST`, `FINANZAS_DB_NAME`, `FINANZAS_DB_USER`,
 `FINANZAS_DB_PASSWORD`, `FINANZAS_DB_PORT`, `KEYCLOAK_CERTS_URL`,
 `CORS_ORIGIN`, `PORT` (default `3014`),
-`FINANZAS_INTERVALO_IMPORTACION_HORAS` (default `24`)
+`FINANZAS_INTERVALO_IMPORTACION_HORAS` (default `24`),
+`FINANZAS_INTERVALO_SCRAPER_CAPITAL_HORAS` (default `24`)
+
+### Histórico de precio de vivienda por CAPITAL de provincia (nuevo, complementario)
+Segunda fuente de precio de vivienda, deliberadamente distinta de la del XLS
+del Ministerio: precio medio de OFERTA (anuncios reales de Fotocasa y
+pisos.com), no de tasación oficial, y por CAPITAL de provincia en vez de por
+provincia entera — una capital es sistemáticamente más cara que la media
+rural de su provincia, y el XLS no distingue eso. No sustituye a
+`precio_vivienda`/`importador.ts`: son dos gráficas distintas, conmutables
+con un selector en la misma sección del frontend (`Oficial` vs `Anuncios`),
+nunca mezcladas en la misma serie.
+
+**Módulo de portales — fork deliberado de `pisos/backend/src/portales/`.**
+`backend/src/portales/{http,extraer,normalizar,fotocasa,pisoscom}.ts` son
+copias literales de los mismos ficheros de `pisos` (mismo comentario de
+cabecera, misma lógica, mismos tests adaptados) — es un fork de código propio
+para no acoplar `finanzas` al backend de `pisos`, no una reescritura. El
+único cambio real es de tipos: `portales/types.ts` define `AnuncioCrudo`,
+`PortalId` y `TipoInmueble` localmente en vez de importarlos de
+`pisos/backend/src/types/pisos.ts` (que no existe en este subapp), y
+`fotocasa.ts`/`pisoscom.ts` importan desde ahí. Solo se copian Fotocasa y
+pisos.com — nunca Wallapop (necesita coordenadas, no nombre de ciudad) ni
+Idealista (excluido en todo el monorepo, detrás de DataDome).
+
+**Mapa provincia → capital fijo, no derivado.** `services/capitales.ts`
+(52 entradas, mismo criterio que el mapa canónico de `xlsParser.ts`: la
+geografía no cambia, así que un mapa a mano es más fiable que cualquier
+heurística). Casos no triviales que reutilizan sin cambios la lógica ya
+verificada de `pisos` (`esCapitalDeProvincia`/`slugificar` en
+`normalizar.ts`, que ya cubre estos nombres): A Coruña, Castellón de la
+Plana, Vitoria-Gasteiz, San Sebastián, Santa Cruz de Tenerife, Las Palmas de
+Gran Canaria.
+
+**Scraper secuencial y más conservador que `pisos` (IMPORTANTE).**
+`services/capitalScraper.ts`, patrón calcado de `importador.ts` (`setTimeout`
+encadenado, nunca `setInterval`) pero con su propio intervalo
+(`FINANZAS_INTERVALO_SCRAPER_CAPITAL_HORAS`, default 24h). Recorre las 52
+capitales EN SECUENCIA (nunca en paralelo), una sola página por
+capital+portal (no dos, como en `pisos`: esto es una foto periódica del
+precio medio, no un feed de anuncios nuevos), con una pausa aleatoria de 2-4s
+entre capital y capital — más conservador que el ritmo de `pisos` porque este
+tráfico (52 ciudades seguidas) no se ha probado contra los portales todavía.
+Un capital o portal que falla (bloqueo, red, cero anuncios con precio+m²
+válidos) se loguea y se omite (no inserta fila con precio 0), sin abortar la
+vuelta — mismo principio que "un rastreo parcial nunca debe parecerse a uno
+completo" en `pisos`. `precio_m2_medio` es la media de precio/m² solo entre
+los anuncios que tienen AMBOS datos; upsert idempotente por
+`(capital, portal, fecha_captura)`, extraído como función pura
+(`construirUpsertFilaCapitalQuery`) igual que `importador.ts`.
+
+**Tablas nuevas, y por qué el arranque del backend también las crea.**
+`precio_vivienda_capital` y `capital_scraper_estado` (ver `infra/init.sql`).
+`init.sql` SOLO se ejecuta al crear el volumen de Postgres desde cero — el
+contenedor `finanzas-db` de producción ya existe con datos reales, así que
+editar `init.sql` no basta para desplegar este cambio. Por eso
+`backend/src/services/ensureSchemaCapitales.ts` ejecuta los mismos
+`CREATE TABLE IF NOT EXISTS` en cada arranque del backend, ANTES de arrancar
+el scraper (llamado desde `index.ts` junto a `arrancarImportador`). Los dos
+ficheros llevan un comentario cruzado señalando al otro — si se toca el
+esquema, hay que tocar los dos.
 
 ### nginx — sin bloque `/finanzas/api/` en `nginx/calendario.conf`
 A diferencia de lo que un primer vistazo a `mapacyd` podría sugerir,
