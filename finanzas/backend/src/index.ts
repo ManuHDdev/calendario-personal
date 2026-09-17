@@ -2,6 +2,8 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { preciosViviendaRoutes } from './routes/preciosVivienda';
 import { arrancarImportador } from './services/importador';
+import { arrancarScraperCapitales } from './services/capitalScraper';
+import { ensureSchemaCapitales } from './services/ensureSchemaCapitales';
 
 const isProd = process.env.NODE_ENV === 'production';
 const app = Fastify({ logger: isProd });
@@ -27,11 +29,19 @@ async function bootstrap() {
   await app.listen({ port, host: '0.0.0.0' });
   app.log.info(`Finanzas backend listening on port ${port}`);
 
-  await arrancarImportador({
-    info: (msg) => app.log.info(msg),
-    warn: (msg) => app.log.warn(msg),
-    error: (msg) => app.log.error(msg),
-  });
+  const log = {
+    info: (msg: string) => app.log.info(msg),
+    warn: (msg: string) => app.log.warn(msg),
+    error: (msg: string) => app.log.error(msg),
+  };
+
+  await arrancarImportador(log);
+
+  // Asegura las tablas del scraper de capitales ANTES de arrancarlo — ver el
+  // comentario de ensureSchemaCapitales.ts sobre por qué init.sql no basta
+  // en producción (el volumen de finanzas-db ya existe con datos reales).
+  await ensureSchemaCapitales();
+  await arrancarScraperCapitales(log);
 }
 
 bootstrap().catch((err) => {
