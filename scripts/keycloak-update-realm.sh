@@ -4,10 +4,11 @@
 #
 # Actualiza el realm "calendario" en Keycloak con los roles correctos
 # (admin / familia / invitado / paraisos_admin / mapacyd_admin / mapacyd_invitado /
-# reparto_admin / reparto_invitado / mensajeria_admin / mensajeria_invitado) y
-# asigna los roles admin, paraisos_admin, mapacyd_admin, reparto_admin y
-# mensajeria_admin al usuario "propietario". mapacyd_invitado, reparto_invitado
-# y mensajeria_invitado se crean pero NO se asignan a nadie automáticamente —
+# reparto_admin / reparto_invitado / mensajeria_admin / mensajeria_invitado /
+# tenis_admin / tenis_invitado) y asigna los roles admin, paraisos_admin,
+# mapacyd_admin, reparto_admin, mensajeria_admin y tenis_admin al usuario
+# "propietario". mapacyd_invitado, reparto_invitado, mensajeria_invitado y
+# tenis_invitado se crean pero NO se asignan a nadie automáticamente —
 # existen para asignarse desde Panel (convención documentada para roles
 # "_invitado").
 #
@@ -54,7 +55,7 @@ TOKEN=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).access_token)"
 ok "Token de admin obtenido"
 
 # ── 2. Crear roles si no existen ──────────────────────────────────────────────
-for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin mapacyd_invitado reparto_admin reparto_invitado mensajeria_admin mensajeria_invitado; do
+for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin mapacyd_invitado reparto_admin reparto_invitado mensajeria_admin mensajeria_invitado tenis_admin tenis_invitado; do
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     "$HOST/admin/realms/$REALM/roles" \
     -H "Authorization: Bearer $TOKEN" \
@@ -191,6 +192,30 @@ fi
 # NOTA: 'mensajeria_invitado' se crea en el bucle de arriba pero NO se asigna
 # a nadie aquí — solo lectura del inbox, delegable desde Panel cuando haga falta.
 
+# ── 4f. Asignar rol "tenis_admin" al usuario ────────────────────────────────
+TENIS_ADMIN_ROLE_JSON=$(curl -sf \
+  "$HOST/admin/realms/$REALM/roles/tenis_admin" \
+  -H "Authorization: Bearer $TOKEN")
+
+TENIS_ADMIN_ROLE_ID=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).id)" "$TENIS_ADMIN_ROLE_JSON")
+
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+  "$HOST/admin/realms/$REALM/users/$USER_ID/role-mappings/realm" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "[{\"id\":\"$TENIS_ADMIN_ROLE_ID\",\"name\":\"tenis_admin\"}]")
+
+if [ "$HTTP_STATUS" = "204" ]; then
+  ok "Rol 'tenis_admin' asignado a 'propietario'"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  warn "Rol 'tenis_admin' ya estaba asignado (OK)"
+else
+  warn "Respuesta $HTTP_STATUS al asignar rol (puede que ya lo tenga)"
+fi
+
+# NOTA: 'tenis_invitado' se crea en el bucle de arriba pero NO se asigna a
+# nadie aquí — solo lectura, delegable desde Panel cuando haga falta.
+
 # ── 5. Actualizar redirect URIs del cliente calendario-frontend ───────────────
 CLIENTS_JSON=$(curl -sf \
   "$HOST/admin/realms/$REALM/clients?clientId=calendario-frontend" \
@@ -242,7 +267,7 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Realm actualizado correctamente ✓${NC}"
 echo -e "${GREEN}════════════════════════════════════════${NC}"
 echo ""
-echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, mapacyd_invitado, reparto_admin, reparto_invitado, mensajeria_admin, mensajeria_invitado"
-echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin, reparto_admin, mensajeria_admin"
+echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, mapacyd_invitado, reparto_admin, reparto_invitado, mensajeria_admin, mensajeria_invitado, tenis_admin, tenis_invitado"
+echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin, reparto_admin, mensajeria_admin, tenis_admin"
 echo "  Redirect URIs actualizadas para todos los puertos locales"
 echo ""

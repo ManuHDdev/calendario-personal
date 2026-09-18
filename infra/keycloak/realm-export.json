@@ -80,6 +80,20 @@
         "composite": false,
         "clientRole": false,
         "containerId": "calendario"
+      },
+      {
+        "name": "tenis_admin",
+        "description": "Administrador de Tenis — gestión completa del predictor de tenis",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
+      },
+      {
+        "name": "tenis_invitado",
+        "description": "Invitado de Tenis — solo consulta",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
       }
     ],
     "client": {
