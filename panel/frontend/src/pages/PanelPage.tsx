@@ -20,6 +20,8 @@ const ROLE_LABEL: Record<string, string> = {
   reparto_invitado: 'Invitado Reparto',
   mensajeria_admin: 'Admin Mensajería',
   mensajeria_invitado: 'Invitado Mensajería',
+  tenis_admin: 'Admin Tenis',
+  tenis_invitado: 'Invitado Tenis',
 };
 const ROLE_COLOR: Record<string, string> = {
   admin: '#0071e3',
@@ -32,6 +34,8 @@ const ROLE_COLOR: Record<string, string> = {
   reparto_invitado: '#c7ab8c',
   mensajeria_admin: '#0a84c7',
   mensajeria_invitado: '#8ecdea',
+  tenis_admin: '#8bc900',
+  tenis_invitado: '#d4f21e',
 };
 
 export default function PanelPage() {
@@ -153,13 +157,13 @@ export default function PanelPage() {
                       <td className="user-email">{u.email || <span className="no-data">—</span>}</td>
                       <td>
                         <div className="role-badges">
-                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin','mapacyd_invitado','reparto_admin','reparto_invitado','mensajeria_admin','mensajeria_invitado'].includes(r)).map((r) => (
+                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin','mapacyd_invitado','reparto_admin','reparto_invitado','mensajeria_admin','mensajeria_invitado','tenis_admin','tenis_invitado'].includes(r)).map((r) => (
                             <span key={r} className="role-badge"
                               style={{ '--role-color': ROLE_COLOR[r] ?? '#aeaeb2' } as React.CSSProperties}>
                               {ROLE_LABEL[r] ?? r}
                             </span>
                           ))}
-                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin','mapacyd_invitado','reparto_admin','reparto_invitado','mensajeria_admin','mensajeria_invitado'].includes(r)).length === 0 && (
+                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin','mapacyd_invitado','reparto_admin','reparto_invitado','mensajeria_admin','mensajeria_invitado','tenis_admin','tenis_invitado'].includes(r)).length === 0 && (
                             <span className="no-data">Sin rol</span>
                           )}
                         </div>

@@ -1073,6 +1073,40 @@ los tenga, y no hace nada si ya están.
 
 ---
 
+## Tenis (Tennis Predictor) — Predicción de resultados de tenis
+
+### Ubicación
+Repo independiente `tennis-predictor/` (fuera de este monorepo), bajo
+`/tenis/` — mismo patrón que Fútbol (Football Predictor): repo standalone
+con su propio stack, unido a `calendario-net`. Este documento solo cubre el
+registro/plumbing de este monorepo (AppLauncher, roles de Keycloak, nginx,
+Panel); el backend/frontend del predictor de tenis vive y se despliega
+enteramente en `tennis-predictor/`.
+
+### Auth (a implementar en `tennis-predictor`, no en este repo)
+Realm `calendario`, cliente compartido `calendario-frontend` (sin cliente
+propio, sin redirect URIs nuevas) — mismo patrón que Fútbol. El backend de
+`tennis-predictor` debe verificar el JWT contra el JWKS de ese realm y
+aplicar, en su equivalente de `authMiddleware`/guard de rol:
+- Rutas de escritura → roles `admin` o `tenis_admin`
+- Rutas de lectura → roles `admin`, `familia`, `tenis_admin` o `tenis_invitado`
+
+(mismo patrón documentado para el resto de subapps con roles delegados —
+ver sección "Sistema de roles" más abajo).
+
+### nginx
+Los bloques `/tenis/` y `/tenis/api/` viven en `nginx/calendario.conf` de
+este repo (como los de `futbol`), proxeando a `tennis-predictor-frontend-1`
+y `tennis-predictor-backend-1` respectivamente — los contenedores reales los
+levanta el propio `tennis-predictor` con su compose, no este repo.
+
+### AppLauncher
+Entrada `tenis` añadida a las 16 copias internas (id, nombre, color
+`#d4f21e`, icono de pelota de tenis, `roles: ['admin']` — visible solo para
+`admin`, convención por defecto para subapps nuevas).
+
+---
+
 ## Finanzas — calculadoras financieras + histórico de precio de vivienda
 
 ### Ubicación
@@ -1356,8 +1390,9 @@ Frontend `:5188`, backend `:3015`.
 
 ## Sistema de roles (OBLIGATORIO conocer)
 
-Los diez roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
-`mapacyd_invitado`, `reparto_admin`, `reparto_invitado`, `mensajeria_admin`, `mensajeria_invitado`. Cualquier código que filtre por rol DEBE usar
+Los doce roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
+`mapacyd_invitado`, `reparto_admin`, `reparto_invitado`, `mensajeria_admin`, `mensajeria_invitado`,
+`tenis_admin`, `tenis_invitado`. Cualquier código que filtre por rol DEBE usar
 exactamente estos nombres.
 
 | Rol                 | Acceso                                                       |
@@ -1372,12 +1407,14 @@ exactamente estos nombres.
 | reparto_invitado    | Consulta de todos los grupos de Reparto (solo lectura, sin crear/editar) |
 | mensajeria_admin    | Envío de mensajes de prueba (email/SMS/llamada) en Mensajería    |
 | mensajeria_invitado | Consulta del inbox/log de Mensajería (solo lectura)             |
+| tenis_admin         | Rol delegado para Tenis (repo externo `tennis-predictor`) — creado en Keycloak/Panel, aún sin uso porque el AppLauncher mantiene `tenis` en `roles: ['admin']` (admin-only por defecto) |
+| tenis_invitado      | Rol delegado de solo lectura para Tenis — mismo estado que `tenis_admin`, creado pero sin efecto en el AppLauncher hasta que se decida abrir acceso delegado |
 
 Locales tampoco añade rol: solo `admin`, como Gastos/Ofertas/Ruta/Pisos.
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
-Ofertas, Ruta, Pisos, Locales, Trader, Fútbol y Calendario solo son accesibles para `admin` (uso exclusivo del
+Ofertas, Ruta, Pisos, Locales, Trader, Fútbol, Tenis y Calendario solo son accesibles para `admin` (uso exclusivo del
 propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
 llamar a su API. Juegos y Finanzas son la excepción a ese último punto: Juegos es
 utilizable por los tres roles por igual (ver sección "Juegos" arriba) y Finanzas
@@ -1405,7 +1442,7 @@ fue el segundo y `mensajeria_invitado` el tercero. A diferencia de los roles
 los tres se crean en el realm pero quedan sin asignar, delegables manualmente
 desde Panel cuando haga falta.
 
-El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin`, `reparto_admin` y `mensajeria_admin`.
+El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin`, `reparto_admin`, `mensajeria_admin` y `tenis_admin`.
 
 ## Keycloak — configuración y despliegue
 
@@ -1454,6 +1491,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Locales            | :5185    | :3013   |
 | Fútbol (repo externo, stack propio) | :5186 | :8000 |
 | Finanzas           | :5187    | :3014   |
+| Tenis (repo externo, stack propio) | :5189 | :8000 |
 | Mensajería         | :5188    | :3015   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
@@ -1478,7 +1516,10 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 `locales` ya está en las copias del AppLauncher (`roles: ['admin']`), añadido
 junto con su frontend (fase 9). `finanzas` ya está en las copias
 (`roles: ['admin', 'invitado']`). `mensajeria` ya está en las 16 copias
-internas (`roles: ['admin']`). `crypto-trader/frontend` y
+internas (`roles: ['admin']`). `tenis` también está en las 16 copias internas
+(`roles: ['admin']`) — mismo patrón que `futbol`: repo externo
+(`tennis-predictor`), solo registrado aquí para el AppLauncher/Keycloak/nginx
+compartidos. `crypto-trader/frontend` y
 `football-predictor/frontend` siguen fuera de este repo y se actualizan aparte.
 
 **Panel es admin-only en el launcher (2026-09-17)**: la entrada `panel` de
