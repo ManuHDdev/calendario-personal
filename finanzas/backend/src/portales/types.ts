@@ -25,6 +25,15 @@ export const TIPOS = ['vivienda', 'local'] as const;
 export type TipoInmueble = (typeof TIPOS)[number];
 
 /**
+ * Operación: venta o alquiler. Dimensión ortogonal a `TipoInmueble` — decide
+ * la sección del portal (comprar/alquiler) y, en Fotocasa, el
+ * `transactionTypeId` esperado del nodo. El scraper de capitales de
+ * `finanzas` solo usa `'venta'`; `rentabilidadZona.ts` usa ambas.
+ */
+export const TIPOS_OPERACION = ['venta', 'alquiler'] as const;
+export type TipoOperacion = (typeof TIPOS_OPERACION)[number];
+
+/**
  * Un anuncio tal y como lo devuelve un portal, antes de tocar la base de
  * datos. Todo lo que un portal puede no informar viaja como `null`, nunca
  * como un valor inventado por defecto.
@@ -59,6 +68,8 @@ export interface AnuncioCrudo {
 export interface CriteriosPortal {
   /** Tipo de inmueble: decide la sección del portal y el filtro de subtipos. */
   tipo: TipoInmueble;
+  /** Venta o alquiler: decide la sección del portal (comprar/alquiler). */
+  operacion: TipoOperacion;
   ubicacion: string;
   latitud: number | null;
   longitud: number | null;

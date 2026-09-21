@@ -1297,6 +1297,74 @@ empaqueta DENTRO de la propia imagen de `finanzas-frontend`
 No confundir con mapacyd, que tampoco tiene ese split porque no tiene
 backend propio expuesto tras `/mapacyd/api/` en absoluto.
 
+### Rentabilidad de alquiler por zona (nuevo, complementario)
+
+Tercera funcionalidad del módulo de portales: para una ubicación dada,
+devuelve anuncios EN VENTA con una estimación de a cuánto se podrían
+alquilar, a partir del precio/m² real de alquiler de esa misma zona.
+Complementa (no sustituye) las dos calculadoras/gráficas anteriores — sigue
+sin haber tabla ni persistencia: cada búsqueda rastrea los portales en el
+momento y devuelve el resultado, sin guardar nada (ni `busqueda_id`, ni
+programación, ni `ensureSchema*`).
+
+**Dimensión `operacion` (venta/alquiler) añadida al módulo de portales.**
+`portales/types.ts` añade `operacion: 'venta' | 'alquiler'` (obligatorio) a
+`CriteriosPortal`, con el mismo patrón `TIPOS_OPERACION`/`TipoOperacion` que
+ya existía para `TIPOS`/`TipoInmueble`. Es ortogonal al `tipo` (vivienda/
+local): las cuatro combinaciones son válidas.
+
+- **Fotocasa**: `construirUrl` cambia el segmento `comprar` → `alquiler`
+  según `operacion`. `pareceAnuncio()` ya NO rechaza el alquiler a fuego
+  (antes tenía un rechazo hardcodeado con el comentario "esta app es solo
+  compra", heredado de `pisos`): ahora compara `transactionTypeId` contra el
+  esperado para la operación pedida (`1`=venta, `3`=alquiler).
+- **pisos.com**: `construirUrl` cambia el segmento `venta` → `alquiler`. No
+  hace falta tocar el parseo de tarjetas: pisos.com no distingue venta de
+  alquiler en la forma del anuncio, solo en la URL del listado.
+- **`capitalScraper.ts`** (histórico por capital) fija `operacion: 'venta'`
+  en `criteriosParaCapital()` — sigue rastreando solo compra, comportamiento
+  sin cambios; sus tests existentes pasan igual.
+
+**Mediana compartida, no duplicada.** `services/mediana.ts` extrae la
+función `mediana()` que antes vivía inline en `calcularPrecioMedioM2()` de
+`capitalScraper.ts`. Ahora la usan los dos servicios: `capitalScraper.ts`
+para el precio/m² de VENTA por capital, y `rentabilidadZona.ts` para el
+precio/m² de ALQUILER por zona. Mismo motivo en los dos sitios: con una
+muestra pequeña (~20-30 anuncios), un único atípico mal etiquetado dispara
+una media aritmética a un valor disparatado (caso real: un anuncio de Jaén a
+~15.800 €/m² entre anuncios normales de ~1.800-2.000 €/m², ver el
+comentario de `calcularPrecioMedioM2`); la mediana lo ignora sin necesidad
+de detectarlo.
+
+**Cómo se estima el alquiler de cada anuncio.** `services/rentabilidadZona.ts`
+busca EN PARALELO anuncios en venta y en alquiler (Fotocasa + pisos.com,
+`tipo: 'vivienda'`, hasta 2 páginas por portal). De los anuncios de alquiler
+que tengan AMBOS datos (precio y metros — igual que en `capitalScraper.ts`,
+un dato a medias no cuenta pero no descarta el resto), calcula la MEDIANA de
+€/m²/mes de la zona. Cada anuncio en venta que también tenga precio y metros
+recibe `alquilerMensualEstimado = medianaAlquilerM2 * metros`; sin mediana
+(cero comparables), `alquilerMensualEstimado` es `null`, nunca un número
+inventado. `confianza` es `'baja'` por debajo de 5 comparables (constante
+`MIN_COMPARABLES_ALTA_CONFIANZA`, no un número mágico repetido). Un portal o
+la pata de alquiler entera que falla se loguea y se omite, sin tumbar la
+búsqueda — mismo principio que `plan.fullCoverage` en `ruta` y el rastreo
+parcial de `pisos`; los avisos (`avisos: string[]`) lo dejan explícito en la
+respuesta en vez de una lista vacía sin explicación.
+
+**No calcula rentabilidad en el backend, a propósito.** La ruta solo junta
+"anuncios en venta" + "alquiler estimado por m²"; el cálculo de
+cash-on-cash (entrada, TIN, gastos…) se queda en el frontend, reutilizando
+`calcularAlquilerRentabilidad` de `lib/calculators.ts` — la misma función
+que ya usa "Comprar para alquilar". Así, cambiar un parámetro de
+financiación re-rankea el resultado al instante, sin una petición nueva por
+cada tecleo. El ranking en sí es una función pura y testeada,
+`calcularRankingRentabilidad()` en `frontend/src/lib/rentabilidadZona.ts`.
+
+### Rutas (`/finanzas/api/*`, cont.)
+- `GET /rentabilidad-zona?ubicacion=<texto>` — búsqueda síncrona (admin,
+  invitado). `ubicacion` vacía o ausente es 400. Devuelve `{ ubicacion,
+  listings[], numComparablesAlquilerTotal, medianaAlquilerM2, avisos[] }`.
+
 ### Puerto local
 Frontend `:5187`, backend `:3014`.
 

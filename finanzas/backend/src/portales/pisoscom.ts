@@ -1,4 +1,11 @@
-import type { AnuncioCrudo, TipoInmueble, CriteriosPortal, OpcionesBusqueda, PortalProvider } from './types';
+import type {
+  AnuncioCrudo,
+  TipoInmueble,
+  TipoOperacion,
+  CriteriosPortal,
+  OpcionesBusqueda,
+  PortalProvider,
+} from './types';
 import { fetchTexto } from './http';
 import { extraerJsonLd, primerValor, comoTexto } from './extraer';
 import {
@@ -53,14 +60,18 @@ const SECCION: Record<TipoInmueble, string> = { vivienda: 'pisos', local: 'local
 /** Slugs de URL que en pisos.com son vivienda: si aparecen en un listado de local, se descartan. */
 const SLUGS_RESIDENCIALES = ['piso', 'atico', 'duplex', 'chalet', 'vivienda', 'apartamento', 'estudio', 'casa'];
 
-/** Expuesto para los tests: el segmento de la ruta depende del `tipo`. */
+/** Segmento de la ruta de pisos.com según la operación (venta/alquiler). */
+const RUTA_OPERACION: Record<TipoOperacion, string> = { venta: 'venta', alquiler: 'alquiler' };
+
+/** Expuesto para los tests: el segmento de la ruta depende del `tipo` y la `operacion`. */
 export function construirUrl(criterios: CriteriosPortal, pagina: number): string {
   // "pisos-caceres" es la provincia; "pisos-caceres_capital" la ciudad.
   const base = slugificar(criterios.ubicacion);
   const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}_capital` : base;
   const seccion = SECCION[criterios.tipo];
+  const operacion = RUTA_OPERACION[criterios.operacion];
   // pisos.com pagina por segmento de ruta, no por query: /venta/pisos-badajoz/2/
-  const ruta = pagina <= 1 ? `/venta/${seccion}-${zona}/` : `/venta/${seccion}-${zona}/${pagina}/`;
+  const ruta = pagina <= 1 ? `/${operacion}/${seccion}-${zona}/` : `/${operacion}/${seccion}-${zona}/${pagina}/`;
 
   const params = new URLSearchParams();
   if (criterios.precioMin !== null) params.set('precioDesde', String(criterios.precioMin));

@@ -4,6 +4,7 @@ import type { CriteriosPortal } from './types';
 
 const CRITERIOS_BASE: CriteriosPortal = {
   tipo: 'vivienda',
+  operacion: 'venta',
   ubicacion: 'Plasencia',
   latitud: null,
   longitud: null,
@@ -121,6 +122,14 @@ describe('pisos.com · locales (tipo=local)', () => {
     const url = construirUrl(CRITERIOS_BASE, 1);
     expect(url).toContain('/venta/pisos-plasencia/');
     expect(url).toContain('habitacionesDesde=3');
+  });
+
+  it('en operación alquiler cambia el segmento a /alquiler/ conservando la sección', () => {
+    const urlVivienda = construirUrl({ ...CRITERIOS_BASE, operacion: 'alquiler' }, 1);
+    expect(urlVivienda).toContain('/alquiler/pisos-plasencia/');
+
+    const urlLocal = construirUrl({ ...CRITERIOS_BASE, tipo: 'local', operacion: 'alquiler' }, 1);
+    expect(urlLocal).toContain('/alquiler/locales-plasencia/');
   });
 
   it('descarta por slug un anuncio de vivienda colado en un listado de local', () => {

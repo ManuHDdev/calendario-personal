@@ -11,6 +11,7 @@ import DeudaCalculator from '../components/calculators/DeudaCalculator';
 import HipotecaTinTaeCalculator from '../components/calculators/HipotecaTinTaeCalculator';
 import AlquilerRentabilidadCalculator from '../components/calculators/AlquilerRentabilidadCalculator';
 import PerdidaPoderAdquisitivoCalculator from '../components/calculators/PerdidaPoderAdquisitivoCalculator';
+import BuscadorRentabilidadAlquiler from '../components/calculators/BuscadorRentabilidadAlquiler';
 import PreciosVivienda from '../components/PreciosVivienda';
 import './FinanzasPage.css';
 
@@ -36,6 +37,11 @@ const CALCULADORAS: CalculadoraDef[] = [
     Componente: PerdidaPoderAdquisitivoCalculator,
   },
   { id: 'precios-vivienda', nombre: 'Precios de vivienda por provincia', Componente: PreciosVivienda },
+  {
+    id: 'rentabilidad-zona',
+    nombre: 'Rentabilidad de alquiler por zona',
+    Componente: BuscadorRentabilidadAlquiler,
+  },
 ];
 
 export default function FinanzasPage() {
