@@ -57,6 +57,14 @@ export interface ListingRentabilidadZona {
   /** Comparables de alquiler que alimentan la mediana de TODA la zona (no por anuncio). */
   numComparablesAlquiler: number;
   confianza: 'alta' | 'baja';
+  /**
+   * Desviación del €/m² de este anuncio respecto a `medianaVentaM2` de la
+   * zona: ((precio/metros - medianaVentaM2) / medianaVentaM2) * 100.
+   * Negativo = por debajo de la mediana (posible chollo); positivo = por
+   * encima (posible sobreprecio). `null` cuando `medianaVentaM2` es `null`
+   * (sin comparables de venta suficientes) — nunca un 0% inventado.
+   */
+  desviacionVsMedianaVentaPct: number | null;
 }
 
 export interface RentabilidadZonaResultado {
@@ -64,6 +72,15 @@ export interface RentabilidadZonaResultado {
   listings: ListingRentabilidadZona[];
   numComparablesAlquilerTotal: number;
   medianaAlquilerM2: number | null;
+  /**
+   * Mediana de €/m² de los anuncios EN VENTA de la zona (no confundir con
+   * `medianaAlquilerM2`, que viene de los comparables de alquiler): la
+   * valoración automática (AVM) de referencia contra la que se compara el
+   * precio/m² de cada listing individual (`desviacionVsMedianaVentaPct`).
+   */
+  medianaVentaM2: number | null;
+  /** Comparables de venta (con precio y metros) que alimentan `medianaVentaM2`. */
+  numComparablesVentaTotal: number;
   avisos: string[];
 }
 
@@ -124,6 +141,13 @@ function preciosPorM2Alquiler(anunciosAlquiler: AnuncioCrudo[]): number[] {
     .map((a) => (a.precio as number) / (a.metros as number));
 }
 
+/** Precio/m² de cada anuncio EN VENTA que tiene AMBOS datos (precio y metros). */
+function preciosPorM2Venta(anunciosVenta: AnuncioCrudo[]): number[] {
+  return anunciosVenta
+    .filter((a) => a.precio !== null && a.precio > 0 && a.metros !== null && a.metros > 0)
+    .map((a) => (a.precio as number) / (a.metros as number));
+}
+
 export async function calcularRentabilidadZona(
   ubicacion: string,
   log?: Logger,
@@ -153,6 +177,16 @@ export async function calcularRentabilidadZona(
     avisos.push('No se encontraron anuncios en venta en esta zona.');
   }
 
+  const comparablesVenta = preciosPorM2Venta(enVenta);
+  const medianaVentaM2 = mediana(comparablesVenta);
+  const numComparablesVentaTotal = comparablesVenta.length;
+
+  if (medianaVentaM2 === null) {
+    avisos.push(
+      'Sin comparables de venta suficientes en esta zona: no se puede valorar si el precio está por encima o por debajo del mercado.',
+    );
+  }
+
   // Un anuncio en venta sin precio o sin metros no se puede rankear ni
   // estimar: se excluye del todo, igual que en calcularPrecioMedioM2 y en
   // el filtro fino de `pisos` para cualquier dato que falte por completo.
@@ -163,6 +197,10 @@ export async function calcularRentabilidadZona(
       const metros = a.metros as number;
       const alquilerMensualEstimado =
         medianaAlquilerM2 !== null ? Math.round(medianaAlquilerM2 * metros * 100) / 100 : null;
+      const desviacionVsMedianaVentaPct =
+        medianaVentaM2 !== null
+          ? Math.round(((precio / metros - medianaVentaM2) / medianaVentaM2) * 100 * 100) / 100
+          : null;
 
       return {
         titulo: a.titulo,
@@ -178,6 +216,7 @@ export async function calcularRentabilidadZona(
         alquilerMensualEstimado,
         numComparablesAlquiler: numComparablesAlquilerTotal,
         confianza,
+        desviacionVsMedianaVentaPct,
       };
     });
 
@@ -186,6 +225,8 @@ export async function calcularRentabilidadZona(
     listings,
     numComparablesAlquilerTotal,
     medianaAlquilerM2,
+    medianaVentaM2,
+    numComparablesVentaTotal,
     avisos,
   };
 }

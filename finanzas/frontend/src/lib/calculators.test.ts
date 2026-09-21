@@ -515,6 +515,43 @@ describe('calcularAlquilerRentabilidad', () => {
     expect(r.rentabilidadNetaSobreInversionPct).toBeCloseTo(3.33, 1);
     expect(r.veredicto).toBe('Dudoso');
   });
+
+  it('roiSinApalancamientoPct reproduce el ejemplo publicado de roiexplorer.com', () => {
+    // roiexplorer.com: precio 90.000€, gastos de compra 10% (coste total
+    // 99.000€), renta anual EFECTIVA (ya descontado el vacío) de 11.220€ ->
+    // ROI sin apalancamiento = 11.220 / 99.000 * 100 = 11.333...% ≈ su "11.3%".
+    // alquilerMensual*12*(1-tasaVacioPct/100) debe dar 11.220€: con vacío 0%,
+    // alquilerMensual = 11220/12 = 935€/mes.
+    const r = calcularAlquilerRentabilidad({
+      precioVivienda: 90000,
+      gastosCompraPct: 10,
+      tinHipotecaPct: 3,
+      plazoHipotecaAnios: 25,
+      alquilerMensual: 935,
+      tasaVacioPct: 0,
+    });
+
+    expect(r.ingresoAlquilerAnualEfectivo).toBeCloseTo(11220, 2);
+    expect(r.roiSinApalancamientoPct).toBeCloseTo(11.33, 2);
+  });
+
+  it('roiSinApalancamientoPct sigue la fórmula ingresoAlquilerAnualEfectivo / costeTotalDeCompra, sin restar gastos operativos', () => {
+    const casos = [
+      { precioVivienda: 150000, gastosCompraPct: 10, alquilerMensual: 750, tasaVacioPct: 5 },
+      { precioVivienda: 200000, gastosCompraPct: 8, alquilerMensual: 1100, tasaVacioPct: 0 },
+    ];
+
+    for (const caso of casos) {
+      const r = calcularAlquilerRentabilidad({
+        ...caso,
+        tinHipotecaPct: 3,
+        plazoHipotecaAnios: 25,
+      });
+      const costeTotalDeCompra = caso.precioVivienda * (1 + caso.gastosCompraPct / 100);
+      const esperado = (r.ingresoAlquilerAnualEfectivo / costeTotalDeCompra) * 100;
+      expect(r.roiSinApalancamientoPct).toBeCloseTo(esperado, 8);
+    }
+  });
 });
 
 describe('simularProyeccionAlquiler', () => {

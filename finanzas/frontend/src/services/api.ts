@@ -117,6 +117,12 @@ export interface RentabilidadZonaListing {
   alquilerMensualEstimado: number | null;
   numComparablesAlquiler: number;
   confianza: 'alta' | 'baja';
+  /**
+   * Desviación del €/m² de este anuncio respecto a `medianaVentaM2` de la
+   * zona (negativo = por debajo de la mediana, posible chollo; positivo =
+   * por encima, posible sobreprecio). `null` cuando no hay `medianaVentaM2`.
+   */
+  desviacionVsMedianaVentaPct: number | null;
 }
 
 export interface RentabilidadZonaResultado {
@@ -124,6 +130,9 @@ export interface RentabilidadZonaResultado {
   listings: RentabilidadZonaListing[];
   numComparablesAlquilerTotal: number;
   medianaAlquilerM2: number | null;
+  /** Mediana de €/m² de los anuncios EN VENTA de la zona (AVM de referencia). */
+  medianaVentaM2: number | null;
+  numComparablesVentaTotal: number;
   avisos: string[];
 }
 

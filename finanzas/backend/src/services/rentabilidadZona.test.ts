@@ -183,4 +183,72 @@ describe('calcularRentabilidadZona', () => {
       expect(resultado.avisos.some((a) => /anuncios en venta/.test(a))).toBe(true);
     });
   });
+
+  describe('AVM: medianaVentaM2 y desviacionVsMedianaVentaPct', () => {
+    it('calcula la mediana de €/m² de venta y la desviación de cada anuncio con el signo correcto', () => {
+      mockearBusquedas({
+        // €/m²: 1000, 2000, 3000 -> mediana 2000
+        venta: [
+          anuncio({ portalId: 'v1', precio: 100_000, metros: 100 }), // 1000 €/m² -> -50%
+          anuncio({ portalId: 'v2', url: 'https://example.com/2', precio: 200_000, metros: 100 }), // 2000 €/m² -> 0%
+          anuncio({ portalId: 'v3', url: 'https://example.com/3', precio: 300_000, metros: 100 }), // 3000 €/m² -> +50%
+        ],
+        alquiler: [anuncio({ portalId: 'a1', precio: 1000, metros: 100 })],
+      });
+
+      return calcularRentabilidadZona('Cáceres').then((resultado) => {
+        expect(resultado.medianaVentaM2).toBe(2000);
+        expect(resultado.numComparablesVentaTotal).toBe(3);
+
+        const l1 = resultado.listings.find((l) => l.url === 'https://example.com/1');
+        const l2 = resultado.listings.find((l) => l.url === 'https://example.com/2');
+        const l3 = resultado.listings.find((l) => l.url === 'https://example.com/3');
+
+        // Anuncio por debajo de la mediana -> deviación negativa (posible chollo).
+        expect(l1?.desviacionVsMedianaVentaPct).toBeCloseTo(-50, 2);
+        // Anuncio exactamente en la mediana -> deviación ≈ 0.
+        expect(l2?.desviacionVsMedianaVentaPct).toBeCloseTo(0, 2);
+        // Anuncio por encima de la mediana -> deviación positiva (posible sobreprecio).
+        expect(l3?.desviacionVsMedianaVentaPct).toBeCloseTo(50, 2);
+      });
+    });
+
+    it('con cero o un anuncio en venta, medianaVentaM2 es null y hay un aviso de valoración no disponible', () => {
+      mockearBusquedas({ venta: [], alquiler: [] });
+
+      return calcularRentabilidadZona('Zona Vacía').then((resultado) => {
+        expect(resultado.medianaVentaM2).toBeNull();
+        expect(resultado.numComparablesVentaTotal).toBe(0);
+        expect(resultado.avisos.some((a) => /valorar si el precio/.test(a))).toBe(true);
+      });
+    });
+
+    it('con un único anuncio en venta, medianaVentaM2 es ese mismo €/m² y la desviación de ese anuncio es 0', () => {
+      mockearBusquedas({
+        venta: [anuncio({ portalId: 'v1', precio: 150_000, metros: 100 })], // 1500 €/m²
+        alquiler: [],
+      });
+
+      return calcularRentabilidadZona('Cáceres').then((resultado) => {
+        expect(resultado.medianaVentaM2).toBe(1500);
+        expect(resultado.numComparablesVentaTotal).toBe(1);
+        expect(resultado.listings[0].desviacionVsMedianaVentaPct).toBeCloseTo(0, 2);
+      });
+    });
+
+    it('un anuncio en venta sin precio/metros no cuenta como comparable de venta (se excluye del listado igualmente)', () => {
+      mockearBusquedas({
+        venta: [
+          anuncio({ portalId: 'v1', precio: 100_000, metros: 100 }),
+          anuncio({ portalId: 'v2', precio: null, metros: 80 }),
+        ],
+        alquiler: [],
+      });
+
+      return calcularRentabilidadZona('Cáceres').then((resultado) => {
+        expect(resultado.numComparablesVentaTotal).toBe(1);
+        expect(resultado.listings).toHaveLength(1);
+      });
+    });
+  });
 });

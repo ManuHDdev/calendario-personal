@@ -92,6 +92,15 @@ export default function AlquilerRentabilidadCalculator() {
               <span>Rentabilidad neta sobre inversión (cash-on-cash), anual</span>
               <strong>{resultado.rentabilidadNetaSobreInversionPct.toFixed(2)}%</strong>
             </div>
+            <div className="resultado-linea">
+              <span>ROI sin apalancamiento (como si pagaras al contado)</span>
+              <strong>{resultado.roiSinApalancamientoPct.toFixed(2)}%</strong>
+            </div>
+            <p className="calculator-help-text">
+              Con apalancamiento usa el cashflow real tras hipoteca y gastos, sobre lo que realmente pones de tu
+              bolsillo. Sin apalancamiento es la renta anual efectiva sobre el coste total de compra, sin restar
+              gastos ni cuota — útil para comparar el inmueble en sí, sin el efecto de cómo lo financies.
+            </p>
             <p className={`resultado-veredicto ${CLASE_VEREDICTO[resultado.veredicto]}`}>
               {resultado.veredicto}
             </p>

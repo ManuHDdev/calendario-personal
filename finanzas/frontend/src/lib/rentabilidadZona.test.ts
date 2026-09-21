@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { calcularRankingRentabilidad, type ParametrosFinanciacion } from './rentabilidadZona';
+import {
+  calcularRankingRentabilidad,
+  formatearDesviacionVenta,
+  type ParametrosFinanciacion,
+} from './rentabilidadZona';
 import type { RentabilidadZonaListing } from '../services/api';
 
 const PARAMETROS: ParametrosFinanciacion = {
@@ -31,6 +35,7 @@ function listing(overrides: Partial<RentabilidadZonaListing> = {}): Rentabilidad
     alquilerMensualEstimado: 800,
     numComparablesAlquiler: 10,
     confianza: 'alta',
+    desviacionVsMedianaVentaPct: null,
     ...overrides,
   };
 }
@@ -91,5 +96,19 @@ describe('calcularRankingRentabilidad', () => {
     );
     // Un gasto de reforma alto empeora la rentabilidad de A y cambia el orden.
     expect(conReformaEnA[0].listing.url).toBe('b');
+  });
+});
+
+describe('formatearDesviacionVenta', () => {
+  it('antepone "+" a una desviación positiva (por encima de la mediana)', () => {
+    expect(formatearDesviacionVenta(12.345)).toBe('+12.3% vs. mediana de la zona');
+  });
+
+  it('no antepone signo a una desviación negativa (el propio número ya lo lleva)', () => {
+    expect(formatearDesviacionVenta(-8.2)).toBe('-8.2% vs. mediana de la zona');
+  });
+
+  it('una desviación de 0 no lleva signo "+"', () => {
+    expect(formatearDesviacionVenta(0)).toBe('0.0% vs. mediana de la zona');
   });
 });
