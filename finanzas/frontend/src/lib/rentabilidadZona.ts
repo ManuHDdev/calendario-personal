@@ -68,3 +68,14 @@ export function calcularRankingRentabilidad(
     return b.resultado.rentabilidadNetaSobreInversionPct - a.resultado.rentabilidadNetaSobreInversionPct;
   });
 }
+
+/**
+ * Texto del badge de `desviacionVsMedianaVentaPct`: "+12.3% vs. mediana de
+ * la zona" (por encima) o "-8.2% vs. mediana de la zona" (por debajo). Un
+ * valor negativo ya lleva su propio signo — solo se antepone "+" cuando
+ * hace falta, nunca se duplica.
+ */
+export function formatearDesviacionVenta(pct: number): string {
+  const signo = pct > 0 ? '+' : '';
+  return `${signo}${pct.toFixed(1)}% vs. mediana de la zona`;
+}

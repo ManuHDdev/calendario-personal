@@ -4,7 +4,11 @@ import NumberField from '../NumberField';
 import RentabilidadZonaMapa from './RentabilidadZonaMapa';
 import { getRentabilidadZona } from '../../services/api';
 import type { RentabilidadZonaListing, RentabilidadZonaResultado } from '../../services/api';
-import { calcularRankingRentabilidad, type ParametrosFinanciacion } from '../../lib/rentabilidadZona';
+import {
+  calcularRankingRentabilidad,
+  formatearDesviacionVenta,
+  type ParametrosFinanciacion,
+} from '../../lib/rentabilidadZona';
 import { formatEUR } from '../../lib/format';
 import './BuscadorRentabilidadAlquiler.css';
 
@@ -235,6 +239,27 @@ export default function BuscadorRentabilidadAlquiler() {
             )}
           </div>
 
+          {(resultado.medianaVentaM2 !== null || resultado.medianaAlquilerM2 !== null) && (
+            <div className="rentabilidad-zona-resumen">
+              {resultado.medianaVentaM2 !== null && (
+                <span>
+                  Mediana de venta: <strong>{formatEUR(resultado.medianaVentaM2)}/m²</strong>{' '}
+                  <span className="rentabilidad-zona-comparables">
+                    ({resultado.numComparablesVentaTotal} comparable{resultado.numComparablesVentaTotal === 1 ? '' : 's'})
+                  </span>
+                </span>
+              )}
+              {resultado.medianaAlquilerM2 !== null && (
+                <span>
+                  Mediana de alquiler: <strong>{formatEUR(resultado.medianaAlquilerM2)}/m²/mes</strong>{' '}
+                  <span className="rentabilidad-zona-comparables">
+                    ({resultado.numComparablesAlquilerTotal} comparable{resultado.numComparablesAlquilerTotal === 1 ? '' : 's'})
+                  </span>
+                </span>
+              )}
+            </div>
+          )}
+
           {ranking.length === 0 && !buscando ? (
             <p className="rentabilidad-zona-vacio">Sin anuncios en venta para "{resultado.ubicacion}".</p>
           ) : (
@@ -268,6 +293,16 @@ export default function BuscadorRentabilidadAlquiler() {
                         <span>{selectedListing.metros} m²</span>
                         {selectedListing.habitaciones !== null && <span>{selectedListing.habitaciones} hab.</span>}
                       </div>
+
+                      {selectedListing.desviacionVsMedianaVentaPct !== null && (
+                        <span
+                          className={`rentabilidad-zona-desviacion ${
+                            selectedListing.desviacionVsMedianaVentaPct <= 0 ? 'favorable' : 'desfavorable'
+                          }`}
+                        >
+                          {formatearDesviacionVenta(selectedListing.desviacionVsMedianaVentaPct)}
+                        </span>
+                      )}
 
                       <div className="rentabilidad-zona-alquiler">
                         {selectedListing.alquilerMensualEstimado === null ? (
@@ -303,9 +338,18 @@ export default function BuscadorRentabilidadAlquiler() {
                       <div className="rentabilidad-zona-detalle-rentabilidad">
                         {selectedItem?.resultado ? (
                           <>
-                            <span className="rentabilidad-zona-rentabilidad-pct">
-                              {selectedItem.resultado.rentabilidadNetaSobreInversionPct.toFixed(2)}%
-                            </span>
+                            <div className="rentabilidad-zona-detalle-roi-linea">
+                              <span>Con apalancamiento (cash-on-cash)</span>
+                              <span className="rentabilidad-zona-rentabilidad-pct">
+                                {selectedItem.resultado.rentabilidadNetaSobreInversionPct.toFixed(2)}%
+                              </span>
+                            </div>
+                            <div className="rentabilidad-zona-detalle-roi-linea">
+                              <span>Sin apalancamiento (al contado)</span>
+                              <span className="rentabilidad-zona-rentabilidad-pct rentabilidad-zona-rentabilidad-pct--secundaria">
+                                {selectedItem.resultado.roiSinApalancamientoPct.toFixed(2)}%
+                              </span>
+                            </div>
                             <span
                               className={`resultado-veredicto ${CLASE_VEREDICTO[selectedItem.resultado.veredicto]}`}
                             >
@@ -359,6 +403,15 @@ export default function BuscadorRentabilidadAlquiler() {
                           <span>{formatEUR(listing.precio)}</span>
                           <span>{listing.metros} m²</span>
                           {listing.habitaciones !== null && <span>{listing.habitaciones} hab.</span>}
+                          {listing.desviacionVsMedianaVentaPct !== null && (
+                            <span
+                              className={`rentabilidad-zona-desviacion ${
+                                listing.desviacionVsMedianaVentaPct <= 0 ? 'favorable' : 'desfavorable'
+                              }`}
+                            >
+                              {formatearDesviacionVenta(listing.desviacionVsMedianaVentaPct)}
+                            </span>
+                          )}
                         </div>
                         <div className="rentabilidad-zona-alquiler">
                           {listing.alquilerMensualEstimado === null ? (

@@ -1363,7 +1363,57 @@ cada tecleo. El ranking en sí es una función pura y testeada,
 ### Rutas (`/finanzas/api/*`, cont.)
 - `GET /rentabilidad-zona?ubicacion=<texto>` — búsqueda síncrona (admin,
   invitado). `ubicacion` vacía o ausente es 400. Devuelve `{ ubicacion,
-  listings[], numComparablesAlquilerTotal, medianaAlquilerM2, avisos[] }`.
+  listings[], numComparablesAlquilerTotal, medianaAlquilerM2, medianaVentaM2,
+  numComparablesVentaTotal, avisos[] }`.
+
+### ROI sin apalancamiento (nuevo, complementario — inspirado en roiexplorer.com)
+
+`calcularAlquilerRentabilidad()` (`frontend/src/lib/calculators.ts`) devuelve
+ahora también `roiSinApalancamientoPct`, campo aditivo junto al ya existente
+`rentabilidadNetaSobreInversionPct` — no sustituye nada, ambos conviven.
+Fórmula: `ingresoAlquilerAnualEfectivo / (precioVivienda * (1 +
+gastosCompraPct/100)) * 100`, es decir, la renta anual ya descontado el
+vacío sobre el coste total de adquisición **como si se pagara al contado**,
+sin restar gastos operativos (IBI, comunidad, seguro, mantenimiento,
+gestoría) ni cuota de hipoteca — a diferencia de
+`rentabilidadNetaSobreInversionPct`, que sí es cashflow real tras hipoteca y
+gastos sobre lo que realmente se pone de bolsillo. Verificada contra el
+ejemplo publicado por roiexplorer.com (precio 90.000€, gastos de compra
+10% → coste total 99.000€, renta anual efectiva 11.220€ → ROI = 11.33% ≈ su
+"11.3%" redondeado). Se muestra junto a la rentabilidad con apalancamiento
+tanto en "Comprar para alquilar" (`AlquilerRentabilidadCalculator.tsx`) como
+en el detalle de cada listing de "Rentabilidad de alquiler por zona"
+(`BuscadorRentabilidadAlquiler.tsx`) — en el listado compacto de zona sigue
+mostrándose solo la cifra con apalancamiento como métrica de orden, para no
+saturar cada fila con dos porcentajes.
+
+### AVM — valoración automática del precio de venta (nuevo, complementario)
+
+Extiende `rentabilidadZona.ts` (backend) con una segunda mediana, calculada
+sobre los MISMOS anuncios en venta que el servicio ya trae (sin scraping
+nuevo): `medianaVentaM2` es la mediana de €/m² de `enVenta` (reutiliza
+`mediana()` de `services/mediana.ts`, mismo patrón que `medianaAlquilerM2`,
+pero es una magnitud distinta — una viene de los comparables de alquiler,
+la otra de los propios anuncios en venta). `numComparablesVentaTotal` es el
+recuento detrás de esa mediana.
+
+Cada listing del resultado añade `desviacionVsMedianaVentaPct: number |
+null` = `((precio/metros - medianaVentaM2) / medianaVentaM2) * 100`,
+redondeado a 2 decimales. Negativo = por debajo de la mediana de la zona
+(posible chollo); positivo = por encima (posible sobreprecio) — el signo NO
+se invierte, sigue esa convención. `null` cuando `medianaVentaM2` es `null`
+(cero o un único comparable de venta) — nunca un 0% inventado. Sin mediana
+de venta, se añade un aviso a `avisos[]`, mismo principio de transparencia
+que el aviso ya existente de comparables de alquiler insuficientes.
+
+Frontend: `BuscadorRentabilidadAlquiler.tsx` muestra una línea "resumen de
+la zona" (mediana de venta y de alquiler, con su recuento de comparables)
+sobre el mapa, y un badge con `desviacionVsMedianaVentaPct` (formateado por
+`formatearDesviacionVenta()` en `lib/rentabilidadZona.ts`, p. ej. "-12.0%
+vs. mediana de la zona") tanto en el panel de detalle como en cada fila del
+listado — coloreado con `--success`/`--danger` (favorable/desfavorable),
+mismo criterio visual que el veredicto de rentabilidad. Un listing con
+`desviacionVsMedianaVentaPct === null` no muestra badge.
 
 ### Puerto local
 Frontend `:5187`, backend `:3014`.

@@ -841,6 +841,17 @@ export interface AlquilerRentabilidadResultado {
   cashflowMensualNeto: number;
   rentabilidadBrutaAnualPct: number;
   rentabilidadNetaSobreInversionPct: number;
+  /**
+   * ROI sin apalancamiento (como si se pagara al contado, sin hipoteca):
+   * ingresoAlquilerAnualEfectivo / (precioVivienda * (1 + gastosCompraPct/100)) * 100.
+   * A diferencia de rentabilidadNetaSobreInversionPct, NO resta gastos
+   * operativos (IBI, comunidad, seguro, mantenimiento, gestoría) ni cuota de
+   * hipoteca — es la renta efectiva (ya descontado el vacío) sobre el coste
+   * total de adquisición. Fórmula y magnitud verificadas contra el ejemplo
+   * de roiexplorer.com (precio 90.000€, gastos de compra 10%, renta anual
+   * efectiva 11.220€ → coste total 99.000€ → ROI 11.33% ≈ su "11.3%").
+   */
+  roiSinApalancamientoPct: number;
   veredicto: VeredictoAlquiler;
   mensaje: string;
 }
@@ -899,6 +910,9 @@ export function calcularAlquilerRentabilidad(
   const rentabilidadBrutaAnualPct = (ingresoAlquilerAnualEfectivo / precioVivienda) * 100;
   const rentabilidadNetaSobreInversionPct =
     inversionInicial > 0 ? (cashflowAnualNeto / inversionInicial) * 100 : 0;
+  const costeTotalDeCompra = precioVivienda * (1 + gastosCompraPct / 100);
+  const roiSinApalancamientoPct =
+    costeTotalDeCompra > 0 ? (ingresoAlquilerAnualEfectivo / costeTotalDeCompra) * 100 : 0;
 
   let veredicto: VeredictoAlquiler;
   let mensaje: string;
@@ -925,6 +939,7 @@ export function calcularAlquilerRentabilidad(
     cashflowMensualNeto,
     rentabilidadBrutaAnualPct,
     rentabilidadNetaSobreInversionPct,
+    roiSinApalancamientoPct,
     veredicto,
     mensaje,
   };
