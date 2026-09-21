@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { construirUpsertFilaCapitalQuery, calcularPrecioMedioM2, type FilaCapital } from './capitalScraper';
+import {
+  construirUpsertFilaCapitalQuery,
+  calcularPrecioMedioM2,
+  criteriosParaCapital,
+  type FilaCapital,
+} from './capitalScraper';
 import type { AnuncioCrudo } from '../portales/types';
 
 function anuncio(overrides: Partial<AnuncioCrudo> = {}): AnuncioCrudo {
@@ -52,6 +57,15 @@ describe('construirUpsertFilaCapitalQuery', () => {
     const { text } = construirUpsertFilaCapitalQuery(fila);
     expect(text).toMatch(/precio_m2_medio = EXCLUDED\.precio_m2_medio/);
     expect(text).toMatch(/num_anuncios = EXCLUDED\.num_anuncios/);
+  });
+});
+
+describe('criteriosParaCapital', () => {
+  it('siempre busca en venta — el scraper de capitales no toca alquiler', () => {
+    const criterios = criteriosParaCapital('Madrid');
+    expect(criterios.operacion).toBe('venta');
+    expect(criterios.tipo).toBe('vivienda');
+    expect(criterios.ubicacion).toBe('Madrid');
   });
 });
 

@@ -4,6 +4,7 @@ import type { CriteriosPortal } from './types';
 
 const CRITERIOS_BASE: CriteriosPortal = {
   tipo: 'vivienda',
+  operacion: 'venta',
   ubicacion: 'Plasencia',
   latitud: null,
   longitud: null,
@@ -126,9 +127,26 @@ describe('fotocasa · parsearPagina', () => {
     expect(a.imagenUrl).toContain('static.fotocasa.es');
   });
 
-  it('descarta alquiler y tipos que no son vivienda', () => {
+  it('en operación venta (por defecto) descarta alquiler y tipos que no son vivienda', () => {
     const anuncios = parsearPagina(HTML);
     expect(anuncios.map((a) => a.portalId)).not.toContain('190600001');
     expect(anuncios.map((a) => a.portalId)).not.toContain('190600002');
+  });
+});
+
+describe('fotocasa · operación (venta/alquiler)', () => {
+  it('construye la URL de compra para venta y de alquiler para alquiler', () => {
+    const urlVenta = construirUrl(CRITERIOS_BASE, 1);
+    expect(urlVenta).toContain('/es/comprar/viviendas/plasencia/');
+
+    const urlAlquiler = construirUrl({ ...CRITERIOS_BASE, operacion: 'alquiler' }, 1);
+    expect(urlAlquiler).toContain('/es/alquiler/viviendas/plasencia/');
+  });
+
+  it('en operación alquiler acepta el nodo con transactionTypeId=3 y descarta el de venta', () => {
+    const anuncios = parsearPagina(HTML, 'vivienda', 'alquiler');
+    const ids = anuncios.map((a) => a.portalId);
+    expect(ids).toContain('190600002'); // alquiler
+    expect(ids).not.toContain('190620092'); // venta, descartado en modo alquiler
   });
 });

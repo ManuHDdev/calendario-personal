@@ -34,6 +34,7 @@ import { pool } from '../db/pool';
 import { CAPITALES, provinciaDeCapital } from './capitales';
 import { fotocasaProvider } from '../portales/fotocasa';
 import { pisosComProvider } from '../portales/pisoscom';
+import { mediana } from './mediana';
 import type { AnuncioCrudo, CriteriosPortal, PortalProvider } from '../portales/types';
 
 const INTERVALO_HORAS = Number(process.env.FINANZAS_INTERVALO_SCRAPER_CAPITAL_HORAS) || 24;
@@ -98,22 +99,21 @@ export interface FilaCapital {
  * anuncios por capital y portal, una media aritmética arrastra ese valor a
  * toda la capital (9.045 €/m² de media para Jaén, cuando el resto de
  * anuncios rondaba 1.800-2.000 €/m²). La mediana ignora ese tipo de atípico
- * sin necesitar detectarlo explícitamente.
+ * sin necesitar detectarlo explícitamente. La función `mediana()` en sí vive
+ * en `./mediana.ts`, compartida con `rentabilidadZona.ts` (mismo problema,
+ * mismo remedio, sobre precio/m² de alquiler en vez de venta).
  */
 export function calcularPrecioMedioM2(
   anuncios: AnuncioCrudo[],
 ): { precioM2Medio: number; numAnuncios: number } | null {
   const preciosPorM2 = anuncios
     .filter((a) => a.precio !== null && a.precio > 0 && a.metros !== null && a.metros > 0)
-    .map((a) => (a.precio as number) / (a.metros as number))
-    .sort((a, b) => a - b);
+    .map((a) => (a.precio as number) / (a.metros as number));
   if (preciosPorM2.length === 0) return null;
 
-  const mitad = Math.floor(preciosPorM2.length / 2);
-  const mediana =
-    preciosPorM2.length % 2 === 0 ? (preciosPorM2[mitad - 1] + preciosPorM2[mitad]) / 2 : preciosPorM2[mitad];
+  const medianaPrecio = mediana(preciosPorM2) as number;
 
-  return { precioM2Medio: Math.round(mediana * 100) / 100, numAnuncios: preciosPorM2.length };
+  return { precioM2Medio: Math.round(medianaPrecio * 100) / 100, numAnuncios: preciosPorM2.length };
 }
 
 /**
@@ -136,9 +136,15 @@ async function upsertFila(fila: FilaCapital): Promise<void> {
   await pool.query(text, values);
 }
 
-function criteriosParaCapital(capital: string): CriteriosPortal {
+/**
+ * Expuesto para los tests: el scraper de capitales solo rastrea VENTA — el
+ * alquiler es cosa de `rentabilidadZona.ts`, que reutiliza el mismo módulo
+ * de portales pero con `operacion: 'alquiler'` para su pata de comparables.
+ */
+export function criteriosParaCapital(capital: string): CriteriosPortal {
   return {
     tipo: 'vivienda',
+    operacion: 'venta',
     ubicacion: capital,
     latitud: null,
     longitud: null,

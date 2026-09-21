@@ -1,4 +1,11 @@
-import type { AnuncioCrudo, TipoInmueble, CriteriosPortal, OpcionesBusqueda, PortalProvider } from './types';
+import type {
+  AnuncioCrudo,
+  TipoInmueble,
+  TipoOperacion,
+  CriteriosPortal,
+  OpcionesBusqueda,
+  PortalProvider,
+} from './types';
 import { fetchTexto } from './http';
 import {
   extraerJsonLd,
@@ -66,12 +73,18 @@ const PORTAL = 'fotocasa';
 /** Segmento de la ruta de Fotocasa según el tipo de inmueble. */
 const SECCION: Record<TipoInmueble, string> = { vivienda: 'viviendas', local: 'locales' };
 
-/** Expuesto para los tests: la ruta y los parámetros dependen del `tipo`. */
+/** Segmento de la ruta de Fotocasa según la operación (venta/alquiler). */
+const RUTA_OPERACION: Record<TipoOperacion, string> = { venta: 'comprar', alquiler: 'alquiler' };
+
+/** `transactionTypeId` que Fotocasa espera para cada operación (1=venta, 3=alquiler). */
+const TRANSACTION_TYPE_ID: Record<TipoOperacion, number> = { venta: 1, alquiler: 3 };
+
+/** Expuesto para los tests: la ruta y los parámetros dependen del `tipo` y la `operacion`. */
 export function construirUrl(criterios: CriteriosPortal, pagina: number): string {
   // En Fotocasa "caceres" es la provincia y "caceres-capital" la ciudad.
   const base = slugificar(criterios.ubicacion);
   const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}-capital` : base;
-  const ruta = `/es/comprar/${SECCION[criterios.tipo]}/${zona}/todas-las-zonas/l/${pagina > 1 ? pagina : ''}`;
+  const ruta = `/es/${RUTA_OPERACION[criterios.operacion]}/${SECCION[criterios.tipo]}/${zona}/todas-las-zonas/l/${pagina > 1 ? pagina : ''}`;
 
   const params = new URLSearchParams();
   if (criterios.precioMin !== null) params.set('minPrice', String(criterios.precioMin));
@@ -112,15 +125,19 @@ const SUBTIPOS_RECHAZADOS: Record<TipoInmueble, Set<string>> = {
   local: SUBTIPOS_NO_LOCAL,
 };
 
-/** ¿Este nodo del estado embebido tiene pinta de ser un anuncio del tipo buscado? */
-function pareceAnuncio(nodo: Record<string, unknown>, tipo: TipoInmueble): boolean {
+/** ¿Este nodo del estado embebido tiene pinta de ser un anuncio del tipo/operación buscados? */
+function pareceAnuncio(nodo: Record<string, unknown>, tipo: TipoInmueble, operacion: TipoOperacion): boolean {
   const tieneId = typeof nodo.id === 'number' || nodo.id !== undefined || nodo.realEstateId !== undefined;
   const tienePrecio = nodo.rawPrice !== undefined || nodo.price !== undefined;
   const esListado = Array.isArray(nodo.features) || nodo.detail !== undefined || nodo.buildingSubtype !== undefined;
   if (!(tieneId && tienePrecio && esListado)) return false;
 
-  // Alquiler fuera: esta app es solo compra.
-  if (nodo.transactionTypeId !== undefined && nodo.transactionTypeId !== 1) return false;
+  // Se rechaza cualquier nodo cuyo transactionTypeId no case con la
+  // operación pedida (1=venta, 3=alquiler) — antes esto rechazaba siempre
+  // el alquiler porque la app solo hacía compra; ahora depende de la
+  // operación de la búsqueda.
+  const idEsperado = TRANSACTION_TYPE_ID[operacion];
+  if (nodo.transactionTypeId !== undefined && nodo.transactionTypeId !== idEsperado) return false;
 
   const subtipo = comoTexto(primerValor(nodo, ['buildingSubtype', 'buildingType']))?.toLowerCase() ?? '';
   if ([...SUBTIPOS_RECHAZADOS[tipo]].some((s) => subtipo.includes(s))) return false;
@@ -316,13 +333,18 @@ function parsearDesdeJsonLd(html: string, tipo: TipoInmueble): AnuncioCrudo[] {
 
 /**
  * Expuesto para los tests y el smoke: parsea una página ya descargada.
- * `tipo` por defecto `vivienda` para no tocar tests ni smoke existentes.
+ * `tipo` por defecto `vivienda` y `operacion` por defecto `venta` para no
+ * tocar tests ni smoke existentes.
  */
-export function parsearPagina(html: string, tipo: TipoInmueble = 'vivienda'): AnuncioCrudo[] {
+export function parsearPagina(
+  html: string,
+  tipo: TipoInmueble = 'vivienda',
+  operacion: TipoOperacion = 'venta',
+): AnuncioCrudo[] {
   const estado = extraerEstadoEmbebido(html);
   const desdeEstado = estado === null
     ? []
-    : buscarNodos(estado, (nodo) => pareceAnuncio(nodo, tipo))
+    : buscarNodos(estado, (nodo) => pareceAnuncio(nodo, tipo, operacion))
         .map((nodo) => parsearNodo(nodo, tipo))
         .filter((a): a is AnuncioCrudo => a !== null);
 
@@ -359,7 +381,7 @@ export const fotocasaProvider: PortalProvider = {
         portal: 'Fotocasa',
         timeoutMs: opciones.timeoutMs,
       });
-      const anunciosPagina = parsearPagina(html, criterios.tipo);
+      const anunciosPagina = parsearPagina(html, criterios.tipo, criterios.operacion);
       if (anunciosPagina.length === 0) break;
 
       for (const anuncio of anunciosPagina) {

@@ -95,3 +95,39 @@ export async function getEstadoScraperCapital(): Promise<CapitalScraperEstado> {
   if (!res.ok) await handleError(res);
   return res.json() as Promise<CapitalScraperEstado>;
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Rentabilidad de alquiler por zona — anuncios en venta con una estimación de
+// alquiler mensual a partir de la mediana de €/m²/mes de alquiler de la
+// misma zona (ver `services/rentabilidadZona.ts` en el backend).
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface RentabilidadZonaListing {
+  titulo: string;
+  url: string;
+  portal: string;
+  precio: number;
+  metros: number;
+  habitaciones: number | null;
+  ubicacion: string | null;
+  imagenUrl: string | null;
+  alquilerMensualEstimado: number | null;
+  numComparablesAlquiler: number;
+  confianza: 'alta' | 'baja';
+}
+
+export interface RentabilidadZonaResultado {
+  ubicacion: string;
+  listings: RentabilidadZonaListing[];
+  numComparablesAlquilerTotal: number;
+  medianaAlquilerM2: number | null;
+  avisos: string[];
+}
+
+export async function getRentabilidadZona(ubicacion: string): Promise<RentabilidadZonaResultado> {
+  const res = await fetch(`${BASE}/rentabilidad-zona?ubicacion=${encodeURIComponent(ubicacion)}`, {
+    headers: headers(),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<RentabilidadZonaResultado>;
+}

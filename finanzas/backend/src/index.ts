@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { preciosViviendaRoutes } from './routes/preciosVivienda';
+import { rentabilidadZonaRoutes } from './routes/rentabilidadZona';
 import { arrancarImportador } from './services/importador';
 import { arrancarScraperCapitales } from './services/capitalScraper';
 import { ensureSchemaCapitales } from './services/ensureSchemaCapitales';
@@ -19,6 +20,7 @@ async function bootstrap() {
   });
 
   await app.register(preciosViviendaRoutes, { prefix: '/finanzas/api' });
+  await app.register(rentabilidadZonaRoutes, { prefix: '/finanzas/api' });
 
   app.get('/health', async () => ({
     status: 'ok',
