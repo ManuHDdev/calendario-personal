@@ -1,11 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import {
   calcularRankingRentabilidad,
+  calcularRankingFlip,
   formatearDesviacionVenta,
   etiquetaAlquilerEstimado,
   type ParametrosFinanciacion,
+  type ParametrosFlip,
 } from './rentabilidadZona';
 import type { RentabilidadZonaListing } from '../services/api';
+
+const PARAMETROS_FLIP: ParametrosFlip = {
+  gastosCompraPct: 10,
+  gastosVentaPct: 5,
+  umbralMargenAceptablePct: 20,
+};
 
 const PARAMETROS: ParametrosFinanciacion = {
   entradaPct: 20,
@@ -97,6 +105,81 @@ describe('calcularRankingRentabilidad', () => {
     );
     // Un gasto de reforma alto empeora la rentabilidad de A y cambia el orden.
     expect(conReformaEnA[0].listing.url).toBe('b');
+  });
+});
+
+describe('calcularRankingFlip', () => {
+  it('un flip rentable rankea primero que uno con margen bajo', () => {
+    // medianaVentaM2 = 2000; barato: precio 100k/100m² -> venta estimada 200k;
+    // caro: precio 180k/100m² -> venta estimada 200k también, pero con menos margen.
+    const barato = listing({ url: 'barato', precio: 100_000, metros: 100 });
+    const caro = listing({ url: 'caro', precio: 180_000, metros: 100 });
+
+    const ranking = calcularRankingFlip([caro, barato], 2000, PARAMETROS_FLIP);
+
+    expect(ranking.map((r) => r.listing.url)).toEqual(['barato', 'caro']);
+    expect(ranking[0].resultado?.margenSobreInversionPct).toBeGreaterThan(
+      ranking[1].resultado?.margenSobreInversionPct ?? Infinity,
+    );
+  });
+
+  it('sin medianaVentaM2 de la zona, todos los listings van con resultado null (no se fabrica un precio de venta)', () => {
+    const l = listing({ url: 'sin-avm' });
+
+    const ranking = calcularRankingFlip([l], null, PARAMETROS_FLIP);
+
+    expect(ranking).toHaveLength(1);
+    expect(ranking[0].resultado).toBeNull();
+  });
+
+  it('con medianaVentaM2, precioVentaEstimado = medianaVentaM2 * metros (verificable a mano)', () => {
+    // medianaVentaM2 = 1800, metros = 100 -> precioVentaEstimado = 180000
+    // inversionTotal = 100000*1.10 + 0 = 110000
+    // ingresoVentaNeto = 180000*0.95 = 171000
+    // beneficioBruto = 61000 -> margen = 61000/110000*100 ≈ 55.45%
+    const l = listing({ url: 'a', precio: 100_000, metros: 100 });
+
+    const ranking = calcularRankingFlip([l], 1800, PARAMETROS_FLIP);
+
+    expect(ranking[0].resultado?.margenSobreInversionPct).toBeCloseTo(55.45, 1);
+  });
+
+  it('un gasto de reforma por listing solo afecta a la rentabilidad de ESE listing (mismo mapa que el modo alquiler)', () => {
+    const a = listing({ url: 'a', precio: 100_000, metros: 100 });
+    const b = listing({ url: 'b', precio: 100_000, metros: 100 });
+
+    const sinReforma = calcularRankingFlip([a, b], 2000, PARAMETROS_FLIP);
+    const conReformaEnA = calcularRankingFlip([a, b], 2000, PARAMETROS_FLIP, { a: 50_000 });
+
+    const bSinReforma = sinReforma.find((r) => r.listing.url === 'b');
+    const bConReformaEnA = conReformaEnA.find((r) => r.listing.url === 'b');
+    expect(bConReformaEnA?.resultado?.margenSobreInversionPct).toBe(bSinReforma?.resultado?.margenSobreInversionPct);
+
+    const aSinReforma = sinReforma.find((r) => r.listing.url === 'a');
+    const aConReforma = conReformaEnA.find((r) => r.listing.url === 'a');
+    expect(aConReforma?.resultado?.margenSobreInversionPct).not.toBe(
+      aSinReforma?.resultado?.margenSobreInversionPct,
+    );
+  });
+
+  it('los gastos de compra se aplican SOLO al precio de compra, nunca a la reforma (verificable a mano)', () => {
+    // Regresión: una implementación anterior sumaba la reforma al precio de
+    // compra ANTES de aplicar gastosCompraPct, encareciendo la reforma con
+    // un 10% de ITP/notaría que no le corresponde (eso se paga a un
+    // contratista, no en la compraventa). precio 100k, reforma 30k, mediana
+    // 2000€/m², metros 100 -> venta estimada 200000.
+    // inversionTotal correcto = 100000*1.10 + 30000 = 140000 (NO (100000+30000)*1.10 = 143000)
+    // ingresoVentaNeto = 200000*0.95 = 190000
+    // beneficioBruto = 190000 - 140000 = 50000 -> margen = 50000/140000*100 ≈ 35.71%
+    const l = listing({ url: 'a', precio: 100_000, metros: 100 });
+
+    const ranking = calcularRankingFlip([l], 2000, PARAMETROS_FLIP, { a: 30_000 });
+
+    expect(ranking[0].resultado?.margenSobreInversionPct).toBeCloseTo(35.71, 1);
+  });
+
+  it('una lista vacía devuelve un ranking vacío', () => {
+    expect(calcularRankingFlip([], 2000, PARAMETROS_FLIP)).toEqual([]);
   });
 });
 

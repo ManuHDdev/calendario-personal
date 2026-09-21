@@ -6,7 +6,7 @@ import { calcularRentabilidadZona } from '../services/rentabilidadZona';
 const ROLES_LECTURA = ['admin', 'invitado'];
 
 export async function rentabilidadZonaRoutes(app: FastifyInstance): Promise<void> {
-  // GET /rentabilidad-zona?ubicacion=<texto>&modo=alquiler_completo|habitaciones
+  // GET /rentabilidad-zona?ubicacion=<texto>&modo=alquiler_completo|habitaciones|flip
   app.get<{ Querystring: { ubicacion?: string; modo?: string } }>(
     '/rentabilidad-zona',
     { preHandler: authMiddleware(ROLES_LECTURA) },

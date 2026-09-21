@@ -14,6 +14,7 @@ import {
   calcularAlquilerRentabilidad,
   simularProyeccionAlquiler,
   calcularPerdidaPoderAdquisitivo,
+  calcularFlip,
 } from './calculators';
 
 describe('calcularInteresCompuesto', () => {
@@ -551,6 +552,72 @@ describe('calcularAlquilerRentabilidad', () => {
       const esperado = (r.ingresoAlquilerAnualEfectivo / costeTotalDeCompra) * 100;
       expect(r.roiSinApalancamientoPct).toBeCloseTo(esperado, 8);
     }
+  });
+});
+
+describe('calcularFlip', () => {
+  it('caso rentable ("Merece la pena")', () => {
+    // inversionTotal = 100000*1.10 + 20000 = 110000 + 20000 = 130000
+    // ingresoVentaNeto = 180000*0.95 = 171000
+    // beneficioBruto = 171000 - 130000 = 41000
+    // margenSobreInversionPct = 41000/130000*100 ≈ 31.54% (>= umbral 20%)
+    const r = calcularFlip({
+      precioCompra: 100000,
+      gastosCompraPct: 10,
+      gastosReforma: 20000,
+      precioVentaEstimado: 180000,
+      gastosVentaPct: 5,
+    });
+
+    expect(r.inversionTotal).toBeCloseTo(130000, 5);
+    expect(r.ingresoVentaNeto).toBeCloseTo(171000, 5);
+    expect(r.beneficioBruto).toBeCloseTo(41000, 5);
+    expect(r.margenSobreInversionPct).toBeCloseTo(31.54, 1);
+    expect(r.veredicto).toBe('Merece la pena');
+  });
+
+  it('caso con beneficio negativo ("No merece la pena")', () => {
+    // inversionTotal = 100000*1.10 + 20000 = 130000
+    // ingresoVentaNeto = 120000*0.95 = 114000
+    // beneficioBruto = 114000 - 130000 = -16000 (<= 0)
+    const r = calcularFlip({
+      precioCompra: 100000,
+      gastosCompraPct: 10,
+      gastosReforma: 20000,
+      precioVentaEstimado: 120000,
+      gastosVentaPct: 5,
+    });
+
+    expect(r.beneficioBruto).toBeCloseTo(-16000, 5);
+    expect(r.veredicto).toBe('No merece la pena');
+  });
+
+  it('caso con beneficio positivo pero margen bajo ("Dudoso")', () => {
+    // inversionTotal = 100000*1.10 + 0 = 110000
+    // ingresoVentaNeto = 120000*0.95 = 114000
+    // beneficioBruto = 114000 - 110000 = 4000
+    // margenSobreInversionPct = 4000/110000*100 ≈ 3.64% (< umbral 20%, > 0)
+    const r = calcularFlip({
+      precioCompra: 100000,
+      gastosCompraPct: 10,
+      gastosReforma: 0,
+      precioVentaEstimado: 120000,
+      gastosVentaPct: 5,
+    });
+
+    expect(r.beneficioBruto).toBeCloseTo(4000, 5);
+    expect(r.margenSobreInversionPct).toBeCloseTo(3.64, 1);
+    expect(r.veredicto).toBe('Dudoso');
+  });
+
+  it('lanza si algún input es negativo', () => {
+    const base = { precioCompra: 100000, precioVentaEstimado: 150000 };
+    expect(() => calcularFlip({ ...base, precioCompra: -1 })).toThrow();
+    expect(() => calcularFlip({ ...base, precioVentaEstimado: -1 })).toThrow();
+    expect(() => calcularFlip({ ...base, gastosCompraPct: -1 })).toThrow();
+    expect(() => calcularFlip({ ...base, gastosReforma: -1 })).toThrow();
+    expect(() => calcularFlip({ ...base, gastosVentaPct: -1 })).toThrow();
+    expect(() => calcularFlip({ ...base, umbralMargenAceptablePct: -1 })).toThrow();
   });
 });
 

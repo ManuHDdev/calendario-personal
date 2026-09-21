@@ -46,7 +46,7 @@ export interface Logger {
  * (ingreso por habitaciones sueltas, comparables de la sección `compartir`
  * multiplicados por el número de habitaciones del anuncio en venta).
  */
-export const MODOS_RENTABILIDAD_ZONA = ['alquiler_completo', 'habitaciones'] as const;
+export const MODOS_RENTABILIDAD_ZONA = ['alquiler_completo', 'habitaciones', 'flip'] as const;
 export type ModoRentabilidadZona = (typeof MODOS_RENTABILIDAD_ZONA)[number];
 
 export interface ListingRentabilidadZona {
@@ -180,30 +180,48 @@ export async function calcularRentabilidadZona(
 ): Promise<RentabilidadZonaResultado> {
   const avisos: string[] = [];
   const esHabitaciones = modo === 'habitaciones';
+  const esFlip = modo === 'flip';
 
+  // Modo 'flip' (comprar, reformar, vender) no necesita NINGÚN comparable de
+  // alquiler ni de "compartir": la rentabilidad de un flip sale de comparar
+  // precio de compra con precio de VENTA estimado (medianaVentaM2 * metros),
+  // que ya se calcula más abajo a partir de los propios anuncios en venta —
+  // dato que el servicio ya trae para TODOS los modos. Por eso aquí se evita
+  // la petición de alquiler/compartir por completo (petición más ligera, no
+  // solo "igual de pesada pero ignorando el resultado").
   const [enVenta, comparablesOperacion] = await Promise.all([
     buscarEnPortales(ubicacion, 'venta', log),
-    buscarEnPortales(ubicacion, esHabitaciones ? 'compartir' : 'alquiler', log),
+    esFlip ? Promise.resolve([]) : buscarEnPortales(ubicacion, esHabitaciones ? 'compartir' : 'alquiler', log),
   ]);
 
   // En modo habitaciones la mediana es de PRECIO (€/mes de una habitación),
   // no de €/m² — ver `preciosHabitacion`. En modo piso completo sigue siendo
-  // €/m²/mes, comportamiento sin cambios.
-  const comparablesAlquiler = esHabitaciones
-    ? preciosHabitacion(comparablesOperacion)
-    : preciosPorM2Alquiler(comparablesOperacion);
-  const medianaAlquilerM2 = mediana(comparablesAlquiler);
+  // €/m²/mes, comportamiento sin cambios. En modo flip no hay comparables de
+  // alquiler en absoluto: `medianaAlquilerM2` es `null` (mismo sentinela "sin
+  // estimación" que ya usan los otros modos cuando no hay datos, nunca un
+  // número inventado), `numComparablesAlquilerTotal` es 0 y `confianza` se
+  // fija a `'baja'` — no porque la estimación de alquiler sea de baja
+  // confianza (no existe tal estimación en este modo), sino porque el tipo
+  // `confianza: 'alta' | 'baja'` de cada listing no admite un tercer valor
+  // "no aplica" sin tocar el contrato que ya usan los otros dos modos; 'baja'
+  // es la opción que nunca sobreestima la fiabilidad de un dato ausente.
+  const comparablesAlquiler = esFlip
+    ? []
+    : esHabitaciones
+      ? preciosHabitacion(comparablesOperacion)
+      : preciosPorM2Alquiler(comparablesOperacion);
+  const medianaAlquilerM2 = esFlip ? null : mediana(comparablesAlquiler);
   const numComparablesAlquilerTotal = comparablesAlquiler.length;
   const confianza: 'alta' | 'baja' =
     numComparablesAlquilerTotal >= MIN_COMPARABLES_ALTA_CONFIANZA ? 'alta' : 'baja';
 
-  if (numComparablesAlquilerTotal === 0) {
+  if (!esFlip && numComparablesAlquilerTotal === 0) {
     avisos.push(
       esHabitaciones
         ? 'Sin anuncios de alquiler por habitaciones en esta zona: no se puede estimar el ingreso.'
         : 'Sin comparables de alquiler suficientes en esta zona: no se puede estimar el alquiler.',
     );
-  } else if (confianza === 'baja') {
+  } else if (!esFlip && confianza === 'baja') {
     avisos.push(
       esHabitaciones
         ? `Solo ${numComparablesAlquilerTotal} comparable(s) de alquiler por habitaciones en esta zona: estimación de baja confianza.`
@@ -221,7 +239,9 @@ export async function calcularRentabilidadZona(
 
   if (medianaVentaM2 === null) {
     avisos.push(
-      'Sin comparables de venta suficientes en esta zona: no se puede valorar si el precio está por encima o por debajo del mercado.',
+      esFlip
+        ? 'Sin comparables de venta suficientes en esta zona: no se puede estimar el precio de venta para el flip.'
+        : 'Sin comparables de venta suficientes en esta zona: no se puede valorar si el precio está por encima o por debajo del mercado.',
     );
   }
 
@@ -231,7 +251,9 @@ export async function calcularRentabilidadZona(
   // En modo habitaciones, además, hace falta un número de habitaciones
   // conocido (> 0): sin él no se puede multiplicar por el precio de la
   // habitación y el anuncio se excluye, mismo principio de "un dato
-  // desconocido no se sustituye por una suposición".
+  // desconocido no se sustituye por una suposición". En modo flip no hace
+  // falta ningún filtro adicional: la estimación de venta usa precio/metros,
+  // ya exigidos arriba para todos los modos.
   const listings: ListingRentabilidadZona[] = enVenta
     .filter((a) => a.precio !== null && a.precio > 0 && a.metros !== null && a.metros > 0)
     .filter((a) => !esHabitaciones || (a.habitaciones !== null && a.habitaciones > 0))

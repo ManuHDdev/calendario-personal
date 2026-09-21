@@ -126,13 +126,16 @@ export interface RentabilidadZonaListing {
 }
 
 /**
- * Modo de estimación del alquiler: `'alquiler_completo'` (por defecto, todo
- * el piso) o `'habitaciones'` (ingreso por habitaciones sueltas, a partir de
- * comparables de alquiler por habitación). Cambiar de modo dispara una
- * búsqueda nueva (necesita comparables distintos del portal), a diferencia
- * de los parámetros de financiación, que son puramente client-side.
+ * Modo de estimación: `'alquiler_completo'` (por defecto, todo el piso),
+ * `'habitaciones'` (ingreso por habitaciones sueltas, a partir de
+ * comparables de alquiler por habitación) o `'flip'` (comprar, reformar,
+ * vender — sin comparables de alquiler en absoluto, solo el AVM de venta ya
+ * usado por los otros dos modos). Cambiar de modo dispara una búsqueda
+ * nueva (necesita comparables distintos del portal, o ninguno en el caso de
+ * flip), a diferencia de los parámetros de financiación, que son
+ * puramente client-side.
  */
-export type ModoRentabilidadZona = 'alquiler_completo' | 'habitaciones';
+export type ModoRentabilidadZona = 'alquiler_completo' | 'habitaciones' | 'flip';
 
 export interface RentabilidadZonaResultado {
   ubicacion: string;

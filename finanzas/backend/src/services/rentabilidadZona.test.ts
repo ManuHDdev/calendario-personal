@@ -321,4 +321,66 @@ describe('calcularRentabilidadZona', () => {
       });
     });
   });
+
+  describe('modo "flip" (comprar, reformar, vender)', () => {
+    it('no busca comparables de alquiler ni de "compartir" en absoluto (petición más ligera)', () => {
+      // Limpia el historial de llamadas de tests anteriores del mismo fichero
+      // (los mocks son de módulo, no se resetean solos entre tests) — solo
+      // interesan las llamadas que haga ESTA búsqueda.
+      fotocasaBuscar.mockClear();
+      pisosBuscar.mockClear();
+      mockearBusquedas({
+        venta: [anuncio({ portalId: 'v1', precio: 100_000, metros: 100 })],
+        // Si el modo flip llamara a buscarEnPortales para alquiler/compartir,
+        // este mock (por operación) seguiría devolviendo [] igualmente, así
+        // que la prueba real está en la aserción de llamadas de abajo.
+      });
+
+      return calcularRentabilidadZona('Cáceres', undefined, 'flip').then((resultado) => {
+        expect(resultado.modo).toBe('flip');
+        expect(resultado.medianaAlquilerM2).toBeNull();
+        expect(resultado.numComparablesAlquilerTotal).toBe(0);
+        expect(resultado.listings[0].alquilerMensualEstimado).toBeNull();
+        // Solo se pidió 'venta': ni fotocasaBuscar ni pisosBuscar deben haberse
+        // llamado con operacion 'alquiler' ni 'compartir'.
+        const operacionesPedidas = [...fotocasaBuscar.mock.calls, ...pisosBuscar.mock.calls].map(
+          (call) => (call[0] as CriteriosPortal).operacion,
+        );
+        expect(operacionesPedidas.every((op) => op === 'venta')).toBe(true);
+      });
+    });
+
+    it('sigue calculando medianaVentaM2 y desviacionVsMedianaVentaPct exactamente igual que los otros modos', () => {
+      mockearBusquedas({
+        venta: [
+          anuncio({ portalId: 'v1', precio: 100_000, metros: 100 }), // 1000 €/m²
+          anuncio({ portalId: 'v2', url: 'https://example.com/2', precio: 300_000, metros: 100 }), // 3000 €/m²
+        ],
+      });
+
+      return calcularRentabilidadZona('Cáceres', undefined, 'flip').then((resultado) => {
+        expect(resultado.medianaVentaM2).toBe(2000);
+        expect(resultado.numComparablesVentaTotal).toBe(2);
+        const l1 = resultado.listings.find((l) => l.url === 'https://example.com/1');
+        expect(l1?.desviacionVsMedianaVentaPct).toBeCloseTo(-50, 2);
+      });
+    });
+
+    it('sin comparables de venta suficientes, el aviso menciona la estimación de venta para el flip (no "por encima/debajo del mercado")', () => {
+      mockearBusquedas({ venta: [] });
+
+      return calcularRentabilidadZona('Zona Vacía', undefined, 'flip').then((resultado) => {
+        expect(resultado.medianaVentaM2).toBeNull();
+        expect(resultado.avisos.some((a) => /estimar el precio de venta para el flip/.test(a))).toBe(true);
+      });
+    });
+
+    it('no genera ningún aviso de "comparables de alquiler" (no aplica a este modo)', () => {
+      mockearBusquedas({ venta: [anuncio({ portalId: 'v1', precio: 100_000, metros: 100 })] });
+
+      return calcularRentabilidadZona('Cáceres', undefined, 'flip').then((resultado) => {
+        expect(resultado.avisos.some((a) => /comparables de alquiler/.test(a))).toBe(false);
+      });
+    });
+  });
 });
