@@ -32,19 +32,27 @@ export interface ListingConRentabilidad {
  * falla, p. ej. por un parámetro inválido) van al final, en el mismo orden
  * relativo en que llegaron — nunca se descartan en silencio, así la UI puede
  * seguir mostrándolos con un "sin datos suficientes".
+ *
+ * `gastosReformaPorListing` es un ajuste puramente client-side por listing
+ * (clave = `listing.url`, la misma clave estable que ya se usa como `key` de
+ * React en la lista): un "y si reformo ESTE piso" que solo sube el precio
+ * efectivo usado para calcular SU rentabilidad, no una hipótesis global — un
+ * listing sin entrada en el mapa usa 0, igual que hasta ahora.
  */
 export function calcularRankingRentabilidad(
   listings: RentabilidadZonaListing[],
   parametros: ParametrosFinanciacion,
+  gastosReformaPorListing: Record<string, number> = {},
 ): ListingConRentabilidad[] {
   const conResultado: ListingConRentabilidad[] = listings.map((listing) => {
     if (listing.alquilerMensualEstimado === null) {
       return { listing, resultado: null };
     }
     try {
+      const gastosReforma = gastosReformaPorListing[listing.url] ?? 0;
       const resultado = calcularAlquilerRentabilidad({
         ...parametros,
-        precioVivienda: listing.precio,
+        precioVivienda: listing.precio + gastosReforma,
         alquilerMensual: listing.alquilerMensualEstimado,
       });
       return { listing, resultado };

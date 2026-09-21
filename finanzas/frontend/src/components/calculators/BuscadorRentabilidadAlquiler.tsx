@@ -1,8 +1,9 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import CalculatorCard from '../CalculatorCard';
 import NumberField from '../NumberField';
+import RentabilidadZonaMapa from './RentabilidadZonaMapa';
 import { getRentabilidadZona } from '../../services/api';
-import type { RentabilidadZonaResultado } from '../../services/api';
+import type { RentabilidadZonaListing, RentabilidadZonaResultado } from '../../services/api';
 import { calcularRankingRentabilidad, type ParametrosFinanciacion } from '../../lib/rentabilidadZona';
 import { formatEUR } from '../../lib/format';
 import './BuscadorRentabilidadAlquiler.css';
@@ -38,6 +39,19 @@ export default function BuscadorRentabilidadAlquiler() {
 
   const [params, setParams] = useState(PARAMETROS_INICIALES);
 
+  // Selección compartida entre mapa y lista: se guarda por `url` (clave
+  // estable, la misma que ya se usa como `key` de React), no el objeto
+  // listing en sí — así la selección sobrevive a un re-rankeo (editar TIN,
+  // gastos de reforma…) que crea listings nuevos en cada render.
+  const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
+
+  // "Y si reformo ESTE piso": ajuste per-listing, puramente client-side,
+  // nunca enviado al backend ni mezclado con los parámetros globales de
+  // financiación. Clave = listing.url, valor = string tal y como se edita
+  // (permite dejar el campo vacío mientras se escribe, igual que el resto
+  // de NumberField del formulario).
+  const [gastosReformaInputs, setGastosReformaInputs] = useState<Record<string, string>>({});
+
   const handleBuscar = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const texto = ubicacion.trim();
@@ -46,7 +60,13 @@ export default function BuscadorRentabilidadAlquiler() {
     setError(null);
     setBuscando(true);
     getRentabilidadZona(texto)
-      .then((r) => setResultado(r))
+      .then((r) => {
+        setResultado(r);
+        // Resultados nuevos → ni la selección ni los gastos de reforma de la
+        // búsqueda anterior tienen sentido (son de otros listings).
+        setSelectedUrl(null);
+        setGastosReformaInputs({});
+      })
       .catch((err: unknown) => {
         setResultado(null);
         setError(err instanceof Error ? err.message : 'Error buscando la zona');
@@ -77,13 +97,36 @@ export default function BuscadorRentabilidadAlquiler() {
     return valores;
   }, [params]);
 
+  // Del string editable al mapa numérico que espera calcularRankingRentabilidad:
+  // vacío o inválido → sin entrada (0, "no toques el precio de este listing").
+  const gastosReformaPorListing = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const [url, raw] of Object.entries(gastosReformaInputs)) {
+      if (raw.trim() === '') continue;
+      const n = Number(raw);
+      if (Number.isFinite(n) && n >= 0) out[url] = n;
+    }
+    return out;
+  }, [gastosReformaInputs]);
+
   const ranking = useMemo(() => {
     if (!resultado || !parametrosFinanciacion) return [];
-    return calcularRankingRentabilidad(resultado.listings, parametrosFinanciacion);
-  }, [resultado, parametrosFinanciacion]);
+    return calcularRankingRentabilidad(resultado.listings, parametrosFinanciacion, gastosReformaPorListing);
+  }, [resultado, parametrosFinanciacion, gastosReformaPorListing]);
+
+  const selectedItem = useMemo(
+    () => ranking.find((r) => r.listing.url === selectedUrl) ?? null,
+    [ranking, selectedUrl],
+  );
+  const selectedListing: RentabilidadZonaListing | null = selectedItem?.listing ?? null;
 
   const setParam = (campo: keyof typeof PARAMETROS_INICIALES) => (valor: string) =>
     setParams((prev) => ({ ...prev, [campo]: valor }));
+
+  const setGastosReforma = (url: string) => (valor: string) =>
+    setGastosReformaInputs((prev) => ({ ...prev, [url]: valor }));
+
+  const seleccionar = (listing: RentabilidadZonaListing) => setSelectedUrl(listing.url);
 
   return (
     <div className="rentabilidad-zona">
@@ -192,64 +235,175 @@ export default function BuscadorRentabilidadAlquiler() {
             )}
           </div>
 
-          <div className="rentabilidad-zona-listado">
-            {ranking.length === 0 && !buscando && (
-              <p className="rentabilidad-zona-vacio">Sin anuncios en venta para "{resultado.ubicacion}".</p>
-            )}
-            {ranking.map(({ listing, resultado: r }) => (
-              <a
-                key={listing.url}
-                href={listing.url}
-                target="_blank"
-                rel="noreferrer"
-                className="rentabilidad-zona-fila"
-              >
-                {listing.imagenUrl && (
-                  <img className="rentabilidad-zona-imagen" src={listing.imagenUrl} alt="" loading="lazy" />
-                )}
-                <div className="rentabilidad-zona-info">
-                  <div className="rentabilidad-zona-titulo-linea">
-                    <span className="rentabilidad-zona-titulo">{listing.titulo}</span>
-                    <span className="rentabilidad-zona-portal">{listing.portal}</span>
-                  </div>
-                  <span className="rentabilidad-zona-ubicacion">{listing.ubicacion ?? '—'}</span>
-                  <div className="rentabilidad-zona-datos">
-                    <span>{formatEUR(listing.precio)}</span>
-                    <span>{listing.metros} m²</span>
-                    {listing.habitaciones !== null && <span>{listing.habitaciones} hab.</span>}
-                  </div>
-                  <div className="rentabilidad-zona-alquiler">
-                    {listing.alquilerMensualEstimado === null ? (
-                      <span className="rentabilidad-zona-sin-datos">sin datos suficientes de alquiler</span>
-                    ) : (
-                      <>
-                        <span>Alquiler estimado: {formatEUR(listing.alquilerMensualEstimado)}/mes</span>
-                        <span className="rentabilidad-zona-comparables">
-                          ({listing.numComparablesAlquiler} comparable
-                          {listing.numComparablesAlquiler === 1 ? '' : 's'})
-                        </span>
-                        {listing.confianza === 'baja' && (
-                          <span className="rentabilidad-zona-baja-confianza">confianza baja</span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="rentabilidad-zona-rentabilidad">
-                  {r ? (
-                    <>
-                      <span className="rentabilidad-zona-rentabilidad-pct">
-                        {r.rentabilidadNetaSobreInversionPct.toFixed(2)}%
-                      </span>
-                      <span className={`resultado-veredicto ${CLASE_VEREDICTO[r.veredicto]}`}>{r.veredicto}</span>
-                    </>
+          {ranking.length === 0 && !buscando ? (
+            <p className="rentabilidad-zona-vacio">Sin anuncios en venta para "{resultado.ubicacion}".</p>
+          ) : (
+            <>
+              <div className="rentabilidad-zona-mapa-layout">
+                <RentabilidadZonaMapa listings={ranking} selectedListing={selectedListing} onSelect={seleccionar} />
+
+                <div className="rentabilidad-zona-detalle">
+                  {!selectedListing ? (
+                    <p className="rentabilidad-zona-detalle-vacio">
+                      Selecciona un piso en el mapa o en la lista para ver sus fotos y detalles.
+                    </p>
                   ) : (
-                    <span className="rentabilidad-zona-sin-datos">—</span>
+                    <>
+                      {selectedListing.imagenUrl && (
+                        <img
+                          className="rentabilidad-zona-detalle-imagen"
+                          src={selectedListing.imagenUrl}
+                          alt=""
+                          loading="lazy"
+                        />
+                      )}
+                      <div className="rentabilidad-zona-titulo-linea">
+                        <span className="rentabilidad-zona-detalle-titulo">{selectedListing.titulo}</span>
+                        <span className="rentabilidad-zona-portal">{selectedListing.portal}</span>
+                      </div>
+                      <span className="rentabilidad-zona-ubicacion">{selectedListing.ubicacion ?? '—'}</span>
+
+                      <div className="rentabilidad-zona-detalle-datos">
+                        <span>{formatEUR(selectedListing.precio)}</span>
+                        <span>{selectedListing.metros} m²</span>
+                        {selectedListing.habitaciones !== null && <span>{selectedListing.habitaciones} hab.</span>}
+                      </div>
+
+                      <div className="rentabilidad-zona-alquiler">
+                        {selectedListing.alquilerMensualEstimado === null ? (
+                          <span className="rentabilidad-zona-sin-datos">sin datos suficientes de alquiler</span>
+                        ) : (
+                          <>
+                            <span>Alquiler estimado: {formatEUR(selectedListing.alquilerMensualEstimado)}/mes</span>
+                            <span className="rentabilidad-zona-comparables">
+                              ({selectedListing.numComparablesAlquiler} comparable
+                              {selectedListing.numComparablesAlquiler === 1 ? '' : 's'})
+                            </span>
+                            {selectedListing.confianza === 'baja' && (
+                              <span className="rentabilidad-zona-baja-confianza">confianza baja</span>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      <div className="rentabilidad-zona-detalle-reforma">
+                        <NumberField
+                          label="Gastos de reforma (€)"
+                          value={gastosReformaInputs[selectedListing.url] ?? ''}
+                          onChange={setGastosReforma(selectedListing.url)}
+                          placeholder="0"
+                          required={false}
+                        />
+                        <p className="calculator-help-text">
+                          Se suma al precio solo para calcular la rentabilidad de ESTE piso — no es una
+                          hipótesis global, ni se envía al buscar.
+                        </p>
+                      </div>
+
+                      <div className="rentabilidad-zona-detalle-rentabilidad">
+                        {selectedItem?.resultado ? (
+                          <>
+                            <span className="rentabilidad-zona-rentabilidad-pct">
+                              {selectedItem.resultado.rentabilidadNetaSobreInversionPct.toFixed(2)}%
+                            </span>
+                            <span
+                              className={`resultado-veredicto ${CLASE_VEREDICTO[selectedItem.resultado.veredicto]}`}
+                            >
+                              {selectedItem.resultado.veredicto}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="rentabilidad-zona-sin-datos">Sin datos suficientes para calcular la rentabilidad.</span>
+                        )}
+                      </div>
+
+                      <a
+                        className="rentabilidad-zona-detalle-enlace"
+                        href={selectedListing.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Ver anuncio original ↗
+                      </a>
+                    </>
                   )}
                 </div>
-              </a>
-            ))}
-          </div>
+              </div>
+
+              <div className="rentabilidad-zona-listado">
+                {ranking.map(({ listing, resultado: r }) => {
+                  const seleccionado = listing.url === selectedUrl;
+                  const sinMapa = listing.latitud === null || listing.longitud === null;
+                  return (
+                    <div
+                      key={listing.url}
+                      className={`rentabilidad-zona-fila${seleccionado ? ' seleccionada' : ''}`}
+                      onClick={() => seleccionar(listing)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') seleccionar(listing);
+                      }}
+                    >
+                      {listing.imagenUrl && (
+                        <img className="rentabilidad-zona-imagen" src={listing.imagenUrl} alt="" loading="lazy" />
+                      )}
+                      <div className="rentabilidad-zona-info">
+                        <div className="rentabilidad-zona-titulo-linea">
+                          <span className="rentabilidad-zona-titulo">{listing.titulo}</span>
+                          <span className="rentabilidad-zona-portal">{listing.portal}</span>
+                          {sinMapa && <span className="rentabilidad-zona-sin-mapa">sin ubicación en el mapa</span>}
+                        </div>
+                        <span className="rentabilidad-zona-ubicacion">{listing.ubicacion ?? '—'}</span>
+                        <div className="rentabilidad-zona-datos">
+                          <span>{formatEUR(listing.precio)}</span>
+                          <span>{listing.metros} m²</span>
+                          {listing.habitaciones !== null && <span>{listing.habitaciones} hab.</span>}
+                        </div>
+                        <div className="rentabilidad-zona-alquiler">
+                          {listing.alquilerMensualEstimado === null ? (
+                            <span className="rentabilidad-zona-sin-datos">sin datos suficientes de alquiler</span>
+                          ) : (
+                            <>
+                              <span>Alquiler estimado: {formatEUR(listing.alquilerMensualEstimado)}/mes</span>
+                              <span className="rentabilidad-zona-comparables">
+                                ({listing.numComparablesAlquiler} comparable
+                                {listing.numComparablesAlquiler === 1 ? '' : 's'})
+                              </span>
+                              {listing.confianza === 'baja' && (
+                                <span className="rentabilidad-zona-baja-confianza">confianza baja</span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="rentabilidad-zona-rentabilidad">
+                        {r ? (
+                          <>
+                            <span className="rentabilidad-zona-rentabilidad-pct">
+                              {r.rentabilidadNetaSobreInversionPct.toFixed(2)}%
+                            </span>
+                            <span className={`resultado-veredicto ${CLASE_VEREDICTO[r.veredicto]}`}>{r.veredicto}</span>
+                          </>
+                        ) : (
+                          <span className="rentabilidad-zona-sin-datos">—</span>
+                        )}
+                        <a
+                          className="rentabilidad-zona-fila-abrir"
+                          href={listing.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          abrir anuncio ↗
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
