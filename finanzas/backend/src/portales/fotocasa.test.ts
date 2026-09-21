@@ -150,3 +150,39 @@ describe('fotocasa · operación (venta/alquiler)', () => {
     expect(ids).not.toContain('190620092'); // venta, descartado en modo alquiler
   });
 });
+
+describe('fotocasa · operación compartir (alquiler por habitaciones)', () => {
+  it('usa siempre el segmento "pisos", incluso si tipo es "local"', () => {
+    const url = construirUrl({ ...CRITERIOS_BASE, operacion: 'compartir' }, 1);
+    expect(url).toContain('/es/compartir/pisos/plasencia/todas-las-zonas/l');
+
+    const urlDesdeLocal = construirUrl({ ...CRITERIOS_BASE, tipo: 'local', operacion: 'compartir' }, 1);
+    expect(urlDesdeLocal).toContain('/es/compartir/pisos/plasencia/todas-las-zonas/l');
+    expect(urlDesdeLocal).not.toContain('/locales/');
+  });
+
+  it('filtra por transactionTypeId=5 en modo compartir', () => {
+    const htmlCompartir = `
+<html><body>
+<script type="application/json" id="__initial_props__">
+{"search":{"result":{"realEstates":[
+  {"id":400100001,"buildingType":"Flat","transactionTypeId":5,"rawPrice":320,
+   "detail":{"es-ES":"/es/compartir/piso/caceres/x/400100001/d"},
+   "features":[{"key":"surface","value":389},{"key":"rooms","value":12}]},
+  {"id":400100002,"buildingType":"Flat","transactionTypeId":1,"rawPrice":150000,
+   "detail":{"es-ES":"/es/comprar/vivienda/caceres/x/400100002/d"},
+   "features":[{"key":"surface","value":90}]}
+]}}}
+</script>
+</body></html>`;
+    const ids = parsearPagina(htmlCompartir, 'vivienda', 'compartir').map((a) => a.portalId);
+    expect(ids).toContain('400100001');
+    expect(ids).not.toContain('400100002'); // venta, descartado en modo compartir
+
+    // El precio de la habitación se lee correctamente; las features (surface,
+    // rooms) son del PISO entero, no de la habitación — no se deben usar
+    // para price/m² (ver comentario de cabecera del fichero).
+    const habitacion = parsearPagina(htmlCompartir, 'vivienda', 'compartir')[0];
+    expect(habitacion.precio).toBe(320);
+  });
+});

@@ -14,7 +14,7 @@ import {
   type AlquilerRentabilidadInput,
   type AlquilerRentabilidadResultado,
 } from './calculators';
-import type { RentabilidadZonaListing } from '../services/api';
+import type { ModoRentabilidadZona, RentabilidadZonaListing } from '../services/api';
 
 /** Los parámetros de financiación que el usuario edita, sin precio ni alquiler (vienen del listing). */
 export type ParametrosFinanciacion = Omit<AlquilerRentabilidadInput, 'precioVivienda' | 'alquilerMensual'>;
@@ -78,4 +78,18 @@ export function calcularRankingRentabilidad(
 export function formatearDesviacionVenta(pct: number): string {
   const signo = pct > 0 ? '+' : '';
   return `${signo}${pct.toFixed(1)}% vs. mediana de la zona`;
+}
+
+/**
+ * Etiqueta del alquiler/ingreso estimado, sensible al modo: en
+ * "alquiler_completo" es "Alquiler estimado" (como hasta ahora); en
+ * "habitaciones" es "Ingreso estimado (N habitaciones)", para dejar claro
+ * que la cifra suma varias habitaciones sueltas y no es comparable 1:1 con
+ * un alquiler de piso completo. Sin dato de habitaciones (no debería
+ * ocurrir: un listing sin habitaciones se excluye en modo habitaciones antes
+ * de llegar aquí) cae a "Ingreso estimado" a secas.
+ */
+export function etiquetaAlquilerEstimado(modo: ModoRentabilidadZona, habitaciones: number | null): string {
+  if (modo !== 'habitaciones') return 'Alquiler estimado';
+  return habitaciones !== null ? `Ingreso estimado (${habitaciones} habitaciones)` : 'Ingreso estimado';
 }

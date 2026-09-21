@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   calcularRankingRentabilidad,
   formatearDesviacionVenta,
+  etiquetaAlquilerEstimado,
   type ParametrosFinanciacion,
 } from './rentabilidadZona';
 import type { RentabilidadZonaListing } from '../services/api';
@@ -110,5 +111,20 @@ describe('formatearDesviacionVenta', () => {
 
   it('una desviación de 0 no lleva signo "+"', () => {
     expect(formatearDesviacionVenta(0)).toBe('0.0% vs. mediana de la zona');
+  });
+});
+
+describe('etiquetaAlquilerEstimado', () => {
+  it('en modo alquiler_completo siempre dice "Alquiler estimado"', () => {
+    expect(etiquetaAlquilerEstimado('alquiler_completo', 3)).toBe('Alquiler estimado');
+    expect(etiquetaAlquilerEstimado('alquiler_completo', null)).toBe('Alquiler estimado');
+  });
+
+  it('en modo habitaciones incluye el número de habitaciones', () => {
+    expect(etiquetaAlquilerEstimado('habitaciones', 3)).toBe('Ingreso estimado (3 habitaciones)');
+  });
+
+  it('en modo habitaciones sin dato de habitaciones cae a un texto genérico', () => {
+    expect(etiquetaAlquilerEstimado('habitaciones', null)).toBe('Ingreso estimado');
   });
 });

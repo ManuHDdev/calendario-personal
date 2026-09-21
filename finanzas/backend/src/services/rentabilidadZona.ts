@@ -40,6 +40,15 @@ export interface Logger {
   error: (msg: string) => void;
 }
 
+/**
+ * Modo de estimación del alquiler: `'alquiler_completo'` (por defecto, todo
+ * el piso, comparables de la sección `alquiler`) o `'habitaciones'`
+ * (ingreso por habitaciones sueltas, comparables de la sección `compartir`
+ * multiplicados por el número de habitaciones del anuncio en venta).
+ */
+export const MODOS_RENTABILIDAD_ZONA = ['alquiler_completo', 'habitaciones'] as const;
+export type ModoRentabilidadZona = (typeof MODOS_RENTABILIDAD_ZONA)[number];
+
 export interface ListingRentabilidadZona {
   titulo: string;
   url: string;
@@ -69,6 +78,8 @@ export interface ListingRentabilidadZona {
 
 export interface RentabilidadZonaResultado {
   ubicacion: string;
+  /** Eco del modo solicitado — `'alquiler_completo'` cuando no se pidió ninguno. */
+  modo: ModoRentabilidadZona;
   listings: ListingRentabilidadZona[];
   numComparablesAlquilerTotal: number;
   medianaAlquilerM2: number | null;
@@ -141,6 +152,20 @@ function preciosPorM2Alquiler(anunciosAlquiler: AnuncioCrudo[]): number[] {
     .map((a) => (a.precio as number) / (a.metros as number));
 }
 
+/**
+ * Precio mensual de cada comparable de "compartir" (alquiler por
+ * habitaciones) que tiene precio. A diferencia de `preciosPorM2Alquiler`,
+ * NUNCA se divide por `metros`: en un anuncio "compartir" la superficie
+ * publicada es la del PISO ENTERO, no la de la habitación alquilada (ver el
+ * comentario de cabecera de `portales/fotocasa.ts`), así que un precio/m²
+ * ahí sería una magnitud sin sentido. Solo se necesita el precio en bruto.
+ */
+function preciosHabitacion(anunciosCompartir: AnuncioCrudo[]): number[] {
+  return anunciosCompartir
+    .filter((a) => a.precio !== null && a.precio > 0)
+    .map((a) => a.precio as number);
+}
+
 /** Precio/m² de cada anuncio EN VENTA que tiene AMBOS datos (precio y metros). */
 function preciosPorM2Venta(anunciosVenta: AnuncioCrudo[]): number[] {
   return anunciosVenta
@@ -151,25 +176,38 @@ function preciosPorM2Venta(anunciosVenta: AnuncioCrudo[]): number[] {
 export async function calcularRentabilidadZona(
   ubicacion: string,
   log?: Logger,
+  modo: ModoRentabilidadZona = 'alquiler_completo',
 ): Promise<RentabilidadZonaResultado> {
   const avisos: string[] = [];
+  const esHabitaciones = modo === 'habitaciones';
 
-  const [enVenta, enAlquiler] = await Promise.all([
+  const [enVenta, comparablesOperacion] = await Promise.all([
     buscarEnPortales(ubicacion, 'venta', log),
-    buscarEnPortales(ubicacion, 'alquiler', log),
+    buscarEnPortales(ubicacion, esHabitaciones ? 'compartir' : 'alquiler', log),
   ]);
 
-  const comparablesAlquiler = preciosPorM2Alquiler(enAlquiler);
+  // En modo habitaciones la mediana es de PRECIO (€/mes de una habitación),
+  // no de €/m² — ver `preciosHabitacion`. En modo piso completo sigue siendo
+  // €/m²/mes, comportamiento sin cambios.
+  const comparablesAlquiler = esHabitaciones
+    ? preciosHabitacion(comparablesOperacion)
+    : preciosPorM2Alquiler(comparablesOperacion);
   const medianaAlquilerM2 = mediana(comparablesAlquiler);
   const numComparablesAlquilerTotal = comparablesAlquiler.length;
   const confianza: 'alta' | 'baja' =
     numComparablesAlquilerTotal >= MIN_COMPARABLES_ALTA_CONFIANZA ? 'alta' : 'baja';
 
   if (numComparablesAlquilerTotal === 0) {
-    avisos.push('Sin comparables de alquiler suficientes en esta zona: no se puede estimar el alquiler.');
+    avisos.push(
+      esHabitaciones
+        ? 'Sin anuncios de alquiler por habitaciones en esta zona: no se puede estimar el ingreso.'
+        : 'Sin comparables de alquiler suficientes en esta zona: no se puede estimar el alquiler.',
+    );
   } else if (confianza === 'baja') {
     avisos.push(
-      `Solo ${numComparablesAlquilerTotal} comparable(s) de alquiler en esta zona: estimación de baja confianza.`,
+      esHabitaciones
+        ? `Solo ${numComparablesAlquilerTotal} comparable(s) de alquiler por habitaciones en esta zona: estimación de baja confianza.`
+        : `Solo ${numComparablesAlquilerTotal} comparable(s) de alquiler en esta zona: estimación de baja confianza.`,
     );
   }
 
@@ -190,13 +228,22 @@ export async function calcularRentabilidadZona(
   // Un anuncio en venta sin precio o sin metros no se puede rankear ni
   // estimar: se excluye del todo, igual que en calcularPrecioMedioM2 y en
   // el filtro fino de `pisos` para cualquier dato que falte por completo.
+  // En modo habitaciones, además, hace falta un número de habitaciones
+  // conocido (> 0): sin él no se puede multiplicar por el precio de la
+  // habitación y el anuncio se excluye, mismo principio de "un dato
+  // desconocido no se sustituye por una suposición".
   const listings: ListingRentabilidadZona[] = enVenta
     .filter((a) => a.precio !== null && a.precio > 0 && a.metros !== null && a.metros > 0)
+    .filter((a) => !esHabitaciones || (a.habitaciones !== null && a.habitaciones > 0))
     .map((a) => {
       const precio = a.precio as number;
       const metros = a.metros as number;
       const alquilerMensualEstimado =
-        medianaAlquilerM2 !== null ? Math.round(medianaAlquilerM2 * metros * 100) / 100 : null;
+        medianaAlquilerM2 === null
+          ? null
+          : esHabitaciones
+            ? Math.round(medianaAlquilerM2 * (a.habitaciones as number) * 100) / 100
+            : Math.round(medianaAlquilerM2 * metros * 100) / 100;
       const desviacionVsMedianaVentaPct =
         medianaVentaM2 !== null
           ? Math.round(((precio / metros - medianaVentaM2) / medianaVentaM2) * 100 * 100) / 100
@@ -222,6 +269,7 @@ export async function calcularRentabilidadZona(
 
   return {
     ubicacion,
+    modo,
     listings,
     numComparablesAlquilerTotal,
     medianaAlquilerM2,

@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RentabilidadZonaListing } from '../../services/api';
 import type { ListingConRentabilidad } from '../../lib/rentabilidadZona';
+import type { Punto } from '../../lib/geometria';
 
 // Mismo color que las clases `.resultado-veredicto.buena/.dudosa/.mala` ya
 // usadas en el listado (ver CalculatorCard.css) — el mapa no inventa una
@@ -52,6 +53,14 @@ interface Props {
   listings: ListingConRentabilidad[];
   selectedListing: RentabilidadZonaListing | null;
   onSelect: (listing: RentabilidadZonaListing) => void;
+  /** `true` mientras el usuario está dibujando una zona (cursor en cruz, clics añaden vértices). */
+  dibujando: boolean;
+  /** Vértices de la zona ya cerrada (mostrada como polígono relleno) — `null` si no hay zona activa. */
+  zonaCerrada: Punto[] | null;
+  /** Vértices del polígono en curso de dibujo (mostrado como línea, aún sin cerrar). */
+  verticesEnCurso: Punto[];
+  /** Se llama con cada clic en el mapa mientras `dibujando` es `true`. */
+  onAgregarVertice: (punto: Punto) => void;
 }
 
 // Mismo patrón que paraisos/frontend/src/components/SpotMap.tsx: leaflet
@@ -60,9 +69,18 @@ interface Props {
 // selección y flyTo en la selección. El ajuste de vista inicial ("mostrar
 // todos los puntos") sigue el mismo patrón fitBounds que
 // locales/frontend/src/components/MapaViabilidad.tsx.
-export default function RentabilidadZonaMapa({ listings, selectedListing, onSelect }: Props) {
+export default function RentabilidadZonaMapa({
+  listings,
+  selectedListing,
+  onSelect,
+  dibujando,
+  zonaCerrada,
+  verticesEnCurso,
+  onAgregarVertice,
+}: Props) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.LayerGroup>(L.layerGroup());
+  const dibujoRef = useRef<L.LayerGroup>(L.layerGroup());
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -79,6 +97,7 @@ export default function RentabilidadZonaMapa({ listings, selectedListing, onSele
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     markersRef.current.addTo(map);
+    dibujoRef.current.addTo(map);
     mapRef.current = map;
 
     return () => {
@@ -88,6 +107,72 @@ export default function RentabilidadZonaMapa({ listings, selectedListing, onSele
   }, []);
 
   const handleMarkerClick = useCallback((listing: RentabilidadZonaListing) => onSelect(listing), [onSelect]);
+
+  // Cursor en cruz mientras se dibuja: mismo patrón que `pickingMode` en
+  // `paraisos/frontend/src/components/SpotMap.tsx`.
+  useEffect(() => {
+    if (!mapRef.current) return;
+    mapRef.current.getContainer().style.cursor = dibujando ? 'crosshair' : '';
+  }, [dibujando]);
+
+  // Clic en el mapa en modo dibujo → nuevo vértice. Se desactiva el arrastre
+  // en modo dibujo (mismo criterio que un modo de "picking": el gesto
+  // principal del clic es añadir un punto, no mover el mapa) y se reactiva
+  // al salir de él.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (dibujando) {
+      map.dragging.disable();
+    } else {
+      map.dragging.enable();
+    }
+
+    const handleClick = (e: L.LeafletMouseEvent) => {
+      if (!dibujando) return;
+      onAgregarVertice([e.latlng.lat, e.latlng.lng]);
+    };
+    map.on('click', handleClick);
+    return () => {
+      map.off('click', handleClick);
+    };
+  }, [dibujando, onAgregarVertice]);
+
+  // Pinta el polígono cerrado (relleno) o la línea en curso (sin cerrar),
+  // más un marcador especial en el primer vértice mientras se dibuja, para
+  // que "cerrar la zona" tenga un objetivo visible y no sea un truco oculto.
+  useEffect(() => {
+    const group = dibujoRef.current;
+    group.clearLayers();
+
+    if (zonaCerrada && zonaCerrada.length >= 3) {
+      L.polygon(zonaCerrada as L.LatLngExpression[], {
+        color: 'var(--accent)',
+        weight: 2,
+        fillOpacity: 0.12,
+      }).addTo(group);
+      return;
+    }
+
+    if (verticesEnCurso.length > 0) {
+      if (verticesEnCurso.length > 1) {
+        L.polyline(verticesEnCurso as L.LatLngExpression[], { color: 'var(--accent)', weight: 2, dashArray: '6 6' }).addTo(
+          group,
+        );
+      }
+      verticesEnCurso.forEach((v, i) => {
+        const esPrimero = i === 0;
+        L.circleMarker(v, {
+          radius: esPrimero && verticesEnCurso.length >= 3 ? 7 : 4,
+          color: 'var(--accent)',
+          weight: esPrimero ? 3 : 1,
+          fillColor: 'white',
+          fillOpacity: 1,
+        }).addTo(group);
+      });
+    }
+  }, [zonaCerrada, verticesEnCurso]);
 
   // Repuebla los marcadores en cada cambio de datos o de selección (mismo
   // efecto único que SpotMap, no dos efectos duplicados haciendo lo mismo).
