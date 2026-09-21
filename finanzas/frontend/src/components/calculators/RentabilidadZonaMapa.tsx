@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RentabilidadZonaListing } from '../../services/api';
-import type { ListingConRentabilidad } from '../../lib/rentabilidadZona';
+import type { ItemRanking } from '../../lib/rentabilidadZona';
 import type { Punto } from '../../lib/geometria';
 
 // Mismo color que las clases `.resultado-veredicto.buena/.dudosa/.mala` ya
@@ -15,7 +15,7 @@ const COLOR_DUDOSO = 'var(--accent)';
 const COLOR_NO_MERECE_LA_PENA = 'var(--danger)';
 const COLOR_SIN_DATOS = 'var(--text-tertiary)';
 
-function colorParaListing(item: ListingConRentabilidad): string {
+function colorParaListing(item: ItemRanking): string {
   if (!item.resultado) return COLOR_SIN_DATOS;
   switch (item.resultado.veredicto) {
     case 'Merece la pena':
@@ -45,12 +45,12 @@ function crearIcono(color: string, seleccionado: boolean): L.DivIcon {
 }
 
 /** Listings con coordenadas — una sin latitud/longitud no puede pintarse (sigue en la lista, solo no en el mapa). */
-function conCoordenadas(listings: ListingConRentabilidad[]): ListingConRentabilidad[] {
+function conCoordenadas(listings: ItemRanking[]): ItemRanking[] {
   return listings.filter((item) => item.listing.latitud !== null && item.listing.longitud !== null);
 }
 
 interface Props {
-  listings: ListingConRentabilidad[];
+  listings: ItemRanking[];
   selectedListing: RentabilidadZonaListing | null;
   onSelect: (listing: RentabilidadZonaListing) => void;
   /** `true` mientras el usuario está dibujando una zona (cursor en cruz, clics añaden vértices). */

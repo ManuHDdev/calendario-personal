@@ -1077,6 +1077,103 @@ export function simularProyeccionAlquiler(
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// 9c. Flip (comprar, reformar, vender) — inspirado en roiexplorer.com
+// ─────────────────────────────────────────────────────────────────────────
+//
+// A diferencia de "Comprar para alquilar", un flip no genera renta: el
+// retorno es puramente el margen entre lo invertido (compra + gastos +
+// reforma) y lo obtenido en la venta (ya descontados los gastos de venta).
+// Por eso, deliberadamente, esta función NO recibe ni usa tinHipotecaPct ni
+// plazoHipotecaAnios — no hay hipoteca ni cuota que amortizar en este
+// modelo, es una operación de compraventa pura. `precioVentaEstimado` se
+// recibe ya calculado por quien llama (típicamente `medianaVentaM2 *
+// metros`, el mismo AVM que ya usa "Rentabilidad de alquiler por zona"):
+// esta función no sabe nada de comparables ni de scraping, solo hace
+// aritmética con los números que le dan.
+
+export interface FlipInput {
+  precioCompra: number;
+  /** % sobre el precio de compra (ITP/IVA, notaría, registro, gestoría…). Default 10, igual que en "Comprar para alquilar". */
+  gastosCompraPct?: number;
+  /** Coste de la reforma, en euros. Default 0 — mismo concepto per-listing que "Gastos de reforma" en el modo alquiler. */
+  gastosReforma?: number;
+  /** Estimación de precio de venta ya calculada por quien llama (p. ej. medianaVentaM2 * metros). */
+  precioVentaEstimado: number;
+  /** % sobre el precio de venta (comisión de la inmobiliaria + gastos de cierre). Default 5, rango típico en España 3-6%. */
+  gastosVentaPct?: number;
+  /**
+   * Umbral de margen para "Merece la pena", en %. Default 20 — más alto que
+   * el umbral de rentabilidad de alquiler (5%) porque un flip no genera
+   * cashflow mientras dura la obra/venta (meses sin ingreso, capital
+   * inmovilizado), tiene más riesgo de ejecución (sobrecoste de reforma,
+   * plazos de venta que se alargan) y es una operación ilíquida de una sola
+   * vez, no una renta recurrente — necesita más colchón para compensar.
+   */
+  umbralMargenAceptablePct?: number;
+}
+
+export type VeredictoFlip = VeredictoAlquiler;
+
+export interface FlipResultado {
+  /** precioCompra * (1 + gastosCompraPct/100) + gastosReforma */
+  inversionTotal: number;
+  /** precioVentaEstimado * (1 - gastosVentaPct/100) */
+  ingresoVentaNeto: number;
+  /** ingresoVentaNeto - inversionTotal */
+  beneficioBruto: number;
+  /** beneficioBruto / inversionTotal * 100 */
+  margenSobreInversionPct: number;
+  veredicto: VeredictoFlip;
+  mensaje: string;
+}
+
+export function calcularFlip(input: FlipInput): FlipResultado {
+  const {
+    precioCompra,
+    gastosCompraPct = 10,
+    gastosReforma = 0,
+    precioVentaEstimado,
+    gastosVentaPct = 5,
+    umbralMargenAceptablePct = 20,
+  } = input;
+
+  validarNoNegativo(precioCompra, 'El precio de compra');
+  validarNoNegativo(gastosCompraPct, 'Los gastos de compra');
+  validarNoNegativo(gastosReforma, 'Los gastos de reforma');
+  validarNoNegativo(precioVentaEstimado, 'El precio de venta estimado');
+  validarNoNegativo(gastosVentaPct, 'Los gastos de venta');
+  validarNoNegativo(umbralMargenAceptablePct, 'El umbral de margen aceptable');
+
+  const inversionTotal = precioCompra * (1 + gastosCompraPct / 100) + gastosReforma;
+  const ingresoVentaNeto = precioVentaEstimado * (1 - gastosVentaPct / 100);
+  const beneficioBruto = ingresoVentaNeto - inversionTotal;
+  const margenSobreInversionPct = inversionTotal > 0 ? (beneficioBruto / inversionTotal) * 100 : 0;
+
+  let veredicto: VeredictoFlip;
+  let mensaje: string;
+  if (beneficioBruto <= 0) {
+    veredicto = 'No merece la pena';
+    mensaje = 'El precio de venta estimado no cubre la compra, la reforma y los gastos: pierdes dinero en la operación.';
+  } else if (margenSobreInversionPct >= umbralMargenAceptablePct) {
+    veredicto = 'Merece la pena';
+    mensaje = 'El margen sobre lo invertido supera el umbral marcado, suficiente para compensar el riesgo y el tiempo sin renta de un flip.';
+  } else {
+    veredicto = 'Dudoso';
+    mensaje =
+      'Hay beneficio pero el margen es bajo para el riesgo (sobrecoste de reforma, plazo de venta) de una operación de compraventa — compara con alternativas más seguras.';
+  }
+
+  return {
+    inversionTotal,
+    ingresoVentaNeto,
+    beneficioBruto,
+    margenSobreInversionPct,
+    veredicto,
+    mensaje,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // 10. Pérdida de poder adquisitivo por inflación (dinero parado, sin invertir)
 // ─────────────────────────────────────────────────────────────────────────
 

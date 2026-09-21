@@ -1524,6 +1524,110 @@ lista) — "¿en qué zona cae?" no tiene respuesta sin coordenadas, así que ya
 no basta con la etiqueta. Un indicador ("N de M pisos en esta zona") deja
 claro cuántos quedan fuera y cómo se borra el filtro.
 
+### Modo "flip" (comprar, reformar, vender) (nuevo, complementario — inspirado en roiexplorer.com)
+
+Tercer modo de `rentabilidad-zona`, junto a `alquiler_completo` y
+`habitaciones`: `flip`. A diferencia de los otros dos, un flip no genera
+renta — el retorno es el margen entre lo invertido en comprar+reformar y lo
+obtenido al vender.
+
+**Insight clave: el AVM de venta ya calculado sirve de estimación de venta,
+sin dato nuevo.** `medianaVentaM2` (ver sección "AVM" más arriba) ya se
+calcula para TODOS los modos a partir de los propios anuncios en venta que
+el servicio trae — nunca requirió scraping adicional. El precio de venta
+estimado de un flip es sencillamente `medianaVentaM2 * metros` del propio
+anuncio: el mismo número que ya alimenta el badge de
+`desviacionVsMedianaVentaPct`. Por eso el modo flip no necesita NINGÚN dato
+nuevo del backend.
+
+**Sin hipoteca, sin comparables de alquiler — petición más ligera, a
+propósito.** `calcularRentabilidadZona` (`services/rentabilidadZona.ts`) con
+`modo: 'flip'` se salta por completo la búsqueda de comparables de
+alquiler/compartir (`buscarEnPortales(ubicacion, 'alquiler'|'compartir',
+...)` ni se llama): un flip no tiene inquilino, así que rastrear alquiler
+sería trabajo desperdiciado, no solo "igual de pesado pero ignorado".
+`alquilerMensualEstimado` es `null` para todos los listings en este modo
+(mismo sentinela "sin estimación" que ya usan los otros modos, nunca un
+número inventado); `numComparablesAlquiler` es `0` y `confianza` se fija a
+`'baja'` — no porque haya una estimación de baja confianza (no existe tal
+estimación en flip), sino porque el tipo `confianza: 'alta' | 'baja'` de
+cada listing no admite un tercer valor "no aplica" sin romper el contrato
+que ya usan los otros dos modos; `'baja'` es la opción que nunca
+sobreestima la fiabilidad de un dato ausente. `medianaVentaM2` y
+`desviacionVsMedianaVentaPct` se calculan exactamente igual que en los
+otros modos (sin cambios). El aviso de "sin comparables de venta" se
+reformula en este modo: en vez de "no se puede valorar si el precio está
+por encima o por debajo del mercado" (lenguaje de AVM comparativo), dice
+"no se puede estimar el precio de venta para el flip" — en flip la falta de
+`medianaVentaM2` significa que la propia estimación de venta no existe, no
+solo que falte un punto de comparación.
+
+**`calcularFlip()` (`frontend/src/lib/calculators.ts`) — sin hipoteca, a
+propósito.** Deliberadamente NO recibe ni usa `tinHipotecaPct` ni
+`plazoHipotecaAnios`: un flip es una operación de compraventa pura, sin
+cuota que amortizar. `FlipInput`: `precioCompra`, `gastosCompraPct`
+(default 10, reutiliza el mismo % que "Comprar para alquilar"),
+`gastosReforma` (default 0, mismo concepto per-listing que "Gastos de
+reforma" en el modo alquiler), `precioVentaEstimado` (calculado por quien
+llama — `medianaVentaM2 * metros` — la función no sabe nada de scraping ni
+comparables), `gastosVentaPct` (default 5%, comisión inmobiliaria + gastos
+de cierre, rango típico en España 3-6%), `umbralMargenAceptablePct`
+(default **20%**, deliberadamente más alto que el umbral de rentabilidad de
+alquiler que es 5% — un flip no genera cashflow mientras dura la obra/venta,
+inmoviliza capital varios meses, tiene más riesgo de ejecución (sobrecoste
+de reforma, plazo de venta que se alarga) y es una operación de una sola vez
+en vez de una renta recurrente: necesita más colchón de margen para
+compensar). `inversionTotal = precioCompra*(1+gastosCompraPct/100) +
+gastosReforma`; `ingresoVentaNeto = precioVentaEstimado*(1-gastosVentaPct/100)`;
+`beneficioBruto = ingresoVentaNeto - inversionTotal`; veredicto
+`'No merece la pena'` si `beneficioBruto <= 0`, `'Merece la pena'` si el
+margen supera el umbral, si no `'Dudoso'` — mismo patrón de tres veredictos
+que `calcularAlquilerRentabilidad`.
+
+**`calcularRankingFlip()` (`frontend/src/lib/rentabilidadZona.ts`) —
+función PARALELA a `calcularRankingRentabilidad`, no un `modo` interno de
+la misma.** Decisión de diseño explícita: los dos modos existentes
+(`alquiler_completo`/`habitaciones`) comparten exactamente la misma forma de
+entrada (`alquilerMensualEstimado` por listing) y de salida
+(`AlquilerRentabilidadResultado`, vía `calcularAlquilerRentabilidad`); flip
+no — su entrada relevante (`medianaVentaM2`, un valor de la ZONA entera, no
+por listing) y su salida (`FlipResultado`, sin cashflow ni hipoteca) son de
+forma distinta. Forzar los tres en una única función con un `modo` interno
+habría obligado a un tipo de resultado unión en cada punto de uso, para un
+caso que en realidad no comparte forma con los otros dos — una función
+paralela mantiene cada modo con su propio tipo de entrada/salida, sin
+narrowing forzado en la UI. Firma:
+`calcularRankingFlip(listings, medianaVentaM2, parametros, gastosReformaPorListing?)`.
+Reutiliza el MISMO mapa `gastosReformaPorListing` (clave = `listing.url`)
+que ya usan los otros modos — no un segundo input de reforma. Un listing sin
+`medianaVentaM2` de zona (AVM no disponible) va al final con
+`resultado: null`, mismo principio "nunca se descarta en silencio, nunca se
+fabrica un dato" que el resto del módulo. El componente
+(`BuscadorRentabilidadAlquiler.tsx`) unifica ambas formas de ranking en un
+tipo `ItemRanking` discriminado por `kind: 'alquiler' | 'flip'` (definido en
+`lib/rentabilidadZona.ts`, reutilizado también por `RentabilidadZonaMapa.tsx`
+para colorear los marcadores por `veredicto`, campo que SÍ comparten los dos
+tipos de resultado).
+
+**Frontend — tercer botón de modo, panel de financiación condicional.**
+`BuscadorRentabilidadAlquiler.tsx` añade un tercer botón "Flip (comprar,
+reformar, vender)" al selector de modo (mismo patrón `role="tablist"`);
+cambiar a este modo repite la búsqueda igual que "Por habitaciones" (más
+ligera: sin la pata de alquiler). El panel de parámetros oculta, en modo
+flip, TODOS los campos de hipoteca/operación de alquiler (`entradaPct`,
+`tinHipotecaPct`, `plazoHipotecaAnios`, `tasaVacioPct`,
+`gestoriaPctAlquiler`, `comunidadMensual`, `ibiAnual`, `seguroHogarAnual`,
+`mantenimientoPctAnual`, `umbralRentabilidadAceptablePct` — `entradaPct`
+también se oculta pese a no estar en la lista original del encargo, porque
+sin hipoteca no tiene ningún significado) y muestra en su lugar
+`gastosCompraPct` (reutilizado), `gastosVentaPct` (nuevo, default 5%) y
+`umbralMargenAceptablePct` (nuevo, default 20%). En el listado y en el panel
+de detalle, la cifra de rentabilidad se sustituye por `margenSobreInversionPct`
++ veredicto, y "alquiler estimado" se sustituye por "Venta estimada: X €"
+(o "sin datos suficientes para estimar el precio de venta" sin AVM) — el
+campo "Gastos de reforma" del panel de detalle es el MISMO que en los otros
+modos, no se duplica.
+
 ### Puerto local
 Frontend `:5187`, backend `:3014`.
 

@@ -11,8 +11,11 @@
 
 import {
   calcularAlquilerRentabilidad,
+  calcularFlip,
   type AlquilerRentabilidadInput,
   type AlquilerRentabilidadResultado,
+  type FlipInput,
+  type FlipResultado,
 } from './calculators';
 import type { ModoRentabilidadZona, RentabilidadZonaListing } from '../services/api';
 
@@ -66,6 +69,86 @@ export function calcularRankingRentabilidad(
     if (a.resultado === null) return 1;
     if (b.resultado === null) return -1;
     return b.resultado.rentabilidadNetaSobreInversionPct - a.resultado.rentabilidadNetaSobreInversionPct;
+  });
+}
+
+/**
+ * Parámetros del modo "flip" que el usuario edita, sin precio de compra ni
+ * precio de venta (vienen del listing y de `medianaVentaM2` de la zona,
+ * respectivamente).
+ */
+export type ParametrosFlip = Omit<FlipInput, 'precioCompra' | 'precioVentaEstimado'>;
+
+export interface ListingConFlip {
+  listing: RentabilidadZonaListing;
+  /** null cuando no hay medianaVentaM2 de la zona (AVM no disponible), o los parámetros no son válidos. */
+  resultado: FlipResultado | null;
+}
+
+/**
+ * Ranking del modo "flip" (comprar, reformar, vender). A diferencia de
+ * `calcularRankingRentabilidad` (que reutiliza el `alquilerMensualEstimado`
+ * ya calculado por listing), aquí el precio de venta estimado de CADA
+ * listing se deriva de `medianaVentaM2` de la ZONA (un único valor de todo
+ * el resultado, no por listing) multiplicado por los metros del propio
+ * listing — el mismo AVM que ya alimenta `desviacionVsMedianaVentaPct`, sin
+ * ningún dato nuevo. Por eso esta función es una función PARALELA a
+ * `calcularRankingRentabilidad` en vez de un `modo` interno de la misma: la
+ * entrada (`medianaVentaM2` de la zona, no del listing) y el tipo de
+ * resultado (`FlipResultado`, sin cashflow ni hipoteca) son distintos de
+ * los otros dos modos, que SÍ comparten forma de entrada/salida entre sí
+ * (ambos usan `calcularAlquilerRentabilidad` con `alquilerMensualEstimado`
+ * por listing). Forzar los tres modos en una sola función con un `modo`
+ * interno habría obligado a un tipo de resultado unión en cada punto de uso
+ * del componente, para un caso (flip) que en realidad no comparte forma con
+ * los otros dos.
+ *
+ * Un listing sin `medianaVentaM2` de zona (AVM no disponible) va al final
+ * con `resultado: null` — nunca se descarta ni se fabrica un precio de
+ * venta inventado, mismo principio que el resto del módulo.
+ */
+/**
+ * Forma unificada de un ítem del ranking, usada por el componente y por el
+ * mapa (`RentabilidadZonaMapa`): discrimina por `kind` entre las dos formas
+ * de resultado posibles (alquiler_completo/habitaciones comparten
+ * `AlquilerRentabilidadResultado`; flip usa `FlipResultado`) — ver el
+ * comentario de `calcularRankingFlip` sobre por qué son funciones paralelas
+ * en vez de una sola con un `modo` interno.
+ */
+export type ItemRanking =
+  | { listing: RentabilidadZonaListing; kind: 'alquiler'; resultado: AlquilerRentabilidadResultado | null }
+  | { listing: RentabilidadZonaListing; kind: 'flip'; resultado: FlipResultado | null };
+
+export function calcularRankingFlip(
+  listings: RentabilidadZonaListing[],
+  medianaVentaM2: number | null,
+  parametros: ParametrosFlip,
+  gastosReformaPorListing: Record<string, number> = {},
+): ListingConFlip[] {
+  const conResultado: ListingConFlip[] = listings.map((listing) => {
+    if (medianaVentaM2 === null) {
+      return { listing, resultado: null };
+    }
+    try {
+      const gastosReforma = gastosReformaPorListing[listing.url] ?? 0;
+      const precioVentaEstimado = medianaVentaM2 * listing.metros;
+      const resultado = calcularFlip({
+        ...parametros,
+        precioCompra: listing.precio,
+        gastosReforma,
+        precioVentaEstimado,
+      });
+      return { listing, resultado };
+    } catch {
+      return { listing, resultado: null };
+    }
+  });
+
+  return [...conResultado].sort((a, b) => {
+    if (a.resultado === null && b.resultado === null) return 0;
+    if (a.resultado === null) return 1;
+    if (b.resultado === null) return -1;
+    return b.resultado.margenSobreInversionPct - a.resultado.margenSobreInversionPct;
   });
 }
 

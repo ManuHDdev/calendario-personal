@@ -6,9 +6,12 @@ import { getRentabilidadZona } from '../../services/api';
 import type { ModoRentabilidadZona, RentabilidadZonaListing, RentabilidadZonaResultado } from '../../services/api';
 import {
   calcularRankingRentabilidad,
+  calcularRankingFlip,
   formatearDesviacionVenta,
   etiquetaAlquilerEstimado,
   type ParametrosFinanciacion,
+  type ParametrosFlip,
+  type ItemRanking,
 } from '../../lib/rentabilidadZona';
 import { puntoDentroDePoligono, type Punto } from '../../lib/geometria';
 import { formatEUR } from '../../lib/format';
@@ -35,6 +38,9 @@ const PARAMETROS_INICIALES = {
   gestoriaPctAlquiler: '0',
   tasaVacioPct: '5',
   umbralRentabilidadAceptablePct: '5',
+  // Solo modo "flip": gastosCompraPct (arriba) se reutiliza tal cual.
+  gastosVentaPct: '5',
+  umbralMargenAceptablePct: '20',
 };
 
 export default function BuscadorRentabilidadAlquiler() {
@@ -155,6 +161,19 @@ export default function BuscadorRentabilidadAlquiler() {
     return valores;
   }, [params]);
 
+  // Modo flip: sin hipoteca ni operación de alquiler, parámetros propios
+  // (gastosCompraPct se reutiliza tal cual de arriba).
+  const parametrosFlip: ParametrosFlip | null = useMemo(() => {
+    const n = (v: string) => Number(v);
+    const valores = {
+      gastosCompraPct: n(params.gastosCompraPct),
+      gastosVentaPct: n(params.gastosVentaPct),
+      umbralMargenAceptablePct: n(params.umbralMargenAceptablePct),
+    };
+    if (Object.values(valores).some((v) => !Number.isFinite(v) || v < 0)) return null;
+    return valores;
+  }, [params.gastosCompraPct, params.gastosVentaPct, params.umbralMargenAceptablePct]);
+
   // Del string editable al mapa numérico que espera calcularRankingRentabilidad:
   // vacío o inválido → sin entrada (0, "no toques el precio de este listing").
   const gastosReformaPorListing = useMemo(() => {
@@ -167,10 +186,19 @@ export default function BuscadorRentabilidadAlquiler() {
     return out;
   }, [gastosReformaInputs]);
 
-  const ranking = useMemo(() => {
-    if (!resultado || !parametrosFinanciacion) return [];
-    return calcularRankingRentabilidad(resultado.listings, parametrosFinanciacion, gastosReformaPorListing);
-  }, [resultado, parametrosFinanciacion, gastosReformaPorListing]);
+  const ranking: ItemRanking[] = useMemo(() => {
+    if (!resultado) return [];
+    if (modo === 'flip') {
+      if (!parametrosFlip) return [];
+      return calcularRankingFlip(resultado.listings, resultado.medianaVentaM2, parametrosFlip, gastosReformaPorListing).map(
+        ({ listing, resultado: r }) => ({ listing, kind: 'flip' as const, resultado: r }),
+      );
+    }
+    if (!parametrosFinanciacion) return [];
+    return calcularRankingRentabilidad(resultado.listings, parametrosFinanciacion, gastosReformaPorListing).map(
+      ({ listing, resultado: r }) => ({ listing, kind: 'alquiler' as const, resultado: r }),
+    );
+  }, [resultado, modo, parametrosFinanciacion, parametrosFlip, gastosReformaPorListing]);
 
   // Con una zona dibujada activa, se filtra a los listings cuyas coordenadas
   // caen dentro del polígono. Un listing sin coordenadas no puede evaluarse
@@ -202,6 +230,13 @@ export default function BuscadorRentabilidadAlquiler() {
     setGastosReformaInputs((prev) => ({ ...prev, [url]: valor }));
 
   const seleccionar = (listing: RentabilidadZonaListing) => setSelectedUrl(listing.url);
+
+  // Precio de venta estimado de un listing en modo flip: mismo AVM que ya
+  // alimenta `desviacionVsMedianaVentaPct` (medianaVentaM2 de la zona,
+  // ver calcularRankingFlip), sin ningún dato ni petición nueva. `null`
+  // cuando la zona no tiene medianaVentaM2 — nunca un número inventado.
+  const ventaEstimada = (listing: RentabilidadZonaListing): number | null =>
+    resultado && resultado.medianaVentaM2 !== null ? resultado.medianaVentaM2 * listing.metros : null;
 
   return (
     <div className="rentabilidad-zona">
@@ -247,12 +282,20 @@ export default function BuscadorRentabilidadAlquiler() {
           >
             Por habitaciones
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={modo === 'flip'}
+            className={`rentabilidad-zona-modo-btn${modo === 'flip' ? ' rentabilidad-zona-modo-btn--activo' : ''}`}
+            onClick={() => handleCambiarModo('flip')}
+          >
+            Flip (comprar, reformar, vender)
+          </button>
         </div>
         <p className="calculator-help-text">
-          "Por habitaciones" estima el ingreso alquilando cada habitación por separado (mayor rentabilidad,
-          más gestión), a partir de anuncios reales de alquiler por habitación. Cambiar de modo repite la
-          búsqueda: necesita comparables distintos del portal, a diferencia de los parámetros de financiación
-          de abajo.
+          {modo === 'flip'
+            ? '"Flip" estima el margen de comprar, reformar y vender, usando el precio de venta estimado de la zona (mismo AVM que el badge de desviación) — no necesita comparables de alquiler. Cambiar de modo repite la búsqueda: es una petición más ligera, sin la pata de alquiler.'
+            : '"Por habitaciones" estima el ingreso alquilando cada habitación por separado (mayor rentabilidad, más gestión), a partir de anuncios reales de alquiler por habitación. Cambiar de modo repite la búsqueda: necesita comparables distintos del portal, a diferencia de los parámetros de financiación de abajo.'}
         </p>
       </CalculatorCard>
 
@@ -269,70 +312,100 @@ export default function BuscadorRentabilidadAlquiler() {
           )}
 
           <div className="calculator-card rentabilidad-zona-parametros">
-            <h2 className="calculator-card-titulo">Parámetros de financiación</h2>
+            <h2 className="calculator-card-titulo">
+              {modo === 'flip' ? 'Parámetros del flip' : 'Parámetros de financiación'}
+            </h2>
             <p className="calculator-card-descripcion">
-              Los mismos que "Comprar para alquilar". Cámbialos y el ranking de abajo se recalcula al
-              instante, sin volver a buscar.
+              {modo === 'flip'
+                ? 'Sin hipoteca ni operación de alquiler: solo compra, reforma y venta. Cámbialos y el ranking de abajo se recalcula al instante, sin volver a buscar.'
+                : 'Los mismos que "Comprar para alquilar". Cámbialos y el ranking de abajo se recalcula al instante, sin volver a buscar.'}
             </p>
             <div className="calculator-card-campos rentabilidad-zona-campos-grid">
-              <NumberField label="Entrada" suffix="%" value={params.entradaPct} onChange={setParam('entradaPct')} />
               <NumberField
                 label="Gastos de compra"
                 suffix="%"
                 value={params.gastosCompraPct}
                 onChange={setParam('gastosCompraPct')}
               />
-              <NumberField
-                label="TIN de la hipoteca"
-                suffix="%"
-                value={params.tinHipotecaPct}
-                onChange={setParam('tinHipotecaPct')}
-              />
-              <NumberField
-                label="Plazo de la hipoteca"
-                suffix="años"
-                value={params.plazoHipotecaAnios}
-                onChange={setParam('plazoHipotecaAnios')}
-              />
-              <NumberField label="IBI anual" suffix="€" value={params.ibiAnual} onChange={setParam('ibiAnual')} />
-              <NumberField
-                label="Comunidad mensual"
-                suffix="€"
-                value={params.comunidadMensual}
-                onChange={setParam('comunidadMensual')}
-              />
-              <NumberField
-                label="Seguro de hogar anual"
-                suffix="€"
-                value={params.seguroHogarAnual}
-                onChange={setParam('seguroHogarAnual')}
-              />
-              <NumberField
-                label="Mantenimiento"
-                suffix="% del valor/año"
-                value={params.mantenimientoPctAnual}
-                onChange={setParam('mantenimientoPctAnual')}
-              />
-              <NumberField
-                label="Gestoría de alquileres"
-                suffix="% del alquiler"
-                value={params.gestoriaPctAlquiler}
-                onChange={setParam('gestoriaPctAlquiler')}
-              />
-              <NumberField
-                label="Tasa de vacío esperada"
-                suffix="%"
-                value={params.tasaVacioPct}
-                onChange={setParam('tasaVacioPct')}
-              />
-              <NumberField
-                label="Rentabilidad mínima aceptable"
-                suffix="%"
-                value={params.umbralRentabilidadAceptablePct}
-                onChange={setParam('umbralRentabilidadAceptablePct')}
-              />
+              {modo === 'flip' ? (
+                <>
+                  <NumberField
+                    label="Gastos de venta"
+                    suffix="%"
+                    value={params.gastosVentaPct}
+                    onChange={setParam('gastosVentaPct')}
+                  />
+                  <NumberField
+                    label="Margen mínimo aceptable"
+                    suffix="%"
+                    value={params.umbralMargenAceptablePct}
+                    onChange={setParam('umbralMargenAceptablePct')}
+                  />
+                </>
+              ) : (
+                <>
+                  <NumberField
+                    label="Entrada"
+                    suffix="%"
+                    value={params.entradaPct}
+                    onChange={setParam('entradaPct')}
+                  />
+                  <NumberField
+                    label="TIN de la hipoteca"
+                    suffix="%"
+                    value={params.tinHipotecaPct}
+                    onChange={setParam('tinHipotecaPct')}
+                  />
+                  <NumberField
+                    label="Plazo de la hipoteca"
+                    suffix="años"
+                    value={params.plazoHipotecaAnios}
+                    onChange={setParam('plazoHipotecaAnios')}
+                  />
+                  <NumberField label="IBI anual" suffix="€" value={params.ibiAnual} onChange={setParam('ibiAnual')} />
+                  <NumberField
+                    label="Comunidad mensual"
+                    suffix="€"
+                    value={params.comunidadMensual}
+                    onChange={setParam('comunidadMensual')}
+                  />
+                  <NumberField
+                    label="Seguro de hogar anual"
+                    suffix="€"
+                    value={params.seguroHogarAnual}
+                    onChange={setParam('seguroHogarAnual')}
+                  />
+                  <NumberField
+                    label="Mantenimiento"
+                    suffix="% del valor/año"
+                    value={params.mantenimientoPctAnual}
+                    onChange={setParam('mantenimientoPctAnual')}
+                  />
+                  <NumberField
+                    label="Gestoría de alquileres"
+                    suffix="% del alquiler"
+                    value={params.gestoriaPctAlquiler}
+                    onChange={setParam('gestoriaPctAlquiler')}
+                  />
+                  <NumberField
+                    label="Tasa de vacío esperada"
+                    suffix="%"
+                    value={params.tasaVacioPct}
+                    onChange={setParam('tasaVacioPct')}
+                  />
+                  <NumberField
+                    label="Rentabilidad mínima aceptable"
+                    suffix="%"
+                    value={params.umbralRentabilidadAceptablePct}
+                    onChange={setParam('umbralRentabilidadAceptablePct')}
+                  />
+                </>
+              )}
             </div>
-            {!parametrosFinanciacion && (
+            {modo === 'flip' && !parametrosFlip && (
+              <p className="calculator-card-error">Revisa los parámetros del flip: alguno no es válido.</p>
+            )}
+            {modo !== 'flip' && !parametrosFinanciacion && (
               <p className="calculator-card-error">Revisa los parámetros de financiación: alguno no es válido.</p>
             )}
           </div>
@@ -457,7 +530,15 @@ export default function BuscadorRentabilidadAlquiler() {
                       )}
 
                       <div className="rentabilidad-zona-alquiler">
-                        {selectedListing.alquilerMensualEstimado === null ? (
+                        {modo === 'flip' ? (
+                          ventaEstimada(selectedListing) === null ? (
+                            <span className="rentabilidad-zona-sin-datos">
+                              sin datos suficientes para estimar el precio de venta
+                            </span>
+                          ) : (
+                            <span>Venta estimada: {formatEUR(ventaEstimada(selectedListing) as number)}</span>
+                          )
+                        ) : selectedListing.alquilerMensualEstimado === null ? (
                           <span className="rentabilidad-zona-sin-datos">sin datos suficientes de alquiler</span>
                         ) : (
                           <>
@@ -491,7 +572,45 @@ export default function BuscadorRentabilidadAlquiler() {
                       </div>
 
                       <div className="rentabilidad-zona-detalle-rentabilidad">
-                        {selectedItem?.resultado ? (
+                        {selectedItem?.kind === 'flip' && selectedItem.resultado ? (
+                          <>
+                            <div className="rentabilidad-zona-detalle-roi-linea">
+                              <span>Precio de compra</span>
+                              <span className="rentabilidad-zona-rentabilidad-pct--secundaria">
+                                {formatEUR(selectedListing.precio)}
+                              </span>
+                            </div>
+                            <div className="rentabilidad-zona-detalle-roi-linea">
+                              <span>Gastos de compra ({params.gastosCompraPct}%)</span>
+                              <span className="rentabilidad-zona-rentabilidad-pct--secundaria">
+                                {formatEUR(selectedListing.precio * ((parametrosFlip?.gastosCompraPct ?? 0) / 100))}
+                              </span>
+                            </div>
+                            <div className="rentabilidad-zona-detalle-roi-linea">
+                              <span>Precio de venta estimado</span>
+                              <span className="rentabilidad-zona-rentabilidad-pct--secundaria">
+                                {formatEUR(ventaEstimada(selectedListing) as number)}
+                              </span>
+                            </div>
+                            <div className="rentabilidad-zona-detalle-roi-linea">
+                              <span>Beneficio bruto</span>
+                              <span className="rentabilidad-zona-rentabilidad-pct--secundaria">
+                                {formatEUR(selectedItem.resultado.beneficioBruto)}
+                              </span>
+                            </div>
+                            <div className="rentabilidad-zona-detalle-roi-linea">
+                              <span>Margen sobre inversión</span>
+                              <span className="rentabilidad-zona-rentabilidad-pct">
+                                {selectedItem.resultado.margenSobreInversionPct.toFixed(2)}%
+                              </span>
+                            </div>
+                            <span
+                              className={`resultado-veredicto ${CLASE_VEREDICTO[selectedItem.resultado.veredicto]}`}
+                            >
+                              {selectedItem.resultado.veredicto}
+                            </span>
+                          </>
+                        ) : selectedItem?.kind === 'alquiler' && selectedItem.resultado ? (
                           <>
                             <div className="rentabilidad-zona-detalle-roi-linea">
                               <span>Con apalancamiento (cash-on-cash)</span>
@@ -512,7 +631,11 @@ export default function BuscadorRentabilidadAlquiler() {
                             </span>
                           </>
                         ) : (
-                          <span className="rentabilidad-zona-sin-datos">Sin datos suficientes para calcular la rentabilidad.</span>
+                          <span className="rentabilidad-zona-sin-datos">
+                            {modo === 'flip'
+                              ? 'Sin datos suficientes para calcular el flip.'
+                              : 'Sin datos suficientes para calcular la rentabilidad.'}
+                          </span>
                         )}
                       </div>
 
@@ -530,7 +653,7 @@ export default function BuscadorRentabilidadAlquiler() {
               </div>
 
               <div className="rentabilidad-zona-listado">
-                {rankingFiltrado.map(({ listing, resultado: r }) => {
+                {rankingFiltrado.map(({ listing, kind, resultado: r }) => {
                   const seleccionado = listing.url === selectedUrl;
                   const sinMapa = listing.latitud === null || listing.longitud === null;
                   return (
@@ -569,7 +692,15 @@ export default function BuscadorRentabilidadAlquiler() {
                           )}
                         </div>
                         <div className="rentabilidad-zona-alquiler">
-                          {listing.alquilerMensualEstimado === null ? (
+                          {modo === 'flip' ? (
+                            ventaEstimada(listing) === null ? (
+                              <span className="rentabilidad-zona-sin-datos">
+                                sin datos suficientes para estimar el precio de venta
+                              </span>
+                            ) : (
+                              <span>Venta estimada: {formatEUR(ventaEstimada(listing) as number)}</span>
+                            )
+                          ) : listing.alquilerMensualEstimado === null ? (
                             <span className="rentabilidad-zona-sin-datos">sin datos suficientes de alquiler</span>
                           ) : (
                             <>
@@ -589,7 +720,14 @@ export default function BuscadorRentabilidadAlquiler() {
                         </div>
                       </div>
                       <div className="rentabilidad-zona-rentabilidad">
-                        {r ? (
+                        {r && kind === 'flip' ? (
+                          <>
+                            <span className="rentabilidad-zona-rentabilidad-pct">
+                              {r.margenSobreInversionPct.toFixed(2)}%
+                            </span>
+                            <span className={`resultado-veredicto ${CLASE_VEREDICTO[r.veredicto]}`}>{r.veredicto}</span>
+                          </>
+                        ) : r && kind === 'alquiler' ? (
                           <>
                             <span className="rentabilidad-zona-rentabilidad-pct">
                               {r.rentabilidadNetaSobreInversionPct.toFixed(2)}%
