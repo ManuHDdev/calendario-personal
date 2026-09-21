@@ -3,12 +3,14 @@ import CalculatorCard from '../CalculatorCard';
 import NumberField from '../NumberField';
 import RentabilidadZonaMapa from './RentabilidadZonaMapa';
 import { getRentabilidadZona } from '../../services/api';
-import type { RentabilidadZonaListing, RentabilidadZonaResultado } from '../../services/api';
+import type { ModoRentabilidadZona, RentabilidadZonaListing, RentabilidadZonaResultado } from '../../services/api';
 import {
   calcularRankingRentabilidad,
   formatearDesviacionVenta,
+  etiquetaAlquilerEstimado,
   type ParametrosFinanciacion,
 } from '../../lib/rentabilidadZona';
+import { puntoDentroDePoligono, type Punto } from '../../lib/geometria';
 import { formatEUR } from '../../lib/format';
 import './BuscadorRentabilidadAlquiler.css';
 
@@ -37,11 +39,20 @@ const PARAMETROS_INICIALES = {
 
 export default function BuscadorRentabilidadAlquiler() {
   const [ubicacion, setUbicacion] = useState('');
+  const [modo, setModo] = useState<ModoRentabilidadZona>('alquiler_completo');
   const [buscando, setBuscando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<RentabilidadZonaResultado | null>(null);
 
   const [params, setParams] = useState(PARAMETROS_INICIALES);
+
+  // Zona dibujada a mano sobre el mapa: filtro puramente client-side, sin
+  // ninguna petición nueva (ver "## Finanzas" en el CLAUDE.md raíz). Los
+  // vértices en curso son los que el usuario ya ha clicado antes de cerrar
+  // la zona; `zonaCerrada` es `null` hasta que se pulsa "Cerrar zona".
+  const [dibujandoZona, setDibujandoZona] = useState(false);
+  const [verticesEnCurso, setVerticesEnCurso] = useState<Punto[]>([]);
+  const [zonaCerrada, setZonaCerrada] = useState<Punto[] | null>(null);
 
   // Selección compartida entre mapa y lista: se guarda por `url` (clave
   // estable, la misma que ya se usa como `key` de React), no el objeto
@@ -56,18 +67,18 @@ export default function BuscadorRentabilidadAlquiler() {
   // de NumberField del formulario).
   const [gastosReformaInputs, setGastosReformaInputs] = useState<Record<string, string>>({});
 
-  const handleBuscar = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const texto = ubicacion.trim();
+  const buscar = (texto: string, modoBusqueda: ModoRentabilidadZona) => {
     if (!texto) return;
 
     setError(null);
     setBuscando(true);
-    getRentabilidadZona(texto)
+    getRentabilidadZona(texto, modoBusqueda)
       .then((r) => {
         setResultado(r);
         // Resultados nuevos → ni la selección ni los gastos de reforma de la
-        // búsqueda anterior tienen sentido (son de otros listings).
+        // búsqueda anterior tienen sentido (son de otros listings). La zona
+        // dibujada, en cambio, sí sobrevive: sigue siendo el mismo área
+        // geográfica aunque cambien los anuncios que caen dentro.
         setSelectedUrl(null);
         setGastosReformaInputs({});
       })
@@ -76,6 +87,49 @@ export default function BuscadorRentabilidadAlquiler() {
         setError(err instanceof Error ? err.message : 'Error buscando la zona');
       })
       .finally(() => setBuscando(false));
+  };
+
+  const handleBuscar = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    buscar(ubicacion.trim(), modo);
+  };
+
+  // Cambiar de modo necesita comparables distintos del portal (alquiler de
+  // piso completo vs. por habitaciones), así que dispara una búsqueda nueva
+  // — a diferencia de los parámetros de financiación, que son client-side.
+  // Solo tiene sentido si ya hay una ubicación buscada.
+  const handleCambiarModo = (nuevoModo: ModoRentabilidadZona) => {
+    setModo(nuevoModo);
+    const texto = ubicacion.trim();
+    if (texto && resultado) buscar(texto, nuevoModo);
+  };
+
+  // ── Dibujar zona sobre el mapa ──────────────────────────────────────────
+  const iniciarDibujo = () => {
+    setVerticesEnCurso([]);
+    setZonaCerrada(null);
+    setDibujandoZona(true);
+  };
+
+  const agregarVertice = (punto: Punto) => {
+    setVerticesEnCurso((prev) => [...prev, punto]);
+  };
+
+  const cerrarZona = () => {
+    if (verticesEnCurso.length < 3) return;
+    setZonaCerrada(verticesEnCurso);
+    setDibujandoZona(false);
+  };
+
+  const cancelarDibujo = () => {
+    setDibujandoZona(false);
+    setVerticesEnCurso([]);
+  };
+
+  const borrarZona = () => {
+    setZonaCerrada(null);
+    setVerticesEnCurso([]);
+    setDibujandoZona(false);
   };
 
   // Los parámetros de financiación se parsean a número cada vez que cambian
@@ -118,9 +172,26 @@ export default function BuscadorRentabilidadAlquiler() {
     return calcularRankingRentabilidad(resultado.listings, parametrosFinanciacion, gastosReformaPorListing);
   }, [resultado, parametrosFinanciacion, gastosReformaPorListing]);
 
+  // Con una zona dibujada activa, se filtra a los listings cuyas coordenadas
+  // caen dentro del polígono. Un listing sin coordenadas no puede evaluarse
+  // ("¿en qué zona está?" no tiene respuesta) y se excluye tanto del mapa
+  // (ya lo hacía antes) como de la lista (nuevo: antes se mostraba con la
+  // etiqueta "sin ubicación en el mapa"; con una zona activa esa etiqueta ya
+  // no basta, así que se oculta también de la lista). Sin zona activa, el
+  // comportamiento es exactamente el de antes.
+  const rankingFiltrado = useMemo(() => {
+    if (!zonaCerrada) return ranking;
+    return ranking.filter(
+      (item) =>
+        item.listing.latitud !== null &&
+        item.listing.longitud !== null &&
+        puntoDentroDePoligono([item.listing.latitud, item.listing.longitud], zonaCerrada),
+    );
+  }, [ranking, zonaCerrada]);
+
   const selectedItem = useMemo(
-    () => ranking.find((r) => r.listing.url === selectedUrl) ?? null,
-    [ranking, selectedUrl],
+    () => rankingFiltrado.find((r) => r.listing.url === selectedUrl) ?? null,
+    [rankingFiltrado, selectedUrl],
   );
   const selectedListing: RentabilidadZonaListing | null = selectedItem?.listing ?? null;
 
@@ -155,6 +226,33 @@ export default function BuscadorRentabilidadAlquiler() {
         <p className="calculator-help-text">
           Nombre de ciudad o zona, igual que en "Precios de vivienda por provincia". La búsqueda rastrea
           Fotocasa y pisos.com en directo — puede tardar unos segundos.
+        </p>
+
+        <div className="rentabilidad-zona-modo" role="tablist" aria-label="Modo de alquiler">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={modo === 'alquiler_completo'}
+            className={`rentabilidad-zona-modo-btn${modo === 'alquiler_completo' ? ' rentabilidad-zona-modo-btn--activo' : ''}`}
+            onClick={() => handleCambiarModo('alquiler_completo')}
+          >
+            Alquiler completo
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={modo === 'habitaciones'}
+            className={`rentabilidad-zona-modo-btn${modo === 'habitaciones' ? ' rentabilidad-zona-modo-btn--activo' : ''}`}
+            onClick={() => handleCambiarModo('habitaciones')}
+          >
+            Por habitaciones
+          </button>
+        </div>
+        <p className="calculator-help-text">
+          "Por habitaciones" estima el ingreso alquilando cada habitación por separado (mayor rentabilidad,
+          más gestión), a partir de anuncios reales de alquiler por habitación. Cambiar de modo repite la
+          búsqueda: necesita comparables distintos del portal, a diferencia de los parámetros de financiación
+          de abajo.
         </p>
       </CalculatorCard>
 
@@ -251,7 +349,11 @@ export default function BuscadorRentabilidadAlquiler() {
               )}
               {resultado.medianaAlquilerM2 !== null && (
                 <span>
-                  Mediana de alquiler: <strong>{formatEUR(resultado.medianaAlquilerM2)}/m²/mes</strong>{' '}
+                  {modo === 'habitaciones' ? 'Mediana de alquiler por habitación: ' : 'Mediana de alquiler: '}
+                  <strong>
+                    {formatEUR(resultado.medianaAlquilerM2)}
+                    {modo === 'habitaciones' ? '/mes' : '/m²/mes'}
+                  </strong>{' '}
                   <span className="rentabilidad-zona-comparables">
                     ({resultado.numComparablesAlquilerTotal} comparable{resultado.numComparablesAlquilerTotal === 1 ? '' : 's'})
                   </span>
@@ -260,12 +362,62 @@ export default function BuscadorRentabilidadAlquiler() {
             </div>
           )}
 
-          {ranking.length === 0 && !buscando ? (
-            <p className="rentabilidad-zona-vacio">Sin anuncios en venta para "{resultado.ubicacion}".</p>
+          <div className="rentabilidad-zona-dibujo-controles">
+            {!dibujandoZona && !zonaCerrada && (
+              <button type="button" className="rentabilidad-zona-boton-secundario" onClick={iniciarDibujo}>
+                ✏️ Dibujar zona en el mapa
+              </button>
+            )}
+            {dibujandoZona && (
+              <>
+                <span className="rentabilidad-zona-dibujo-ayuda">
+                  Haz clic en el mapa para añadir vértices ({verticesEnCurso.length}
+                  {verticesEnCurso.length === 1 ? ' punto' : ' puntos'}).
+                  {verticesEnCurso.length < 3 && ' Añade al menos 3 para poder cerrar la zona.'}
+                </span>
+                <button
+                  type="button"
+                  className="rentabilidad-zona-boton-secundario"
+                  onClick={cerrarZona}
+                  disabled={verticesEnCurso.length < 3}
+                >
+                  ✓ Cerrar zona
+                </button>
+                <button type="button" className="rentabilidad-zona-boton-secundario" onClick={cancelarDibujo}>
+                  Cancelar
+                </button>
+              </>
+            )}
+            {zonaCerrada && !dibujandoZona && (
+              <>
+                <span className="rentabilidad-zona-dibujo-ayuda">
+                  {rankingFiltrado.length} de {ranking.length} pisos en esta zona
+                </span>
+                <button type="button" className="rentabilidad-zona-boton-secundario" onClick={borrarZona}>
+                  ✕ Borrar zona
+                </button>
+              </>
+            )}
+          </div>
+
+          {rankingFiltrado.length === 0 && !buscando ? (
+            <p className="rentabilidad-zona-vacio">
+              {zonaCerrada
+                ? 'Ningún piso cae dentro de la zona dibujada.'
+                : `Sin anuncios en venta para "${resultado.ubicacion}".`}
+            </p>
           ) : (
             <>
               <div className="rentabilidad-zona-mapa-layout">
-                <RentabilidadZonaMapa listings={ranking} selectedListing={selectedListing} onSelect={seleccionar} />
+                <RentabilidadZonaMapa
+                  listings={rankingFiltrado}
+                  selectedListing={selectedListing}
+                  onSelect={seleccionar}
+                  dibujando={dibujandoZona}
+                  zonaCerrada={zonaCerrada}
+                  verticesEnCurso={verticesEnCurso}
+                  onAgregarVertice={agregarVertice}
+                />
 
                 <div className="rentabilidad-zona-detalle">
                   {!selectedListing ? (
@@ -309,7 +461,10 @@ export default function BuscadorRentabilidadAlquiler() {
                           <span className="rentabilidad-zona-sin-datos">sin datos suficientes de alquiler</span>
                         ) : (
                           <>
-                            <span>Alquiler estimado: {formatEUR(selectedListing.alquilerMensualEstimado)}/mes</span>
+                            <span>
+                              {etiquetaAlquilerEstimado(modo, selectedListing.habitaciones)}:{' '}
+                              {formatEUR(selectedListing.alquilerMensualEstimado)}/mes
+                            </span>
                             <span className="rentabilidad-zona-comparables">
                               ({selectedListing.numComparablesAlquiler} comparable
                               {selectedListing.numComparablesAlquiler === 1 ? '' : 's'})
@@ -375,7 +530,7 @@ export default function BuscadorRentabilidadAlquiler() {
               </div>
 
               <div className="rentabilidad-zona-listado">
-                {ranking.map(({ listing, resultado: r }) => {
+                {rankingFiltrado.map(({ listing, resultado: r }) => {
                   const seleccionado = listing.url === selectedUrl;
                   const sinMapa = listing.latitud === null || listing.longitud === null;
                   return (
@@ -418,7 +573,10 @@ export default function BuscadorRentabilidadAlquiler() {
                             <span className="rentabilidad-zona-sin-datos">sin datos suficientes de alquiler</span>
                           ) : (
                             <>
-                              <span>Alquiler estimado: {formatEUR(listing.alquilerMensualEstimado)}/mes</span>
+                              <span>
+                                {etiquetaAlquilerEstimado(modo, listing.habitaciones)}:{' '}
+                                {formatEUR(listing.alquilerMensualEstimado)}/mes
+                              </span>
                               <span className="rentabilidad-zona-comparables">
                                 ({listing.numComparablesAlquiler} comparable
                                 {listing.numComparablesAlquiler === 1 ? '' : 's'})

@@ -327,3 +327,68 @@
   font-weight: 700;
   color: var(--accent);
 }
+
+/* ── Selector de modo (alquiler completo / por habitaciones) ────────────── */
+/* Mismo patrón visual que `.precios-vivienda-toggle` en PreciosVivienda.css. */
+
+.rentabilidad-zona-modo {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 4px;
+  flex-wrap: wrap;
+}
+
+.rentabilidad-zona-modo-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.rentabilidad-zona-modo-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+.rentabilidad-zona-modo-btn--activo {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── Dibujar zona en el mapa ─────────────────────────────────────────────── */
+
+.rentabilidad-zona-dibujo-controles {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.rentabilidad-zona-boton-secundario {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--bg-primary);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease;
+}
+
+.rentabilidad-zona-boton-secundario:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.rentabilidad-zona-boton-secundario:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rentabilidad-zona-dibujo-ayuda {
+  font-size: 13px;
+  color: var(--text-secondary);
+}

@@ -125,8 +125,19 @@ export interface RentabilidadZonaListing {
   desviacionVsMedianaVentaPct: number | null;
 }
 
+/**
+ * Modo de estimación del alquiler: `'alquiler_completo'` (por defecto, todo
+ * el piso) o `'habitaciones'` (ingreso por habitaciones sueltas, a partir de
+ * comparables de alquiler por habitación). Cambiar de modo dispara una
+ * búsqueda nueva (necesita comparables distintos del portal), a diferencia
+ * de los parámetros de financiación, que son puramente client-side.
+ */
+export type ModoRentabilidadZona = 'alquiler_completo' | 'habitaciones';
+
 export interface RentabilidadZonaResultado {
   ubicacion: string;
+  /** Eco del modo solicitado. */
+  modo: ModoRentabilidadZona;
   listings: RentabilidadZonaListing[];
   numComparablesAlquilerTotal: number;
   medianaAlquilerM2: number | null;
@@ -136,8 +147,12 @@ export interface RentabilidadZonaResultado {
   avisos: string[];
 }
 
-export async function getRentabilidadZona(ubicacion: string): Promise<RentabilidadZonaResultado> {
-  const res = await fetch(`${BASE}/rentabilidad-zona?ubicacion=${encodeURIComponent(ubicacion)}`, {
+export async function getRentabilidadZona(
+  ubicacion: string,
+  modo: ModoRentabilidadZona = 'alquiler_completo',
+): Promise<RentabilidadZonaResultado> {
+  const params = new URLSearchParams({ ubicacion, modo });
+  const res = await fetch(`${BASE}/rentabilidad-zona?${params.toString()}`, {
     headers: headers(),
   });
   if (!res.ok) await handleError(res);

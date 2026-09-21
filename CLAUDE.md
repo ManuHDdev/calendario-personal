@@ -1415,6 +1415,115 @@ listado — coloreado con `--success`/`--danger` (favorable/desfavorable),
 mismo criterio visual que el veredicto de rentabilidad. Un listing con
 `desviacionVsMedianaVentaPct === null` no muestra badge.
 
+### Modo "por habitaciones" (nuevo, complementario — inspirado en roiexplorer.com)
+
+`rentabilidad-zona` puede estimar el alquiler de dos formas: `alquiler_completo`
+(el piso entero, comportamiento original, sigue siendo el default) o
+`habitaciones` (ingreso alquilando cada habitación por separado — mayor
+rentabilidad, más gestión). El `modo` es un parámetro de la BÚSQUEDA (rastrea
+comparables distintos del portal), no un ajuste client-side como los
+parámetros de financiación: cambiarlo dispara una petición nueva.
+
+**Dimensión `operacion: 'compartir'` en el módulo de portales**, tercera
+operación junto a `venta`/`alquiler`. Solo Fotocasa la soporta:
+
+- **Fotocasa** (`portales/fotocasa.ts`): sección `/es/compartir/pisos/<zona>/
+  todas-las-zonas/l`. El segmento es SIEMPRE `pisos`, nunca `SECCION[tipo]`
+  (a diferencia de venta/alquiler) — el alquiler por habitaciones solo aplica
+  a pisos completos, no a locales. `transactionTypeId: 5` identifica un nodo
+  de "compartir" (venta=1, alquiler=3). `pareceAnuncio` no necesita ningún
+  cambio propio: `buildingType: "Flat"` de un nodo "compartir" ya pasa el
+  filtro de vivienda existente.
+- **GOTCHA importante — el precio es lo único fiable de un anuncio
+  "compartir".** Las `features` (`surface`, `rooms`…) de un nodo "compartir"
+  describen el PISO ENTERO donde está la habitación, no la habitación
+  alquilada (verificado con un anuncio real: 320 €/mes en un nodo que
+  reporta 389 m² y 12 habitaciones — son los datos del piso, no de la
+  habitación). Por eso NUNCA se calcula precio/m² para un comparable de
+  "compartir": solo se usa su `precio` en bruto (ver
+  `services/rentabilidadZona.ts::preciosHabitacion`, que deliberadamente NO
+  reutiliza la lógica de `preciosPorM2Alquiler`).
+- **pisos.com** (`portales/pisoscom.ts`) no tiene sección de alquiler por
+  habitaciones: `puedeBuscar` rechaza `operacion === 'compartir'` con motivo
+  explícito, mismo patrón que Wallapop necesitando coordenadas en `pisos`;
+  `construirUrl` no se toca para este caso.
+
+**Cálculo (`services/rentabilidadZona.ts`, `calcularRentabilidadZona`).** Con
+`modo: 'habitaciones'` se buscan comparables de `compartir` en vez de
+`alquiler` (mismo presupuesto de páginas). `medianaPrecioHabitacion` es la
+mediana (`mediana()` de `services/mediana.ts`) del PRECIO en bruto de esos
+comparables, nunca de €/m². Cada anuncio en venta con `habitaciones` conocido
+(no `null`, > 0) recibe `alquilerMensualEstimado = medianaPrecioHabitacion *
+habitaciones`; un anuncio sin ese dato se EXCLUYE del todo (mismo principio
+de "un dato desconocido no se sustituye por una suposición" que ya rige
+precio/metros). `numComparablesAlquiler`/`confianza` siguen el mismo umbral
+(`MIN_COMPARABLES_ALTA_CONFIANZA`) contando comparables de `compartir`. El
+AVM (`medianaVentaM2`/`desviacionVsMedianaVentaPct`) no cambia con el modo:
+sigue viniendo siempre de `enVenta`. `RentabilidadZonaResultado.modo` hace
+eco del modo pedido (`'alquiler_completo'` si se omite); los `avisos[]`
+distinguen el texto según el modo ("sin anuncios de alquiler por
+habitaciones" vs. la redacción original de piso completo).
+
+**Ruta**: `GET /rentabilidad-zona?ubicacion=<texto>&modo=alquiler_completo|
+habitaciones` — `modo` opcional (Zod, default `alquiler_completo`), un valor
+fuera de esa unión es 400.
+
+**Frontend**: selector de dos botones ("Alquiler completo" / "Por
+habitaciones", mismo patrón visual `role="tablist"` que el toggle
+Oficial/Anuncios de `PreciosVivienda.tsx`) en
+`BuscadorRentabilidadAlquiler.tsx`, junto al campo de ubicación. Cambiar de
+modo repite la búsqueda automáticamente si ya hay una ubicación cargada — la
+UI lo explica con un texto de ayuda ("necesita comparables distintos del
+portal"). La etiqueta del alquiler estimado es sensible al modo
+(`etiquetaAlquilerEstimado()` en `lib/rentabilidadZona.ts`): "Alquiler
+estimado" en modo piso completo, "Ingreso estimado (N habitaciones)" en modo
+habitaciones — tanto en el panel de detalle como en cada fila del listado.
+
+### Dibujar zona en el mapa (nuevo, complementario — inspirado en roiexplorer.com)
+
+Filtro client-side puro sobre los listings ya traídos por la búsqueda de
+`rentabilidad-zona` — sin scraping nuevo, sin petición HTTP nueva, sin cambio
+de backend. Dibujar una zona en el mapa reduce lo que se ve en el mapa Y en
+la lista a los pisos cuyas coordenadas caen dentro del polígono.
+
+**Sin librerías de dibujo.** Igual que el resto del monorepo
+(`paraisos/SpotMap.tsx`, `locales/MapaViabilidad.tsx`, `ruta`), Leaflet
+plano, nunca `leaflet-draw` ni ninguna otra dependencia nueva. El dibujo se
+implementa a mano en `RentabilidadZonaMapa.tsx`: un botón "Dibujar zona"
+activa el modo dibujo (cursor en cruz vía
+`map.getContainer().style.cursor`, mismo patrón que `pickingMode` de
+`SpotMap.tsx`, y `map.dragging.disable()` mientras se dibuja — el gesto
+principal del clic es añadir un vértice, no mover el mapa); cada clic añade
+un vértice, pintado como una línea discontinua en curso
+(`L.polyline`/`L.circleMarker`). Cerrar la zona es una acción EXPLÍCITA (botón
+"✓ Cerrar zona", habilitado desde 3 vértices) en vez de detectar un clic
+cerca del primer punto — más discoverable y sin ambigüedad de radio de
+clic. "✕ Borrar zona" limpia el polígono y el filtro, mostrando todo otra
+vez; "Cancelar" durante el dibujo descarta los vértices sin cerrar nada.
+
+**`puntoDentroDePoligono()` — `frontend/src/lib/geometria.ts` (nuevo).**
+Función pura, ray-casting/even-odd clásico: cuenta cruces de un rayo
+horizontal desde el punto hacia +∞ en longitud contra cada arista del
+polígono; impar = dentro. No necesita que `vertices` repita el primer punto
+al final (se cierra implícitamente). Caso borde documentado explícitamente
+en el propio código: un punto exactamente sobre un vértice o una arista no
+tiene un resultado garantizado (ambigüedad clásica de ray-casting con
+redondeo de punto flotante) — aceptado porque, en el uso real (coordenadas
+GPS de un anuncio), caer exactamente sobre el borde del polígono dibujado a
+mano es, en la práctica, un suceso de probabilidad cero. Tests en
+`geometria.test.ts`: dentro, fuera, sobre vértice, sobre arista, polígono no
+convexo, `< 3` vértices.
+
+**Filtro aplicado en `BuscadorRentabilidadAlquiler.tsx`** (`rankingFiltrado`,
+`useMemo` sobre `zonaCerrada`): sin zona activa, comportamiento idéntico al
+de antes (selección, re-rankeo por financiación/reforma, todo sigue
+funcionando igual, ahora sobre el subconjunto filtrado cuando aplica). Con
+zona activa, un listing SIN coordenadas se excluye también de la LISTA (antes
+solo se excluía del mapa y se marcaba "sin ubicación en el mapa" en la
+lista) — "¿en qué zona cae?" no tiene respuesta sin coordenadas, así que ya
+no basta con la etiqueta. Un indicador ("N de M pisos en esta zona") deja
+claro cuántos quedan fuera y cómo se borra el filtro.
+
 ### Puerto local
 Frontend `:5187`, backend `:3014`.
 

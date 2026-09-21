@@ -67,24 +67,46 @@ const PORTAL = 'fotocasa';
  *     `buildingSubtype`. Pasa el filtro porque `business` no está en
  *     `SUBTIPOS_NO_LOCAL` y sí en `SUBTIPOS_NO_VIVIENDA` (se rechaza en vivienda).
  *   - `features` mantiene la forma `[{ key, value }]` (surface, bathrooms…).
+ *
+ * ALQUILER POR HABITACIONES ("compartir", transactionTypeId 5): sección
+ * `/es/compartir/pisos/<zona>/…` — SIEMPRE el segmento "pisos", nunca
+ * `SECCION[tipo]`, porque compartir piso solo existe para vivienda completa
+ * (nunca locales). IMPORTANTE: en un nodo "compartir" las features
+ * (`surface`, `rooms`…) describen el PISO ENTERO donde está la habitación,
+ * no la habitación en sí (verificado con un anuncio real: 320€/mes en un
+ * nodo que reporta 389 m² y 12 habitaciones — son los datos del piso, no de
+ * la habitación alquilada). Por eso NUNCA se debe usar `metros`/precio-por-m²
+ * de un anuncio "compartir": solo su `precio` (mensual, de la habitación) es
+ * fiable — ver `pareceAnuncio`/`parsearNodo`, que no distinguen esto porque
+ * ya no usan `metros` para nada en el caso de uso de rentabilidadZona.ts.
+ * `pareceAnuncio` no necesita cambios propios: `buildingType: "Flat"` de un
+ * nodo "compartir" ya pasa el filtro de vivienda existente sin tocarlo.
  * ─────────────────────────────────────────────────────────────────────────
  */
 
 /** Segmento de la ruta de Fotocasa según el tipo de inmueble. */
 const SECCION: Record<TipoInmueble, string> = { vivienda: 'viviendas', local: 'locales' };
 
-/** Segmento de la ruta de Fotocasa según la operación (venta/alquiler). */
-const RUTA_OPERACION: Record<TipoOperacion, string> = { venta: 'comprar', alquiler: 'alquiler' };
+/** Segmento de la ruta de Fotocasa según la operación (venta/alquiler/compartir). */
+const RUTA_OPERACION: Record<TipoOperacion, string> = {
+  venta: 'comprar',
+  alquiler: 'alquiler',
+  compartir: 'compartir',
+};
 
-/** `transactionTypeId` que Fotocasa espera para cada operación (1=venta, 3=alquiler). */
-const TRANSACTION_TYPE_ID: Record<TipoOperacion, number> = { venta: 1, alquiler: 3 };
+/** `transactionTypeId` que Fotocasa espera para cada operación (1=venta, 3=alquiler, 5=compartir). */
+const TRANSACTION_TYPE_ID: Record<TipoOperacion, number> = { venta: 1, alquiler: 3, compartir: 5 };
 
 /** Expuesto para los tests: la ruta y los parámetros dependen del `tipo` y la `operacion`. */
 export function construirUrl(criterios: CriteriosPortal, pagina: number): string {
   // En Fotocasa "caceres" es la provincia y "caceres-capital" la ciudad.
   const base = slugificar(criterios.ubicacion);
   const zona = esCapitalDeProvincia(criterios.ubicacion) ? `${base}-capital` : base;
-  const ruta = `/es/${RUTA_OPERACION[criterios.operacion]}/${SECCION[criterios.tipo]}/${zona}/todas-las-zonas/l/${pagina > 1 ? pagina : ''}`;
+  // "compartir" (habitación) siempre usa el segmento "pisos": el alquiler por
+  // habitaciones solo aplica a pisos completos, nunca a locales — a
+  // diferencia de venta/alquiler, aquí NO se usa SECCION[criterios.tipo].
+  const seccion = criterios.operacion === 'compartir' ? 'pisos' : SECCION[criterios.tipo];
+  const ruta = `/es/${RUTA_OPERACION[criterios.operacion]}/${seccion}/${zona}/todas-las-zonas/l/${pagina > 1 ? pagina : ''}`;
 
   const params = new URLSearchParams();
   if (criterios.precioMin !== null) params.set('minPrice', String(criterios.precioMin));

@@ -25,12 +25,17 @@ export const TIPOS = ['vivienda', 'local'] as const;
 export type TipoInmueble = (typeof TIPOS)[number];
 
 /**
- * Operación: venta o alquiler. Dimensión ortogonal a `TipoInmueble` — decide
- * la sección del portal (comprar/alquiler) y, en Fotocasa, el
+ * Operación: venta, alquiler (piso completo) o compartir (alquiler por
+ * habitaciones). Dimensión ortogonal a `TipoInmueble` — decide la sección
+ * del portal (comprar/alquiler/compartir) y, en Fotocasa, el
  * `transactionTypeId` esperado del nodo. El scraper de capitales de
- * `finanzas` solo usa `'venta'`; `rentabilidadZona.ts` usa ambas.
+ * `finanzas` solo usa `'venta'`; `rentabilidadZona.ts` usa las tres.
+ *
+ * `'compartir'` (habitación dentro de un piso) solo existe en Fotocasa —
+ * pisos.com no tiene sección de alquiler por habitaciones, ver
+ * `pisosComProvider.puedeBuscar`.
  */
-export const TIPOS_OPERACION = ['venta', 'alquiler'] as const;
+export const TIPOS_OPERACION = ['venta', 'alquiler', 'compartir'] as const;
 export type TipoOperacion = (typeof TIPOS_OPERACION)[number];
 
 /**

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { construirUrl, parsearPagina } from './pisoscom';
+import { construirUrl, parsearPagina, pisosComProvider } from './pisoscom';
 import type { CriteriosPortal } from './types';
 
 const CRITERIOS_BASE: CriteriosPortal = {
@@ -162,5 +162,15 @@ describe('pisos.com · locales (tipo=local)', () => {
     expect(anuncio.portalId).toBe('62518867133.109300');
     expect(anuncio.precio).toBeNull();
     expect(anuncio.metros).toBe(96);
+  });
+});
+
+describe('pisos.com · operación compartir (alquiler por habitaciones)', () => {
+  it('puedeBuscar rechaza compartir: pisos.com no tiene esa sección', () => {
+    const resultado = pisosComProvider.puedeBuscar({ ...CRITERIOS_BASE, operacion: 'compartir' });
+    expect(resultado.ok).toBe(false);
+    if (!resultado.ok) {
+      expect(resultado.motivo).toMatch(/habitaciones/);
+    }
   });
 });

@@ -50,9 +50,14 @@ function anuncio(overrides: Partial<AnuncioCrudo> = {}): AnuncioCrudo {
 }
 
 /** Configura lo que devuelve cada provider según la operación pedida. */
-function mockearBusquedas(porOperacion: { venta?: AnuncioCrudo[]; alquiler?: AnuncioCrudo[] }): void {
+function mockearBusquedas(porOperacion: {
+  venta?: AnuncioCrudo[];
+  alquiler?: AnuncioCrudo[];
+  compartir?: AnuncioCrudo[];
+}): void {
   const impl = (criterios: CriteriosPortal) => {
     if (criterios.operacion === 'venta') return Promise.resolve(porOperacion.venta ?? []);
+    if (criterios.operacion === 'compartir') return Promise.resolve(porOperacion.compartir ?? []);
     return Promise.resolve(porOperacion.alquiler ?? []);
   };
   fotocasaBuscar.mockImplementation(impl);
@@ -248,6 +253,71 @@ describe('calcularRentabilidadZona', () => {
       return calcularRentabilidadZona('Cáceres').then((resultado) => {
         expect(resultado.numComparablesVentaTotal).toBe(1);
         expect(resultado.listings).toHaveLength(1);
+      });
+    });
+  });
+
+  describe('modo (alquiler_completo por defecto vs. habitaciones)', () => {
+    it('sin modo (u omitido) se comporta byte a byte igual que antes y devuelve modo: "alquiler_completo"', () => {
+      mockearBusquedas({
+        venta: [anuncio({ portalId: 'v1', precio: 150_000, metros: 100 })],
+        alquiler: [
+          anuncio({ portalId: 'a1', precio: 1000, metros: 100 }),
+          anuncio({ portalId: 'a2', precio: 1200, metros: 100 }),
+        ],
+      });
+
+      return calcularRentabilidadZona('Cáceres').then((resultado) => {
+        expect(resultado.modo).toBe('alquiler_completo');
+        expect(resultado.medianaAlquilerM2).toBe(11);
+        expect(resultado.listings[0].alquilerMensualEstimado).toBe(1100);
+      });
+    });
+
+    it('modo "habitaciones" busca comparables de "compartir" y estima con mediana de precio × habitaciones', () => {
+      mockearBusquedas({
+        venta: [anuncio({ portalId: 'v1', precio: 150_000, metros: 100, habitaciones: 3 })],
+        // mediana de 300 y 340 € -> 320 €/habitación/mes
+        compartir: [
+          anuncio({ portalId: 'c1', precio: 300, metros: 389 }),
+          anuncio({ portalId: 'c2', precio: 340, metros: 389 }),
+        ],
+      });
+
+      return calcularRentabilidadZona('Cáceres', undefined, 'habitaciones').then((resultado) => {
+        expect(resultado.modo).toBe('habitaciones');
+        expect(resultado.medianaAlquilerM2).toBe(320);
+        expect(resultado.numComparablesAlquilerTotal).toBe(2);
+        expect(resultado.listings).toHaveLength(1);
+        expect(resultado.listings[0].alquilerMensualEstimado).toBe(960); // 320 * 3 habitaciones
+      });
+    });
+
+    it('en modo habitaciones, un anuncio en venta con habitaciones null o 0 se excluye (no se puede estimar)', () => {
+      mockearBusquedas({
+        venta: [
+          anuncio({ portalId: 'v1', precio: 150_000, metros: 100, habitaciones: 3 }),
+          anuncio({ portalId: 'v2', url: 'https://example.com/2', precio: 100_000, metros: 80, habitaciones: null }),
+          anuncio({ portalId: 'v3', url: 'https://example.com/3', precio: 90_000, metros: 70, habitaciones: 0 }),
+        ],
+        compartir: [anuncio({ portalId: 'c1', precio: 300, metros: 389 })],
+      });
+
+      return calcularRentabilidadZona('Cáceres', undefined, 'habitaciones').then((resultado) => {
+        expect(resultado.listings.map((l) => l.url)).toEqual(['https://example.com/1']);
+      });
+    });
+
+    it('en modo habitaciones sin comparables de "compartir", el estimado es null y hay un aviso específico', () => {
+      mockearBusquedas({
+        venta: [anuncio({ portalId: 'v1', precio: 150_000, metros: 100, habitaciones: 3 })],
+        compartir: [],
+      });
+
+      return calcularRentabilidadZona('Cáceres', undefined, 'habitaciones').then((resultado) => {
+        expect(resultado.medianaAlquilerM2).toBeNull();
+        expect(resultado.listings[0].alquilerMensualEstimado).toBeNull();
+        expect(resultado.avisos.some((a) => /alquiler por habitaciones/.test(a))).toBe(true);
       });
     });
   });

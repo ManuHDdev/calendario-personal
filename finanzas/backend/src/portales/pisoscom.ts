@@ -60,8 +60,18 @@ const SECCION: Record<TipoInmueble, string> = { vivienda: 'pisos', local: 'local
 /** Slugs de URL que en pisos.com son vivienda: si aparecen en un listado de local, se descartan. */
 const SLUGS_RESIDENCIALES = ['piso', 'atico', 'duplex', 'chalet', 'vivienda', 'apartamento', 'estudio', 'casa'];
 
-/** Segmento de la ruta de pisos.com según la operación (venta/alquiler). */
-const RUTA_OPERACION: Record<TipoOperacion, string> = { venta: 'venta', alquiler: 'alquiler' };
+/**
+ * Segmento de la ruta de pisos.com según la operación (venta/alquiler). La
+ * entrada `compartir` nunca se usa en la práctica — `puedeBuscar` rechaza esa
+ * operación antes de llegar a `construirUrl` (pisos.com no tiene sección de
+ * alquiler por habitaciones) — pero el tipo `Record<TipoOperacion, string>`
+ * exige las tres claves.
+ */
+const RUTA_OPERACION: Record<TipoOperacion, string> = {
+  venta: 'venta',
+  alquiler: 'alquiler',
+  compartir: 'compartir',
+};
 
 /** Expuesto para los tests: el segmento de la ruta depende del `tipo` y la `operacion`. */
 export function construirUrl(criterios: CriteriosPortal, pagina: number): string {
@@ -258,6 +268,13 @@ export const pisosComProvider: PortalProvider = {
   nombre: 'pisos.com',
 
   puedeBuscar(criterios) {
+    // pisos.com no tiene sección de alquiler por habitaciones ("compartir"):
+    // a diferencia de Fotocasa, no hay equivalente a
+    // `/es/compartir/pisos/…` — se omite con motivo explícito, mismo patrón
+    // que Wallapop necesitando coordenadas en `pisos`.
+    if (criterios.operacion === 'compartir') {
+      return { ok: false, motivo: 'pisos.com no tiene sección de alquiler por habitaciones' };
+    }
     return criterios.ubicacion.trim()
       ? { ok: true }
       : { ok: false, motivo: 'pisos.com necesita una ubicación con nombre' };
