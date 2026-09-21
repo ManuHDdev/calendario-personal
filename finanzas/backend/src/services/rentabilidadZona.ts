@@ -49,6 +49,9 @@ export interface ListingRentabilidadZona {
   habitaciones: number | null;
   ubicacion: string | null;
   imagenUrl: string | null;
+  /** Nullable: el portal no siempre publica coordenadas del anuncio. */
+  latitud: number | null;
+  longitud: number | null;
   /** null cuando no hay mediana de alquiler para la zona — nunca un número inventado. */
   alquilerMensualEstimado: number | null;
   /** Comparables de alquiler que alimentan la mediana de TODA la zona (no por anuncio). */
@@ -170,6 +173,8 @@ export async function calcularRentabilidadZona(
         habitaciones: a.habitaciones,
         ubicacion: a.ubicacion,
         imagenUrl: a.imagenUrl,
+        latitud: a.latitud,
+        longitud: a.longitud,
         alquilerMensualEstimado,
         numComparablesAlquiler: numComparablesAlquilerTotal,
         confianza,

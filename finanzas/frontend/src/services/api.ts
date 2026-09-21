@@ -111,6 +111,9 @@ export interface RentabilidadZonaListing {
   habitaciones: number | null;
   ubicacion: string | null;
   imagenUrl: string | null;
+  /** Nullable: el portal no siempre publica coordenadas del anuncio. */
+  latitud: number | null;
+  longitud: number | null;
   alquilerMensualEstimado: number | null;
   numComparablesAlquiler: number;
   confianza: 'alta' | 'baja';

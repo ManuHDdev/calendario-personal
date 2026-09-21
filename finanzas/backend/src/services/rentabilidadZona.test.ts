@@ -121,6 +121,26 @@ describe('calcularRentabilidadZona', () => {
     });
   });
 
+  it('expone latitud/longitud del anuncio en venta cuando el portal las da, y null cuando no', () => {
+    mockearBusquedas({
+      venta: [
+        anuncio({ portalId: 'v1', latitud: 39.4699, longitud: -0.3763 }),
+        anuncio({ portalId: 'v2', url: 'https://example.com/2', latitud: null, longitud: null }),
+      ],
+      alquiler: [anuncio({ portalId: 'a1', precio: 1000, metros: 100 })],
+    });
+
+    return calcularRentabilidadZona('Cáceres').then((resultado) => {
+      expect(resultado.listings).toHaveLength(2);
+      const conCoords = resultado.listings.find((l) => l.url === 'https://example.com/1');
+      const sinCoords = resultado.listings.find((l) => l.url === 'https://example.com/2');
+      expect(conCoords?.latitud).toBe(39.4699);
+      expect(conCoords?.longitud).toBe(-0.3763);
+      expect(sinCoords?.latitud).toBeNull();
+      expect(sinCoords?.longitud).toBeNull();
+    });
+  });
+
   it('un anuncio de alquiler sin precio o sin metros no cuenta para la mediana pero no descarta el resto', () => {
     mockearBusquedas({
       venta: [anuncio({ portalId: 'v1' })],

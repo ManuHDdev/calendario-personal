@@ -26,6 +26,8 @@ function listing(overrides: Partial<RentabilidadZonaListing> = {}): Rentabilidad
     habitaciones: 3,
     ubicacion: 'Cáceres',
     imagenUrl: null,
+    latitud: 39.4699,
+    longitud: -0.3763,
     alquilerMensualEstimado: 800,
     numComparablesAlquiler: 10,
     confianza: 'alta',
@@ -67,5 +69,27 @@ describe('calcularRankingRentabilidad', () => {
 
   it('una lista vacía devuelve un ranking vacío', () => {
     expect(calcularRankingRentabilidad([], PARAMETROS)).toEqual([]);
+  });
+
+  it('un gasto de reforma por listing solo afecta a la rentabilidad de ESE listing', () => {
+    const a = listing({ url: 'a', precio: 100_000, alquilerMensualEstimado: 800 });
+    const b = listing({ url: 'b', precio: 100_000, alquilerMensualEstimado: 800 });
+
+    const sinReforma = calcularRankingRentabilidad([a, b], PARAMETROS);
+    const conReformaEnA = calcularRankingRentabilidad([a, b], PARAMETROS, { a: 30_000 });
+
+    const bSinReforma = sinReforma.find((r) => r.listing.url === 'b');
+    const bConReformaEnA = conReformaEnA.find((r) => r.listing.url === 'b');
+    expect(bConReformaEnA?.resultado?.rentabilidadNetaSobreInversionPct).toBe(
+      bSinReforma?.resultado?.rentabilidadNetaSobreInversionPct,
+    );
+
+    const aSinReforma = sinReforma.find((r) => r.listing.url === 'a');
+    const aConReforma = conReformaEnA.find((r) => r.listing.url === 'a');
+    expect(aConReforma?.resultado?.rentabilidadNetaSobreInversionPct).not.toBe(
+      aSinReforma?.resultado?.rentabilidadNetaSobreInversionPct,
+    );
+    // Un gasto de reforma alto empeora la rentabilidad de A y cambia el orden.
+    expect(conReformaEnA[0].listing.url).toBe('b');
   });
 });

@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 900px;
+  max-width: 1100px;
 }
 
 .rentabilidad-zona-cargando {
@@ -55,11 +55,138 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   text-decoration: none;
-  transition: border-color 150ms ease;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
 }
 
 .rentabilidad-zona-fila:hover {
   border-color: var(--accent);
+}
+
+.rentabilidad-zona-fila.seleccionada {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-primary));
+}
+
+.rentabilidad-zona-sin-mapa {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.rentabilidad-zona-fila-abrir {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-decoration: none;
+}
+
+.rentabilidad-zona-fila-abrir:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* ── Mapa + panel de detalle ─────────────────────────────────────────── */
+
+.rentabilidad-zona-mapa-layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+
+@media (max-width: 860px) {
+  .rentabilidad-zona-mapa-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rentabilidad-zona-mapa {
+  width: 100%;
+  height: 420px;
+  min-height: 320px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+  z-index: 0;
+  background: var(--bg-secondary);
+}
+
+.rentabilidad-zona-detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-height: 320px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.rentabilidad-zona-detalle-vacio {
+  margin: auto 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.rentabilidad-zona-detalle-imagen {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+}
+
+.rentabilidad-zona-detalle-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.rentabilidad-zona-detalle-datos {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.rentabilidad-zona-detalle-reforma {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.rentabilidad-zona-detalle-rentabilidad {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.rentabilidad-zona-detalle-enlace {
+  margin-top: auto;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+
+.rentabilidad-zona-detalle-enlace:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .rentabilidad-zona-imagen {
