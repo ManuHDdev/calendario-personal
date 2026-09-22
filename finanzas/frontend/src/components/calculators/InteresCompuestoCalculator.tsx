@@ -129,10 +129,14 @@ export default function InteresCompuestoCalculator() {
         añosCrisisValidados.push({ año, rendimiento });
       }
 
-      // Conversión a aportación anual equivalente: la simulación avanzada
-      // siempre corre en pasos de un año (los años de crisis y los impuestos
-      // son eventos anuales), así que una aportación mensual de la
-      // calculadora simple se multiplica por 12.
+      // Conversión a aportación anual equivalente: el TOTAL contribuido por
+      // año siempre se expresa como una cifra anual, pero la FRECUENCIA real
+      // (frecuenciaAportacion) se sigue pasando aparte — la simulación
+      // avanzada la necesita para capitalizar cada aportación mensual desde
+      // su propio mes de entrada, en vez de tratarlas todas como un único
+      // bloque anual (ver el comentario de `capitalizarUnAño` en
+      // calculators.ts: ese trato en bloque fue un fallo real que disparaba
+      // la ganancia bruta muy por encima de la de la calculadora simple).
       const aportacionBase = aportacionPeriodica ? Number(aportacionPeriodica) : 0;
       const aportacionAnual =
         aportacionBase > 0 && frecuenciaAportacion === 'mensual' ? aportacionBase * 12 : aportacionBase;
@@ -142,6 +146,8 @@ export default function InteresCompuestoCalculator() {
         tasaAnualBase: Number(tasaAnual),
         años: aniosNum,
         aportacionAnual,
+        frecuenciaCapitalizacion,
+        frecuenciaAportacion,
         añosCrisis: añosCrisisValidados,
         regimenFiscal,
         retiroAnual: regimenFiscal === 'retiros_fifo' ? Number(retiroAnual) || 0 : undefined,
@@ -284,7 +290,6 @@ export default function InteresCompuestoCalculator() {
         <select
           value={frecuenciaCapitalizacion}
           onChange={(e) => setFrecuenciaCapitalizacion(e.target.value as Frecuencia)}
-          disabled={modoAvanzado}
         >
           <option value="anual">Anual</option>
           <option value="mensual">Mensual</option>

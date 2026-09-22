@@ -139,6 +139,10 @@ export interface SimulacionAvanzadaInput {
   tasaAnualBase: number; // %
   años: number;
   aportacionAnual?: number; // ya convertida a equivalente anual por la UI
+  /** Frecuencia de capitalización dentro de cada año simulado. Default 'anual' (comportamiento histórico). */
+  frecuenciaCapitalizacion?: Frecuencia;
+  /** Frecuencia real de la aportación (antes de convertirla a `aportacionAnual`). Default 'anual' (comportamiento histórico) — ver `capitalizarUnAño`. */
+  frecuenciaAportacion?: Frecuencia;
   añosCrisis: AñoCrisis[];
   regimenFiscal: RegimenFiscal;
   retiroAnual?: number; // importe BRUTO que se intenta retirar cada año — solo régimen 'retiros_fifo'
@@ -177,6 +181,65 @@ interface PerdidaPendiente {
   importe: number;
 }
 
+/**
+ * Capitaliza UN año dentro de la simulación avanzada: saldo inicial +
+ * aportación anual (si la hay), con la tasa de ese año (puede ser negativa,
+ * un año de crisis) y las frecuencias de capitalización/aportación que
+ * eligió el usuario.
+ *
+ * FALLO REAL encontrado en producción (2026-09): antes de esto, la
+ * simulación avanzada SIEMPRE trataba la aportación como un único bloque
+ * anual añadido de golpe al principio del año, sin importar si el usuario
+ * había elegido aportación mensual — con años=1, capital 3000€, aportación
+ * 1000€/mes y tasa 17%, eso metía los 12.000€ de golpe el día 1 y calculaba
+ * un año entero de interés sobre esa suma completa (2.550€ de ganancia
+ * bruta), muy por encima de lo que da capitalizar 12 aportaciones mensuales
+ * reales (1.532,27€ en la calculadora simple) — de ahí que "pagando
+ * impuestos" pareciera salir MÁS que sin pagarlos: la base sobre la que se
+ * tributaba ya venía inflada por el propio modelo, no por los impuestos.
+ *
+ * Dos ramas deliberadamente distintas, no una fórmula única:
+ *  - Aportación NO mensual (anual, o no hay aportación): se mantiene el
+ *    comportamiento histórico byte a byte — la aportación entra al
+ *    principio del año y crece junto al resto durante los 12 meses. No se
+ *    toca porque ya está verificado por los tests existentes (incluido el
+ *    régimen `retiros_fifo`) y una aportación anual "al principio del año"
+ *    es una convención legítima, no el bug reportado.
+ *  - Aportación mensual: cada una de las 12 aportaciones capitaliza SOLO
+ *    desde su propio mes de entrada hasta fin de año — misma fórmula
+ *    cerrada que ya usa `calcularInteresCompuesto` para aportaciones
+ *    periódicas. Con régimen 'ninguno' y años=1, esto hace que la
+ *    simulación avanzada dé EXACTAMENTE el mismo resultado que la
+ *    calculadora simple para los mismos datos (verificado en
+ *    `calculators.test.ts`) — que es precisamente lo que se rompía antes.
+ */
+function capitalizarUnAño(
+  saldoInicio: number,
+  tasaAnualPctDelAño: number,
+  aportacionAnual: number,
+  frecuenciaCapitalizacion: Frecuencia,
+  frecuenciaAportacion: Frecuencia,
+): { saldoFinal: number; gananciaDelAño: number } {
+  const r = tasaAnualPctDelAño / 100;
+  const n = PERIODOS_POR_ANIO[frecuenciaCapitalizacion];
+
+  if (frecuenciaAportacion !== 'mensual' || aportacionAnual <= 0) {
+    const saldoConAportacion = saldoInicio + aportacionAnual;
+    const saldoFinal = saldoConAportacion * Math.pow(1 + r / n, n);
+    return { saldoFinal, gananciaDelAño: saldoFinal - saldoInicio - aportacionAnual };
+  }
+
+  const saldoInicialFinal = saldoInicio * Math.pow(1 + r / n, n);
+  const aportacionMensual = aportacionAnual / 12;
+  let aportacionesFinal = 0;
+  for (let i = 1; i <= 12; i++) {
+    const periodosRestantes = (1 - i / 12) * n;
+    aportacionesFinal += aportacionMensual * Math.pow(1 + r / n, periodosRestantes);
+  }
+  const saldoFinal = saldoInicialFinal + aportacionesFinal;
+  return { saldoFinal, gananciaDelAño: saldoFinal - saldoInicio - aportacionAnual };
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // 1c. Régimen 'retiros_fifo' — retiros programados con contabilidad FIFO
 // ─────────────────────────────────────────────────────────────────────────
@@ -204,6 +267,8 @@ interface SimulacionFifoInput {
   tasaAnualBase: number;
   años: number;
   aportacionAnual: number;
+  frecuenciaCapitalizacion: Frecuencia;
+  frecuenciaAportacion: Frecuencia;
   rendimientoCrisisPorAño: Map<number, number>;
   retiroAnual: number;
   añoInicioRetiros: number;
@@ -215,6 +280,8 @@ function simularRetirosFifo(input: SimulacionFifoInput): SimulacionAvanzadaResul
     tasaAnualBase,
     años,
     aportacionAnual,
+    frecuenciaCapitalizacion,
+    frecuenciaAportacion,
     rendimientoCrisisPorAño,
     retiroAnual,
     añoInicioRetiros,
@@ -238,13 +305,33 @@ function simularRetirosFifo(input: SimulacionFifoInput): SimulacionAvanzadaResul
       : tasaAnualBase;
 
     const saldoInicio = sumaValorActual();
+    const r = rendimientoAplicado / 100;
+    const n = PERIODOS_POR_ANIO[frecuenciaCapitalizacion];
 
-    if (aportacionAnual > 0) {
-      lotes.push({ añoOrigen: año, costeBasisRestante: aportacionAnual, valorActual: aportacionAnual });
-    }
-
-    for (const lote of lotes) {
-      lote.valorActual *= 1 + rendimientoAplicado / 100;
+    if (frecuenciaAportacion !== 'mensual' || aportacionAnual <= 0) {
+      // Histórico, sin cambios: la aportación (si la hay) entra como un lote
+      // más al principio del año y crece junto al resto — ver el comentario
+      // de `capitalizarUnAño` sobre por qué esta rama no se toca.
+      if (aportacionAnual > 0) {
+        lotes.push({ añoOrigen: año, costeBasisRestante: aportacionAnual, valorActual: aportacionAnual });
+      }
+      for (const lote of lotes) {
+        lote.valorActual *= Math.pow(1 + r / n, n);
+      }
+    } else {
+      // Aportación mensual: los lotes YA existentes (de años anteriores)
+      // crecen el año completo; la de ESTE año se reparte en 12 lotes
+      // mensuales, cada uno creciendo solo desde su mes de entrada — mismo
+      // fallo/arreglo que en `capitalizarUnAño`, aplicado a los lotes FIFO.
+      for (const lote of lotes) {
+        lote.valorActual *= Math.pow(1 + r / n, n);
+      }
+      const aportacionMensual = aportacionAnual / 12;
+      for (let i = 1; i <= 12; i++) {
+        const periodosRestantes = (1 - i / 12) * n;
+        const valorActualFinAño = aportacionMensual * Math.pow(1 + r / n, periodosRestantes);
+        lotes.push({ añoOrigen: año, costeBasisRestante: aportacionMensual, valorActual: valorActualFinAño });
+      }
     }
 
     const gananciaDelAño = sumaValorActual() - saldoInicio - aportacionAnual;
@@ -368,6 +455,8 @@ export function simularInteresCompuestoAvanzado(
     tasaAnualBase,
     años,
     aportacionAnual = 0,
+    frecuenciaCapitalizacion = 'anual',
+    frecuenciaAportacion = 'anual',
     añosCrisis,
     regimenFiscal,
     retiroAnual = 0,
@@ -398,6 +487,8 @@ export function simularInteresCompuestoAvanzado(
       tasaAnualBase,
       años,
       aportacionAnual,
+      frecuenciaCapitalizacion,
+      frecuenciaAportacion,
       rendimientoCrisisPorAño,
       retiroAnual,
       añoInicioRetiros,
@@ -416,10 +507,14 @@ export function simularInteresCompuestoAvanzado(
       : tasaAnualBase;
 
     const saldoInicio = saldo;
-    saldo += aportacionAnual;
-
-    const gananciaDelAño = saldo * (rendimientoAplicado / 100);
-    saldo += gananciaDelAño;
+    const { saldoFinal, gananciaDelAño } = capitalizarUnAño(
+      saldoInicio,
+      rendimientoAplicado,
+      aportacionAnual,
+      frecuenciaCapitalizacion,
+      frecuenciaAportacion,
+    );
+    saldo = saldoFinal;
 
     let impuestoPagado = 0;
     const saldoFinBruto = saldo;
