@@ -128,6 +128,33 @@ async function tablaVacia(): Promise<boolean> {
   return Number(rows[0]?.count ?? '0') === 0;
 }
 
+/** `ultima_ejecucion` del singleton, o `null` si nunca se ha intentado ninguna importación. */
+async function ultimaEjecucion(): Promise<Date | null> {
+  const { rows } = await pool.query<{ ultima_ejecucion: Date | null }>(
+    'SELECT ultima_ejecucion FROM importacion_estado WHERE id = 1',
+  );
+  return rows[0]?.ultima_ejecucion ?? null;
+}
+
+/**
+ * Decide si toca importar YA o cuánto queda para el próximo intento,
+ * a partir de cuándo fue el último intento (éxito o fallo, da igual) —
+ * nunca de cuándo arrancó este proceso. Extraída como función pura (mismo
+ * patrón que `construirUpsertFilaQuery`) para poder testear la lógica de
+ * reanudación tras un redespliegue sin necesitar una base de datos real.
+ */
+export function calcularProximaAccion(
+  ultima: Date | null,
+  ahora: Date,
+  intervaloMs: number,
+): { ejecutarAhora: boolean; esperaMs: number } {
+  const transcurridoMs = ultima ? ahora.getTime() - ultima.getTime() : Infinity;
+  if (transcurridoMs >= intervaloMs) {
+    return { ejecutarAhora: true, esperaMs: 0 };
+  }
+  return { ejecutarAhora: false, esperaMs: intervaloMs - transcurridoMs };
+}
+
 async function ciclo(log: Logger): Promise<void> {
   if (parado) return;
   try {
@@ -141,9 +168,19 @@ async function ciclo(log: Logger): Promise<void> {
 
 /**
  * Arranca el importador programado. Si la tabla está vacía (primer
- * arranque), lanza una importación inicial inmediata; si ya hay datos,
- * espera al primer intervalo para no disparar una descarga en cada
- * redespliegue.
+ * arranque), lanza una importación inicial inmediata.
+ *
+ * Si no, el PRÓXIMO intento se calcula a partir de `ultima_ejecucion` en
+ * `importacion_estado` (éxito o fallo, da igual), NUNCA desde que arrancó
+ * este proceso. Antes se reprogramaba un intervalo entero desde cero en
+ * cada arranque — con redespliegues más frecuentes que `INTERVALO_HORAS`
+ * (algo habitual durante desarrollo activo), el reloj de 24h se reiniciaba
+ * en cada deploy antes de llegar a cumplirse nunca, así que un fallo
+ * transitorio (p. ej. "fetch failed") podía dejar la importación congelada
+ * indefinidamente sin que ningún reintento llegara a dispararse — bug real
+ * detectado en producción el 2026-09-22: la última importación había
+ * fallado el 20-09 y, pese a varios redespliegues posteriores, nunca se
+ * había vuelto a intentar.
  */
 export async function arrancarImportador(log: Logger): Promise<void> {
   parado = false;
@@ -157,8 +194,24 @@ export async function arrancarImportador(log: Logger): Promise<void> {
     log.info('Tabla precio_vivienda vacía: lanzando importación inicial.');
     await ejecutarImportacion(log);
     if (!parado) temporizador = setTimeout(() => void ciclo(log), proximaEsperaMs());
+    return;
+  }
+
+  const ultima = await ultimaEjecucion();
+  const intervaloMs = INTERVALO_HORAS * 60 * 60_000;
+  const { ejecutarAhora, esperaMs } = calcularProximaAccion(ultima, new Date(), intervaloMs);
+
+  if (ejecutarAhora) {
+    log.info(
+      ultima
+        ? `[importador] Toca importar: la última ejecución fue hace ${((Date.now() - ultima.getTime()) / 3_600_000).toFixed(1)}h.`
+        : '[importador] Sin ejecución previa registrada: lanzando importación ahora.',
+    );
+    await ejecutarImportacion(log);
+    if (!parado) temporizador = setTimeout(() => void ciclo(log), proximaEsperaMs());
   } else {
-    temporizador = setTimeout(() => void ciclo(log), proximaEsperaMs());
+    log.info(`[importador] Siguiente intento en ~${(esperaMs / 3_600_000).toFixed(1)}h.`);
+    temporizador = setTimeout(() => void ciclo(log), esperaMs);
   }
 }
 

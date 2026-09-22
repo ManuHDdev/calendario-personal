@@ -35,6 +35,7 @@ import { CAPITALES, provinciaDeCapital } from './capitales';
 import { fotocasaProvider } from '../portales/fotocasa';
 import { pisosComProvider } from '../portales/pisoscom';
 import { mediana } from './mediana';
+import { calcularProximaAccion } from './importador';
 import type { AnuncioCrudo, CriteriosPortal, PortalProvider } from '../portales/types';
 
 const INTERVALO_HORAS = Number(process.env.FINANZAS_INTERVALO_SCRAPER_CAPITAL_HORAS) || 24;
@@ -272,6 +273,14 @@ async function tablaVacia(): Promise<boolean> {
   return Number(rows[0]?.count ?? '0') === 0;
 }
 
+/** `ultima_ejecucion` del singleton, o `null` si nunca se ha intentado ninguna vuelta. */
+async function ultimaEjecucion(): Promise<Date | null> {
+  const { rows } = await pool.query<{ ultima_ejecucion: Date | null }>(
+    'SELECT ultima_ejecucion FROM capital_scraper_estado WHERE id = 1',
+  );
+  return rows[0]?.ultima_ejecucion ?? null;
+}
+
 async function ciclo(log: Logger): Promise<void> {
   if (parado) return;
   try {
@@ -285,8 +294,14 @@ async function ciclo(log: Logger): Promise<void> {
 
 /**
  * Arranca el scraper programado de capitales. Si la tabla está vacía (primer
- * arranque), lanza una vuelta inicial inmediata; si ya hay datos, espera al
- * primer intervalo para no disparar 104 peticiones en cada redespliegue.
+ * arranque), lanza una vuelta inicial inmediata.
+ *
+ * Si no, el PRÓXIMO intento se calcula a partir de `ultima_ejecucion` en
+ * `capital_scraper_estado` (éxito o fallo, da igual), NUNCA desde que
+ * arrancó este proceso — mismo arreglo que `importador.ts` (ver su
+ * comentario para el bug real que motivó esto): reprogramar un intervalo
+ * entero desde cero en cada arranque deja el scraper congelado si los
+ * redespliegues son más frecuentes que `INTERVALO_HORAS`.
  */
 export async function arrancarScraperCapitales(log: Logger): Promise<void> {
   parado = false;
@@ -300,8 +315,24 @@ export async function arrancarScraperCapitales(log: Logger): Promise<void> {
     log.info('Tabla precio_vivienda_capital vacía: lanzando vuelta inicial.');
     await ejecutarScraperCapitales(log);
     if (!parado) temporizador = setTimeout(() => void ciclo(log), proximaEsperaMs());
+    return;
+  }
+
+  const ultima = await ultimaEjecucion();
+  const intervaloMs = INTERVALO_HORAS * 60 * 60_000;
+  const { ejecutarAhora, esperaMs } = calcularProximaAccion(ultima, new Date(), intervaloMs);
+
+  if (ejecutarAhora) {
+    log.info(
+      ultima
+        ? `[capitalScraper] Toca rastrear: la última vuelta fue hace ${((Date.now() - ultima.getTime()) / 3_600_000).toFixed(1)}h.`
+        : '[capitalScraper] Sin vuelta previa registrada: lanzando ahora.',
+    );
+    await ejecutarScraperCapitales(log);
+    if (!parado) temporizador = setTimeout(() => void ciclo(log), proximaEsperaMs());
   } else {
-    temporizador = setTimeout(() => void ciclo(log), proximaEsperaMs());
+    log.info(`[capitalScraper] Siguiente vuelta en ~${(esperaMs / 3_600_000).toFixed(1)}h.`);
+    temporizador = setTimeout(() => void ciclo(log), esperaMs);
   }
 }
 
