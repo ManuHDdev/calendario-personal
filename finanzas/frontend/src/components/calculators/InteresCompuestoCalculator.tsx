@@ -231,6 +231,10 @@ export default function InteresCompuestoCalculator() {
                     <strong>{formatEUR(resultadoAvanzado.impuestosTotales)}</strong>
                   </div>
                   <div className="resultado-linea">
+                    <span>Ganancia neta total</span>
+                    <strong>{formatEUR(resultadoAvanzado.gananciaTotalNeta)}</strong>
+                  </div>
+                  <div className="resultado-linea">
                     <span>Rentabilidad neta total</span>
                     <strong>{resultadoAvanzado.rentabilidadNetaTotal.toFixed(2)}%</strong>
                   </div>
