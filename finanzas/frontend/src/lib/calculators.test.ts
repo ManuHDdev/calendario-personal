@@ -275,6 +275,52 @@ describe('simularInteresCompuestoAvanzado', () => {
     expect(resultado.impuestosTotales).toBe(0);
   });
 
+  it('régimen "ninguno" con aportación mensual coincide EXACTAMENTE con calcularInteresCompuesto (caso reportado: 3000€, 17%, 1 año, capitalización y aportación mensual, 1000€/mes)', () => {
+    // Regresión: antes de este fix, la simulación avanzada metía toda la
+    // aportación anual de golpe al principio del año e ignoraba la
+    // frecuencia de capitalización elegida, dando 2550€ de ganancia bruta
+    // en vez de los 1532.27€ que ya daba (correctamente) la calculadora
+    // simple para los mismos datos — de ahí que "pagando impuestos" pareciera
+    // dar MÁS ganancia que "sin pagar impuestos".
+    const simple = calcularInteresCompuesto({
+      capitalInicial: 3000,
+      tasaAnualPct: 17,
+      anios: 1,
+      frecuenciaCapitalizacion: 'mensual',
+      aportacionPeriodica: 1000,
+      frecuenciaAportacion: 'mensual',
+    });
+
+    const avanzado = simularInteresCompuestoAvanzado({
+      capitalInicial: 3000,
+      tasaAnualBase: 17,
+      años: 1,
+      aportacionAnual: 12000,
+      frecuenciaCapitalizacion: 'mensual',
+      frecuenciaAportacion: 'mensual',
+      añosCrisis: [],
+      regimenFiscal: 'ninguno',
+    });
+
+    expect(avanzado.años[0].gananciaDelAño).toBeCloseTo(simple.totalIntereses, 5);
+    // El fallo original daba 2550€: nos aseguramos de estar lejos de esa cifra.
+    expect(avanzado.años[0].gananciaDelAño).not.toBeCloseTo(2550, 0);
+  });
+
+  it('con aportación anual (no mensual), el comportamiento histórico no cambia: la aportación entra de golpe al principio del año', () => {
+    const resultado = simularInteresCompuestoAvanzado({
+      capitalInicial: 10000,
+      tasaAnualBase: 10,
+      años: 1,
+      aportacionAnual: 2000,
+      frecuenciaAportacion: 'anual',
+      añosCrisis: [],
+      regimenFiscal: 'ninguno',
+    });
+    // (10000 + 2000) * 1.10 = 13200 -> ganancia = 13200 - 10000 - 2000 = 1200
+    expect(resultado.años[0].gananciaDelAño).toBeCloseTo(1200, 5);
+  });
+
   it('un año de crisis sustituye la tasa base (7% base, -30% el año 3)', () => {
     const resultado = simularInteresCompuestoAvanzado({
       capitalInicial: 10000,
@@ -360,6 +406,37 @@ describe('simularInteresCompuestoAvanzado', () => {
       // con ese orden alternativo.
       const gananciaSiFueraLifo = 100 + 210 + (10690 - 10000 * (10690 / 12100));
       expect(gananciaEsperada).not.toBeCloseTo(gananciaSiFueraLifo, 1);
+    });
+
+    it('con aportación mensual, la aportación del año en curso entra repartida en 12 lotes mensuales (no de golpe)', () => {
+      // Mismo fallo que en la simulación sin retiros: antes, la aportación
+      // anual completa entraba como un único lote al principio del año. Con
+      // frecuenciaAportacion 'mensual' cada uno de los 12 lotes mensuales
+      // crece solo desde su propio mes de entrada, así que el fondo final
+      // (sin retiros, año 1) debe coincidir con calcularInteresCompuesto.
+      const simple = calcularInteresCompuesto({
+        capitalInicial: 5000,
+        tasaAnualPct: 12,
+        anios: 1,
+        frecuenciaCapitalizacion: 'mensual',
+        aportacionPeriodica: 500,
+        frecuenciaAportacion: 'mensual',
+      });
+
+      const resultado = simularInteresCompuestoAvanzado({
+        capitalInicial: 5000,
+        tasaAnualBase: 12,
+        años: 1,
+        aportacionAnual: 6000,
+        frecuenciaCapitalizacion: 'mensual',
+        frecuenciaAportacion: 'mensual',
+        añosCrisis: [],
+        regimenFiscal: 'retiros_fifo',
+        retiroAnual: 0,
+        añoInicioRetiros: 1,
+      });
+
+      expect(resultado.saldoFinalFondoRestante).toBeCloseTo(simple.capitalFinal, 5);
     });
 
     it('rechaza un año de inicio de retiros fuera de [1, años]', () => {
