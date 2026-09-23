@@ -4,6 +4,59 @@
 > y **borra el contenido de este archivo** cuando termines (deja solo este bloque de cabecera vacío).
 > Así evitamos que instrucciones antiguas se mezclen con futuros despliegues.
 
+## Gastos — migración manual para el estado `previsto` (gasto previsto)
+
+Añade un tercer `estado` a `gasto` (`previsto`, junto a `pendiente_revision` y
+`confirmado`) y hace que `fecha` sea opcional en la tabla — un gasto previsto
+tiene importe conocido pero fecha aún por confirmar. **Es aditiva y
+reversible: no borra ningún dato, las filas existentes no se tocan.** Debe
+aplicarse ANTES de desplegar el nuevo backend: el backend antiguo nunca
+escribe `previsto` ni una `fecha` nula, así que ejecutar la migración antes no
+rompe nada; desplegar el backend nuevo antes de la migración sí rompe — el
+`INSERT`/`UPDATE` con `estado='previsto'` fallaría contra el `CHECK`
+constraint viejo, y una `fecha` nula contra el `NOT NULL` viejo.
+
+### 1. Confirmar el nombre real del constraint
+
+Postgres lo autonombra al crear la tabla — no asumir `gasto_estado_check`,
+comprobarlo primero:
+
+```bash
+docker exec gastos-db psql -U gastos -d gastos -c "\d gasto"
+```
+
+Busca en la salida la línea `Check constraints:` bajo la columna `estado` y
+anota el nombre exacto que aparece entre comillas (algo del estilo
+`gasto_estado_check`, pero puede diferir si la tabla se creó o se migró de
+otra forma).
+
+### 2. Aplicar la migración
+
+Sustituye `<nombre_constraint>` por el nombre confirmado en el paso 1:
+
+```bash
+docker exec gastos-db psql -U gastos -d gastos -c "
+  ALTER TABLE gasto DROP CONSTRAINT <nombre_constraint>;
+  ALTER TABLE gasto ADD CONSTRAINT <nombre_constraint>
+    CHECK (estado IN ('pendiente_revision', 'confirmado', 'previsto'));
+  ALTER TABLE gasto ALTER COLUMN fecha DROP NOT NULL;
+"
+```
+
+Comprobación:
+
+```bash
+docker exec gastos-db psql -U gastos -d gastos -c "\d gasto"
+```
+
+`estado` debe admitir ahora `previsto` en su `CHECK` y `fecha` debe aparecer
+sin `not null` en la salida.
+
+### 3. Desplegar el backend nuevo
+
+Una vez aplicada la migración, el deploy normal de `gastos-backend` (vía CI)
+ya puede seguir su curso.
+
 ## `locales` — fases 5, 6 y 9 (rastreadores de portales + planificador + frontend)
 
 La subapp pasa de "solo backend de consulta" a **rastreador completo con

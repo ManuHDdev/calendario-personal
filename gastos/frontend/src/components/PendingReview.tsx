@@ -44,7 +44,7 @@ export default function PendingReview({ gastos, onConfirm, onDiscard }: Props) {
     const r = getRowRefs(g.id);
     const importeRaw = r.importe?.value ?? String(g.importe);
     const importe = parseFloat(importeRaw.replace(',', '.'));
-    const fecha = r.fecha?.value || g.fecha.slice(0, 10);
+    const fecha = r.fecha?.value || (g.fecha ? g.fecha.slice(0, 10) : '');
     const comercio = (r.comercio?.value ?? g.comercio).trim() || g.comercio;
     const categoria = r.categoria?.value?.trim() || undefined;
 
@@ -68,7 +68,7 @@ export default function PendingReview({ gastos, onConfirm, onDiscard }: Props) {
             />
             <input
               ref={(el) => { getRowRefs(g.id).fecha = el; }}
-              type="date" defaultValue={g.fecha.slice(0, 10)} aria-label="Fecha"
+              type="date" defaultValue={g.fecha ? g.fecha.slice(0, 10) : ''} aria-label="Fecha"
             />
             <input
               ref={(el) => { getRowRefs(g.id).comercio = el; }}

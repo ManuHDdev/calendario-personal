@@ -2,14 +2,14 @@
 CREATE TABLE IF NOT EXISTS gasto (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     importe     NUMERIC(10, 2) NOT NULL,
-    fecha       DATE           NOT NULL,
+    fecha       DATE,
     comercio    TEXT           NOT NULL,
     concepto    TEXT,
     categoria   TEXT,
     origen      VARCHAR(10)    NOT NULL DEFAULT 'manual'
                                 CHECK (origen IN ('manual', 'ticket', 'banco')),
     estado      VARCHAR(20)    NOT NULL DEFAULT 'confirmado'
-                                CHECK (estado IN ('pendiente_revision', 'confirmado')),
+                                CHECK (estado IN ('pendiente_revision', 'confirmado', 'previsto')),
     imagen_path TEXT,
     activo      BOOLEAN        NOT NULL DEFAULT TRUE,
     deleted_at  TIMESTAMP,

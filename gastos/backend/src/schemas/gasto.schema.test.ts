@@ -33,6 +33,42 @@ describe('createGastoSchema', () => {
     const result = createGastoSchema.safeParse(body);
     expect(result.success).toBe(false);
   });
+
+  it('accepts estado previsto with no fecha', () => {
+    const result = createGastoSchema.safeParse({
+      importe: 50,
+      comercio: 'Alquiler',
+      estado: 'previsto',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects estado confirmado with no fecha', () => {
+    const result = createGastoSchema.safeParse({
+      importe: 50,
+      comercio: 'Alquiler',
+      estado: 'confirmado',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an omitted estado with no fecha (defaults to confirmado, fecha still required)', () => {
+    const result = createGastoSchema.safeParse({
+      importe: 50,
+      comercio: 'Alquiler',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects estado 'pendiente_revision' (OCR-only, never settable via manual POST)", () => {
+    const result = createGastoSchema.safeParse({
+      importe: 50,
+      fecha: '2026-07-25',
+      comercio: 'Alquiler',
+      estado: 'pendiente_revision',
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('updateGastoSchema', () => {
@@ -51,6 +87,10 @@ describe('updateGastoSchema', () => {
 
   it('rejects unknown fields', () => {
     expect(updateGastoSchema.safeParse({ foo: 'bar' }).success).toBe(false);
+  });
+
+  it('accepts estado previsto (picked up automatically via the extended enum)', () => {
+    expect(updateGastoSchema.safeParse({ estado: 'previsto' }).success).toBe(true);
   });
 });
 

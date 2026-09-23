@@ -32,13 +32,13 @@ export async function gastosRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) {
       return reply.code(400).send({ error: parsed.error.issues[0]?.message ?? 'Validación fallida', statusCode: 400 });
     }
-    const { importe, fecha, comercio, concepto, categoria } = parsed.data;
+    const { importe, fecha, comercio, concepto, categoria, estado } = parsed.data;
     try {
       const result = await pool.query(
         `INSERT INTO gasto (importe, fecha, comercio, concepto, categoria, origen, estado)
-         VALUES ($1, $2, $3, $4, $5, 'manual', 'confirmado')
+         VALUES ($1, $2, $3, $4, $5, 'manual', $6)
          RETURNING *`,
-        [importe, fecha, comercio, concepto ?? null, categoria ?? null],
+        [importe, fecha ?? null, comercio, concepto ?? null, categoria ?? null, estado ?? 'confirmado'],
       );
       return reply.code(201).send(result.rows[0]);
     } catch (err) {
