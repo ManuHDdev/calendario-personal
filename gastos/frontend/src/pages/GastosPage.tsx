@@ -4,6 +4,7 @@ import AppLauncher from '../components/AppLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import ExpenseForm from '../components/ExpenseForm';
 import PendingReview from '../components/PendingReview';
+import PendingExpenses from '../components/PendingExpenses';
 import ExpenseList from '../components/ExpenseList';
 import TotalsView from '../components/TotalsView';
 import { getGastos, createGasto, updateGasto, deleteGasto, getTotales } from '../services/api';
@@ -19,6 +20,7 @@ export default function GastosPage() {
   const [categoriaFiltro, setCategoriaFiltro] = useState('');
   const [pendientes, setPendientes] = useState<Gasto[]>([]);
   const [confirmados, setConfirmados] = useState<Gasto[]>([]);
+  const [previstos, setPrevistos] = useState<Gasto[]>([]);
   const [totales, setTotales] = useState<Totales | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,13 +31,15 @@ export default function GastosPage() {
     setLoading(true);
     setError('');
     try {
-      const [pend, conf, tot] = await Promise.all([
+      const [pend, conf, prev, tot] = await Promise.all([
         getGastos({ estado: 'pendiente_revision' }),
         getGastos({ mes, estado: 'confirmado', categoria: categoriaFiltro || undefined }),
+        getGastos({ estado: 'previsto' }),
         getTotales(mes),
       ]);
       setPendientes(pend);
       setConfirmados(conf);
+      setPrevistos(prev);
       setTotales(tot);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar los gastos');
@@ -47,6 +51,11 @@ export default function GastosPage() {
   useEffect(() => { void load(); }, [load]);
 
   const handleCreate = async (data: GastoFormData) => {
+    await createGasto(data);
+    await load();
+  };
+
+  const handleCreatePrevisto = async (data: GastoFormData) => {
     await createGasto(data);
     await load();
   };
@@ -100,6 +109,18 @@ export default function GastosPage() {
             Pendientes de revisar{pendientes.length > 0 ? ` (${pendientes.length})` : ''}
           </h2>
           <PendingReview gastos={pendientes} onConfirm={handleConfirm} onDiscard={handleDiscard} />
+        </section>
+
+        <section className="gastos-section">
+          <h2 className="gastos-section-title">
+            Gastos pendientes{previstos.length > 0 ? ` (${previstos.length})` : ''}
+          </h2>
+          <PendingExpenses
+            gastos={previstos}
+            onCreate={handleCreatePrevisto}
+            onConfirm={handleConfirm}
+            onDiscard={handleDiscard}
+          />
         </section>
 
         <section className="gastos-section">

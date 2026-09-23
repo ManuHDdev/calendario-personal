@@ -1,10 +1,10 @@
 export type Origen = 'manual' | 'ticket' | 'banco';
-export type Estado = 'pendiente_revision' | 'confirmado';
+export type Estado = 'pendiente_revision' | 'confirmado' | 'previsto';
 
 export interface Gasto {
   id: string;
   importe: number;
-  fecha: string;
+  fecha: string | null;
   comercio: string;
   concepto: string | null;
   categoria: string | null;
@@ -18,10 +18,11 @@ export interface Gasto {
 
 export interface GastoFormData {
   importe: number;
-  fecha: string;
+  fecha?: string;
   comercio: string;
   concepto?: string;
   categoria?: string;
+  estado?: 'confirmado' | 'previsto';
 }
 
 export interface GastoUpdateData {

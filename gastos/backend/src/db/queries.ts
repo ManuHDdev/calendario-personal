@@ -27,8 +27,15 @@ export function buildListQuery(filters: ListGastosQuery): SqlQuery {
     conditions.push(`estado = $${values.length}`);
   }
 
+  // Los previstos se listan por fecha conocida más próxima primero (los sin
+  // fecha van al final); cualquier otro filtro (o ninguno) mantiene el orden
+  // descendente habitual por fecha.
+  const orderBy = filters.estado === 'previsto'
+    ? 'fecha ASC NULLS LAST, created_at DESC'
+    : 'fecha DESC, created_at DESC';
+
   return {
-    text: `SELECT * FROM gasto WHERE ${conditions.join(' AND ')} ORDER BY fecha DESC, created_at DESC`,
+    text: `SELECT * FROM gasto WHERE ${conditions.join(' AND ')} ORDER BY ${orderBy}`,
     values,
   };
 }

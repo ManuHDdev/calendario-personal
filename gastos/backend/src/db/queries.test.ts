@@ -38,6 +38,18 @@ describe('buildListQuery', () => {
     expect(text).toContain('estado = $3');
     expect(values).toEqual(['2026-07-01', 'Ocio', 'confirmado']);
   });
+
+  it('orders previsto by soonest-known-date-first, undated last', () => {
+    const { text } = buildListQuery({ estado: 'previsto' });
+    expect(text).toContain('ORDER BY fecha ASC NULLS LAST, created_at DESC');
+  });
+
+  it('keeps the default descending order for every other filter combination', () => {
+    expect(buildListQuery({}).text).toContain('ORDER BY fecha DESC, created_at DESC');
+    expect(buildListQuery({ estado: 'confirmado' }).text).toContain('ORDER BY fecha DESC, created_at DESC');
+    expect(buildListQuery({ estado: 'pendiente_revision' }).text).toContain('ORDER BY fecha DESC, created_at DESC');
+    expect(buildListQuery({ mes: '2026-07', categoria: 'Ocio' }).text).toContain('ORDER BY fecha DESC, created_at DESC');
+  });
 });
 
 describe('buildTotalesQuery', () => {

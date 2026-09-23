@@ -26,7 +26,7 @@ export default function ExpenseList({ gastos, onDelete }: Props) {
         <tbody>
           {gastos.map((g) => (
             <tr key={g.id}>
-              <td>{g.fecha.slice(0, 10)}</td>
+              <td>{g.fecha ? g.fecha.slice(0, 10) : <span className="no-data">—</span>}</td>
               <td>{g.comercio}</td>
               <td>{g.categoria || <span className="no-data">—</span>}</td>
               <td>{g.concepto || <span className="no-data">—</span>}</td>

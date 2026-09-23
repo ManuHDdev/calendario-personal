@@ -162,6 +162,14 @@
   color: var(--text-primary);
 }
 
+/* ── Pending expenses (previstos) ────────────────────────── */
+.pending-expenses-total {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 4px 0 10px;
+}
+
 /* ── Pending review cards ────────────────────────────────── */
 .pending-list {
   display: flex;
