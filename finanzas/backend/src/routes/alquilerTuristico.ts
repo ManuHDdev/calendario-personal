@@ -9,8 +9,31 @@ import {
 
 const ROLES_LECTURA = ['admin', 'invitado'];
 
+/**
+ * `pg` NO devuelve una columna `DATE` como string: la parsea a un objeto
+ * `Date` de JS (construido con hora LOCAL del proceso, `new Date(y, m-1,
+ * d)`, no UTC — por eso aquí se leen los componentes con los getters
+ * locales, nunca `getUTCFullYear`/`toISOString`, que en un proceso con
+ * timezone distinta de UTC desplazarían la fecha un día). Bug real
+ * detectado en producción (2026-09-24): `agruparPorSnapshot` comparaba
+ * `snapshot_date` con `.localeCompare`, que no existe en `Date` — solo
+ * pasaba desapercibido en otras rutas de finanzas (p. ej.
+ * `precios-vivienda/capital`) porque ahí la fecha nunca se manipula como
+ * string en el backend, solo se reenvía tal cual y Fastify la serializa a
+ * ISO por su cuenta al hacer `reply.send()`.
+ */
+export function fechaSqlAString(valor: unknown): string {
+  if (valor instanceof Date) {
+    const y = valor.getFullYear();
+    const m = String(valor.getMonth() + 1).padStart(2, '0');
+    const d = String(valor.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return String(valor);
+}
+
 interface FilaAgregada {
-  snapshot_date: string;
+  snapshot_date: Date | string; // pg devuelve DATE como Date, no string — ver fechaSqlAString
   tipo_habitacion: string | null;
   mediana_precio: string | null;
   num_anuncios: string;
@@ -36,17 +59,18 @@ function agruparPorSnapshot(filas: FilaAgregada[], overall: Map<string, { median
   const porFecha = new Map<string, PuntoResumen>();
 
   for (const fila of filas) {
-    if (!porFecha.has(fila.snapshot_date)) {
-      const datosOverall = overall.get(fila.snapshot_date);
-      porFecha.set(fila.snapshot_date, {
-        snapshotDate: fila.snapshot_date,
+    const snapshotDate = fechaSqlAString(fila.snapshot_date);
+    if (!porFecha.has(snapshotDate)) {
+      const datosOverall = overall.get(snapshotDate);
+      porFecha.set(snapshotDate, {
+        snapshotDate,
         medianaPrecioNoche: datosOverall?.mediana ?? null,
         numAnuncios: datosOverall?.total ?? 0,
         ocupacionEstimadaPct: datosOverall?.ocupacion ?? null,
         porTipoHabitacion: [],
       });
     }
-    porFecha.get(fila.snapshot_date)!.porTipoHabitacion.push({
+    porFecha.get(snapshotDate)!.porTipoHabitacion.push({
       tipoHabitacion: fila.tipo_habitacion ?? 'Desconocido',
       medianaPrecioNoche: fila.mediana_precio === null ? null : Number(fila.mediana_precio),
       numAnuncios: Number(fila.num_anuncios),
@@ -125,7 +149,7 @@ export async function alquilerTuristicoRoutes(app: FastifyInstance): Promise<voi
         // anuncios sin ese dato). PERCENTILE_CONT calcula la mediana real
         // en el propio motor, sin traer cada fila a Node.
         const overallResult = await pool.query<{
-          snapshot_date: string;
+          snapshot_date: Date | string; // pg devuelve DATE como Date — ver fechaSqlAString
           mediana_precio: string | null;
           num_anuncios: string;
           ocupacion_estimada_pct: string | null;
@@ -143,7 +167,7 @@ export async function alquilerTuristicoRoutes(app: FastifyInstance): Promise<voi
 
         const overall = new Map(
           overallResult.rows.map((r) => [
-            r.snapshot_date,
+            fechaSqlAString(r.snapshot_date),
             {
               mediana: r.mediana_precio === null ? null : Number(r.mediana_precio),
               ocupacion: r.ocupacion_estimada_pct === null ? null : Number(r.ocupacion_estimada_pct),
