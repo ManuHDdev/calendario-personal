@@ -10,6 +10,7 @@ import ColchonCalculator from '../components/calculators/ColchonCalculator';
 import DeudaCalculator from '../components/calculators/DeudaCalculator';
 import HipotecaTinTaeCalculator from '../components/calculators/HipotecaTinTaeCalculator';
 import AlquilerRentabilidadCalculator from '../components/calculators/AlquilerRentabilidadCalculator';
+import AirbnbRentabilidadCalculator from '../components/calculators/AirbnbRentabilidadCalculator';
 import PerdidaPoderAdquisitivoCalculator from '../components/calculators/PerdidaPoderAdquisitivoCalculator';
 import BuscadorRentabilidadAlquiler from '../components/calculators/BuscadorRentabilidadAlquiler';
 import AlquilerTuristico from '../components/calculators/AlquilerTuristico';
@@ -32,6 +33,7 @@ const CALCULADORAS: CalculadoraDef[] = [
   { id: 'deuda', nombre: 'Deuda buena vs. mala', Componente: DeudaCalculator },
   { id: 'hipoteca-tin-tae', nombre: 'Hipoteca: TIN vs. TAE', Componente: HipotecaTinTaeCalculator },
   { id: 'alquiler-rentabilidad', nombre: 'Comprar para alquilar', Componente: AlquilerRentabilidadCalculator },
+  { id: 'airbnb-rentabilidad', nombre: 'Invertir para Airbnb', Componente: AirbnbRentabilidadCalculator },
   {
     id: 'perdida-poder-adquisitivo',
     nombre: 'Pérdida de poder adquisitivo',

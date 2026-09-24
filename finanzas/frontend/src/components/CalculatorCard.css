@@ -329,3 +329,34 @@
   font-weight: 600;
   color: var(--text-primary);
 }
+
+.calculator-desglose-tramos summary {
+  cursor: pointer;
+  font-weight: inherit;
+  color: inherit;
+  list-style: none;
+}
+
+.calculator-desglose-tramos summary::-webkit-details-marker {
+  display: none;
+}
+
+.calculator-desglose-tramos summary::after {
+  content: ' ▾';
+  color: var(--accent);
+  font-size: 10px;
+}
+
+.calculator-desglose-tramos ul {
+  margin: 6px 0 0;
+  padding-left: 14px;
+  text-align: left;
+  white-space: normal;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  list-style: disc;
+}
+
+.calculator-desglose-tramos li {
+  margin-bottom: 2px;
+}

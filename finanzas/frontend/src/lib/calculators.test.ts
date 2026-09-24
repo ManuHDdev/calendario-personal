@@ -8,6 +8,7 @@ import {
   calcularColchonSeguridad,
   calcularDeuda,
   calcularImpuestoProgresivoAhorro,
+  desglosarTramosIrpf,
   simularInteresCompuestoAvanzado,
   generarAñosCrisisAleatorios,
   calcularHipotecaTinTae,
@@ -15,6 +16,7 @@ import {
   simularProyeccionAlquiler,
   calcularPerdidaPoderAdquisitivo,
   calcularFlip,
+  calcularAirbnbRentabilidad,
 } from './calculators';
 
 describe('calcularInteresCompuesto', () => {
@@ -157,6 +159,41 @@ describe('calcularImpuestoProgresivoAhorro', () => {
   });
 });
 
+describe('desglosarTramosIrpf', () => {
+  it('con una base de 60000€ desglosa en los tres primeros tramos (6000@19%, 44000@21%, 10000@23%)', () => {
+    const tramos = desglosarTramosIrpf(60000);
+
+    expect(tramos).toHaveLength(3);
+    expect(tramos[0]).toMatchObject({ desde: 0, hasta: 6000, tipo: 0.19, baseEnTramo: 6000, cuota: 1140 });
+    expect(tramos[1]).toMatchObject({ desde: 6000, hasta: 50000, tipo: 0.21, baseEnTramo: 44000, cuota: 9240 });
+    expect(tramos[2]).toMatchObject({ desde: 50000, hasta: 200000, tipo: 0.23, baseEnTramo: 10000, cuota: 2300 });
+  });
+
+  it('la suma de las cuotas del desglose coincide siempre con calcularImpuestoProgresivoAhorro', () => {
+    for (const base of [0, 1500, 6000, 60000, 275000, 1_000_000]) {
+      const sumaDesglose = desglosarTramosIrpf(base).reduce((acc, t) => acc + t.cuota, 0);
+      expect(sumaDesglose).toBeCloseTo(calcularImpuestoProgresivoAhorro(base), 5);
+    }
+  });
+
+  it('una base dentro del primer tramo devuelve un único tramo', () => {
+    const tramos = desglosarTramosIrpf(3000);
+    expect(tramos).toHaveLength(1);
+    expect(tramos[0]).toMatchObject({ desde: 0, hasta: 6000, tipo: 0.19, baseEnTramo: 3000, cuota: 570 });
+  });
+
+  it('una base de 0€ o negativa devuelve un desglose vacío', () => {
+    expect(desglosarTramosIrpf(0)).toEqual([]);
+    expect(desglosarTramosIrpf(-100)).toEqual([]);
+  });
+
+  it('una base muy alta incluye el último tramo (30%, hasta Infinity)', () => {
+    const tramos = desglosarTramosIrpf(350000);
+    const ultimo = tramos[tramos.length - 1];
+    expect(ultimo).toMatchObject({ desde: 300000, hasta: Infinity, tipo: 0.3, baseEnTramo: 50000, cuota: 15000 });
+  });
+});
+
 describe('simularInteresCompuestoAvanzado', () => {
   it('régimen "anual" sin años de crisis: tributa cada año sobre la ganancia de ese año', () => {
     const resultado = simularInteresCompuestoAvanzado({
@@ -169,6 +206,30 @@ describe('simularInteresCompuestoAvanzado', () => {
     expect(resultado.años[0].gananciaDelAño).toBeCloseTo(1000, 5);
     expect(resultado.años[0].impuestoPagado).toBeCloseTo(190, 5); // 1000 * 0.19
     expect(resultado.saldoFinalNeto).toBeCloseTo(10810, 5);
+
+    // El desglose por tramo debe reflejar exactamente el impuesto pagado:
+    // 1000€ de ganancia cae entera en el primer tramo (hasta 6000€, 19%).
+    expect(resultado.años[0].desgloseImpuesto).toHaveLength(1);
+    expect(resultado.años[0].desgloseImpuesto![0]).toMatchObject({
+      desde: 0,
+      hasta: 6000,
+      tipo: 0.19,
+      baseEnTramo: 1000,
+      cuota: 190,
+    });
+  });
+
+  it('régimen "anual" sin ganancia (o con pérdida) no lleva desglose de impuesto', () => {
+    const resultado = simularInteresCompuestoAvanzado({
+      capitalInicial: 10000,
+      tasaAnualBase: 10,
+      años: 1,
+      añosCrisis: [{ año: 1, rendimiento: -10 }],
+      regimenFiscal: 'anual',
+    });
+    expect(resultado.años[0].gananciaDelAño).toBeLessThan(0);
+    expect(resultado.años[0].impuestoPagado).toBe(0);
+    expect(resultado.años[0].desgloseImpuesto).toBeUndefined();
   });
 
   it('compensa una pérdida de un año contra la ganancia de un año posterior (régimen "anual")', () => {
@@ -261,6 +322,15 @@ describe('simularInteresCompuestoAvanzado', () => {
     const gananciaTotal = resultado.saldoFinalBruto - resultado.totalAportado;
     expect(ultimoAño.impuestoPagado).toBeCloseTo(calcularImpuestoProgresivoAhorro(gananciaTotal), 5);
     expect(resultado.saldoFinalNeto).toBeCloseTo(resultado.saldoFinalBruto - ultimoAño.impuestoPagado, 5);
+
+    // El desglose del último año debe sumar exactamente el impuesto pagado,
+    // y coincidir con desglosarTramosIrpf sobre la misma base.
+    const sumaDesglose = ultimoAño.desgloseImpuesto!.reduce((acc, t) => acc + t.cuota, 0);
+    expect(sumaDesglose).toBeCloseTo(ultimoAño.impuestoPagado, 5);
+    expect(ultimoAño.desgloseImpuesto).toEqual(desglosarTramosIrpf(gananciaTotal));
+    for (let i = 0; i < resultado.años.length - 1; i++) {
+      expect(resultado.años[i].desgloseImpuesto).toBeUndefined();
+    }
   });
 
   it('régimen "ninguno": el saldo final bruto y neto coinciden y no hay impuestos', () => {
@@ -363,6 +433,12 @@ describe('simularInteresCompuestoAvanzado', () => {
       // Saldo del fondo restante tras el retiro: 11000 - 5000 = 6000 exacto.
       expect(año1.saldoFinNeto).toBeCloseTo(6000, 5);
       expect(resultado.saldoFinalFondoRestante).toBeCloseTo(6000, 5);
+
+      // Ganancia realizada (~454.55€) cae entera en el primer tramo (19%).
+      expect(año1.desgloseImpuesto).toHaveLength(1);
+      expect(año1.desgloseImpuesto![0].tipo).toBe(0.19);
+      const sumaDesglose = año1.desgloseImpuesto!.reduce((acc, t) => acc + t.cuota, 0);
+      expect(sumaDesglose).toBeCloseTo(año1.impuestoPagado, 5);
     });
 
     it('dos años, dos lotes: el retiro consume primero el lote más antiguo (FIFO, no LIFO ni proporcional)', () => {
@@ -799,6 +875,126 @@ describe('simularProyeccionAlquiler', () => {
     expect(resultado.retornoTotalAnualizadoPct).toBeLessThan(resultado.retornoTotalFinalSobreInversionPct);
     const multiploReconstruido = Math.pow(1 + resultado.retornoTotalAnualizadoPct / 100, 25);
     expect((multiploReconstruido - 1) * 100).toBeCloseTo(resultado.retornoTotalFinalSobreInversionPct, 2);
+  });
+});
+
+describe('calcularAirbnbRentabilidad', () => {
+  it('caso claramente rentable ("Merece la pena"), verificado a mano', () => {
+    // capitalPrestamo = 80000; cuotaMensual (TIN 0%, 240 cuotas) = 80000/240 = 333.33...
+    // inversionInicial = 100000 * 30/100 = 30000
+    // nochesOcupadasAnio = 365 * 0.50 = 182.5; numeroReservasAnio = 182.5/5 = 36.5
+    // ingresoBrutoAnual = 182.5 * 100 = 18250
+    // gastosLimpiezaAnual = 36.5 * 30 = 1095
+    // comisionPlataformaAnual = 18250 * 3% = 547.5
+    // gastosOperativosAnuales = mantenimiento 1% de 100000 (1000) + 1095 + 547.5 = 2642.5
+    // noiAnual = 18250 - 2642.5 = 15607.5
+    // cashflowAnualNeto = 15607.5 - 333.33*12 = 15607.5 - 4000 = 11607.5
+    // rentabilidadNetaSobreInversionPct = 11607.5/30000*100 ≈ 38.69%
+    // roiSinApalancamientoPct = 18250 / (100000*1.10) * 100 ≈ 16.59%
+    const r = calcularAirbnbRentabilidad({
+      precioVivienda: 100000,
+      entradaPct: 20,
+      gastosCompraPct: 10,
+      tinHipotecaPct: 0,
+      plazoHipotecaAnios: 20,
+      precioNocheMedio: 100,
+      ocupacionAnualPct: 50,
+      duracionMediaEstanciaNoches: 5,
+      gastosLimpiezaPorEstancia: 30,
+      comisionPlataformaPct: 3,
+      gestionPctIngresos: 0,
+      suministrosMensuales: 0,
+      mantenimientoPctAnual: 1,
+    });
+
+    expect(r.capitalPrestamo).toBeCloseTo(80000, 5);
+    expect(r.cuotaMensualHipoteca).toBeCloseTo(333.33, 1);
+    expect(r.inversionInicial).toBeCloseTo(30000, 5);
+    expect(r.nochesOcupadasAnio).toBeCloseTo(182.5, 5);
+    expect(r.numeroReservasAnio).toBeCloseTo(36.5, 5);
+    expect(r.ingresoBrutoAnual).toBeCloseTo(18250, 5);
+    expect(r.gastosLimpiezaAnual).toBeCloseTo(1095, 5);
+    expect(r.comisionPlataformaAnual).toBeCloseTo(547.5, 5);
+    expect(r.gastosOperativosAnuales).toBeCloseTo(2642.5, 2);
+    expect(r.noiAnual).toBeCloseTo(15607.5, 2);
+    expect(r.cashflowAnualNeto).toBeCloseTo(11607.5, 1);
+    expect(r.rentabilidadNetaSobreInversionPct).toBeCloseTo(38.69, 1);
+    expect(r.roiSinApalancamientoPct).toBeCloseTo(16.59, 1);
+    expect(r.veredicto).toBe('Merece la pena');
+  });
+
+  it('con ocupación/precio bajos y gastos de gestión altos, cashflow negativo ("No merece la pena")', () => {
+    const r = calcularAirbnbRentabilidad({
+      precioVivienda: 150000,
+      entradaPct: 20,
+      gastosCompraPct: 10,
+      tinHipotecaPct: 3,
+      plazoHipotecaAnios: 25,
+      precioNocheMedio: 35,
+      ocupacionAnualPct: 25,
+      gestionPctIngresos: 20,
+      comisionPlataformaPct: 3,
+    });
+    expect(r.cashflowAnualNeto).toBeLessThan(0);
+    expect(r.veredicto).toBe('No merece la pena');
+  });
+
+  it('la gestión subcontratada (gestionPctIngresos) reduce el cashflow frente a gestionarlo uno mismo', () => {
+    const base = {
+      precioVivienda: 120000,
+      entradaPct: 20,
+      gastosCompraPct: 10,
+      tinHipotecaPct: 2,
+      plazoHipotecaAnios: 20,
+      precioNocheMedio: 90,
+      ocupacionAnualPct: 55,
+    };
+    const sinGestora = calcularAirbnbRentabilidad({ ...base, gestionPctIngresos: 0 });
+    const conGestora = calcularAirbnbRentabilidad({ ...base, gestionPctIngresos: 20 });
+    expect(conGestora.cashflowAnualNeto).toBeLessThan(sinGestora.cashflowAnualNeto);
+    expect(conGestora.gestionAnual).toBeGreaterThan(0);
+    expect(sinGestora.gestionAnual).toBe(0);
+  });
+
+  it('el amueblamiento inicial se suma a la inversión inicial, no a los gastos anuales', () => {
+    const base = {
+      precioVivienda: 100000,
+      tinHipotecaPct: 2,
+      plazoHipotecaAnios: 20,
+      precioNocheMedio: 80,
+      ocupacionAnualPct: 50,
+    };
+    const sinAmueblar = calcularAirbnbRentabilidad(base);
+    const conAmueblar = calcularAirbnbRentabilidad({ ...base, amueblamientoInicial: 8000 });
+
+    expect(conAmueblar.inversionInicial).toBeCloseTo(sinAmueblar.inversionInicial + 8000, 5);
+    // Los gastos operativos anuales no cambian por un coste único de amueblamiento.
+    expect(conAmueblar.gastosOperativosAnuales).toBeCloseTo(sinAmueblar.gastosOperativosAnuales, 5);
+  });
+
+  it('rechaza una ocupación anual fuera de [0, 100]', () => {
+    expect(() =>
+      calcularAirbnbRentabilidad({
+        precioVivienda: 100000,
+        tinHipotecaPct: 2,
+        plazoHipotecaAnios: 20,
+        precioNocheMedio: 80,
+        ocupacionAnualPct: 120,
+      }),
+    ).toThrow();
+  });
+
+  it('rechaza una duración media de estancia de 0 o negativa', () => {
+    expect(() =>
+      calcularAirbnbRentabilidad({
+        precioVivienda: 100000,
+        tinHipotecaPct: 2,
+        plazoHipotecaAnios: 20,
+        precioNocheMedio: 80,
+        ocupacionAnualPct: 50,
+        duracionMediaEstanciaNoches: 0,
+      }),
+    ).toThrow();
   });
 });
 

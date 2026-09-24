@@ -1147,6 +1147,7 @@ del backend excepto `/health` exigen JWT válido con rol `admin` o `invitado`.
 8. Hipoteca: TIN vs. TAE
 9. Comprar para alquilar (rentabilidad)
 10. Pérdida de poder adquisitivo por inflación (dinero parado, sin invertir)
+11. Invertir para Airbnb (rentabilidad de alquiler turístico — ver subsección propia)
 
 ### Histórico de precio de vivienda por provincia (nuevo)
 Gráfica de línea temporal del precio medio de vivienda libre (€/m²) por
@@ -1729,6 +1730,60 @@ llevan un comentario cruzado entre sí.
 
 ### Variables de entorno del backend (cont.)
 `FINANZAS_INTERVALO_IMPORTACION_AIRBNB_HORAS` (default `168`)
+
+### Desglose por tramos del IRPF en Interés compuesto (nuevo, complementario)
+
+En el modo avanzado (fiscalidad) de "Interés compuesto", cada año en que se
+paga impuesto (regímenes `anual`, `diferido` en su último año, y
+`retiros_fifo` en los años con retiro) muestra ahora, en la tabla "Ver
+desglose año a año", un desplegable bajo la cifra de impuesto con el detalle
+por tramo del IRPF: qué parte de la ganancia cayó en cada tramo y cuánto se
+pagó en cada uno.
+
+`desglosarTramosIrpf(base)` (nueva, `lib/calculators.ts`) es la única fuente
+de verdad: `calcularImpuestoProgresivoAhorro()` ahora simplemente suma sus
+cuotas, así que el desglose mostrado y el total pagado nunca pueden
+desincronizarse entre sí. `AñoSimulado.desgloseImpuesto` es `undefined`
+cuando no se paga impuesto ese año (pérdida, o régimen `ninguno`/`diferido`
+en un año que no es el último) — nunca un array vacío ni un 0 fabricado.
+
+### Invertir para Airbnb — rentabilidad de alquiler turístico (nuevo, complementario)
+
+Calculadora paralela a "Comprar para alquilar" (`calcularAlquilerRentabilidad`),
+NO un `modo` interno de la misma — mismo criterio de diseño que ya separó
+"Flip" de "Comprar para alquilar": comparten la financiación (hipoteca,
+entrada, gastos de compra) pero el lado de ingresos/gastos es
+estructuralmente distinto. En vez de un alquiler mensual fijo, el ingreso
+sale de `precio medio por noche × noches ocupadas al año` (`ocupación % ×
+365`), y aparecen gastos que un alquiler de larga duración no tiene:
+
+- **Limpieza por estancia** (no por noche) — el número de reservas/año se
+  estima como `noches ocupadas ÷ duración media de la estancia`.
+- **Comisión de la plataforma** (Airbnb/Booking, % sobre el ingreso bruto,
+  default 3% — el habitual del host en Airbnb).
+- **Gestión subcontratada** (opcional, % sobre el ingreso bruto, default 0 —
+  si se lleva una gestora de alquiler turístico en vez de gestionarlo uno
+  mismo, suele rondar 15-25%).
+- **Suministros** (luz/agua/gas/internet) a cargo del propietario — al
+  contrario que en un alquiler de larga duración, donde normalmente los paga
+  el inquilino.
+- **Tasa turística por noche** (opcional, algunas CCAA/municipios) y
+  **licencia turística anual** (coste de mantener la VUT — tasas, gestoría),
+  ambas a 0 por defecto ya que no aplican en toda España.
+- **Amueblamiento inicial**: coste ÚNICO (se suma a la inversión inicial,
+  nunca a los gastos anuales) de equipar el piso para alquiler turístico.
+- **Mantenimiento por defecto más alto que en alquiler tradicional** (1,5%
+  del valor/año frente al 1% de "Comprar para alquilar"): la rotación
+  constante de huéspedes desgasta más el inmueble.
+- **Umbral de rentabilidad aceptable por defecto más alto** (8% frente al 5%
+  de alquiler tradicional) — mismo razonamiento que el 20% de "Flip" frente
+  al 5% de alquiler: más gestión, más estacionalidad y más riesgo
+  regulatorio necesitan más colchón de rentabilidad para compensar.
+
+`roiSinApalancamientoPct` sigue el mismo criterio que en "Comprar para
+alquilar": ingreso bruto (ya reflejando la ocupación) sobre el coste total
+de adquisición, sin restar ningún gasto ni cuota — para comparar el inmueble
+en sí, sin el efecto de cómo se financie o gestione.
 
 ### Puerto local
 Frontend `:5187`, backend `:3014`.
