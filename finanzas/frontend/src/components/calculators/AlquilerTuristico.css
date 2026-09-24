@@ -1,0 +1,132 @@
+.alquiler-turistico {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  max-width: 900px;
+}
+
+.alquiler-turistico-atribucion {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+}
+
+.alquiler-turistico-atribucion a {
+  color: var(--accent);
+}
+
+.alquiler-turistico-cabecera {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.alquiler-turistico-cabecera .calculator-select {
+  min-width: 220px;
+}
+
+.alquiler-turistico-ultimo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.alquiler-turistico-ultimo-valor {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.alquiler-turistico-ultimo-detalle {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.alquiler-turistico-ayuda-zoom {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+
+.alquiler-turistico-grafica {
+  position: relative;
+}
+
+.alquiler-turistico-lienzo {
+  width: 100%;
+  height: 320px;
+}
+
+.alquiler-turistico-cargando--flotante {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
+  z-index: 1;
+}
+
+.alquiler-turistico-aviso-historico {
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  margin-bottom: 16px;
+}
+
+.alquiler-turistico-desglose {
+  margin-top: 20px;
+}
+
+.alquiler-turistico-desglose h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.alquiler-turistico-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.alquiler-turistico-tabla th,
+.alquiler-turistico-tabla td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.alquiler-turistico-tabla th {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.alquiler-turistico-nota {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+.alquiler-turistico-nota strong {
+  color: var(--text-secondary);
+}
+
+.alquiler-turistico-aviso-inline {
+  color: var(--danger);
+}
