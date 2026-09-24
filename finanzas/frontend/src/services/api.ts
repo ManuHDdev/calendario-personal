@@ -161,3 +161,77 @@ export async function getRentabilidadZona(
   if (!res.ok) await handleError(res);
   return res.json() as Promise<RentabilidadZonaResultado>;
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Alquiler turístico (Inside Airbnb) — precio, ocupación estimada y
+// características del mercado de corta estancia, para las 9 zonas de España
+// que cubre esa fuente. Complementa (no sustituye) precio_vivienda/
+// precio_vivienda_capital, que son compra/alquiler de larga duración.
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface CiudadAirbnb {
+  slug: string;
+  nombre: string;
+  region: string;
+}
+
+export interface AlquilerTuristicoEstado {
+  ultima_ejecucion: string | null;
+  ultima_ejecucion_ok: boolean | null;
+  filas_importadas: number | null;
+  error: string | null;
+}
+
+export interface AlquilerTuristicoPuntoTipo {
+  tipoHabitacion: string;
+  medianaPrecioNoche: number | null;
+  numAnuncios: number;
+}
+
+export interface AlquilerTuristicoPunto {
+  snapshotDate: string;
+  medianaPrecioNoche: number | null;
+  numAnuncios: number;
+  /** Estimación a partir de disponibilidad_365 — NUNCA reservas confirmadas. */
+  ocupacionEstimadaPct: number | null;
+  porTipoHabitacion: AlquilerTuristicoPuntoTipo[];
+}
+
+export interface AlquilerTuristicoResumen {
+  ciudad: string;
+  barrio: string | null;
+  puntos: AlquilerTuristicoPunto[];
+}
+
+export async function getCiudadesAlquilerTuristico(): Promise<CiudadAirbnb[]> {
+  const res = await fetch(`${BASE}/alquiler-turistico/ciudades`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<CiudadAirbnb[]>;
+}
+
+export async function getBarriosAlquilerTuristico(ciudad: string): Promise<string[]> {
+  const res = await fetch(`${BASE}/alquiler-turistico/barrios?ciudad=${encodeURIComponent(ciudad)}`, {
+    headers: headers(),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<string[]>;
+}
+
+export async function getResumenAlquilerTuristico(
+  ciudad: string,
+  barrio?: string,
+): Promise<AlquilerTuristicoResumen> {
+  const params = new URLSearchParams({ ciudad });
+  if (barrio) params.set('barrio', barrio);
+  const res = await fetch(`${BASE}/alquiler-turistico/resumen?${params.toString()}`, {
+    headers: headers(),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<AlquilerTuristicoResumen>;
+}
+
+export async function getEstadoAlquilerTuristico(): Promise<AlquilerTuristicoEstado> {
+  const res = await fetch(`${BASE}/alquiler-turistico/estado`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<AlquilerTuristicoEstado>;
+}

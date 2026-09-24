@@ -2,9 +2,12 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { preciosViviendaRoutes } from './routes/preciosVivienda';
 import { rentabilidadZonaRoutes } from './routes/rentabilidadZona';
+import { alquilerTuristicoRoutes } from './routes/alquilerTuristico';
 import { arrancarImportador } from './services/importador';
 import { arrancarScraperCapitales } from './services/capitalScraper';
+import { arrancarAirbnbImportador } from './services/airbnbImportador';
 import { ensureSchemaCapitales } from './services/ensureSchemaCapitales';
+import { ensureSchemaAirbnb } from './services/ensureSchemaAirbnb';
 
 const isProd = process.env.NODE_ENV === 'production';
 const app = Fastify({ logger: isProd });
@@ -21,6 +24,7 @@ async function bootstrap() {
 
   await app.register(preciosViviendaRoutes, { prefix: '/finanzas/api' });
   await app.register(rentabilidadZonaRoutes, { prefix: '/finanzas/api' });
+  await app.register(alquilerTuristicoRoutes, { prefix: '/finanzas/api' });
 
   app.get('/health', async () => ({
     status: 'ok',
@@ -44,6 +48,10 @@ async function bootstrap() {
   // en producción (el volumen de finanzas-db ya existe con datos reales).
   await ensureSchemaCapitales();
   await arrancarScraperCapitales(log);
+
+  // Mismo motivo que ensureSchemaCapitales — ver ensureSchemaAirbnb.ts.
+  await ensureSchemaAirbnb();
+  await arrancarAirbnbImportador(log);
 }
 
 bootstrap().catch((err) => {

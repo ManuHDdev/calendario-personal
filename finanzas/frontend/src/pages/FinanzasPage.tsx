@@ -12,6 +12,7 @@ import HipotecaTinTaeCalculator from '../components/calculators/HipotecaTinTaeCa
 import AlquilerRentabilidadCalculator from '../components/calculators/AlquilerRentabilidadCalculator';
 import PerdidaPoderAdquisitivoCalculator from '../components/calculators/PerdidaPoderAdquisitivoCalculator';
 import BuscadorRentabilidadAlquiler from '../components/calculators/BuscadorRentabilidadAlquiler';
+import AlquilerTuristico from '../components/calculators/AlquilerTuristico';
 import PreciosVivienda from '../components/PreciosVivienda';
 import './FinanzasPage.css';
 
@@ -41,6 +42,11 @@ const CALCULADORAS: CalculadoraDef[] = [
     id: 'rentabilidad-zona',
     nombre: 'Rentabilidad de alquiler por zona',
     Componente: BuscadorRentabilidadAlquiler,
+  },
+  {
+    id: 'alquiler-turistico',
+    nombre: 'Alquiler turístico (Airbnb)',
+    Componente: AlquilerTuristico,
   },
 ];
 

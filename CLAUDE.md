@@ -1628,6 +1628,108 @@ de detalle, la cifra de rentabilidad se sustituye por `margenSobreInversionPct`
 campo "Gastos de reforma" del panel de detalle es el MISMO que en los otros
 modos, no se duplica.
 
+### Alquiler turístico (Airbnb) — precio, ocupación estimada y características (nuevo, complementario)
+
+Cuarta fuente de datos de Finanzas: precio y características del mercado de
+alquiler turístico de corta estancia (estilo Airbnb), sourced de **Inside
+Airbnb** (insideairbnb.com), un proyecto independiente sin ánimo de lucro,
+licencia **Creative Commons BY 4.0** — no de Airbnb.com directamente. Airbnb
+no tiene API pública para listados/precios/ocupación y sus Términos de
+Servicio prohíben expresamente scrapers, con un anti-bot más duro incluso que
+Idealista (ya excluido en todo el monorepo); Inside Airbnb es la alternativa
+legal y gratuita que existe, a cambio de dos limitaciones reales que la UI
+comunica explícitamente en vez de esconder:
+
+1. **Snapshots trimestrales, no diarios ni mensuales.** Inside Airbnb
+   republica cada ciudad ~1 vez por trimestre. La gráfica tiene un punto por
+   snapshot; con menos de 2 puntos almacenados (el estado normal justo tras
+   desplegar esto) se muestra un aviso explícito en vez de una línea de 1-2
+   puntos que sugeriría una tendencia inexistente.
+2. **La "ocupación" es una ESTIMACIÓN**, nunca una reserva confirmada:
+   `ocupacionEstimadaPct = (365 - disponibilidad_365) / 365 * 100`. Un día
+   bloqueado por el propietario (vacaciones, mantenimiento, hueco de estancia
+   mínima) cuenta igual que uno reservado, así que siempre sobreestima la
+   ocupación real. Cada superficie que la muestra la etiqueta como "estimada".
+
+**Cobertura: 9 zonas de España** (verificado en vivo el 2026-09-24 contra la
+página real, no contra un resumen desactualizado que solo listaba 7): Madrid,
+Barcelona, Girona, Málaga, Mallorca, Menorca, Euskadi, Sevilla y Valencia —
+lista fija en `services/airbnbCiudades.ts` (mismo criterio que
+`capitales.ts`: la lista de ciudades cubiertas no cambia entre despliegues,
+así que un mapa a mano es más fiable que derivarla dinámicamente).
+
+**De dónde salen los enlaces de descarga — sin depender de nada interno de
+Inside Airbnb.** `https://insideairbnb.com/get-the-data/` es una página
+Gatsby, pero el HTML que sirve el servidor YA trae los enlaces reales de
+descarga sin ejecutar JS (verificado con `curl` normal). Se descartó
+depender del JSON interno de Gatsby (`/page-data/sq/d/<hash>.json`, también
+encontrado durante la investigación): ese hash no es una API documentada y
+puede cambiar en cualquier rebuild del sitio; el HTML público SÍ es la
+superficie estable. `services/airbnbImportador.ts::extraerEnlacesPorCiudad()`
+usa una regex estrecha sobre el dominio+patrón de ruta de Inside Airbnb, no
+un parser HTML completo — solo se rompe si cambian el propio dominio o la
+convención de ruta, que rompería también cualquier otra herramienta que ya
+dependa de ella.
+
+**Solo se descarga `visualisations/listings.csv` por ciudad** (unos pocos
+MB), nunca `data/listings.csv.gz` (más columnas, comprimido) ni
+`calendar.csv.gz`/`reviews.csv.gz` (cientos de MB, uno o dos órdenes de
+magnitud más pesados) — el resumen ya trae precio, tipo de alojamiento,
+barrio, reseñas y `availability_365`, suficiente para lo que pide esta
+funcionalidad. `services/airbnbCsvParser.ts` parsea ese CSV con un parser
+RFC4180 propio (sin librería nueva — comillas/comas escapadas, igual que el
+resto del monorepo evita dependencias para algo de este tamaño). Dos gotchas
+verificados contra datos reales: bastantes filas traen `price` vacío
+(frecuente en anuncios gestionados por cadenas hoteleras) — se guarda como
+`NULL`, nunca como `0`, y se excluye de cualquier mediana; y el `id` de
+listing puede superar `Number.MAX_SAFE_INTEGER` (ids de 19 dígitos vistos en
+vivo) — se trata como `TEXT` de principio a fin (parser, columna de BD, tipo
+TypeScript), nunca como número.
+
+**Importador programado**, mismo patrón `setTimeout` encadenado que
+`importador.ts`/`capitalScraper.ts`, reutilizando desde el primer día
+`calcularProximaAccion()` (el helper que arregló el bug real de esos dos
+importadores el 2026-09-22: reprogramar un intervalo completo desde que
+arranca el proceso, no desde el último intento real, dejaba la importación
+congelada si los redespliegues eran más frecuentes que el intervalo).
+`FINANZAS_INTERVALO_IMPORTACION_AIRBNB_HORAS` (default `168`, semanal —
+deliberadamente mucho más conservador que el intervalo diario del importador
+del Ministerio, porque el origen solo cambia por ciudad una vez al
+trimestre). Una ciudad cuyo snapshot vigente ya está importado se salta sin
+descargar nada; una ciudad que falla (descarga o parseo) se salta y se
+loguea, sin abortar la vuelta de las otras 8 — mismo principio que
+`capitalScraper.ts` ("un capital que falla no aborta la vuelta"). Verificado
+en vivo (2026-09-24, backend local contra Postgres real): las 9 ciudades se
+importaron correctamente, 109.960 anuncios en total (Madrid el mayor, 22.835;
+Menorca el menor, 3.620), con el porcentaje esperado de filas sin precio
+excluido de las medianas.
+
+**Esquema.** Tabla `alquiler_turistico_listing`, clave primaria
+`(listing_id, snapshot_date)` — `listing_id` NUNCA `ciudad` como parte de la
+clave, porque los ids de Airbnb son únicos globalmente, no solo dentro de una
+ciudad. Tabla singleton `alquiler_turistico_estado`, mismo patrón que
+`importacion_estado`/`capital_scraper_estado`. Igual que
+`precio_vivienda_capital`, el esquema se crea tanto en `infra/init.sql` (solo
+aplica al crear el volumen de Postgres desde cero) como en
+`backend/src/services/ensureSchemaAirbnb.ts` (ejecutado en cada arranque del
+backend, para producción donde el volumen ya existe) — los dos ficheros
+llevan un comentario cruzado entre sí.
+
+### Rutas (`/finanzas/api/*`, cont.)
+- `GET /alquiler-turistico/ciudades` — las de las 9 soportadas que ya tengan
+  al menos un snapshot importado (admin, invitado)
+- `GET /alquiler-turistico/barrios?ciudad=` — barrios distintos de esa
+  ciudad, alfabético. `ciudad` desconocida es 400
+- `GET /alquiler-turistico/resumen?ciudad=&barrio=` (`barrio` opcional) —
+  serie temporal, un punto por `snapshot_date`: mediana de `precio_noche`
+  (excluyendo nulos, calculada con `PERCENTILE_CONT` en el propio Postgres),
+  `ocupacionEstimadaPct`, número de anuncios y desglose por
+  `tipo_habitacion`. `ciudad` desconocida es 400
+- `GET /alquiler-turistico/estado` — última ejecución del importador
+
+### Variables de entorno del backend (cont.)
+`FINANZAS_INTERVALO_IMPORTACION_AIRBNB_HORAS` (default `168`)
+
 ### Puerto local
 Frontend `:5187`, backend `:3014`.
 
