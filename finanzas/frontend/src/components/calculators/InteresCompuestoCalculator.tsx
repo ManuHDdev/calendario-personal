@@ -272,7 +272,23 @@ export default function InteresCompuestoCalculator() {
                           {regimenFiscal === 'retiros_fifo' && (
                             <td>{añoSimulado.retiroNeto ? formatEUR(añoSimulado.retiroNeto) : '—'}</td>
                           )}
-                          <td>{formatEUR(añoSimulado.impuestoPagado)}</td>
+                          <td>
+                            {añoSimulado.desgloseImpuesto && añoSimulado.desgloseImpuesto.length > 0 ? (
+                              <details className="calculator-desglose-tramos">
+                                <summary>{formatEUR(añoSimulado.impuestoPagado)}</summary>
+                                <ul>
+                                  {añoSimulado.desgloseImpuesto.map((tramo) => (
+                                    <li key={tramo.desde}>
+                                      {formatEUR(tramo.desde)}–{tramo.hasta === Infinity ? '∞' : formatEUR(tramo.hasta)}
+                                      {' '}({(tramo.tipo * 100).toFixed(0)}%): {formatEUR(tramo.baseEnTramo)} → {formatEUR(tramo.cuota)}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </details>
+                            ) : (
+                              formatEUR(añoSimulado.impuestoPagado)
+                            )}
+                          </td>
                           <td>{formatEUR(añoSimulado.saldoFinNeto)}</td>
                         </tr>
                       ))}

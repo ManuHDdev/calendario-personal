@@ -106,25 +106,50 @@ const TRAMOS_BASE_AHORRO_IRPF = [
   { hasta: Infinity, tipo: 0.3 },
 ];
 
-// Impuesto progresivo por tramos sobre la base del ahorro: cada tramo tributa
-// solo por su propio intervalo (nunca el tipo marginal sobre toda la base).
-export function calcularImpuestoProgresivoAhorro(base: number): number {
-  if (!Number.isFinite(base) || base <= 0) return 0;
+export interface TramoIrpfAplicado {
+  desde: number;
+  hasta: number; // Infinity en el último tramo
+  tipo: number; // p. ej. 0.19
+  baseEnTramo: number;
+  cuota: number; // baseEnTramo * tipo
+}
 
-  let impuesto = 0;
+// Desglose por tramos de la base del ahorro: qué parte de `base` cae en cada
+// tramo y cuánto se paga en cada uno. Única fuente de verdad para el importe
+// total (calcularImpuestoProgresivoAhorro suma estas cuotas) — así el
+// desglose que se le muestra al usuario y el total pagado nunca pueden
+// desincronizarse entre sí.
+export function desglosarTramosIrpf(base: number): TramoIrpfAplicado[] {
+  if (!Number.isFinite(base) || base <= 0) return [];
+
+  const tramos: TramoIrpfAplicado[] = [];
   let restante = base;
   let sueloTramo = 0;
 
   for (const tramo of TRAMOS_BASE_AHORRO_IRPF) {
     const anchoTramo = tramo.hasta - sueloTramo;
     const baseEnTramo = Math.min(restante, anchoTramo);
-    impuesto += baseEnTramo * tramo.tipo;
+    if (baseEnTramo > 0) {
+      tramos.push({
+        desde: sueloTramo,
+        hasta: tramo.hasta,
+        tipo: tramo.tipo,
+        baseEnTramo,
+        cuota: baseEnTramo * tramo.tipo,
+      });
+    }
     restante -= baseEnTramo;
     sueloTramo = tramo.hasta;
     if (restante <= 0) break;
   }
 
-  return impuesto;
+  return tramos;
+}
+
+// Impuesto progresivo por tramos sobre la base del ahorro: cada tramo tributa
+// solo por su propio intervalo (nunca el tipo marginal sobre toda la base).
+export function calcularImpuestoProgresivoAhorro(base: number): number {
+  return desglosarTramosIrpf(base).reduce((acc, tramo) => acc + tramo.cuota, 0);
 }
 
 export interface AñoCrisis {
@@ -156,6 +181,8 @@ export interface AñoSimulado {
   aportacion: number;
   gananciaDelAño: number; // bruta, antes de impuestos
   impuestoPagado: number; // 0 salvo régimen 'anual', 'diferido' en el último año, o los años con retiro en 'retiros_fifo'
+  /** Desglose por tramo del IRPF del impuestoPagado de este año — solo presente cuando impuestoPagado > 0. */
+  desgloseImpuesto?: TramoIrpfAplicado[];
   saldoFinBruto: number; // saldo antes de restar el impuesto de este año
   saldoFinNeto: number; // saldoFinBruto - impuestoPagado de este año (en 'retiros_fifo', saldo del FONDO restante, ver saldoFinalFondoRestante)
   retiroBruto?: number; // solo régimen 'retiros_fifo': importe retirado ese año, antes de impuesto
@@ -339,6 +366,7 @@ function simularRetirosFifo(input: SimulacionFifoInput): SimulacionAvanzadaResul
     let retiroBruto = 0;
     let retiroNeto = 0;
     let impuestoPagado = 0;
+    let desgloseImpuesto: TramoIrpfAplicado[] | undefined;
 
     if (año >= añoInicioRetiros) {
       const poolTotal = sumaValorActual();
@@ -385,7 +413,8 @@ function simularRetirosFifo(input: SimulacionFifoInput): SimulacionAvanzadaResul
           if (perdidasPendientes[i].importe <= 0) perdidasPendientes.splice(i, 1);
         }
         const baseImponible = Math.max(0, gananciaCompensable);
-        impuestoPagado = calcularImpuestoProgresivoAhorro(baseImponible);
+        desgloseImpuesto = desglosarTramosIrpf(baseImponible);
+        impuestoPagado = desgloseImpuesto.reduce((acc, t) => acc + t.cuota, 0);
       } else if (gananciaRealizadaDelAño < 0) {
         perdidasPendientes.push({ añoOrigen: año, importe: -gananciaRealizadaDelAño });
       }
@@ -406,6 +435,7 @@ function simularRetirosFifo(input: SimulacionFifoInput): SimulacionAvanzadaResul
       aportacion: aportacionAnual,
       gananciaDelAño,
       impuestoPagado,
+      desgloseImpuesto,
       saldoFinBruto: saldoFinFondo + retiroBruto, // fondo antes de restar el retiro de este año
       saldoFinNeto: saldoFinFondo,
       retiroBruto,
@@ -517,6 +547,7 @@ export function simularInteresCompuestoAvanzado(
     saldo = saldoFinal;
 
     let impuestoPagado = 0;
+    let desgloseImpuesto: TramoIrpfAplicado[] | undefined;
     const saldoFinBruto = saldo;
 
     if (regimenFiscal === 'anual') {
@@ -540,7 +571,8 @@ export function simularInteresCompuestoAvanzado(
         }
 
         const baseImponible = Math.max(0, gananciaCompensable);
-        impuestoPagado = calcularImpuestoProgresivoAhorro(baseImponible);
+        desgloseImpuesto = desglosarTramosIrpf(baseImponible);
+        impuestoPagado = desgloseImpuesto.reduce((acc, t) => acc + t.cuota, 0);
         saldo -= impuestoPagado;
         impuestosTotales += impuestoPagado;
       } else if (gananciaDelAño < 0) {
@@ -557,6 +589,7 @@ export function simularInteresCompuestoAvanzado(
       aportacion: aportacionAnual,
       gananciaDelAño,
       impuestoPagado,
+      desgloseImpuesto,
       saldoFinBruto,
       saldoFinNeto: saldoFinBruto - impuestoPagado,
     });
@@ -574,11 +607,13 @@ export function simularInteresCompuestoAvanzado(
 
   if (regimenFiscal === 'diferido') {
     const gananciaTotalParaImpuesto = Math.max(0, saldoFinalBruto - totalAportado);
-    const impuestoFinal = calcularImpuestoProgresivoAhorro(gananciaTotalParaImpuesto);
+    const desgloseFinal = desglosarTramosIrpf(gananciaTotalParaImpuesto);
+    const impuestoFinal = desgloseFinal.reduce((acc, t) => acc + t.cuota, 0);
     impuestosTotales = impuestoFinal;
     saldoFinalNeto = saldoFinalBruto - impuestoFinal;
 
     ultimoAño.impuestoPagado = impuestoFinal;
+    ultimoAño.desgloseImpuesto = desgloseFinal;
     ultimoAño.saldoFinNeto = saldoFinalNeto;
   }
 
@@ -1263,6 +1298,208 @@ export function calcularFlip(input: FlipInput): FlipResultado {
     ingresoVentaNeto,
     beneficioBruto,
     margenSobreInversionPct,
+    veredicto,
+    mensaje,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 9d. Invertir para alquiler turístico (Airbnb) — rentabilidad de inversión
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Paralela a "Comprar para alquilar" (calcularAlquilerRentabilidad), no un
+// `modo` interno de la misma: comparten la financiación (hipoteca, entrada,
+// gastos de compra) pero el lado de ingresos y gastos operativos es
+// estructuralmente distinto — no hay un "alquiler mensual" fijo, sino un
+// precio por noche × una ocupación estimada, y aparecen gastos que el
+// alquiler de larga duración no tiene (limpieza por estancia, comisión de
+// la plataforma, suministros a cargo del propietario, tasa turística,
+// licencia VUT). Forzarlo en la misma función habría significado que la
+// mitad de sus parámetros no aplicasen según el modo — mismo criterio que
+// ya separó "Flip" de "Comprar para alquilar" en vez de un `modo` compartido.
+export interface AirbnbRentabilidadInput {
+  precioVivienda: number;
+  entradaPct?: number;
+  gastosCompraPct?: number;
+  tinHipotecaPct: number;
+  plazoHipotecaAnios: number;
+  /** Precio medio por noche (ADR, "average daily rate"). */
+  precioNocheMedio: number;
+  /** % del año que el anuncio está realmente ocupado (no solo "disponible"). */
+  ocupacionAnualPct?: number;
+  /** Noches medias por reserva — se usa para estimar cuántas reservas/año hay (limpiezas, rotación). */
+  duracionMediaEstanciaNoches?: number;
+  /** Limpieza (o "checkout fee") que se paga una vez por cada reserva, no por noche. */
+  gastosLimpiezaPorEstancia?: number;
+  /** Comisión de la plataforma (Airbnb/Booking) sobre el ingreso bruto. */
+  comisionPlataformaPct?: number;
+  /** Si se subcontrata la gestión (llaves, check-in, atención al huésped) a una gestora, su % sobre el ingreso bruto. 0 si lo gestionas tú. */
+  gestionPctIngresos?: number;
+  /** Luz/agua/gas/internet — a diferencia del alquiler de larga duración, aquí los paga el propietario. */
+  suministrosMensuales?: number;
+  ibiAnual?: number;
+  comunidadMensual?: number;
+  seguroHogarAnual?: number;
+  mantenimientoPctAnual?: number;
+  /** Tasa turística municipal/autonómica por noche-estancia, donde exista (p. ej. Cataluña, Baleares). */
+  tasaTuristicaPorNoche?: number;
+  /** Coste anual de mantener la licencia de Vivienda de Uso Turístico (tasas, gestoría, renovaciones). */
+  licenciaTuristicaAnual?: number;
+  /** Coste ÚNICO de amueblar/equipar el piso para alquiler turístico — se suma a la inversión inicial, no a los gastos anuales. */
+  amueblamientoInicial?: number;
+  umbralRentabilidadAceptablePct?: number;
+}
+
+export interface AirbnbRentabilidadResultado {
+  capitalPrestamo: number;
+  cuotaMensualHipoteca: number;
+  inversionInicial: number;
+  nochesOcupadasAnio: number;
+  numeroReservasAnio: number;
+  ingresoBrutoAnual: number;
+  gastosLimpiezaAnual: number;
+  comisionPlataformaAnual: number;
+  gestionAnual: number;
+  suministrosAnual: number;
+  tasaTuristicaAnual: number;
+  gastosOperativosAnuales: number;
+  noiAnual: number;
+  cashflowAnualNeto: number;
+  cashflowMensualNeto: number;
+  rentabilidadBrutaAnualPct: number;
+  rentabilidadNetaSobreInversionPct: number;
+  /** Igual que en calcularAlquilerRentabilidad: ingreso bruto (ya reflejando la ocupación) sobre el coste total de adquisición, sin restar ningún gasto ni cuota — para comparar el inmueble en sí, sin el efecto de cómo se financie o gestione. */
+  roiSinApalancamientoPct: number;
+  veredicto: VeredictoAlquiler;
+  mensaje: string;
+}
+
+export function calcularAirbnbRentabilidad(
+  input: AirbnbRentabilidadInput,
+): AirbnbRentabilidadResultado {
+  const {
+    precioVivienda,
+    entradaPct = 20,
+    gastosCompraPct = 10,
+    tinHipotecaPct,
+    plazoHipotecaAnios,
+    precioNocheMedio,
+    ocupacionAnualPct = 60,
+    duracionMediaEstanciaNoches = 3,
+    gastosLimpiezaPorEstancia = 40,
+    comisionPlataformaPct = 3,
+    gestionPctIngresos = 0,
+    suministrosMensuales = 100,
+    ibiAnual = 0,
+    comunidadMensual = 0,
+    seguroHogarAnual = 0,
+    mantenimientoPctAnual = 1.5,
+    tasaTuristicaPorNoche = 0,
+    licenciaTuristicaAnual = 0,
+    amueblamientoInicial = 0,
+    umbralRentabilidadAceptablePct = 8,
+  } = input;
+
+  validarNoNegativo(precioVivienda, 'El precio de la vivienda');
+  validarNoNegativo(entradaPct, 'El porcentaje de entrada');
+  validarNoNegativo(gastosCompraPct, 'Los gastos de compra');
+  validarNoNegativo(tinHipotecaPct, 'El TIN de la hipoteca');
+  if (!Number.isFinite(plazoHipotecaAnios) || plazoHipotecaAnios <= 0) {
+    throw new Error('El plazo de la hipoteca debe ser mayor que cero');
+  }
+  validarNoNegativo(precioNocheMedio, 'El precio por noche');
+  if (!Number.isFinite(ocupacionAnualPct) || ocupacionAnualPct < 0 || ocupacionAnualPct > 100) {
+    throw new Error('La ocupación anual debe estar entre 0 y 100%');
+  }
+  if (!Number.isFinite(duracionMediaEstanciaNoches) || duracionMediaEstanciaNoches <= 0) {
+    throw new Error('La duración media de la estancia debe ser mayor que cero');
+  }
+  validarNoNegativo(gastosLimpiezaPorEstancia, 'Los gastos de limpieza por estancia');
+  validarNoNegativo(comisionPlataformaPct, 'La comisión de la plataforma');
+  validarNoNegativo(gestionPctIngresos, 'El porcentaje de gestión');
+  validarNoNegativo(suministrosMensuales, 'Los suministros mensuales');
+  validarNoNegativo(ibiAnual, 'El IBI anual');
+  validarNoNegativo(comunidadMensual, 'La comunidad mensual');
+  validarNoNegativo(seguroHogarAnual, 'El seguro de hogar anual');
+  validarNoNegativo(mantenimientoPctAnual, 'El porcentaje de mantenimiento');
+  validarNoNegativo(tasaTuristicaPorNoche, 'La tasa turística por noche');
+  validarNoNegativo(licenciaTuristicaAnual, 'La licencia turística anual');
+  validarNoNegativo(amueblamientoInicial, 'El amueblamiento inicial');
+  validarNoNegativo(umbralRentabilidadAceptablePct, 'El umbral de rentabilidad aceptable');
+
+  const capitalPrestamo = precioVivienda * (1 - entradaPct / 100);
+  const numeroCuotas = Math.round(plazoHipotecaAnios * 12);
+  const cuotaMensualHipoteca = amortizacionFrancesa(capitalPrestamo, tinHipotecaPct, numeroCuotas);
+
+  const inversionInicial = (precioVivienda * (entradaPct + gastosCompraPct)) / 100 + amueblamientoInicial;
+
+  const nochesOcupadasAnio = 365 * (ocupacionAnualPct / 100);
+  const numeroReservasAnio = nochesOcupadasAnio / duracionMediaEstanciaNoches;
+  const ingresoBrutoAnual = nochesOcupadasAnio * precioNocheMedio;
+
+  const gastosLimpiezaAnual = numeroReservasAnio * gastosLimpiezaPorEstancia;
+  const comisionPlataformaAnual = (ingresoBrutoAnual * comisionPlataformaPct) / 100;
+  const gestionAnual = (ingresoBrutoAnual * gestionPctIngresos) / 100;
+  const suministrosAnual = suministrosMensuales * 12;
+  const tasaTuristicaAnual = nochesOcupadasAnio * tasaTuristicaPorNoche;
+
+  const gastosOperativosAnuales =
+    ibiAnual +
+    comunidadMensual * 12 +
+    seguroHogarAnual +
+    (precioVivienda * mantenimientoPctAnual) / 100 +
+    gastosLimpiezaAnual +
+    comisionPlataformaAnual +
+    gestionAnual +
+    suministrosAnual +
+    tasaTuristicaAnual +
+    licenciaTuristicaAnual;
+
+  const noiAnual = ingresoBrutoAnual - gastosOperativosAnuales;
+  const cashflowAnualNeto = noiAnual - cuotaMensualHipoteca * 12;
+  const cashflowMensualNeto = cashflowAnualNeto / 12;
+  const rentabilidadBrutaAnualPct = (ingresoBrutoAnual / precioVivienda) * 100;
+  const rentabilidadNetaSobreInversionPct =
+    inversionInicial > 0 ? (cashflowAnualNeto / inversionInicial) * 100 : 0;
+  const costeTotalDeCompra = precioVivienda * (1 + gastosCompraPct / 100) + amueblamientoInicial;
+  const roiSinApalancamientoPct =
+    costeTotalDeCompra > 0 ? (ingresoBrutoAnual / costeTotalDeCompra) * 100 : 0;
+
+  let veredicto: VeredictoAlquiler;
+  let mensaje: string;
+  if (cashflowAnualNeto <= 0) {
+    veredicto = 'No merece la pena';
+    mensaje =
+      'Con esta ocupación y precio por noche, los ingresos no cubren todos los gastos (incluida la hipoteca): pierdes dinero cada mes.';
+  } else if (rentabilidadNetaSobreInversionPct >= umbralRentabilidadAceptablePct) {
+    veredicto = 'Merece la pena';
+    mensaje =
+      'El cashflow es positivo y la rentabilidad sobre lo invertido supera el umbral marcado — recuerda que exige más gestión (check-in/out, limpieza, atención al huésped) que un alquiler de larga duración.';
+  } else {
+    veredicto = 'Dudoso';
+    mensaje =
+      'El cashflow es positivo pero la rentabilidad es baja para el riesgo, la estacionalidad y el esfuerzo de gestión que exige el alquiler turístico — compara con un alquiler de larga duración de la misma vivienda.';
+  }
+
+  return {
+    capitalPrestamo,
+    cuotaMensualHipoteca,
+    inversionInicial,
+    nochesOcupadasAnio,
+    numeroReservasAnio,
+    ingresoBrutoAnual,
+    gastosLimpiezaAnual,
+    comisionPlataformaAnual,
+    gestionAnual,
+    suministrosAnual,
+    tasaTuristicaAnual,
+    gastosOperativosAnuales,
+    noiAnual,
+    cashflowAnualNeto,
+    cashflowMensualNeto,
+    rentabilidadBrutaAnualPct,
+    rentabilidadNetaSobreInversionPct,
+    roiSinApalancamientoPct,
     veredicto,
     mensaje,
   };
