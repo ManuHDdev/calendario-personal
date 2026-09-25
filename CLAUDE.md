@@ -1785,6 +1785,34 @@ alquilar": ingreso bruto (ya reflejando la ocupación) sobre el coste total
 de adquisición, sin restar ningún gasto ni cuota — para comparar el inmueble
 en sí, sin el efecto de cómo se financie o gestione.
 
+`simularProyeccionAirbnb()` (nueva) es el equivalente de
+`simularProyeccionAlquiler()` para esta calculadora — mismo escenario
+conservador (precio por noche, ocupación y gastos constantes durante toda
+la proyección) y reutiliza `saldoPendienteHipotecaTrasAnios()` (la
+amortización francesa es idéntica, no depende de dónde salga el ingreso).
+
+### Gráfica de patrimonio neto en las calculadoras de rentabilidad (nuevo)
+
+`PatrimonioNetoChart.tsx` (nuevo, `components/calculators/`), componente
+reutilizado tanto en "Comprar para alquilar" como en "Invertir para
+Airbnb": muestra, con `lightweight-charts` (mismo patrón que
+`PreciosVivienda.tsx`/`AlquilerTuristico.tsx`), cómo crece el patrimonio
+neto acumulado (`precioVivienda - saldoPendienteHipoteca`) año a año hasta
+terminar de pagar la hipoteca — justo debajo del texto explicativo del
+retorno acumulado/anualizado, antes de la tabla "Ver proyección año a año"
+(que sigue existiendo, con el detalle exacto).
+
+**Eje de tiempo ficticio, a propósito.** `lightweight-charts` es una
+librería de series temporales — necesita timestamps crecientes, no un eje
+categórico "Año 1, Año 2…". Los años de la proyección se codifican como
+`Date.UTC(2000 + año, 0, 1)` (2000 es un año base arbitrario, nunca se
+muestra), y tanto los ticks del eje como el crosshair se sobreescriben con
+`tickMarkFormatter`/`localization.timeFormatter` para leer siempre "Año N"
+— mostrar el año ficticio subyacente (p. ej. "2015") confundiría al usuario
+haciéndole pensar que es un año calendario real. `Flip` no tiene esta
+gráfica: es una operación puntual (comprar-reformar-vender), sin concepto
+de "crecimiento a lo largo de los años".
+
 ### Puerto local
 Frontend `:5187`, backend `:3014`.
 

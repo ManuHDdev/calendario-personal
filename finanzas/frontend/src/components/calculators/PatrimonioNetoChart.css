@@ -1,0 +1,14 @@
+.patrimonio-neto-chart {
+  margin: 16px 0;
+}
+
+.patrimonio-neto-chart-ayuda {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+
+.patrimonio-neto-chart-lienzo {
+  width: 100%;
+  height: 260px;
+}

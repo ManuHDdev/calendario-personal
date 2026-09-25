@@ -1506,6 +1506,104 @@ export function calcularAirbnbRentabilidad(
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// 9e. Invertir para Airbnb — proyección año a año hasta pagar la hipoteca
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Mismo escenario conservador y misma mecánica que
+// simularProyeccionAlquiler (precio por noche, ocupación y gastos
+// constantes durante toda la proyección — sin revalorización ni inflación
+// de ninguno de ellos): el patrimonio crece únicamente por la hipoteca que
+// se va amortizando (equity) y el cashflow acumulado, que es el mismo cada
+// año en este modelo. Reutiliza saldoPendienteHipotecaTrasAnios (ya
+// definida para "Comprar para alquilar" — la amortización francesa es
+// idéntica, no depende de dónde salga el ingreso) para no duplicar esa
+// lógica, y calcularAirbnbRentabilidad para el resto de cifras base.
+
+export interface AñoProyeccionAirbnb {
+  año: number;
+  saldoPendienteHipoteca: number;
+  capitalAmortizadoAño: number;
+  interesesAño: number;
+  cashflowAnualNeto: number;
+  patrimonioNetoAcumulado: number;
+  cashflowAcumulado: number;
+  retornoTotalAcumulado: number;
+  retornoTotalSobreInversionPct: number;
+}
+
+export interface ProyeccionAirbnbResultado {
+  años: AñoProyeccionAirbnb[];
+  cashflowAnualTrasHipoteca: number;
+  cashflowMensualTrasHipoteca: number;
+  patrimonioNetoFinal: number;
+  retornoTotalFinalSobreInversionPct: number;
+  retornoTotalAnualizadoPct: number;
+}
+
+export function simularProyeccionAirbnb(
+  input: AirbnbRentabilidadInput,
+): ProyeccionAirbnbResultado {
+  const base = calcularAirbnbRentabilidad(input);
+  const { precioVivienda, tinHipotecaPct, plazoHipotecaAnios } = input;
+  const { capitalPrestamo, cuotaMensualHipoteca, cashflowAnualNeto, inversionInicial, noiAnual } = base;
+
+  const añosTotales = Math.round(plazoHipotecaAnios);
+  const años: AñoProyeccionAirbnb[] = [];
+
+  let saldoAnterior = capitalPrestamo;
+  let cashflowAcumulado = 0;
+
+  for (let k = 1; k <= añosTotales; k++) {
+    const esUltimoAño = k === añosTotales;
+    const saldoPendienteHipoteca = esUltimoAño
+      ? 0
+      : saldoPendienteHipotecaTrasAnios(capitalPrestamo, tinHipotecaPct, plazoHipotecaAnios, k);
+
+    const capitalAmortizadoAño = saldoAnterior - saldoPendienteHipoteca;
+    const interesesAño = cuotaMensualHipoteca * 12 - capitalAmortizadoAño;
+
+    cashflowAcumulado += cashflowAnualNeto;
+
+    const patrimonioNetoAcumulado = precioVivienda - saldoPendienteHipoteca;
+    const retornoTotalAcumulado = capitalPrestamo - saldoPendienteHipoteca + cashflowAcumulado;
+    const retornoTotalSobreInversionPct =
+      inversionInicial > 0 ? (retornoTotalAcumulado / inversionInicial) * 100 : 0;
+
+    años.push({
+      año: k,
+      saldoPendienteHipoteca,
+      capitalAmortizadoAño,
+      interesesAño,
+      cashflowAnualNeto,
+      patrimonioNetoAcumulado,
+      cashflowAcumulado,
+      retornoTotalAcumulado,
+      retornoTotalSobreInversionPct,
+    });
+
+    saldoAnterior = saldoPendienteHipoteca;
+  }
+
+  const ultimoAño = años[años.length - 1];
+  const retornoTotalFinalSobreInversionPct = ultimoAño ? ultimoAño.retornoTotalSobreInversionPct : 0;
+
+  const multiploFinal = 1 + retornoTotalFinalSobreInversionPct / 100;
+  const retornoTotalAnualizadoPct =
+    multiploFinal > 0 && añosTotales > 0
+      ? (Math.pow(multiploFinal, 1 / añosTotales) - 1) * 100
+      : 0;
+
+  return {
+    años,
+    cashflowAnualTrasHipoteca: noiAnual,
+    cashflowMensualTrasHipoteca: noiAnual / 12,
+    patrimonioNetoFinal: precioVivienda,
+    retornoTotalFinalSobreInversionPct,
+    retornoTotalAnualizadoPct,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // 10. Pérdida de poder adquisitivo por inflación (dinero parado, sin invertir)
 // ─────────────────────────────────────────────────────────────────────────
 
