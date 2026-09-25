@@ -1,9 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import CalculatorCard from '../CalculatorCard';
 import NumberField from '../NumberField';
+import PatrimonioNetoChart from './PatrimonioNetoChart';
 import {
   calcularAirbnbRentabilidad,
+  simularProyeccionAirbnb,
   type AirbnbRentabilidadResultado,
+  type ProyeccionAirbnbResultado,
 } from '../../lib/calculators';
 import { formatEUR } from '../../lib/format';
 
@@ -35,13 +38,14 @@ export default function AirbnbRentabilidadCalculator() {
   const [amueblamientoInicial, setAmueblamientoInicial] = useState('6000');
   const [umbralRentabilidadAceptablePct, setUmbralRentabilidadAceptablePct] = useState('8');
   const [resultado, setResultado] = useState<AirbnbRentabilidadResultado | null>(null);
+  const [proyeccion, setProyeccion] = useState<ProyeccionAirbnbResultado | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     try {
-      const r = calcularAirbnbRentabilidad({
+      const input = {
         precioVivienda: Number(precioVivienda),
         entradaPct: Number(entradaPct),
         gastosCompraPct: Number(gastosCompraPct),
@@ -62,10 +66,13 @@ export default function AirbnbRentabilidadCalculator() {
         licenciaTuristicaAnual: licenciaTuristicaAnual ? Number(licenciaTuristicaAnual) : 0,
         amueblamientoInicial: amueblamientoInicial ? Number(amueblamientoInicial) : 0,
         umbralRentabilidadAceptablePct: Number(umbralRentabilidadAceptablePct),
-      });
+      };
+      const r = calcularAirbnbRentabilidad(input);
       setResultado(r);
+      setProyeccion(simularProyeccionAirbnb(input));
     } catch (err) {
       setResultado(null);
+      setProyeccion(null);
       setError(err instanceof Error ? err.message : 'Datos inválidos');
     }
   };
@@ -152,6 +159,64 @@ export default function AirbnbRentabilidadCalculator() {
             </p>
             <p className={`resultado-veredicto ${CLASE_VEREDICTO[resultado.veredicto]}`}>{resultado.veredicto}</p>
             <p className="calculator-help-text">{resultado.mensaje}</p>
+
+            {proyeccion && (
+              <>
+                <p className="calculator-help-text">
+                  Cuando termines de pagar (año {plazoHipotecaAnios}), el cashflow anual sube a{' '}
+                  {formatEUR(proyeccion.cashflowAnualTrasHipoteca)} (
+                  {formatEUR(proyeccion.cashflowMensualTrasHipoteca)}/mes) — ya no hay cuota que pagar.
+                </p>
+                <div className="resultado-linea">
+                  <span>Retorno total acumulado en {plazoHipotecaAnios} años (no es una tasa anual)</span>
+                  <strong>{proyeccion.retornoTotalFinalSobreInversionPct.toFixed(2)}% sobre tu inversión inicial</strong>
+                </div>
+                <div className="resultado-linea resultado-principal">
+                  <span>Ese mismo retorno, anualizado (comparable con la rentabilidad de arriba)</span>
+                  <strong>{proyeccion.retornoTotalAnualizadoPct.toFixed(2)}% / año</strong>
+                </div>
+                <p className="calculator-help-text">
+                  El retorno acumulado suma TODOS los años de la hipoteca de golpe (incluye el préstamo entero ya
+                  amortizado, que suele ser varias veces tu inversión inicial), por eso sale un número mucho más
+                  grande que la rentabilidad anual de arriba — no son la misma magnitud. La versión anualizada sí
+                  lo es: es la tasa anual constante que, compuesta durante {plazoHipotecaAnios} años, da el mismo
+                  resultado final. Igual que en "Comprar para alquilar", este escenario mantiene precio por noche,
+                  ocupación y gastos constantes durante toda la proyección — sin revalorización ni inflación.
+                </p>
+
+                <PatrimonioNetoChart datos={proyeccion.años} />
+
+                <details className="calculator-desglose">
+                  <summary>Ver proyección año a año hasta pagar la hipoteca</summary>
+                  <div className="calculator-desglose-tabla-wrap">
+                    <table className="calculator-desglose-tabla">
+                      <thead>
+                        <tr>
+                          <th>Año</th>
+                          <th>Cashflow del año</th>
+                          <th>Capital amortizado</th>
+                          <th>Patrimonio neto acumulado</th>
+                          <th>Retorno total acumulado</th>
+                          <th>Retorno sobre inversión</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {proyeccion.años.map((añoProyeccion) => (
+                          <tr key={añoProyeccion.año}>
+                            <td>{añoProyeccion.año}</td>
+                            <td>{formatEUR(añoProyeccion.cashflowAnualNeto)}</td>
+                            <td>{formatEUR(añoProyeccion.capitalAmortizadoAño)}</td>
+                            <td>{formatEUR(añoProyeccion.patrimonioNetoAcumulado)}</td>
+                            <td>{formatEUR(añoProyeccion.retornoTotalAcumulado)}</td>
+                            <td>{añoProyeccion.retornoTotalSobreInversionPct.toFixed(2)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              </>
+            )}
           </>
         )
       }

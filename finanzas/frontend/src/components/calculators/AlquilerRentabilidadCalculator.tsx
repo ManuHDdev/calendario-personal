@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import CalculatorCard from '../CalculatorCard';
 import NumberField from '../NumberField';
+import PatrimonioNetoChart from './PatrimonioNetoChart';
 import {
   calcularAlquilerRentabilidad,
   simularProyeccionAlquiler,
@@ -128,6 +129,8 @@ export default function AlquilerRentabilidadCalculator() {
                   lo es: es la tasa anual constante que, compuesta durante {plazoHipotecaAnios} años, da el mismo
                   resultado final.
                 </p>
+
+                <PatrimonioNetoChart datos={proyeccion.años} />
 
                 <details className="calculator-desglose">
                   <summary>Ver proyección año a año hasta pagar la hipoteca</summary>

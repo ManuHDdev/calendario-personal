@@ -17,6 +17,7 @@ import {
   calcularPerdidaPoderAdquisitivo,
   calcularFlip,
   calcularAirbnbRentabilidad,
+  simularProyeccionAirbnb,
 } from './calculators';
 
 describe('calcularInteresCompuesto', () => {
@@ -995,6 +996,72 @@ describe('calcularAirbnbRentabilidad', () => {
         duracionMediaEstanciaNoches: 0,
       }),
     ).toThrow();
+  });
+});
+
+describe('simularProyeccionAirbnb', () => {
+  it('caso TIN 0% sin gastos operativos (amortización lineal, verificable a mano)', () => {
+    const input = {
+      precioVivienda: 150000,
+      entradaPct: 20,
+      gastosCompraPct: 10,
+      tinHipotecaPct: 0,
+      plazoHipotecaAnios: 10,
+      precioNocheMedio: 100,
+      ocupacionAnualPct: 60,
+      mantenimientoPctAnual: 0,
+      comisionPlataformaPct: 0,
+      gastosLimpiezaPorEstancia: 0,
+      suministrosMensuales: 0,
+    };
+    const base = calcularAirbnbRentabilidad(input);
+    const resultado = simularProyeccionAirbnb(input);
+
+    // capitalPrestamo = 150000*0.8 = 120000; cuotaMensual = 120000/120 = 1000€/mes
+    // (TIN=0, sin intereses) -> 12000€/año amortizado.
+    // nochesOcupadasAnio = 365*0.6 = 219; ingresoBrutoAnual = 219*100 = 21900
+    // (sin ningún gasto operativo con esta configuración).
+    expect(base.capitalPrestamo).toBeCloseTo(120000, 5);
+    expect(base.cuotaMensualHipoteca).toBeCloseTo(1000, 5);
+    expect(base.ingresoBrutoAnual).toBeCloseTo(21900, 5);
+    expect(base.gastosOperativosAnuales).toBeCloseTo(0, 5);
+    // cashflowAnualNeto = 21900 - 1000*12 = 9900
+    expect(base.cashflowAnualNeto).toBeCloseTo(9900, 5);
+
+    expect(resultado.años).toHaveLength(10);
+
+    const año3 = resultado.años[2];
+    expect(año3.saldoPendienteHipoteca).toBeCloseTo(120000 - 3 * 12000, 5); // 84000
+    expect(año3.capitalAmortizadoAño).toBeCloseTo(12000, 5);
+    expect(año3.interesesAño).toBeCloseTo(0, 5);
+
+    const añoFinal = resultado.años[9];
+    expect(añoFinal.saldoPendienteHipoteca).toBe(0);
+    expect(resultado.patrimonioNetoFinal).toBeCloseTo(150000, 5);
+
+    // Retorno acumulado en los 10 años: capital amortizado (120000) +
+    // cashflow acumulado (9900/año * 10 = 99000) = 219000, sobre una
+    // inversión inicial de 45000 -> 486.67%.
+    expect(resultado.retornoTotalFinalSobreInversionPct).toBeCloseTo(486.67, 1);
+    // Anualizado (CAGR): (1+4.8667)^(1/10) - 1 ≈ 19.35%/año.
+    expect(resultado.retornoTotalAnualizadoPct).toBeCloseTo(19.35, 1);
+  });
+
+  it('el patrimonio neto acumulado crece monótonamente hasta igualar el precio de la vivienda', () => {
+    const resultado = simularProyeccionAirbnb({
+      precioVivienda: 120000,
+      tinHipotecaPct: 2.5,
+      plazoHipotecaAnios: 15,
+      precioNocheMedio: 90,
+      ocupacionAnualPct: 55,
+    });
+
+    for (let i = 1; i < resultado.años.length; i++) {
+      expect(resultado.años[i].patrimonioNetoAcumulado).toBeGreaterThan(
+        resultado.años[i - 1].patrimonioNetoAcumulado,
+      );
+    }
+    expect(resultado.años[resultado.años.length - 1].patrimonioNetoAcumulado).toBeCloseTo(120000, 5);
   });
 });
 
