@@ -1,15 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import CalculatorCard from '../CalculatorCard';
 import NumberField from '../NumberField';
+import SerieAnualChart from './SerieAnualChart';
 import {
   calcularInteresCompuesto,
   simularInteresCompuestoAvanzado,
+  simularSerieInteresCompuesto,
   generarAñosCrisisAleatorios,
   type InteresCompuestoResultado,
   type Frecuencia,
   type AñoCrisis,
   type RegimenFiscal,
   type SimulacionAvanzadaResult,
+  type PuntoSerieInteresCompuesto,
 } from '../../lib/calculators';
 import { formatEUR } from '../../lib/format';
 
@@ -33,6 +36,7 @@ export default function InteresCompuestoCalculator() {
   const [aportacionPeriodica, setAportacionPeriodica] = useState('');
   const [frecuenciaAportacion, setFrecuenciaAportacion] = useState<Frecuencia>('mensual');
   const [resultado, setResultado] = useState<InteresCompuestoResultado | null>(null);
+  const [serieSimple, setSerieSimple] = useState<PuntoSerieInteresCompuesto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [modoAvanzado, setModoAvanzado] = useState(false);
@@ -87,21 +91,24 @@ export default function InteresCompuestoCalculator() {
     e.preventDefault();
     setError(null);
     setResultado(null);
+    setSerieSimple(null);
     setResultadoAvanzado(null);
 
     const aniosNum = Number(anios);
 
     if (!modoAvanzado) {
       try {
-        const r = calcularInteresCompuesto({
+        const input = {
           capitalInicial: Number(capitalInicial),
           tasaAnualPct: Number(tasaAnual),
           anios: aniosNum,
           frecuenciaCapitalizacion,
           aportacionPeriodica: aportacionPeriodica ? Number(aportacionPeriodica) : 0,
           frecuenciaAportacion,
-        });
+        };
+        const r = calcularInteresCompuesto(input);
         setResultado(r);
+        setSerieSimple(simularSerieInteresCompuesto(input));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Datos inválidos');
       }
@@ -181,6 +188,13 @@ export default function InteresCompuestoCalculator() {
               <span>Intereses ganados</span>
               <strong>{formatEUR(resultado.totalIntereses)}</strong>
             </div>
+
+            {serieSimple && serieSimple.length > 1 && (
+              <SerieAnualChart
+                datos={serieSimple.map((p) => ({ año: p.año, valor: p.capital }))}
+                ayuda="Cómo crece el capital acumulado a lo largo de los años — rueda del ratón para acercar/alejar, arrastra para desplazarte."
+              />
+            )}
           </>
         ) : (
           resultadoAvanzado && (
@@ -239,6 +253,20 @@ export default function InteresCompuestoCalculator() {
                     <strong>{resultadoAvanzado.rentabilidadNetaTotal.toFixed(2)}%</strong>
                   </div>
                 </>
+              )}
+
+              {resultadoAvanzado.años.length > 0 && (
+                <SerieAnualChart
+                  datos={[
+                    { año: 0, valor: resultadoAvanzado.años[0].saldoInicio },
+                    ...resultadoAvanzado.años.map((a) => ({ año: a.año, valor: a.saldoFinNeto })),
+                  ]}
+                  ayuda={
+                    regimenFiscal === 'retiros_fifo'
+                      ? 'Cómo evoluciona el fondo restante a lo largo de los años (después de cada retiro) — rueda del ratón para acercar/alejar, arrastra para desplazarte.'
+                      : 'Cómo crece el saldo neto (ya descontados los impuestos de cada año) a lo largo del tiempo — rueda del ratón para acercar/alejar, arrastra para desplazarte.'
+                  }
+                />
               )}
 
               <details className="calculator-desglose">
@@ -313,6 +341,8 @@ export default function InteresCompuestoCalculator() {
         >
           <option value="anual">Anual</option>
           <option value="mensual">Mensual</option>
+          <option value="semanal">Semanal</option>
+          <option value="diaria">Diaria</option>
         </select>
       </label>
 

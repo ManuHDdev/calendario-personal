@@ -1791,27 +1791,62 @@ conservador (precio por noche, ocupación y gastos constantes durante toda
 la proyección) y reutiliza `saldoPendienteHipotecaTrasAnios()` (la
 amortización francesa es idéntica, no depende de dónde salga el ingreso).
 
-### Gráfica de patrimonio neto en las calculadoras de rentabilidad (nuevo)
+### Gráfica de evolución anual — reutilizada en varias calculadoras (nuevo)
 
-`PatrimonioNetoChart.tsx` (nuevo, `components/calculators/`), componente
-reutilizado tanto en "Comprar para alquilar" como en "Invertir para
-Airbnb": muestra, con `lightweight-charts` (mismo patrón que
-`PreciosVivienda.tsx`/`AlquilerTuristico.tsx`), cómo crece el patrimonio
-neto acumulado (`precioVivienda - saldoPendienteHipoteca`) año a año hasta
-terminar de pagar la hipoteca — justo debajo del texto explicativo del
-retorno acumulado/anualizado, antes de la tabla "Ver proyección año a año"
-(que sigue existiendo, con el detalle exacto).
+`SerieAnualChart.tsx` (`components/calculators/`, antes `PatrimonioNetoChart.tsx`
+— renombrado y generalizado al reutilizarse en un segundo dominio no
+inmobiliario): componente genérico con `lightweight-charts` (mismo patrón que
+`PreciosVivienda.tsx`/`AlquilerTuristico.tsx`) que pinta una cifra
+cualquiera evolucionando año a año, dado `datos: { año, valor }[]` y un
+texto de ayuda (`ayuda: string`) que cada calculadora personaliza. Usado en:
 
-**Eje de tiempo ficticio, a propósito.** `lightweight-charts` es una
-librería de series temporales — necesita timestamps crecientes, no un eje
-categórico "Año 1, Año 2…". Los años de la proyección se codifican como
-`Date.UTC(2000 + año, 0, 1)` (2000 es un año base arbitrario, nunca se
-muestra), y tanto los ticks del eje como el crosshair se sobreescriben con
-`tickMarkFormatter`/`localization.timeFormatter` para leer siempre "Año N"
-— mostrar el año ficticio subyacente (p. ej. "2015") confundiría al usuario
-haciéndole pensar que es un año calendario real. `Flip` no tiene esta
-gráfica: es una operación puntual (comprar-reformar-vender), sin concepto
-de "crecimiento a lo largo de los años".
+- **"Comprar para alquilar"** e **"Invertir para Airbnb"**: patrimonio neto
+  acumulado (`precioVivienda - saldoPendienteHipoteca`), justo debajo del
+  texto explicativo del retorno acumulado/anualizado, antes de la tabla "Ver
+  proyección año a año" (que sigue existiendo, con el detalle exacto).
+- **"Interés compuesto"**, modo simple: capital acumulado año a año, vía la
+  función nueva `simularSerieInteresCompuesto()` — la calculadora simple no
+  simulaba año a año hasta ahora (fórmula cerrada, un único resultado final),
+  así que esta función reutiliza la MISMA fórmula pero parametrizada por el
+  tiempo transcurrido `t` en vez del plazo total, para poder pintar puntos
+  intermedios sin montar una simulación aparte. Si `anios` no es un número
+  entero, añade un punto final en el instante exacto para que la gráfica
+  termine en el mismo resultado que `calcularInteresCompuesto`.
+- **"Interés compuesto"**, modo avanzado (fiscalidad): reutiliza el
+  `años[]` que ya devuelve `simularInteresCompuestoAvanzado()` — sin
+  necesidad de ninguna función nueva —, pintando `saldoFinNeto` (que en
+  régimen `retiros_fifo` es el fondo restante tras cada retiro).
+- **"Flip"** NO tiene esta gráfica: es una operación puntual
+  (comprar-reformar-vender), sin concepto de "evolución a lo largo de los
+  años".
+
+**Eje de tiempo ficticio, a propósito, con soporte para años fraccionarios.**
+`lightweight-charts` es una librería de series temporales — necesita
+timestamps crecientes, no un eje categórico "Año 1, Año 2…". Los años se
+codifican como una época base arbitraria (`Date.UTC(2000,0,1)`, nunca
+mostrada) más `año × 365 días`, lo que permite tanto años enteros como
+fraccionarios (necesario para "Interés compuesto", donde `anios` no está
+restringido a ser entero, a diferencia de las calculadoras inmobiliarias).
+Tanto los ticks del eje como el crosshair se sobreescriben con
+`tickMarkFormatter`/`localization.timeFormatter` para leer siempre "Año N" (o
+"Año N.NN" si es fraccionario) — mostrar la fecha ficticia subyacente
+confundiría al usuario haciéndole pensar que es un año calendario real.
+
+### Frecuencia de capitalización semanal y diaria en Interés compuesto (nuevo)
+
+El tipo `Frecuencia` (`lib/calculators.ts`) se amplió de `'anual' | 'mensual'`
+a también `'semanal'` (52/año) y `'diaria'` (365/año). **Solo se ofrecen en
+el selector de "Frecuencia de CAPITALIZACIÓN"**, no en el de "Frecuencia de
+aportación" (que se queda con Anual/Mensual) — `capitalizarUnAño()`, en la
+simulación avanzada con fiscalidad, tiene una rama especial codificada
+únicamente para `frecuenciaAportacion === 'mensual'` (ver su comentario en
+el código); una aportación semanal/diaria ahí caería en la rama "no
+mensual" (aportación de golpe al principio del año), que sería incorrecto.
+La capitalización, en cambio, ya era genérica en todo el fichero
+(`Math.pow(1 + r/n, n)` con `n = PERIODOS_POR_ANIO[frecuenciaCapitalizacion]`
+en cualquier sitio que se usa), así que añadir frecuencias nuevas no
+requirió tocar ninguna otra lógica, solo el tipo, el mapa de periodos/año y
+las dos opciones nuevas en el `<select>`.
 
 ### Puerto local
 Frontend `:5187`, backend `:3014`.

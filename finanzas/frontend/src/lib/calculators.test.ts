@@ -18,6 +18,7 @@ import {
   calcularFlip,
   calcularAirbnbRentabilidad,
   simularProyeccionAirbnb,
+  simularSerieInteresCompuesto,
 } from './calculators';
 
 describe('calcularInteresCompuesto', () => {
@@ -32,6 +33,40 @@ describe('calcularInteresCompuesto', () => {
     expect(resultado.capitalFinal).toBeCloseTo(1628.89, 1);
     expect(resultado.totalAportado).toBe(0);
     expect(resultado.totalIntereses).toBeCloseTo(628.89, 1);
+  });
+
+  it('capitalización semanal (1000€ al 5% anual, 1 año, verificable a mano)', () => {
+    const resultado = calcularInteresCompuesto({
+      capitalInicial: 1000,
+      tasaAnualPct: 5,
+      anios: 1,
+      frecuenciaCapitalizacion: 'semanal',
+    });
+    // 1000 * (1 + 0.05/52)^52 ≈ 1051.25
+    expect(resultado.capitalFinal).toBeCloseTo(1051.25, 1);
+  });
+
+  it('capitalización diaria (1000€ al 5% anual, 1 año, verificable a mano)', () => {
+    const resultado = calcularInteresCompuesto({
+      capitalInicial: 1000,
+      tasaAnualPct: 5,
+      anios: 1,
+      frecuenciaCapitalizacion: 'diaria',
+    });
+    // 1000 * (1 + 0.05/365)^365 ≈ 1051.27
+    expect(resultado.capitalFinal).toBeCloseTo(1051.27, 1);
+  });
+
+  it('a más frecuencia de capitalización, más interés compuesto (anual < mensual < semanal < diaria)', () => {
+    const base = { capitalInicial: 1000, tasaAnualPct: 5, anios: 5 } as const;
+    const anual = calcularInteresCompuesto({ ...base, frecuenciaCapitalizacion: 'anual' });
+    const mensual = calcularInteresCompuesto({ ...base, frecuenciaCapitalizacion: 'mensual' });
+    const semanal = calcularInteresCompuesto({ ...base, frecuenciaCapitalizacion: 'semanal' });
+    const diaria = calcularInteresCompuesto({ ...base, frecuenciaCapitalizacion: 'diaria' });
+
+    expect(mensual.capitalFinal).toBeGreaterThan(anual.capitalFinal);
+    expect(semanal.capitalFinal).toBeGreaterThan(mensual.capitalFinal);
+    expect(diaria.capitalFinal).toBeGreaterThan(semanal.capitalFinal);
   });
 
   it('suma las aportaciones periódicas compuestas al capital final', () => {
@@ -56,6 +91,92 @@ describe('calcularInteresCompuesto', () => {
         frecuenciaCapitalizacion: 'anual',
       }),
     ).toThrow();
+  });
+});
+
+describe('simularSerieInteresCompuesto', () => {
+  it('sin aportación, cada punto coincide con el capital compuesto de calcularInteresCompuesto en ese año', () => {
+    const puntos = simularSerieInteresCompuesto({
+      capitalInicial: 1000,
+      tasaAnualPct: 5,
+      anios: 3,
+      frecuenciaCapitalizacion: 'anual',
+    });
+
+    expect(puntos).toHaveLength(4); // años 0, 1, 2, 3
+    expect(puntos[0]).toMatchObject({ año: 0, capital: 1000 });
+
+    for (let k = 1; k <= 3; k++) {
+      const enEseAño = calcularInteresCompuesto({
+        capitalInicial: 1000,
+        tasaAnualPct: 5,
+        anios: k,
+        frecuenciaCapitalizacion: 'anual',
+      });
+      expect(puntos[k].capital).toBeCloseTo(enEseAño.capitalFinal, 5);
+    }
+  });
+
+  it('el último punto coincide EXACTAMENTE con calcularInteresCompuesto para el mismo input (con aportación)', () => {
+    const input = {
+      capitalInicial: 3000,
+      tasaAnualPct: 17,
+      anios: 1,
+      frecuenciaCapitalizacion: 'mensual' as const,
+      aportacionPeriodica: 1000,
+      frecuenciaAportacion: 'mensual' as const,
+    };
+    const serie = simularSerieInteresCompuesto(input);
+    const resultado = calcularInteresCompuesto(input);
+
+    const ultimo = serie[serie.length - 1];
+    expect(ultimo.año).toBe(1);
+    expect(ultimo.capital).toBeCloseTo(resultado.capitalFinal, 5);
+    expect(ultimo.totalAportado).toBeCloseTo(resultado.totalAportado, 5);
+  });
+
+  it('con un plazo fraccionario (2.5 años), añade un punto final en el instante exacto además de los años enteros', () => {
+    const serie = simularSerieInteresCompuesto({
+      capitalInicial: 1000,
+      tasaAnualPct: 5,
+      anios: 2.5,
+      frecuenciaCapitalizacion: 'anual',
+    });
+
+    // años 0, 1, 2 (enteros) + 2.5 (punto final fraccionario) = 4 puntos
+    expect(serie.map((p) => p.año)).toEqual([0, 1, 2, 2.5]);
+
+    const resultado = calcularInteresCompuesto({
+      capitalInicial: 1000,
+      tasaAnualPct: 5,
+      anios: 2.5,
+      frecuenciaCapitalizacion: 'anual',
+    });
+    expect(serie[serie.length - 1].capital).toBeCloseTo(resultado.capitalFinal, 5);
+  });
+
+  it('un plazo entero de años NO añade un punto duplicado al final', () => {
+    const serie = simularSerieInteresCompuesto({
+      capitalInicial: 1000,
+      tasaAnualPct: 5,
+      anios: 3,
+      frecuenciaCapitalizacion: 'anual',
+    });
+    expect(serie.map((p) => p.año)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('el capital acumulado crece monótonamente año a año', () => {
+    const serie = simularSerieInteresCompuesto({
+      capitalInicial: 1000,
+      tasaAnualPct: 5,
+      anios: 10,
+      frecuenciaCapitalizacion: 'mensual',
+      aportacionPeriodica: 50,
+      frecuenciaAportacion: 'mensual',
+    });
+    for (let i = 1; i < serie.length; i++) {
+      expect(serie[i].capital).toBeGreaterThan(serie[i - 1].capital);
+    }
   });
 });
 
@@ -344,6 +465,30 @@ describe('simularInteresCompuestoAvanzado', () => {
     });
     expect(resultado.saldoFinalBruto).toBeCloseTo(resultado.saldoFinalNeto, 5);
     expect(resultado.impuestosTotales).toBe(0);
+  });
+
+  it('capitalización semanal/diaria en modo avanzado (sin aportación) coincide con calcularInteresCompuesto', () => {
+    // capitalizarUnAño usa PERIODOS_POR_ANIO[frecuenciaCapitalizacion] de
+    // forma genérica (no hay ninguna rama especial para 'semanal'/'diaria',
+    // a diferencia de frecuenciaAportacion) — este test lo confirma
+    // comparando contra la calculadora simple para las mismas cifras.
+    for (const frecuenciaCapitalizacion of ['semanal', 'diaria'] as const) {
+      const simple = calcularInteresCompuesto({
+        capitalInicial: 5000,
+        tasaAnualPct: 6,
+        anios: 1,
+        frecuenciaCapitalizacion,
+      });
+      const avanzado = simularInteresCompuestoAvanzado({
+        capitalInicial: 5000,
+        tasaAnualBase: 6,
+        años: 1,
+        frecuenciaCapitalizacion,
+        añosCrisis: [],
+        regimenFiscal: 'ninguno',
+      });
+      expect(avanzado.saldoFinalBruto).toBeCloseTo(simple.capitalFinal, 5);
+    }
   });
 
   it('régimen "ninguno" con aportación mensual coincide EXACTAMENTE con calcularInteresCompuesto (caso reportado: 3000€, 17%, 1 año, capitalización y aportación mensual, 1000€/mes)', () => {

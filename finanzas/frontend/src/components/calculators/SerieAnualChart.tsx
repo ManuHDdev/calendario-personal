@@ -7,41 +7,51 @@ import {
   type UTCTimestamp,
 } from 'lightweight-charts';
 import { formatEUR } from '../../lib/format';
-import './PatrimonioNetoChart.css';
+import './SerieAnualChart.css';
 
-export interface PuntoPatrimonio {
+export interface PuntoSerieAnual {
+  /** Años transcurridos desde el inicio — normalmente entero, pero admite fracciones (p. ej. 10.5). */
   año: number;
-  patrimonioNetoAcumulado: number;
+  valor: number;
 }
 
 /**
- * Gráfica de "cómo crece el patrimonio" a lo largo de la proyección de una
- * inversión inmobiliaria (Comprar para alquilar, Invertir para Airbnb):
+ * Gráfica genérica de "cómo evoluciona una cifra a lo largo de los años" —
+ * usada tanto por las calculadoras de rentabilidad inmobiliaria (patrimonio
+ * neto acumulado) como por "Interés compuesto" (capital/saldo acumulado):
  * mismo `lightweight-charts` que ya usa el resto de finanzas
- * (`PreciosVivienda.tsx`, `AlquilerTuristico.tsx`), pero el eje de tiempo no
- * son fechas reales — son años relativos a hoy (1, 2, 3…), así que se
- * codifican como timestamps ficticios (año 2000 + N) únicamente para tener
- * una escala de tiempo creciente, y se sobreescribe tanto el formato de los
- * ticks del eje como el del crosshair para que SIEMPRE se lea "Año N", nunca
- * la fecha ficticia subyacente — mostrar "2003" confundiría al usuario
- * pensando que es un año calendario real.
+ * (`PreciosVivienda.tsx`, `AlquilerTuristico.tsx`).
+ *
+ * El eje de tiempo no son fechas reales — son años relativos al inicio de la
+ * simulación (1, 2, 3…, con soporte para un punto final fraccionario si el
+ * plazo no es un número entero de años) — así que se codifican como
+ * timestamps ficticios (una época base arbitraria + N días por año) solo
+ * para tener una escala de tiempo creciente, y se sobreescribe tanto el
+ * formato de los ticks del eje como el del crosshair para que SIEMPRE se lea
+ * "Año N", nunca la fecha ficticia subyacente.
  */
 function leerVariableCss(nombre: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
 }
 
-const AÑO_BASE_FICTICIO = 2000;
+const EPOCA_BASE_MS = Date.UTC(2000, 0, 1);
+const MS_POR_DIA = 86_400_000;
+const DIAS_POR_AÑO = 365;
 
 function añoATimestamp(año: number): UTCTimestamp {
-  return (Date.UTC(AÑO_BASE_FICTICIO + año, 0, 1) / 1000) as UTCTimestamp;
+  return ((EPOCA_BASE_MS + año * DIAS_POR_AÑO * MS_POR_DIA) / 1000) as UTCTimestamp;
+}
+
+function timestampAAño(time: number): number {
+  return (time * 1000 - EPOCA_BASE_MS) / (DIAS_POR_AÑO * MS_POR_DIA);
 }
 
 function timestampAEtiquetaAño(time: number): string {
-  const año = new Date(time * 1000).getUTCFullYear() - AÑO_BASE_FICTICIO;
-  return `Año ${año}`;
+  const año = Math.round(timestampAAño(time) * 100) / 100;
+  return `Año ${Number.isInteger(año) ? año : año.toFixed(2)}`;
 }
 
-export default function PatrimonioNetoChart({ datos }: { datos: PuntoPatrimonio[] }) {
+export default function SerieAnualChart({ datos, ayuda }: { datos: PuntoSerieAnual[]; ayuda: string }) {
   const contenedorRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
@@ -103,18 +113,15 @@ export default function PatrimonioNetoChart({ datos }: { datos: PuntoPatrimonio[
 
   useEffect(() => {
     if (!seriesRef.current) return;
-    const puntos = datos.map((p) => ({ time: añoATimestamp(p.año), value: p.patrimonioNetoAcumulado }));
+    const puntos = datos.map((p) => ({ time: añoATimestamp(p.año), value: p.valor }));
     seriesRef.current.setData(puntos);
     chartRef.current?.timeScale().fitContent();
   }, [datos]);
 
   return (
-    <div className="patrimonio-neto-chart">
-      <p className="patrimonio-neto-chart-ayuda">
-        Cómo crece tu patrimonio neto en la vivienda (precio de compra menos hipoteca pendiente) a lo largo de
-        los años — rueda del ratón para acercar/alejar, arrastra para desplazarte.
-      </p>
-      <div ref={contenedorRef} className="patrimonio-neto-chart-lienzo" />
+    <div className="serie-anual-chart">
+      <p className="serie-anual-chart-ayuda">{ayuda}</p>
+      <div ref={contenedorRef} className="serie-anual-chart-lienzo" />
     </div>
   );
 }

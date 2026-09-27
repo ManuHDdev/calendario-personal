@@ -4,11 +4,22 @@
 // (ver components/CalculatorCard.tsx) atrapa el error y lo muestra al lado
 // del formulario en vez de dejar que la calculadora reviente en silencio.
 
-export type Frecuencia = 'anual' | 'mensual';
+// 'semanal' y 'diaria' solo se ofrecen en la UI para la frecuencia de
+// CAPITALIZACIÓN (no de aportación): capitalizarUnAño(), en la simulación
+// avanzada con fiscalidad, tiene una rama especial codificada solo para
+// frecuenciaAportacion === 'mensual' (ver su comentario) — una aportación
+// semanal/diaria ahí caería en la rama "no mensual" (aportación de golpe al
+// principio del año), que sería incorrecto. La capitalización, en cambio, es
+// genérica en todo el fichero (siempre `Math.pow(1 + r/n, n)` con
+// `n = PERIODOS_POR_ANIO[frecuenciaCapitalizacion]`), así que cualquier
+// frecuencia nueva funciona sin tocar más código.
+export type Frecuencia = 'anual' | 'mensual' | 'semanal' | 'diaria';
 
 const PERIODOS_POR_ANIO: Record<Frecuencia, number> = {
   anual: 1,
   mensual: 12,
+  semanal: 52,
+  diaria: 365,
 };
 
 function validarNoNegativo(valor: number, nombre: string): void {
@@ -81,6 +92,91 @@ export function calcularInteresCompuesto(
   const totalIntereses = capitalFinal - capitalInicial - totalAportado;
 
   return { capitalFinal, totalAportado, totalIntereses };
+}
+
+/**
+ * Capital acumulado tras `t` años transcurridos (t puede ser fraccionario),
+ * con la MISMA fórmula cerrada que `calcularInteresCompuesto` pero
+ * parametrizada por el tiempo transcurrido en vez del plazo total — para
+ * poder pintar la evolución año a año sin recalcular una simulación aparte.
+ * Una aportación cuenta solo si ya "ha ocurrido" en el instante t (i/m <= t)
+ * y capitaliza desde su propio momento de entrada hasta t, nunca hasta el
+ * plazo total.
+ */
+function capitalCompuestoTrasT(
+  capitalInicial: number,
+  r: number,
+  n: number,
+  t: number,
+  aportacionPeriodica: number,
+  m: number,
+): { capital: number; totalAportado: number } {
+  const capitalInicialEnT = capitalInicial * Math.pow(1 + r / n, n * t);
+
+  let totalAportado = 0;
+  let aportacionesEnT = 0;
+  if (aportacionPeriodica > 0 && t > 0) {
+    // Redondeo hacia abajo con un margen de tolerancia para evitar que el
+    // ruido de coma flotante (t = i/m calculado desde el otro lado) excluya
+    // por error la última aportación que sí debería contar.
+    const numAportaciones = Math.floor(m * t + 1e-9);
+    totalAportado = aportacionPeriodica * numAportaciones;
+    for (let i = 1; i <= numAportaciones; i++) {
+      const tiempoRestante = t - i / m;
+      aportacionesEnT += aportacionPeriodica * Math.pow(1 + r / n, n * tiempoRestante);
+    }
+  }
+
+  return { capital: capitalInicialEnT + aportacionesEnT, totalAportado };
+}
+
+export interface PuntoSerieInteresCompuesto {
+  año: number; // entero salvo el último punto, si `anios` no es un número entero
+  capital: number;
+  totalAportado: number;
+}
+
+/**
+ * Serie año a año del capital acumulado en la calculadora SIMPLE (sin
+ * fiscalidad ni años de crisis) — para pintar la gráfica de evolución.
+ * Un punto por cada año completo (0, 1, 2, …) y, si `anios` no es un número
+ * entero, un punto final adicional en el instante exacto `anios` para que la
+ * gráfica termine exactamente en el mismo resultado que
+ * `calcularInteresCompuesto`.
+ */
+export function simularSerieInteresCompuesto(input: InteresCompuestoInput): PuntoSerieInteresCompuesto[] {
+  const {
+    capitalInicial,
+    tasaAnualPct,
+    anios,
+    frecuenciaCapitalizacion,
+    aportacionPeriodica = 0,
+    frecuenciaAportacion = frecuenciaCapitalizacion,
+  } = input;
+
+  validarNoNegativo(capitalInicial, 'El capital inicial');
+  validarNoNegativo(tasaAnualPct, 'La tasa anual');
+  validarNoNegativo(anios, 'Los años');
+  validarNoNegativo(aportacionPeriodica, 'La aportación periódica');
+
+  const n = PERIODOS_POR_ANIO[frecuenciaCapitalizacion];
+  const m = PERIODOS_POR_ANIO[frecuenciaAportacion];
+  const r = tasaAnualPct / 100;
+
+  const añosEnteros = Math.floor(anios);
+  const puntos: PuntoSerieInteresCompuesto[] = [];
+
+  for (let k = 0; k <= añosEnteros; k++) {
+    const { capital, totalAportado } = capitalCompuestoTrasT(capitalInicial, r, n, k, aportacionPeriodica, m);
+    puntos.push({ año: k, capital, totalAportado });
+  }
+
+  if (anios > añosEnteros) {
+    const { capital, totalAportado } = capitalCompuestoTrasT(capitalInicial, r, n, anios, aportacionPeriodica, m);
+    puntos.push({ año: anios, capital, totalAportado });
+  }
+
+  return puntos;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
