@@ -1,14 +1,14 @@
-.patrimonio-neto-chart {
+.serie-anual-chart {
   margin: 16px 0;
 }
 
-.patrimonio-neto-chart-ayuda {
+.serie-anual-chart-ayuda {
   font-size: 11px;
   color: var(--text-tertiary);
   margin-bottom: 6px;
 }
 
-.patrimonio-neto-chart-lienzo {
+.serie-anual-chart-lienzo {
   width: 100%;
   height: 260px;
 }

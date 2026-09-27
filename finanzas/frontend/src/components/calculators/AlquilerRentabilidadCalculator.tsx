@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import CalculatorCard from '../CalculatorCard';
 import NumberField from '../NumberField';
-import PatrimonioNetoChart from './PatrimonioNetoChart';
+import SerieAnualChart from './SerieAnualChart';
 import {
   calcularAlquilerRentabilidad,
   simularProyeccionAlquiler,
@@ -130,7 +130,10 @@ export default function AlquilerRentabilidadCalculator() {
                   resultado final.
                 </p>
 
-                <PatrimonioNetoChart datos={proyeccion.años} />
+                <SerieAnualChart
+                  datos={proyeccion.años.map((a) => ({ año: a.año, valor: a.patrimonioNetoAcumulado }))}
+                  ayuda="Cómo crece tu patrimonio neto en la vivienda (precio de compra menos hipoteca pendiente) a lo largo de los años — rueda del ratón para acercar/alejar, arrastra para desplazarte."
+                />
 
                 <details className="calculator-desglose">
                   <summary>Ver proyección año a año hasta pagar la hipoteca</summary>
