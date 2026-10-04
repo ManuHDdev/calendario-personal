@@ -114,6 +114,7 @@ export default function RutaPage() {
   }
 
   async function removeSaved(id: number) {
+    if (!window.confirm('¿Borrar esta búsqueda guardada? Esta acción no se puede deshacer.')) return;
     try {
       await deleteSavedSearch(id);
       await refreshSaved();

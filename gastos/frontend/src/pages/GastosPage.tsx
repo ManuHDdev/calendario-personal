@@ -74,6 +74,7 @@ export default function GastosPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm('¿Eliminar este gasto? Esta acción no se puede deshacer.')) return;
     await deleteGasto(id);
     await load();
   };
