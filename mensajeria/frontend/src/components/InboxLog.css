@@ -165,9 +165,11 @@
 
 .inbox-detail-html {
   margin-top: 12px;
-  padding: 12px;
+  width: 100%;
+  min-height: 240px;
   border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
+  background: #fff;
 }
 
 .inbox-detail-vacio {
