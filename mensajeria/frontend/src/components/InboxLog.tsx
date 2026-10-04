@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getInboxEmails, getInboxLog, type CapturedEmail, type MessageLogEntry } from '../services/api';
+import EmailHtmlPreview from './EmailHtmlPreview';
 import './InboxLog.css';
 
 type Tab = 'emails' | 'sms' | 'call';
@@ -99,10 +100,7 @@ export default function InboxLog() {
                 <p><strong>Recibido:</strong> {new Date(selectedEmail.received_at).toLocaleString('es-ES')}</p>
                 <pre className="inbox-detail-body">{selectedEmail.text_body}</pre>
                 {selectedEmail.html_body && (
-                  <div
-                    className="inbox-detail-html"
-                    dangerouslySetInnerHTML={{ __html: selectedEmail.html_body }}
-                  />
+                  <EmailHtmlPreview html={selectedEmail.html_body} />
                 )}
               </>
             ) : (
