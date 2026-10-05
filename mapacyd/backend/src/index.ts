@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import { zonasRoutes } from './routes/zonas';
 import { horariosRoutes } from './routes/horarios';
 import { preferencesRoutes } from './routes/preferences';
+import { ensureSchema } from './db/ensureSchema';
 
 const isProd = process.env.NODE_ENV === 'production';
 const app = Fastify({ logger: isProd });
@@ -20,6 +21,10 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
+
+  // Reconcilia una base de datos ya existente con init.sql antes de servir
+  // (init.sql solo corre al crear el volumen desde cero). Ver ensureSchema.ts.
+  await ensureSchema();
 
   await app.register(zonasRoutes, { prefix: '/api' });
   await app.register(horariosRoutes, { prefix: '/api' });

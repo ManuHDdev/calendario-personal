@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────────
+﻿# ─────────────────────────────────────────────────────────────────────────────
 # start-local.ps1  —  Arranca TODAS las subaplicaciones en local (Windows)
 # Uso: .\start-local.ps1
 #
@@ -94,9 +94,11 @@ function StartBackground($name, $logfile, $workdir, $cmd, $envVars = @{}) {
 header "Verificando requisitos"
 docker info > $null 2>&1
 if ($LASTEXITCODE -ne 0) { err "Docker no está arrancado. Abre Docker Desktop primero." }
-try { mvn --version > $null 2>&1 } catch { err "'mvn' no encontrado. Instala JDK 17 + Maven." }
+$script:HAS_MVN = $true
+try { mvn --version > $null 2>&1 } catch { $script:HAS_MVN = $false }
+if (-not $HAS_MVN) { warn "'mvn' no encontrado: se OMITIRÁ Calendario (backend Java). Instala JDK 17 + Maven para incluirlo." }
 try { npm --version > $null 2>&1 } catch { err "'npm' no encontrado. Instala Node.js LTS." }
-info "Docker, Maven y npm encontrados."
+info "Docker y npm encontrados$(if ($HAS_MVN) { ', Maven incluido' } else { ' (Calendario/Java omitido)' })."
 
 # ── 2. Preparar directorios ───────────────────────────────────────────────────
 New-Item -ItemType Directory -Force -Path $LOGS_DIR      | Out-Null
@@ -459,10 +461,13 @@ StartBackground "finanzas-backend  :3014" "finanzas-backend.log" `
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ORIGIN="http://localhost:5187" }
 
-# Calendario backend (Spring Boot)
-StartBackground "calendario-backend :8081" "calendario-backend.log" `
-  (Join-Path $SCRIPT_DIR "backend") `
-  "mvn spring-boot:run -Dspring-boot.run.profiles=dev"
+# Calendario backend (Spring Boot) — solo si hay Maven; su ausencia no debe
+# tumbar las demás subapps Node.
+if ($HAS_MVN) {
+  StartBackground "calendario-backend :8081" "calendario-backend.log" `
+    (Join-Path $SCRIPT_DIR "backend") `
+    "mvn spring-boot:run -Dspring-boot.run.profiles=dev"
+}
 
 # ── 8. Arrancar frontends ─────────────────────────────────────────────────────
 header "Arrancando frontends"
@@ -519,9 +524,11 @@ EnsureDeps (Join-Path $SCRIPT_DIR "finanzas\frontend")
 StartBackground "finanzas-frontend  :5187" "finanzas-frontend.log" `
   (Join-Path $SCRIPT_DIR "finanzas\frontend") "npm run dev"
 
-EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
-StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
-  (Join-Path $SCRIPT_DIR "calendario-frontend") "npm start"
+if ($HAS_MVN) {
+  EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
+  StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
+    (Join-Path $SCRIPT_DIR "calendario-frontend") "npm start"
+}
 
 # ── 9. Resumen ────────────────────────────────────────────────────────────────
 Write-Host ""

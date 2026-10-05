@@ -91,6 +91,9 @@ export default function GroupPage({ groupId, auth, headerExtra, onGroupDeleted }
     await load();
   };
   const handleDeleteExpense = async (expenseId: string) => {
+    const exp = expenses.find((e) => e.id === expenseId);
+    const label = exp?.description ? `"${exp.description}"` : 'este gasto';
+    if (!window.confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer y recalcula los balances.`)) return;
     await deleteExpense(auth.token, groupId, expenseId);
     await load();
   };
@@ -104,6 +107,9 @@ export default function GroupPage({ groupId, auth, headerExtra, onGroupDeleted }
     await load();
   };
   const handleRemoveMember = async (memberId: string) => {
+    const member = members.find((m) => m.id === memberId);
+    const label = member?.name ? `a ${member.name}` : 'a este miembro';
+    if (!window.confirm(`¿Eliminar ${label} del grupo? Afecta a los gastos y balances en los que participa.`)) return;
     try {
       await deleteMember(auth.token, groupId, memberId);
       await load();
