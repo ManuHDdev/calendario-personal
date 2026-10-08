@@ -13,6 +13,7 @@ import { padronVacio } from './padron/importar';
 import { getMotor } from './viabilidad/motor';
 import { topeDiario } from './viabilidad/presupuesto';
 import { pool } from './db/pool';
+import { ensureSchema } from './db/ensureSchema';
 
 const isProd = process.env.NODE_ENV === 'production';
 // En producción se loguea todo, como en `pisos`. En desarrollo se baja a
@@ -33,6 +34,9 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
+
+  // Reconcilia una base de datos ya existente con init.sql antes de servir.
+  await ensureSchema();
 
   await app.register(rutasViabilidad);
   await app.register(rutasNormativa);

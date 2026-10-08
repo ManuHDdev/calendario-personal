@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import { gastosRoutes } from './routes/gastos';
 import { startBot } from './telegram/bot';
+import { ensureSchema } from './db/ensureSchema';
 
 const isProd = process.env.NODE_ENV === 'production';
 const app = Fastify({ logger: isProd });
@@ -23,6 +24,9 @@ async function bootstrap() {
   await app.register(multipart, {
     limits: { fileSize: 15 * 1024 * 1024 },
   });
+
+  // Reconcilia una base de datos ya existente con init.sql antes de servir.
+  await ensureSchema();
 
   await app.register(gastosRoutes, { prefix: '/gastos/api' });
 
