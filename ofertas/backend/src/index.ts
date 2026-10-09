@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { searchesRoutes } from './routes/searches';
 import { scraperStateRoutes } from './routes/scraperState';
+import { ensureSchema } from './db/ensureSchema';
 
 const isProd = process.env.NODE_ENV === 'production';
 const app = Fastify({ logger: isProd });
@@ -17,6 +18,9 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
+
+  // Reconcilia una base de datos ya existente con init.sql antes de servir.
+  await ensureSchema();
 
   await app.register(searchesRoutes, { prefix: '/ofertas/api' });
   await app.register(scraperStateRoutes, { prefix: '/ofertas/api' });

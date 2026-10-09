@@ -6,6 +6,7 @@ import { imagesRoutes } from './routes/images';
 import { routeDistanceRoutes } from './routes/route';
 import { usageRoutes } from './routes/usage';
 import { seedLegacyImages } from './services/imageService';
+import { ensureSchema } from './db/ensureSchema';
 
 const isProd = process.env.NODE_ENV === 'production';
 // trustProxy: necesario para que request.ip refleje al visitante real (dos saltos de
@@ -33,6 +34,9 @@ async function bootstrap() {
       fileSize: 8 * MB,
     },
   });
+
+  // Reconcilia una base de datos ya existente con init.sql antes de servir.
+  await ensureSchema();
 
   await app.register(spotsRoutes, { prefix: '/paraisos/api' });
   await app.register(imagesRoutes, { prefix: '/paraisos/api' });
