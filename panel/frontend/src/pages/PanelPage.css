@@ -84,7 +84,7 @@
 .panel-main {
   flex: 1;
   padding: 32px 24px;
-  max-width: 900px;
+  max-width: 1040px;
   width: 100%;
   margin: 0 auto;
 }
@@ -155,8 +155,16 @@
 .user-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: 14px;
 }
+
+/* Anchos fijos: sin esto el navegador reparte el ancho según el contenido y la
+   columna Roles se estrecha o se dispara según cuántos roles tenga cada usuario. */
+.user-table th:nth-child(1) { width: 21%; }
+.user-table th:nth-child(2) { width: 22%; }
+.user-table th:nth-child(4) { width: 104px; }
+.user-table th:nth-child(5) { width: 96px; }
 
 .user-table thead tr {
   border-bottom: 1px solid var(--border);
@@ -188,10 +196,13 @@
 }
 
 /* ── Table cells ─────────────────────────────────────────── */
+/* Es un div dentro del td: un td con display:flex deja de ser celda de tabla y
+   su borde inferior ya no coincide con el del resto de la fila. */
 .user-name-cell {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .user-avatar {
@@ -210,11 +221,18 @@
 
 .user-name {
   font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-email {
   color: var(--text-secondary);
   font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .no-data {
@@ -231,8 +249,9 @@
 /* ── Role badges ─────────────────────────────────────────── */
 .role-badges {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .role-badge {
@@ -240,9 +259,27 @@
   padding: 3px 9px;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
   border-radius: 20px;
   background: color-mix(in srgb, var(--role-color, var(--accent)) 12%, transparent);
   color: var(--role-color, var(--accent));
+}
+
+.role-more {
+  padding: 3px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: inherit;
+  white-space: nowrap;
+  border-radius: 20px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+.role-more:hover {
+  background: var(--border);
+  color: var(--text-primary);
 }
 
 /* ── Status badge ────────────────────────────────────────── */
@@ -303,4 +340,9 @@
   .user-table td:nth-child(4) {
     display: none;
   }
+
+  .user-table th:nth-child(1) { width: 38%; }
+  .user-table th:nth-child(5) { width: 84px; }
+  .user-table th,
+  .user-table td { padding-left: 12px; padding-right: 12px; }
 }

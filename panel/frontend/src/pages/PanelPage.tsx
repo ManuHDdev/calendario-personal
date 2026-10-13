@@ -38,12 +38,24 @@ const ROLE_COLOR: Record<string, string> = {
   tenis_invitado: '#d4f21e',
 };
 
+// Con más badges de estos el resto se resume en un chip "+N" para que todas las filas midan lo mismo.
+const MAX_VISIBLE_ROLES = 2;
+
 export default function PanelPage() {
   const [users, setUsers] = useState<UserOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalUser, setModalUser] = useState<UserOut | null | undefined>(undefined); // undefined=cerrado, null=crear, UserOut=editar
   const [deleteTarget, setDeleteTarget] = useState<UserOut | null>(null);
+  const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
+
+  const toggleRoles = (id: string) =>
+    setExpandedRoles((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const username = (keycloak.tokenParsed as { preferred_username?: string })?.preferred_username ?? 'admin';
 
@@ -148,24 +160,40 @@ export default function PanelPage() {
                     <td colSpan={5} className="table-empty">No hay usuarios</td>
                   </tr>
                 ) : (
-                  users.map((u) => (
+                  users.map((u) => {
+                    const roles = u.roles.filter((r) => r in ROLE_LABEL);
+                    const expanded = expandedRoles.has(u.id);
+                    const visibleRoles = expanded ? roles : roles.slice(0, MAX_VISIBLE_ROLES);
+                    const hiddenRoles = roles.slice(MAX_VISIBLE_ROLES);
+                    return (
                     <tr key={u.id}>
-                      <td className="user-name-cell">
-                        <div className="user-avatar">{u.username.charAt(0).toUpperCase()}</div>
-                        <span className="user-name">{u.username}</span>
+                      <td>
+                        <div className="user-name-cell">
+                          <div className="user-avatar">{u.username.charAt(0).toUpperCase()}</div>
+                          <span className="user-name" title={u.username}>{u.username}</span>
+                        </div>
                       </td>
-                      <td className="user-email">{u.email || <span className="no-data">—</span>}</td>
+                      <td className="user-email" title={u.email || undefined}>{u.email || <span className="no-data">—</span>}</td>
                       <td>
                         <div className="role-badges">
-                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin','mapacyd_invitado','reparto_admin','reparto_invitado','mensajeria_admin','mensajeria_invitado','tenis_admin','tenis_invitado'].includes(r)).map((r) => (
+                          {visibleRoles.map((r) => (
                             <span key={r} className="role-badge"
                               style={{ '--role-color': ROLE_COLOR[r] ?? '#aeaeb2' } as React.CSSProperties}>
-                              {ROLE_LABEL[r] ?? r}
+                              {ROLE_LABEL[r]}
                             </span>
                           ))}
-                          {u.roles.filter((r) => ['admin','familia','invitado','paraisos_admin','mapacyd_admin','mapacyd_invitado','reparto_admin','reparto_invitado','mensajeria_admin','mensajeria_invitado','tenis_admin','tenis_invitado'].includes(r)).length === 0 && (
-                            <span className="no-data">Sin rol</span>
+                          {hiddenRoles.length > 0 && (
+                            <button
+                              type="button"
+                              className="role-more"
+                              aria-expanded={expanded}
+                              title={expanded ? 'Mostrar menos' : hiddenRoles.map((r) => ROLE_LABEL[r]).join(', ')}
+                              onClick={() => toggleRoles(u.id)}
+                            >
+                              {expanded ? 'Menos' : `+${hiddenRoles.length}`}
+                            </button>
                           )}
+                          {roles.length === 0 && <span className="no-data">Sin rol</span>}
                         </div>
                       </td>
                       <td>
@@ -190,7 +218,8 @@ export default function PanelPage() {
                         </button>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
