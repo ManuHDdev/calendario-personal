@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS gasto (
                                 CHECK (origen IN ('manual', 'ticket', 'banco')),
     estado      VARCHAR(20)    NOT NULL DEFAULT 'confirmado'
                                 CHECK (estado IN ('pendiente_revision', 'confirmado', 'previsto')),
+    -- Gasto o ganancia (importe siempre positivo). Misma definición que
+    -- backend/src/db/ensureSchema.ts, que la añade a bases ya existentes.
+    tipo        VARCHAR(10)    NOT NULL DEFAULT 'gasto'
+                                CONSTRAINT gasto_tipo_check CHECK (tipo IN ('gasto', 'ganancia')),
     imagen_path TEXT,
     activo      BOOLEAN        NOT NULL DEFAULT TRUE,
     deleted_at  TIMESTAMP,
