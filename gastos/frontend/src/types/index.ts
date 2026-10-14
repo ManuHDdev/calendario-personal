@@ -50,13 +50,6 @@ export interface TotalesPorMes {
   ganancias: number;
 }
 
-// Legacy shape, removed together with the old components.
-export interface Totales {
-  mes: string;
-  total: number;
-  porCategoria: { categoria: string; total: number }[];
-}
-
 export interface TotalesPeriodo {
   periodo: 'mes' | 'anio';
   mes?: string;
