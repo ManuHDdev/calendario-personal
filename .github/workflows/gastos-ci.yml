@@ -49,6 +49,10 @@ jobs:
         working-directory: gastos/frontend
         run: npm ci && npm run build
 
+      - name: Run tests
+        working-directory: gastos/frontend
+        run: npm test
+
   # ─── 3. Docker build & push to GHCR ─────────────────────────────────────────
   docker-build-and-push:
     name: Gastos · Docker build & push
