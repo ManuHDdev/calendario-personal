@@ -1,4 +1,4 @@
--- Emails "enviados" en modo mock, capturados en vez de relayados de verdad.
+-- Emails capturados: mock (enviados desde la app) e imap (recibidos desde sitios externos).
 CREATE TABLE IF NOT EXISTS mensajeria_captured_emails (
   id SERIAL PRIMARY KEY,
   from_address TEXT NOT NULL,
@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS mensajeria_captured_emails (
   subject TEXT NOT NULL,
   text_body TEXT NOT NULL DEFAULT '',
   html_body TEXT,
+  source VARCHAR(20) NOT NULL DEFAULT 'mock',
   received_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
