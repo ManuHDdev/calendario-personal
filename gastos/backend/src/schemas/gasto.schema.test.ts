@@ -136,6 +136,13 @@ describe('updateGastoSchema', () => {
     expect(updateGastoSchema.safeParse({ tipo: 'ganancia' }).success).toBe(true);
     expect(updateGastoSchema.safeParse({ tipo: 'otro' }).success).toBe(false);
   });
+
+  it('accepts fecha null (clears a forecast date) and still rejects unknown keys', () => {
+    expect(updateGastoSchema.safeParse({ fecha: null }).success).toBe(true);
+    expect(updateGastoSchema.safeParse({ fecha: '2026-03-05' }).success).toBe(true);
+    expect(updateGastoSchema.safeParse({ fecha: 'mañana' }).success).toBe(false);
+    expect(updateGastoSchema.safeParse({ fecha: null, foo: 'bar' }).success).toBe(false);
+  });
 });
 
 describe('listGastosQuerySchema', () => {

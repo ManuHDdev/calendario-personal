@@ -30,7 +30,7 @@ export interface GastoFormData {
 
 export interface GastoUpdateData {
   importe?: number;
-  fecha?: string;
+  fecha?: string | null;
   comercio?: string;
   concepto?: string | null;
   categoria?: string | null;

@@ -70,9 +70,25 @@ export async function gastosRoutes(app: FastifyInstance): Promise<void> {
 
       const { id } = request.params;
       try {
-        const check = await pool.query('SELECT id FROM gasto WHERE id = $1 AND activo = true', [id]);
+        const check = await pool.query('SELECT id, estado, fecha FROM gasto WHERE id = $1 AND activo = true', [id]);
         if (check.rows.length === 0) {
           return reply.code(404).send({ error: 'Gasto no encontrado', statusCode: 404 });
+        }
+
+        // Estado efectivo tras el UPDATE: solo un gasto previsto puede quedar
+        // sin fecha. Cubre tanto borrar la fecha de un no previsto como
+        // confirmar un previsto sin fecha sin aportar una. Solo se comprueba
+        // si el PATCH toca estado o fecha, para no bloquear la edición de
+        // otros campos en filas heredadas sin fecha (p. ej. borradores OCR).
+        if (fields.estado !== undefined || fields.fecha !== undefined) {
+          const current = check.rows[0] as { estado: string; fecha: unknown };
+          const estadoFinal = fields.estado ?? current.estado;
+          const fechaFinal = fields.fecha !== undefined ? fields.fecha : current.fecha;
+          if (estadoFinal !== 'previsto' && fechaFinal == null) {
+            return reply
+              .code(400)
+              .send({ error: 'fecha es obligatoria salvo para gastos previstos', statusCode: 400 });
+          }
         }
 
         const setClauses = Object.keys(fields).map((key, i) => `${key} = $${i + 2}`).join(', ');

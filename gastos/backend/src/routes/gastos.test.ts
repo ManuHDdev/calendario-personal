@@ -178,7 +178,7 @@ describe('gastos routes', () => {
   describe('PATCH /gastos/:id', () => {
     it('persists tipo on update and rejects an invalid one', async () => {
       mockQuery
-        .mockResolvedValueOnce({ rows: [{ id: 'a' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'a', estado: 'confirmado', fecha: '2026-03-01' }] })
         .mockResolvedValueOnce({ rows: [{ id: 'a', tipo: 'ganancia' }] });
       const ok = await app.inject({ method: 'PATCH', url: '/gastos/a', payload: { tipo: 'ganancia' } });
       expect(ok.statusCode).toBe(200);
@@ -187,6 +187,53 @@ describe('gastos routes', () => {
 
       const bad = await app.inject({ method: 'PATCH', url: '/gastos/a', payload: { tipo: 'otro' } });
       expect(bad.statusCode).toBe(400);
+    });
+
+    it('clears the date of a forecast when fecha is null', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ id: 'a', estado: 'previsto', fecha: '2026-03-01' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'a', estado: 'previsto', fecha: null }] });
+      const res = await app.inject({ method: 'PATCH', url: '/gastos/a', payload: { fecha: null } });
+      expect(res.statusCode).toBe(200);
+      expect(mockQuery.mock.calls[1][0]).toContain('fecha = $2');
+      expect(mockQuery.mock.calls[1][1]).toEqual(['a', null]);
+    });
+
+    it('rejects clearing the date of a confirmed expense', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'a', estado: 'confirmado', fecha: '2026-03-01' }] });
+      const res = await app.inject({ method: 'PATCH', url: '/gastos/a', payload: { fecha: null } });
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toEqual({ error: 'fecha es obligatoria salvo para gastos previstos', statusCode: 400 });
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects confirming a dateless forecast without providing a date', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ id: 'a', estado: 'previsto', fecha: null }] });
+      const res = await app.inject({ method: 'PATCH', url: '/gastos/a', payload: { estado: 'confirmado' } });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error).toBe('fecha es obligatoria salvo para gastos previstos');
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows confirming a dateless forecast when a date is sent along', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ id: 'a', estado: 'previsto', fecha: null }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'a', estado: 'confirmado', fecha: '2026-03-05' }] });
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/gastos/a',
+        payload: { estado: 'confirmado', fecha: '2026-03-05' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(mockQuery.mock.calls[1][1]).toEqual(['a', '2026-03-05', 'confirmado']);
+    });
+
+    it('does not block editing other fields of a dateless legacy row', async () => {
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ id: 'a', estado: 'pendiente_revision', fecha: null }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'a' }] });
+      const res = await app.inject({ method: 'PATCH', url: '/gastos/a', payload: { comercio: 'Bar' } });
+      expect(res.statusCode).toBe(200);
     });
   });
 

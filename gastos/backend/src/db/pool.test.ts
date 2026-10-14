@@ -6,8 +6,8 @@ import { types } from 'pg';
 // conexión: verifica directamente que './pool' registra, al cargarse, un
 // parser para el OID de NUMERIC (1700) que convierte el string devuelto por
 // pg a un number de JS. Es la regresión concreta que causaba la pantalla en
-// blanco (ver ExpenseList.tsx `g.importe.toFixed(2)`, que rompía porque
-// `importe` llegaba como string desde `GET /gastos`).
+// blanco: el frontend llama a `toFixed(2)` sobre `importe`, que rompía porque
+// llegaba como string desde `GET /gastos`.
 describe('pool NUMERIC type parser', () => {
   it('registers a parser for OID 1700 that returns numbers, not strings', async () => {
     await import('./pool');

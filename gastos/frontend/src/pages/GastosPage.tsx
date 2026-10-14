@@ -62,6 +62,8 @@ export default function GastosPage() {
   const avisoTimer = useRef<number>();
 
   const periodoReq = useRef(0);
+  const pendientesReq = useRef(0);
+  const categoriasReq = useRef(0);
   const username = (keycloak.tokenParsed as { preferred_username?: string })?.preferred_username ?? 'admin';
 
   // Whole period (year or month): list + totals. A newer request makes older responses irrelevant.
@@ -97,15 +99,18 @@ export default function GastosPage() {
 
   // Forecasts and OCR drafts do not depend on the selected period.
   const cargarPendientes = useCallback(async () => {
+    const id = ++pendientesReq.current;
     try {
       const [prev, pend] = await Promise.all([
         getGastos({ estado: 'previsto' }),
         getGastos({ estado: 'pendiente_revision' }),
       ]);
+      if (id !== pendientesReq.current) return;
       setPrevistos(prev);
       setBorradores(pend);
       setErrorPendientes('');
     } catch (err) {
+      if (id !== pendientesReq.current) return;
       setErrorPendientes(mensajeDe(err, 'No hemos podido cargar los previstos y los tickets por revisar.'));
     }
   }, []);
@@ -113,8 +118,11 @@ export default function GastosPage() {
   useEffect(() => { void cargarPendientes(); }, [cargarPendientes]);
 
   const cargarCategoriasFiltro = useCallback(async () => {
+    const id = ++categoriasReq.current;
     try {
-      setCategoriasFiltro(await getCategorias(tipo === 'todos' ? undefined : tipo));
+      const cats = await getCategorias(tipo === 'todos' ? undefined : tipo);
+      if (id !== categoriasReq.current) return;
+      setCategoriasFiltro(cats);
     } catch { /* suggestions are best-effort */ }
   }, [tipo]);
 
@@ -172,7 +180,8 @@ export default function GastosPage() {
     if (editado) {
       await updateGasto(editado.id, {
         importe: valores.importe,
-        ...(valores.fecha ? { fecha: valores.fecha } : {}),
+        // A forecast may have its date cleared (null); any other estado always carries one.
+        ...(valores.previsto ? { fecha: valores.fecha ?? null } : valores.fecha ? { fecha: valores.fecha } : {}),
         comercio: valores.comercio,
         concepto: valores.concepto || null,
         categoria: valores.categoria || null,

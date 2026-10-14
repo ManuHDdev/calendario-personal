@@ -41,7 +41,7 @@ export function mesDe(fecha: string | null | undefined): string | null {
   return p ? `${p.anio}-${pad(p.mes)}` : null;
 }
 
-export function mesLargo(mes: number): string {
+function mesLargo(mes: number): string {
   return MESES_LARGO[mes - 1] ?? '';
 }
 
@@ -49,7 +49,7 @@ export function mesCorto(mes: number): string {
   return MESES_CORTO[mes - 1] ?? '';
 }
 
-export function capitalizar(s: string): string {
+function capitalizar(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
@@ -75,12 +75,6 @@ export function diaYSemana(fecha: string | null | undefined): { dia: string; sem
   const p = parseFecha(fecha);
   if (!p) return null;
   return { dia: String(p.dia), semana: DIAS_CORTO[diaSemana(p)] };
-}
-
-/** "mié 14" */
-export function formatDiaSemana(fecha: string | null | undefined): string {
-  const d = diaYSemana(fecha);
-  return d ? `${d.semana} ${d.dia}` : '';
 }
 
 /** "14 de octubre de 2026" */

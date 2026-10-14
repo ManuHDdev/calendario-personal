@@ -69,3 +69,5 @@ Grouping by month, subtotals, money/date formatting, suggestion ranking and the 
 [Risk: category/merchant suggestions mix expense and income vocabulary] → Mitigation: the form passes the current `tipo` to `/categorias` and `/comercios`, so "Nómina" is not suggested while adding a supermarket expense.
 
 [Risk: a large visual rewrite is hard to verify without the full local stack] → Mitigation: pure helpers are unit-tested; the UI is checked in a browser against a mocked API at phone and desktop widths in both themes before the branch is reported done.
+
+[Risk: rolling back to the previous backend image after income rows exist] → Mitigation: the old image still reads and writes the migrated table correctly (the new column has a constant default) but ignores `tipo`, so its totals and list would count income as expenses. Prefer fixing forward, or deactivate (`activo = false`) the income rows before reverting.

@@ -35,7 +35,9 @@ export const createGastoSchema = z
 export const updateGastoSchema = z
   .object({
     importe:   z.number().positive().optional(),
-    fecha:     fechaSchema.optional(),
+    // null limpia la fecha (solo válido para un gasto previsto; la regla se
+    // comprueba en el handler PATCH contra el estado efectivo de la fila).
+    fecha:     fechaSchema.nullable().optional(),
     comercio:  z.string().min(1).max(200).optional(),
     concepto:  z.string().max(500).nullable().optional(),
     categoria: z.string().max(100).nullable().optional(),

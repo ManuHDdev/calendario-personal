@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   diaYSemana,
   formatBalance,
-  formatDiaSemana,
   formatFechaLarga,
   formatMoney,
   formatSignedMoney,
@@ -87,11 +86,10 @@ describe('dates', () => {
     expect(parseFecha('2026-13-01')).toBeNull();
   });
 
-  it('formats day + short weekday', () => {
-    expect(formatDiaSemana('2026-10-14')).toBe('mié 14');
+  it('splits day + short weekday', () => {
     expect(diaYSemana('2026-01-01')).toEqual({ dia: '1', semana: 'jue' });
     expect(diaYSemana('2026-10-17')).toEqual({ dia: '17', semana: 'sáb' });
-    expect(formatDiaSemana(null)).toBe('');
+    expect(diaYSemana(null)).toBeNull();
   });
 
   it('formats long dates and month names', () => {
