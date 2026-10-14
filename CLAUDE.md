@@ -324,14 +324,23 @@ Calendario/gastos/ dentro del monorepo elbunkerdelingeniero.
 Único rol con acceso: `admin` (el propietario es el único usuario). `familia` e `invitado` no tienen acceso a Gastos, ni a la API ni al AppLauncher.
 
 ### Rutas (`/gastos/api/*`)
-- `GET /gastos` — listado, filtros `mes`/`categoria`/`estado`, siempre `activo=true`
-- `POST /gastos` — alta manual, directamente `estado='confirmado'`, `origen='manual'`
-- `PATCH /gastos/:id` — edición de campos y/o confirmación de un borrador (`estado='confirmado'`)
+- `GET /gastos` — listado, filtros `mes` (YYYY-MM) **o** `anio` (YYYY) (ambos a la vez = 400), `tipo` (`gasto`|`ganancia`), `categoria` (exacta), `estado`; siempre `activo=true`. Orden: previstos por fecha ascendente (sin fecha al final), el resto del más reciente al más antiguo
+- `POST /gastos` — alta, `tipo` opcional (default `gasto`), `estado` `confirmado` (default) o `previsto` (única forma de omitir `fecha`), `origen='manual'`
+- `PATCH /gastos/:id` — edición parcial (incluido `tipo`) y/o confirmación de un borrador o previsto (`estado='confirmado'` + `fecha`); `.strict()`, `fecha` no admite `null`
 - `DELETE /gastos/:id` — borrado lógico (`activo=false`, `deleted_at=now()`)
-- `GET /totales?mes=YYYY-MM` — suma de gastos `confirmado` del mes, agrupada por categoría (los `pendiente_revision` NUNCA cuentan)
-- `GET /categorias` — categorías distintas usadas hasta ahora (autocompletado)
+- `GET /totales` — exactamente uno de `mes` o `anio` (si no, 400), `categoria` opcional. Solo cuenta `confirmado` + `activo` (borradores OCR y previstos NUNCA). Respuesta `{ periodo, mes?|anio?, gastos, ganancias, balance, total, porCategoria: [{categoria, tipo, total}], porMes? }`; `balance = ganancias - gastos`, `total = gastos` (compatibilidad con el frontend anterior), `porMes` solo con `anio`: siempre 12 entradas `{mes, gastos, ganancias}` rellenadas a 0
+- `GET /categorias` y `GET /comercios` — valores distintos usados por movimientos activos, ordenados por nº de usos (desc) y luego alfabéticamente, `tipo` opcional; `string[]`
 - `POST /gastos/ocr` — interno (sigue exigiendo JWT + rol admin), recibe una imagen + `perfil: 'ticket'|'banco'`, ejecuta OCR + el parser correspondiente, guarda la imagen en `GASTOS_IMAGES_PATH` y crea un `gasto` en `estado='pendiente_revision'`
 - `GET /health`
+
+### Ganancias (`tipo`)
+Columna `gasto.tipo` (`'gasto'` | `'ganancia'`, default `'gasto'`, CHECK `gasto_tipo_check`): `importe` es SIEMPRE positivo y el signo es solo presentación, así que toda fila anterior sigue siendo un gasto sin relleno. La tabla y la columna `comercio` no se renombran (la UI llama "¿De dónde viene?" al `comercio` de una ganancia). Se añade en `infra/init.sql` y, idempotente, en `backend/src/db/ensureSchema.ts` (init.sql solo corre con un volumen nuevo); los dos ficheros se referencian entre sí. El OCR y el bot de Telegram no cambian: crean `gasto` por el default de la columna. Las ganancias también pueden ser previstas ("Por cobrar").
+
+### Frontend (año primero)
+- Por defecto muestra el año en curso: stepper de año + tira "Todo el año / Ene…Dic" (punto en los meses con movimientos), tarjetas Ganancias / Gastos / Balance del periodo (siempre las tres; el filtro de tipo solo afecta a la lista), filtro Todo/Gastos/Ganancias, categoría con autocompletado, búsqueda local, "Mes a mes" (solo en vista anual, clic = ese mes) y la lista agrupada por mes con cabeceras sticky y subtotales. Previstos al final ("Ya ha ocurrido" pide la fecha real); los tickets del bot por revisar salen como un aviso plegable arriba.
+- Un único diálogo (`MovementDialog`) para añadir y editar; borrar pide confirmación en un diálogo propio (no `window.confirm`). Los diálogos comparten `Dialog.tsx` (focus trap, Esc, devuelve el foco).
+- `AutocompleteInput` sustituye al `<datalist>`: combobox ARIA, máx. 6 sugerencias (5 más usadas con el campo vacío), sin tildes ni mayúsculas, prefijo antes que subcadena; el texto libre siempre vale. Las sugerencias se piden por `tipo` a `/categorias` y `/comercios` y se filtran en cliente.
+- Lógica pura y testeada (vitest) en `frontend/src/lib/` (`autocomplete`, `agrupar`, `formato`); los componentes son finos. `fecha` se trata como fecha de calendario (se parsea a mano, sin `new Date('YYYY-MM-DD')`, para no correr un día por zona horaria). Colores de ingreso/gasto: variables `--income`/`--expense` en `globals.css`, claro y oscuro.
 
 ### Flujo del bot de Telegram
 El propietario envía una foto (ticket de papel o captura de app bancaria) al bot. El bot responde con un teclado inline ("🧾 Ticket" / "🏦 Banco"); al pulsar, descarga la foto vía la API de Telegram y llama al pipeline de OCR en el mismo proceso (sin segundo salto HTTP), y responde con el importe/fecha/comercio extraídos, indicando que queda pendiente de revisión en la app. Cualquier mensaje que no venga de `TELEGRAM_OWNER_CHAT_ID` se ignora sin respuesta. Ver `gastos/README.md` para el alta manual del bot vía `@BotFather`.
