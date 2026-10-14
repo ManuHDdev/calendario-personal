@@ -1,7 +1,9 @@
-import { useRef } from 'react';
+import { useId, useState } from 'react';
+import AutocompleteInput from './AutocompleteInput';
+import { importeParaInput, parseImporte } from '../lib/formato';
 import type { Gasto } from '../types';
 
-interface ConfirmEdits {
+export interface ConfirmEdits {
   importe: number;
   fecha: string;
   comercio: string;
@@ -10,81 +12,140 @@ interface ConfirmEdits {
 
 interface Props {
   gastos: Gasto[];
+  categorias: string[];
+  comercios: string[];
   onConfirm: (id: string, edits: ConfirmEdits) => Promise<void>;
-  onDiscard: (id: string) => Promise<void>;
+  onDiscard: (gasto: Gasto) => void;
 }
 
-type RowRefs = {
-  importe?: HTMLInputElement | null;
-  fecha?: HTMLInputElement | null;
-  comercio?: HTMLInputElement | null;
-  categoria?: HTMLInputElement | null;
-};
-
 const ORIGEN_LABEL: Record<string, string> = {
-  ticket: '🧾 Ticket',
-  banco: '🏦 Banco',
+  ticket: 'Ticket',
+  banco: 'Banco',
 };
 
 /**
- * Sección "Pendientes de revisar" (ver design.md): borradores creados por OCR
- * con estado='pendiente_revision', editables inline antes de confirmar. Usa
- * inputs no controlados (refs) para mantener el componente simple mientras se
- * edita fila a fila.
+ * Banner for drafts read by the Telegram bot (estado 'pendiente_revision').
+ * Collapsed into one card; expanding it shows one editable row per draft.
  */
-export default function PendingReview({ gastos, onConfirm, onDiscard }: Props) {
-  const rowRefs = useRef<Record<string, RowRefs>>({});
+export default function PendingReview({ gastos, categorias, comercios, onConfirm, onDiscard }: Props) {
+  const [abierto, setAbierto] = useState(false);
+  const panelId = useId();
 
-  const getRowRefs = (id: string): RowRefs => {
-    if (!rowRefs.current[id]) rowRefs.current[id] = {};
-    return rowRefs.current[id];
-  };
+  if (gastos.length === 0) return null;
 
-  const handleConfirm = async (g: Gasto) => {
-    const r = getRowRefs(g.id);
-    const importeRaw = r.importe?.value ?? String(g.importe);
-    const importe = parseFloat(importeRaw.replace(',', '.'));
-    const fecha = r.fecha?.value || (g.fecha ? g.fecha.slice(0, 10) : '');
-    const comercio = (r.comercio?.value ?? g.comercio).trim() || g.comercio;
-    const categoria = r.categoria?.value?.trim() || undefined;
-
-    if (!Number.isFinite(importe) || importe <= 0) return;
-    await onConfirm(g.id, { importe, fecha, comercio, categoria });
-  };
-
-  if (gastos.length === 0) {
-    return <p className="empty-hint">No hay borradores pendientes de revisión.</p>;
-  }
+  const titulo = gastos.length === 1
+    ? 'Tienes 1 ticket del bot por revisar'
+    : `Tienes ${gastos.length} tickets del bot por revisar`;
 
   return (
-    <div className="pending-list">
-      {gastos.map((g) => (
-        <div key={g.id} className="pending-card">
-          <span className="pending-origin-badge">{ORIGEN_LABEL[g.origen] ?? g.origen}</span>
-          <div className="pending-fields">
-            <input
-              ref={(el) => { getRowRefs(g.id).importe = el; }}
-              type="number" step="0.01" defaultValue={g.importe} aria-label="Importe"
+    <section className="review-banner" aria-label="Tickets por revisar">
+      <button
+        type="button"
+        className="review-toggle"
+        aria-expanded={abierto}
+        aria-controls={panelId}
+        onClick={() => setAbierto((a) => !a)}
+      >
+        <span className="review-badge" aria-hidden="true">{gastos.length}</span>
+        <span className="review-text">
+          <span className="review-title">{titulo}</span>
+          <span className="review-sub">Revisa los datos y confírmalos para que cuenten en tus gastos.</span>
+        </span>
+        <svg className="overview-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {abierto && (
+        <ul id={panelId} className="draft-list">
+          {gastos.map((g) => (
+            <DraftRow
+              key={g.id}
+              gasto={g}
+              categorias={categorias}
+              comercios={comercios}
+              onConfirm={onConfirm}
+              onDiscard={onDiscard}
             />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function DraftRow({
+  gasto: g, categorias, comercios, onConfirm, onDiscard,
+}: { gasto: Gasto } & Pick<Props, 'categorias' | 'comercios' | 'onConfirm' | 'onDiscard'>) {
+  const uid = useId();
+  const [importe, setImporte] = useState(importeParaInput(g.importe));
+  const [fecha, setFecha] = useState(g.fecha ? g.fecha.slice(0, 10) : '');
+  const [comercio, setComercio] = useState(g.comercio);
+  const [categoria, setCategoria] = useState(g.categoria ?? '');
+  const [error, setError] = useState('');
+  const [working, setWorking] = useState(false);
+
+  const handleConfirm = async () => {
+    const valor = parseImporte(importe);
+    if (valor === null || valor <= 0) return setError('Escribe un importe mayor que 0.');
+    if (!fecha) return setError('Elige la fecha del ticket.');
+    if (!comercio.trim()) return setError('Indica el comercio.');
+    setError('');
+    setWorking(true);
+    try {
+      await onConfirm(g.id, {
+        importe: valor,
+        fecha,
+        comercio: comercio.trim(),
+        categoria: categoria.trim() || undefined,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se ha podido confirmar. Inténtalo de nuevo.');
+      setWorking(false);
+    }
+  };
+
+  return (
+    <li className="draft">
+      <span className="draft-origin">{ORIGEN_LABEL[g.origen] ?? g.origen}</span>
+      <div className="draft-grid">
+        <div className="field">
+          <label className="field-label" htmlFor={`${uid}-importe`}>Importe</label>
+          <div className="amount-wrap">
             <input
-              ref={(el) => { getRowRefs(g.id).fecha = el; }}
-              type="date" defaultValue={g.fecha ? g.fecha.slice(0, 10) : ''} aria-label="Fecha"
+              id={`${uid}-importe`}
+              className="input"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              value={importe}
+              onChange={(e) => setImporte(e.target.value)}
             />
-            <input
-              ref={(el) => { getRowRefs(g.id).comercio = el; }}
-              type="text" defaultValue={g.comercio} placeholder="Comercio" aria-label="Comercio"
-            />
-            <input
-              ref={(el) => { getRowRefs(g.id).categoria = el; }}
-              type="text" defaultValue={g.categoria ?? ''} placeholder="Categoría" aria-label="Categoría"
-            />
-          </div>
-          <div className="pending-actions">
-            <button className="btn-confirm" onClick={() => handleConfirm(g)}>Confirmar</button>
-            <button className="btn-discard" onClick={() => onDiscard(g.id)}>Descartar</button>
+            <span className="amount-unit" aria-hidden="true">€</span>
           </div>
         </div>
-      ))}
-    </div>
+        <div className="field">
+          <label className="field-label" htmlFor={`${uid}-fecha`}>Fecha</label>
+          <input
+            id={`${uid}-fecha`}
+            className="input"
+            type="date"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
+          />
+        </div>
+        <AutocompleteInput label="Comercio" value={comercio} onChange={setComercio} options={comercios} />
+        <AutocompleteInput label="Categoría" value={categoria} onChange={setCategoria} options={categorias} />
+      </div>
+      {error && <p className="form-alert" role="alert">{error}</p>}
+      <div className="draft-actions">
+        <button type="button" className="btn btn--ghost" onClick={() => onDiscard(g)} disabled={working}>
+          Descartar
+        </button>
+        <button type="button" className="btn btn--primary" onClick={handleConfirm} disabled={working}>
+          {working ? 'Guardando…' : 'Confirmar gasto'}
+        </button>
+      </div>
+    </li>
   );
 }

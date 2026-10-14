@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const origenEnum = z.enum(['manual', 'ticket', 'banco']);
 export const estadoEnum = z.enum(['pendiente_revision', 'confirmado', 'previsto']);
+export const tipoEnum = z.enum(['gasto', 'ganancia']);
 
 export const fechaSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha YYYY-MM-DD requerido');
 
@@ -15,6 +16,7 @@ export const createGastoSchema = z
     concepto:  z.string().max(500).optional(),
     categoria: z.string().max(100).optional(),
     estado:    z.enum(['confirmado', 'previsto']).optional(),
+    tipo:      tipoEnum.optional(),
   })
   // fecha es opcional únicamente para un gasto previsto (importe conocido,
   // fecha aún por confirmar); para cualquier otro estado sigue siendo
@@ -33,25 +35,62 @@ export const createGastoSchema = z
 export const updateGastoSchema = z
   .object({
     importe:   z.number().positive().optional(),
-    fecha:     fechaSchema.optional(),
+    // null limpia la fecha (solo válido para un gasto previsto; la regla se
+    // comprueba en el handler PATCH contra el estado efectivo de la fila).
+    fecha:     fechaSchema.nullable().optional(),
     comercio:  z.string().min(1).max(200).optional(),
     concepto:  z.string().max(500).nullable().optional(),
     categoria: z.string().max(100).nullable().optional(),
     estado:    estadoEnum.optional(),
+    tipo:      tipoEnum.optional(),
   })
   .strict();
 
-export const listGastosQuerySchema = z.object({
-  mes:       z.string().regex(/^\d{4}-\d{2}$/, 'Formato YYYY-MM requerido').optional(),
-  categoria: z.string().optional(),
-  estado:    estadoEnum.optional(),
-});
+const mesSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Formato YYYY-MM requerido');
+const anioSchema = z.string().regex(/^\d{4}$/, 'Formato YYYY requerido');
 
-export const totalesQuerySchema = z.object({
-  mes: z.string().regex(/^\d{4}-\d{2}$/, 'Formato YYYY-MM requerido'),
+export const listGastosQuerySchema = z
+  .object({
+    mes:       mesSchema.optional(),
+    anio:      anioSchema.optional(),
+    categoria: z.string().optional(),
+    estado:    estadoEnum.optional(),
+    tipo:      tipoEnum.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.mes && data.anio) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Indica mes o anio, no ambos',
+        path: ['anio'],
+      });
+    }
+  });
+
+// Exactamente uno de mes / anio: el periodo de los totales no puede ser
+// ambiguo ni estar ausente.
+export const totalesQuerySchema = z
+  .object({
+    mes:       mesSchema.optional(),
+    anio:      anioSchema.optional(),
+    categoria: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.mes === !data.anio) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Indica exactamente uno de mes (YYYY-MM) o anio (YYYY)',
+        path: ['mes'],
+      });
+    }
+  });
+
+export const sugerenciasQuerySchema = z.object({
+  tipo: tipoEnum.optional(),
 });
 
 export type CreateGastoInput = z.infer<typeof createGastoSchema>;
 export type UpdateGastoInput = z.infer<typeof updateGastoSchema>;
 export type ListGastosQuery = z.infer<typeof listGastosQuerySchema>;
 export type TotalesQuery = z.infer<typeof totalesQuerySchema>;
+export type SugerenciasQuery = z.infer<typeof sugerenciasQuerySchema>;

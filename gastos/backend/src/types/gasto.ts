@@ -1,4 +1,5 @@
 export type Origen = 'manual' | 'ticket' | 'banco';
+export type Tipo = 'gasto' | 'ganancia';
 export type Estado = 'pendiente_revision' | 'confirmado';
 
 export interface Gasto {
@@ -10,6 +11,7 @@ export interface Gasto {
   categoria: string | null;
   origen: Origen;
   estado: Estado;
+  tipo: Tipo;
   imagen_path: string | null;
   activo: boolean;
   deleted_at: string | null;

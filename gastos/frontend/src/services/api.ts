@@ -1,5 +1,7 @@
 import keycloak from './keycloak';
-import type { Gasto, GastoFormData, GastoUpdateData, Totales, ListFilters } from '../types';
+import type {
+  Gasto, GastoFormData, GastoUpdateData, ListFilters, Tipo, TotalesFilters, TotalesPeriodo,
+} from '../types';
 
 const BASE = '/gastos/api';
 
@@ -21,6 +23,8 @@ async function handleError(res: Response): Promise<never> {
 export async function getGastos(filters: ListFilters = {}): Promise<Gasto[]> {
   const params = new URLSearchParams();
   if (filters.mes) params.set('mes', filters.mes);
+  if (filters.anio) params.set('anio', filters.anio);
+  if (filters.tipo) params.set('tipo', filters.tipo);
   if (filters.categoria) params.set('categoria', filters.categoria);
   if (filters.estado) params.set('estado', filters.estado);
   const qs = params.toString();
@@ -58,14 +62,24 @@ export async function deleteGasto(id: string): Promise<void> {
   if (!res.ok && res.status !== 204) await handleError(res);
 }
 
-export async function getTotales(mes: string): Promise<Totales> {
-  const res = await fetch(`${BASE}/totales?mes=${encodeURIComponent(mes)}`, { headers: headers() });
+/** Totals for exactly one of `mes` (YYYY-MM) or `anio` (YYYY); confirmed rows only. */
+export async function getTotales(filters: TotalesFilters): Promise<TotalesPeriodo> {
+  const params = new URLSearchParams();
+  if (filters.mes) params.set('mes', filters.mes);
+  if (filters.anio) params.set('anio', filters.anio);
+  if (filters.categoria) params.set('categoria', filters.categoria);
+  const res = await fetch(`${BASE}/totales?${params.toString()}`, { headers: headers() });
   if (!res.ok) await handleError(res);
-  return res.json() as Promise<Totales>;
+  return res.json() as Promise<TotalesPeriodo>;
 }
 
-export async function getCategorias(): Promise<string[]> {
-  const res = await fetch(`${BASE}/categorias`, { headers: headers() });
+async function getSugerencias(path: 'categorias' | 'comercios', tipo?: Tipo): Promise<string[]> {
+  const qs = tipo ? `?tipo=${tipo}` : '';
+  const res = await fetch(`${BASE}/${path}${qs}`, { headers: headers() });
   if (!res.ok) await handleError(res);
   return res.json() as Promise<string[]>;
 }
+
+/** Previously used values, most used first. */
+export const getCategorias = (tipo?: Tipo) => getSugerencias('categorias', tipo);
+export const getComercios = (tipo?: Tipo) => getSugerencias('comercios', tipo);

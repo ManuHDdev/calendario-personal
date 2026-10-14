@@ -6,12 +6,20 @@ import {
   updateGastoSchema,
   listGastosQuerySchema,
   totalesQuerySchema,
+  sugerenciasQuerySchema,
 } from '../schemas/gasto.schema';
-import { buildListQuery, buildTotalesQuery } from '../db/queries';
+import {
+  buildListQuery,
+  buildTotalesQuery,
+  buildTotalesPorMesQuery,
+  buildSugerenciasQuery,
+  type CampoSugerencia,
+} from '../db/queries';
+import { assembleTotales, type FilaTotalCategoria, type FilaTotalMes } from '../db/totales';
 import { runOcrPipeline, type Perfil } from '../ocr/pipeline';
 
 export async function gastosRoutes(app: FastifyInstance): Promise<void> {
-  // GET /gastos?mes=&categoria=&estado=
+  // GET /gastos?mes=|anio=&categoria=&estado=&tipo=
   app.get('/gastos', { preHandler: authMiddleware(['admin']) }, async (request, reply: FastifyReply) => {
     const parsed = listGastosQuerySchema.safeParse(request.query);
     if (!parsed.success) {
@@ -32,13 +40,13 @@ export async function gastosRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) {
       return reply.code(400).send({ error: parsed.error.issues[0]?.message ?? 'Validación fallida', statusCode: 400 });
     }
-    const { importe, fecha, comercio, concepto, categoria, estado } = parsed.data;
+    const { importe, fecha, comercio, concepto, categoria, estado, tipo } = parsed.data;
     try {
       const result = await pool.query(
-        `INSERT INTO gasto (importe, fecha, comercio, concepto, categoria, origen, estado)
-         VALUES ($1, $2, $3, $4, $5, 'manual', $6)
+        `INSERT INTO gasto (importe, fecha, comercio, concepto, categoria, origen, estado, tipo)
+         VALUES ($1, $2, $3, $4, $5, 'manual', $6, $7)
          RETURNING *`,
-        [importe, fecha ?? null, comercio, concepto ?? null, categoria ?? null, estado ?? 'confirmado'],
+        [importe, fecha ?? null, comercio, concepto ?? null, categoria ?? null, estado ?? 'confirmado', tipo ?? 'gasto'],
       );
       return reply.code(201).send(result.rows[0]);
     } catch (err) {
@@ -62,9 +70,25 @@ export async function gastosRoutes(app: FastifyInstance): Promise<void> {
 
       const { id } = request.params;
       try {
-        const check = await pool.query('SELECT id FROM gasto WHERE id = $1 AND activo = true', [id]);
+        const check = await pool.query('SELECT id, estado, fecha FROM gasto WHERE id = $1 AND activo = true', [id]);
         if (check.rows.length === 0) {
           return reply.code(404).send({ error: 'Gasto no encontrado', statusCode: 404 });
+        }
+
+        // Estado efectivo tras el UPDATE: solo un gasto previsto puede quedar
+        // sin fecha. Cubre tanto borrar la fecha de un no previsto como
+        // confirmar un previsto sin fecha sin aportar una. Solo se comprueba
+        // si el PATCH toca estado o fecha, para no bloquear la edición de
+        // otros campos en filas heredadas sin fecha (p. ej. borradores OCR).
+        if (fields.estado !== undefined || fields.fecha !== undefined) {
+          const current = check.rows[0] as { estado: string; fecha: unknown };
+          const estadoFinal = fields.estado ?? current.estado;
+          const fechaFinal = fields.fecha !== undefined ? fields.fecha : current.fecha;
+          if (estadoFinal !== 'previsto' && fechaFinal == null) {
+            return reply
+              .code(400)
+              .send({ error: 'fecha es obligatoria salvo para gastos previstos', statusCode: 400 });
+          }
         }
 
         const setClauses = Object.keys(fields).map((key, i) => `${key} = $${i + 2}`).join(', ');
@@ -101,37 +125,44 @@ export async function gastosRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  // GET /totales?mes=YYYY-MM  (solo estado=confirmado, agrupado por categoría)
+  // GET /totales?mes=YYYY-MM | ?anio=YYYY [&categoria=]  (solo estado=confirmado)
   app.get('/totales', { preHandler: authMiddleware(['admin']) }, async (request, reply: FastifyReply) => {
     const parsed = totalesQuerySchema.safeParse(request.query);
     if (!parsed.success) {
       return reply.code(400).send({ error: parsed.error.issues[0]?.message ?? 'Validación fallida', statusCode: 400 });
     }
     try {
-      const { text, values } = buildTotalesQuery(parsed.data.mes);
-      const result = await pool.query<{ categoria: string; total: string }>(text, values);
-      const total = result.rows.reduce((acc, r) => acc + Number(r.total), 0);
-      return reply.send({
-        mes: parsed.data.mes,
-        total,
-        porCategoria: result.rows.map((r) => ({ categoria: r.categoria, total: Number(r.total) })),
-      });
+      const { mes, anio, categoria } = parsed.data;
+      const cat = buildTotalesQuery({ mes, anio, categoria });
+      const porCategoria = await pool.query<FilaTotalCategoria>(cat.text, cat.values);
+      let filasMes: FilaTotalMes[] = [];
+      if (anio) {
+        const porMes = buildTotalesPorMesQuery(anio, categoria);
+        filasMes = (await pool.query<FilaTotalMes>(porMes.text, porMes.values)).rows;
+      }
+      return reply.send(assembleTotales({ mes, anio }, porCategoria.rows, filasMes));
     } catch (err) {
       return reply.code(500).send({ error: err instanceof Error ? err.message : 'Error interno', statusCode: 500 });
     }
   });
 
-  // GET /categorias  (autocompletado del frontend)
-  app.get('/categorias', { preHandler: authMiddleware(['admin']) }, async (_request, reply: FastifyReply) => {
-    try {
-      const result = await pool.query<{ categoria: string }>(
-        `SELECT DISTINCT categoria FROM gasto WHERE activo = true AND categoria IS NOT NULL ORDER BY categoria`,
-      );
-      return reply.send(result.rows.map((r) => r.categoria));
-    } catch (err) {
-      return reply.code(500).send({ error: err instanceof Error ? err.message : 'Error interno', statusCode: 500 });
-    }
-  });
+  // GET /categorias y /comercios?tipo=  (autocompletado: más usados primero)
+  const sugerencias = (campo: CampoSugerencia) =>
+    async (request: { query: unknown }, reply: FastifyReply) => {
+      const parsed = sugerenciasQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: parsed.error.issues[0]?.message ?? 'Validación fallida', statusCode: 400 });
+      }
+      try {
+        const { text, values } = buildSugerenciasQuery(campo, parsed.data.tipo);
+        const result = await pool.query<{ valor: string }>(text, values);
+        return reply.send(result.rows.map((r) => r.valor));
+      } catch (err) {
+        return reply.code(500).send({ error: err instanceof Error ? err.message : 'Error interno', statusCode: 500 });
+      }
+    };
+  app.get('/categorias', { preHandler: authMiddleware(['admin']) }, sugerencias('categoria'));
+  app.get('/comercios', { preHandler: authMiddleware(['admin']) }, sugerencias('comercio'));
 
   // POST /gastos/ocr  (interno — sigue exigiendo rol admin, ver design.md)
   app.post('/gastos/ocr', { preHandler: authMiddleware(['admin']) }, async (request, reply: FastifyReply) => {
