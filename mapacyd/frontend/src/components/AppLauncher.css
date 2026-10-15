@@ -36,12 +36,22 @@
   z-index: 1001;
   min-width: 210px;
   animation: mapaLauncherIn 150ms ease;
+  max-height: calc(100vh - 88px);
+  max-height: calc(100dvh - 88px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .mapa-launcher-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
+}
+
+@media (min-width: 600px) {
+  .mapa-launcher-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .mapa-launcher-app {
