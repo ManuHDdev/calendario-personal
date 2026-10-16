@@ -38,6 +38,13 @@ function mediaUrl(route: 'file' | 'download', path: string): string {
 export const fileUrl = (path: string): string => mediaUrl('file', path);
 export const downloadUrl = (path: string): string => mediaUrl('download', path);
 
+/** Widths the backend accepts for `/thumb` (anything else is a 400). */
+export type ThumbWidth = 160 | 320 | 640;
+
+/** Server-side WebP thumbnail of an image; same token handling as `fileUrl`. */
+export const thumbUrl = (path: string, width: ThumbWidth = 320): string =>
+  `${BASE}/thumb?${pathQuery(path)}&w=${width}&token=${encodeURIComponent(keycloak.token ?? '')}`;
+
 /** Keeps the access token valid for media URLs built later. */
 export async function refreshToken(minValiditySeconds = 60): Promise<void> {
   try {

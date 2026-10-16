@@ -5,7 +5,7 @@ vi.mock('./keycloak', () => ({
 }));
 
 import keycloak from './keycloak';
-import { downloadUrl, fileUrl, listDir, pathQuery, refreshToken } from './api';
+import { downloadUrl, fileUrl, listDir, pathQuery, refreshToken, thumbUrl } from './api';
 
 describe('media URLs', () => {
   it('encodes the path once and carries the token', () => {
@@ -13,6 +13,15 @@ describe('media URLs', () => {
       `/descargas/api/file?path=${encodeURIComponent('fotos/ñandú café.jpg')}&token=${encodeURIComponent('tok.en/with+chars')}`,
     );
     expect(downloadUrl('a.txt')).toContain('/descargas/api/download?path=a.txt&token=');
+  });
+
+  it('builds thumbnail URLs with the same token handling and a width', () => {
+    const token = encodeURIComponent('tok.en/with+chars');
+    expect(thumbUrl('fotos/ñandú café.jpg')).toBe(
+      `/descargas/api/thumb?path=${encodeURIComponent('fotos/ñandú café.jpg')}&w=320&token=${token}`,
+    );
+    expect(thumbUrl('a.jpg', 640)).toBe(`/descargas/api/thumb?path=a.jpg&w=640&token=${token}`);
+    expect(thumbUrl('a.jpg', 160)).toContain('&w=160&');
   });
 
   it('keeps a ../ attempt as data inside the encoded value', () => {
