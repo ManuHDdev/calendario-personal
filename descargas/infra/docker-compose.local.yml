@@ -1,0 +1,25 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# descargas — backend in Docker for local development
+# Serves ./sample-data (read-only) at :3016 instead of the VPS host folder.
+# Alternative without Docker: `cd ../backend && npm run dev` (DOWNLOADS_ROOT
+# defaults to ../infra/sample-data in backend/.env.example).
+# Uso: docker compose -f docker-compose.local.yml up --build
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  descargas-backend:
+    build: ../backend
+    container_name: descargas-backend-local
+    ports:
+      - "3016:3016"
+    environment:
+      PORT: 3016
+      DOWNLOADS_ROOT: /data
+      # Keycloak runs on the host in local dev
+      KEYCLOAK_CERTS_URL: http://host.docker.internal:8080/realms/calendario/protocol/openid-connect/certs
+      CORS_ORIGIN: http://localhost:5190
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./sample-data:/data:ro
+    restart: unless-stopped

@@ -22,6 +22,8 @@ const ROLE_LABEL: Record<string, string> = {
   mensajeria_invitado: 'Invitado Mensajería',
   tenis_admin: 'Admin Tenis',
   tenis_invitado: 'Invitado Tenis',
+  descargas_admin: 'Admin Descargas',
+  descargas_invitado: 'Invitado Descargas',
 };
 const ROLE_COLOR: Record<string, string> = {
   admin: '#0071e3',
@@ -36,6 +38,8 @@ const ROLE_COLOR: Record<string, string> = {
   mensajeria_invitado: '#8ecdea',
   tenis_admin: '#8bc900',
   tenis_invitado: '#d4f21e',
+  descargas_admin: '#78909c',
+  descargas_invitado: '#b0bec5',
 };
 
 // Con más badges de estos el resto se resume en un chip "+N" para que todas las filas midan lo mismo.
