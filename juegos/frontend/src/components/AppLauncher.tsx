@@ -37,6 +37,9 @@ const APPS: AppDef[] = [
   // mensajeria: mensajes de prueba (email/sms/llamada) para test de OTP,
   // uso exclusivo del propietario.
   { id: 'mensajeria', nombre: 'Mensajería', color: '#5ac8fa', roles: ['admin', 'mensajeria_admin', 'mensajeria_invitado'] },
+  // descargas: visor de solo lectura de la carpeta del VPS /home/manu/rat_downloads,
+  // uso exclusivo del propietario (archivos privados: familia/invitado excluidos).
+  { id: 'descargas',  nombre: 'Descargas',  color: '#78909c', roles: ['admin'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -61,6 +64,7 @@ function getUrls(): Record<string, string> {
     tenis:      local ? 'http://localhost:5189/tenis/'    : '/tenis/',
     finanzas:   local ? 'http://localhost:5187/finanzas/' : '/finanzas/',
     mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
+    descargas:  local ? 'http://localhost:5190/descargas/' : '/descargas/',
   };
 }
 
@@ -211,6 +215,14 @@ function AppIcon({ id }: { id: string }) {
           <path d="M4 5h16v12H8l-4 4V5z"/>
           <line x1="8" y1="10" x2="16" y2="10"/>
           <line x1="8" y1="14" x2="13" y2="14"/>
+        </svg>
+      );
+    case 'descargas':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <path d="M12 3v12"/>
+          <path d="M7 9l5 5 5-5"/>
+          <path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
         </svg>
       );
     default:

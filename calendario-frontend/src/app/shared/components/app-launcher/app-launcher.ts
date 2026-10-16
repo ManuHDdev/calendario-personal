@@ -32,6 +32,7 @@ function appUrls(): Record<string, string> {
     tenis:      local ? 'http://localhost:5189/tenis/'     : '/tenis/',
     finanzas:   local ? 'http://localhost:5187/finanzas/'  : '/finanzas/',
     mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
+    descargas:  local ? 'http://localhost:5190/descargas/'  : '/descargas/',
   };
 }
 
@@ -75,6 +76,9 @@ export class AppLauncher {
     // mensajeria: mensajes de prueba (email/sms/llamada) para test de OTP,
     // uso exclusivo del propietario.
     { id: 'mensajeria', nombre: 'Mensajería', color: '#5ac8fa', roles: ['admin', 'mensajeria_admin', 'mensajeria_invitado'], url: '' },
+    // descargas: visor de solo lectura de la carpeta del VPS /home/manu/rat_downloads,
+    // uso exclusivo del propietario (archivos privados: familia/invitado excluidos).
+    { id: 'descargas',  nombre: 'Descargas',  color: '#78909c', roles: ['admin'], url: '' },
   ];
 
   get apps(): App[] {
