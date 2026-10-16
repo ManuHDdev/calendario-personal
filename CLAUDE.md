@@ -1948,7 +1948,7 @@ Frontend `:5188`, backend `:3015`.
 
 ---
 
-## Descargas — Visor de solo lectura de la carpeta de descargas del VPS
+## Descargas — Visor y borrado de la carpeta de descargas del VPS
 
 ### Ubicación
 Calendario/descargas/ dentro del monorepo elbunkerdelingeniero.
@@ -1956,19 +1956,36 @@ Calendario/descargas/ dentro del monorepo elbunkerdelingeniero.
 ### Stack
 - Backend: Fastify + Node.js + TypeScript (igual que el resto de subapps)
 - Frontend: React + Vite + TypeScript, con interruptor claro/oscuro (`theme.ts` + `ThemeToggle`)
-- Sin base de datos: filesystem directo sobre `DOWNLOADS_ROOT` (en producción `/data`, bind mount **de solo lectura** de `/home/manu/rat_downloads` del host)
-- Autenticación: Keycloak, JWT verificado a mano (mismo patrón que mensajeria/storage). Las rutas que sirven bytes (`/file`, `/download`, `/thumb`) aceptan además el token como `?token=` (para `<img>`/`<video>`/`<a>`, igual que storage); `/list` solo acepta `Authorization: Bearer`
+- Sin base de datos: filesystem directo sobre `DOWNLOADS_ROOT` (en producción `/data`, bind mount **de lectura-escritura** de `/home/manu/rat_downloads` del host: desde el 2026-10-16 se puede borrar desde la UI)
+- Autenticación: Keycloak, JWT verificado a mano (mismo patrón que mensajeria/storage). Las rutas que sirven bytes (`/file`, `/download`, `/thumb`) aceptan además el token como `?token=` (para `<img>`/`<video>`/`<a>`, igual que storage); `/list` y `POST /delete` solo aceptan `Authorization: Bearer`
 - Validaciones: manuales (sin Zod). Con tests de backend y frontend (vitest), ejecutados en CI
 
 ### Roles
-`admin`, `descargas_admin` y `descargas_invitado` → acceso completo **de lectura** (la app no tiene ningún endpoint de escritura, así que los dos roles delegados son equivalentes). `familia` e `invitado` NO tienen acceso: son archivos privados. En el AppLauncher la entrada es `roles: ['admin']` (admin-only por defecto, como Gastos/Pisos); los roles delegados existen para asignarse desde Panel.
+- `admin` y `descargas_admin` → ver, descargar **y eliminar** (`POST /delete`).
+- `descargas_invitado` → **solo ver/descargar**; el backend le responde 403 en `/delete` y el frontend no le pinta ningún control de borrado.
+- `familia` e `invitado` NO tienen acceso a nada: son archivos privados.
 
-### Rutas (`/descargas/api/*`) — todas GET
+ En el AppLauncher la entrada es `roles: ['admin']` (admin-only por defecto, como Gastos/Pisos); los roles delegados existen para asignarse desde Panel.
+
+### Rutas (`/descargas/api/*`) — todas GET salvo `POST /delete`
 - `GET /list?path=` — entradas de una carpeta (`name`, `path`, `type` dir|file, `size`, `mtime`, `mime`, `category` image|video|audio|pdf|text|other). Orden: carpetas primero, luego lo más reciente primero. Oculta dotfiles y symlinks que escapan de la raíz
 - `GET /file?path=` — contenido en streaming con `Range` (206/416) y `Content-Type` correcto, `Content-Disposition: inline`
 - `GET /download?path=` — igual, con `Content-Disposition: attachment` (nombre RFC 5987)
 - `GET /thumb?path=&w=` — miniatura WebP generada con `sharp` (ver "Miniaturas" abajo). Mismo guard que `/file` (acepta `?token=`)
+- `POST /delete` — borrado **permanente** (ver "Borrado" abajo). Solo `admin`/`descargas_admin`
 - `GET /health`
+
+### Borrado (`POST /delete`) — IRREVERSIBLE, no hay papelera
+- **Body**: `{ paths: string[] }`, máx. 200 (`MAX_DELETE_PATHS` en `services/deletion.ts`). Todo se valida **antes** de tocar nada: no-array, vacío, entradas no-string, `..`, rutas absolutas, `\`, bytes nulos y la propia raíz (`''`, `.`, `/`) → 400 y no se borra nada. Los duplicados se colapsan tras normalizar (`a`, `./a`, `a/`).
+- **Auth**: `authMiddleware(['admin','descargas_admin'])` como `onRequest` (antes de parsear el body), **sin** `allowQueryToken`: un `?token=` da 401. `descargas_invitado`, `familia` e `invitado` → 403.
+- **Respuesta**: 200 `{ deleted: string[], failed: [{ path, error }] }`. Éxito parcial permitido; un fallo no aborta el resto. `error` es un código corto en inglés (`Not found`, `Permission denied`, `Resource busy`, `Delete failed`) sin rutas del host; el frontend lo traduce.
+- **Symlinks**: se resuelve con `realpath` solo el directorio **padre** (debe seguir dentro de la raíz) y el último componente se mira con `lstat`: un symlink se desenlaza (`unlink`) sin seguirlo ni tocar su destino; una carpeta real se borra con `fs.rm({ recursive })`, que tampoco sigue symlinks internos. `carpeta-symlink-a-fuera/x` → `failed: Not found`.
+- **Carpeta + descendientes** en la misma petición: se procesan primero las rutas menos profundas y los descendientes de una carpeta ya borrada se cuentan como `deleted` sin volver a tocarlos.
+- **Log**: cada borrado/fallo se registra con el logger de Fastify (`{ user, path }`, usuario = `preferred_username`/`sub`); nunca el token.
+- **Miniaturas**: la caché (`THUMB_CACHE_DIR`) está indexada por hash de (realpath, tamaño, mtime, ancho), imposible de localizar sin recorrerla, así que **no se limpia al borrar**: son restos inofensivos (nunca se vuelven a pedir; borrar el volumen es seguro).
+- **Contenedor**: el backend corre como **root** (la imagen no define `USER`), así que puede borrar ficheros del usuario `manu` del host. Si algún día se cambia a un usuario no root, ese usuario debe poder escribir en `DESCARGAS_HOST_PATH`.
+- **TOCTOU**: hay una ventana mínima entre `realpath`/`lstat` y el borrado (alguien con acceso al host podría cambiar un directorio por un symlink); aceptado porque solo el propietario escribe en esa carpeta.
+- **Frontend**: solo `admin`/`descargas_admin` ven los controles (`lib/deletion.ts#canDelete`, el backend es la protección real): botón "Seleccionar" (o pulsación larga / casilla en cada tarjeta), "Seleccionar todo" (solo lo visible), barra flotante "Eliminar (N)" / "Cancelar", papelera en cada entrada y botón "Eliminar" en el lightbox. Siempre pasa por `ConfirmDeleteDialog` (cuántos archivos/carpetas, primeros nombres, "irreversible", Esc/overlay cancelan, botones deshabilitados mientras se envía, fallos por elemento). Solo se borra lo que está visible (un filtro nunca deja selección oculta).
 
 ### Seguridad de rutas (IMPORTANTE)
 `services/pathSafety.ts`: validación léxica (sin `..`, sin rutas absolutas ni letras de unidad, sin `\`, sin bytes nulos) **y** `realpath` + comprobación de prefijo con separador (`root-evil` no pasa como `root`). Un symlink que escapa de la raíz responde 404, no 403, para no revelar qué existe fuera. El `%2e%2e` ya lo decodifica Fastify una vez; un `%252e%252e` llega como nombre literal y simplemente no existe.
@@ -1980,7 +1997,7 @@ Las fotos del VPS son JPG de móvil de 3-10 MB; la rejilla pide `/thumb` (WebP, 
 - **Parámetros**: `path` (misma resolución segura que `/file`) y `w` ∈ {160, 320, 640} (default 320). Cualquier otro ancho es 400 — la lista blanca acota la caché y la CPU.
 - **Formatos**: jpg/jpeg, png, webp, gif (primer fotograma) y avif, por extensión **y** por el contenido que libvips decodifica (un SVG renombrado `.jpg` da 415, nunca se rasteriza). El resto (vídeo, texto, `.svg`) es 415; un fichero corrupto también 415. El frontend, ante cualquier error del thumb, cae al original.
 - **Proceso** (`services/thumbnail.ts`): `.rotate()` (EXIF), `withoutEnlargement`, `limitInputPixels` 120 MP, `failOn: 'none'`, WebP calidad 75. Máximo 2 conversiones simultáneas (semáforo) y las peticiones concurrentes de la misma miniatura comparten una sola conversión.
-- **Caché**: `/data` es de solo lectura, así que se escribe en `THUMB_CACHE_DIR` (default: `os.tmpdir()/descargas-thumbs`; en Docker `/cache`, volumen con nombre `descargas-thumbs` en `docker-compose.prod.yml` y `.local.yml`). Clave `sha1(realpath + tamaño + mtimeMs + ancho)`, así que editar o sustituir la foto invalida sola. Escritura atómica (tmp + rename); si el directorio no es escribible solo se pierde velocidad. **No hay limpieza automática**: borrar el volumen es seguro (se regenera bajo demanda).
+- **Caché**: Las miniaturas no se escriben junto a los originales sino en `THUMB_CACHE_DIR` (default: `os.tmpdir()/descargas-thumbs`; en Docker `/cache`, volumen con nombre `descargas-thumbs` en `docker-compose.prod.yml` y `.local.yml`). Clave `sha1(realpath + tamaño + mtimeMs + ancho)`, así que editar o sustituir la foto invalida sola. Escritura atómica (tmp + rename); si el directorio no es escribible solo se pierde velocidad. **No hay limpieza automática**: borrar el volumen es seguro (se regenera bajo demanda).
 - **HTTP**: `Cache-Control: private, max-age=86400` + `ETag` (la propia clave) → `If-None-Match` da 304 sin decodificar nada. Los errores no llevan cabeceras de caché. Como la URL lleva el token (que cambia cada ~45 s), la caché del navegador solo reutiliza una miniatura dentro de la vida de un token; la caché de disco del servidor es la que evita reconvertir.
 - **nginx**: `location /descargas/api/` (en `nginx/calendario.conf` y en `descargas/frontend/nginx.conf`) ya sirve para `/thumb` sin cambios: `proxy_buffering off` no afecta a respuestas pequeñas con `Content-Length`, y `access_log off` también oculta el token de estas URLs.
 
@@ -1988,7 +2005,7 @@ Las fotos del VPS son JPG de móvil de 3-10 MB; la rejilla pide `/thumb` (WebP, 
 Las URLs de media llevan el access token de Keycloak en `?token=` (mismo patrón que storage). Para no dejarlo en logs: el logger de Fastify lo enmascara (`services/redact.ts`), el nginx del frontend (`descargas/frontend/nginx.conf`) y el bloque `location /descargas/api/` de `nginx/calendario.conf` llevan `access_log off`. El frontend lo renueva cada 45 s y construye cada URL en el momento de usarla (miniaturas perezosas con IntersectionObserver); el reproductor reintenta una vez con token nuevo si la reproducción larga lo ve caducar.
 
 ### Variables de entorno del backend
-`DOWNLOADS_ROOT` (default `/data`), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3016), `THUMB_CACHE_DIR` (default `os.tmpdir()/descargas-thumbs`; `/cache` en Docker). En el VPS, `DESCARGAS_HOST_PATH` (opcional, default `/home/manu/rat_downloads`) cambia la carpeta del host montada en `/data:ro`; no hace falta ningún `.env`.
+`DOWNLOADS_ROOT` (default `/data`), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3016), `THUMB_CACHE_DIR` (default `os.tmpdir()/descargas-thumbs`; `/cache` en Docker). En el VPS, `DESCARGAS_HOST_PATH` (opcional, default `/home/manu/rat_downloads`) cambia la carpeta del host montada en `/data` (lectura-escritura); no hace falta ningún `.env`.
 
 ### Frontend y miniaturas
 `LazyImage` (rejilla) usa `thumbUrl(path, 320)` de `services/api.ts`, mantiene la carga perezosa y construye la URL (con el token) al entrar en pantalla; si el thumb falla, reintenta una vez con el original (`fileUrl`) y, si también falla, muestra el icono. El lightbox sigue cargando el original, con la miniatura de 640 px como placeholder instantáneo mientras llega.
@@ -2025,12 +2042,12 @@ exactamente estos nombres.
 | mensajeria_invitado | Consulta del inbox/log de Mensajería (solo lectura)             |
 | tenis_admin         | Rol delegado para Tenis (repo externo `tennis-predictor`) — creado en Keycloak/Panel, aún sin uso porque el AppLauncher mantiene `tenis` en `roles: ['admin']` (admin-only por defecto) |
 | tenis_invitado      | Rol delegado de solo lectura para Tenis — mismo estado que `tenis_admin`, creado pero sin efecto en el AppLauncher hasta que se decida abrir acceso delegado |
-| descargas_admin     | Acceso de lectura a Descargas (carpeta `/home/manu/rat_downloads` del VPS); la app no tiene escritura, así que equivale a `descargas_invitado` |
-| descargas_invitado  | Acceso de lectura a Descargas — mismo alcance que `descargas_admin`; `familia` e `invitado` quedan fuera (archivos privados) |
+| descargas_admin     | Ver, descargar y **eliminar** archivos en Descargas (carpeta `/home/manu/rat_downloads` del VPS) |
+| descargas_invitado  | Solo ver/descargar en Descargas (sin borrar); `familia` e `invitado` quedan fuera (archivos privados) |
 
 Locales tampoco añade rol: solo `admin`, como Gastos/Ofertas/Ruta/Pisos.
 
-Descargas añade `descargas_admin` y `descargas_invitado`, ambos de solo lectura. `descargas_admin` se asigna a `propietario` por el script de realm; `descargas_invitado` se crea pero queda sin asignar (delegable desde Panel).
+Descargas añade `descargas_admin` (ver + eliminar, irreversible) y `descargas_invitado` (solo ver). `descargas_admin` se asigna a `propietario` por el script de realm; `descargas_invitado` se crea pero queda sin asignar (delegable desde Panel).
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
