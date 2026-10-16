@@ -1957,7 +1957,7 @@ Calendario/descargas/ dentro del monorepo elbunkerdelingeniero.
 - Backend: Fastify + Node.js + TypeScript (igual que el resto de subapps)
 - Frontend: React + Vite + TypeScript, con interruptor claro/oscuro (`theme.ts` + `ThemeToggle`)
 - Sin base de datos: filesystem directo sobre `DOWNLOADS_ROOT` (en producción `/data`, bind mount **de solo lectura** de `/home/manu/rat_downloads` del host)
-- Autenticación: Keycloak, JWT verificado a mano (mismo patrón que mensajeria/storage). Las rutas que sirven bytes (`/file`, `/download`) aceptan además el token como `?token=` (para `<img>`/`<video>`/`<a>`, igual que storage); `/list` solo acepta `Authorization: Bearer`
+- Autenticación: Keycloak, JWT verificado a mano (mismo patrón que mensajeria/storage). Las rutas que sirven bytes (`/file`, `/download`, `/thumb`) aceptan además el token como `?token=` (para `<img>`/`<video>`/`<a>`, igual que storage); `/list` solo acepta `Authorization: Bearer`
 - Validaciones: manuales (sin Zod). Con tests de backend y frontend (vitest), ejecutados en CI
 
 ### Roles
@@ -1967,6 +1967,7 @@ Calendario/descargas/ dentro del monorepo elbunkerdelingeniero.
 - `GET /list?path=` — entradas de una carpeta (`name`, `path`, `type` dir|file, `size`, `mtime`, `mime`, `category` image|video|audio|pdf|text|other). Orden: carpetas primero, luego lo más reciente primero. Oculta dotfiles y symlinks que escapan de la raíz
 - `GET /file?path=` — contenido en streaming con `Range` (206/416) y `Content-Type` correcto, `Content-Disposition: inline`
 - `GET /download?path=` — igual, con `Content-Disposition: attachment` (nombre RFC 5987)
+- `GET /thumb?path=&w=` — miniatura WebP generada con `sharp` (ver "Miniaturas" abajo). Mismo guard que `/file` (acepta `?token=`)
 - `GET /health`
 
 ### Seguridad de rutas (IMPORTANTE)
@@ -1974,14 +1975,26 @@ Calendario/descargas/ dentro del monorepo elbunkerdelingeniero.
 
 Los archivos no son de fiar: `X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox; default-src 'none'` (salvo PDF, donde bloquearía el visor de Chrome) y `.html`/`.svg`/`.xml`/`.js` se sirven siempre como `application/octet-stream` + `attachment`, nunca inline. JSON/CSV/MD salen como `text/plain`.
 
+### Miniaturas (`GET /thumb`)
+Las fotos del VPS son JPG de móvil de 3-10 MB; la rejilla pide `/thumb` (WebP, ~10-40 KB) y solo el visor (lightbox) carga el original.
+- **Parámetros**: `path` (misma resolución segura que `/file`) y `w` ∈ {160, 320, 640} (default 320). Cualquier otro ancho es 400 — la lista blanca acota la caché y la CPU.
+- **Formatos**: jpg/jpeg, png, webp, gif (primer fotograma) y avif, por extensión **y** por el contenido que libvips decodifica (un SVG renombrado `.jpg` da 415, nunca se rasteriza). El resto (vídeo, texto, `.svg`) es 415; un fichero corrupto también 415. El frontend, ante cualquier error del thumb, cae al original.
+- **Proceso** (`services/thumbnail.ts`): `.rotate()` (EXIF), `withoutEnlargement`, `limitInputPixels` 120 MP, `failOn: 'none'`, WebP calidad 75. Máximo 2 conversiones simultáneas (semáforo) y las peticiones concurrentes de la misma miniatura comparten una sola conversión.
+- **Caché**: `/data` es de solo lectura, así que se escribe en `THUMB_CACHE_DIR` (default: `os.tmpdir()/descargas-thumbs`; en Docker `/cache`, volumen con nombre `descargas-thumbs` en `docker-compose.prod.yml` y `.local.yml`). Clave `sha1(realpath + tamaño + mtimeMs + ancho)`, así que editar o sustituir la foto invalida sola. Escritura atómica (tmp + rename); si el directorio no es escribible solo se pierde velocidad. **No hay limpieza automática**: borrar el volumen es seguro (se regenera bajo demanda).
+- **HTTP**: `Cache-Control: private, max-age=86400` + `ETag` (la propia clave) → `If-None-Match` da 304 sin decodificar nada. Los errores no llevan cabeceras de caché. Como la URL lleva el token (que cambia cada ~45 s), la caché del navegador solo reutiliza una miniatura dentro de la vida de un token; la caché de disco del servidor es la que evita reconvertir.
+- **nginx**: `location /descargas/api/` (en `nginx/calendario.conf` y en `descargas/frontend/nginx.conf`) ya sirve para `/thumb` sin cambios: `proxy_buffering off` no afecta a respuestas pequeñas con `Content-Length`, y `access_log off` también oculta el token de estas URLs.
+
 ### El token en la URL (trade-off aceptado)
 Las URLs de media llevan el access token de Keycloak en `?token=` (mismo patrón que storage). Para no dejarlo en logs: el logger de Fastify lo enmascara (`services/redact.ts`), el nginx del frontend (`descargas/frontend/nginx.conf`) y el bloque `location /descargas/api/` de `nginx/calendario.conf` llevan `access_log off`. El frontend lo renueva cada 45 s y construye cada URL en el momento de usarla (miniaturas perezosas con IntersectionObserver); el reproductor reintenta una vez con token nuevo si la reproducción larga lo ve caducar.
 
 ### Variables de entorno del backend
-`DOWNLOADS_ROOT` (default `/data`), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3016). En el VPS, `DESCARGAS_HOST_PATH` (opcional, default `/home/manu/rat_downloads`) cambia la carpeta del host montada en `/data:ro`; no hace falta ningún `.env`.
+`DOWNLOADS_ROOT` (default `/data`), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3016), `THUMB_CACHE_DIR` (default `os.tmpdir()/descargas-thumbs`; `/cache` en Docker). En el VPS, `DESCARGAS_HOST_PATH` (opcional, default `/home/manu/rat_downloads`) cambia la carpeta del host montada en `/data:ro`; no hace falta ningún `.env`.
 
-### Limitación conocida
-No hay endpoint de miniaturas: la rejilla carga la imagen original (con carga perezosa). Con carpetas de fotos muy pesadas convendría añadir `sharp` como en storage.
+### Frontend y miniaturas
+`LazyImage` (rejilla) usa `thumbUrl(path, 320)` de `services/api.ts`, mantiene la carga perezosa y construye la URL (con el token) al entrar en pantalla; si el thumb falla, reintenta una vez con el original (`fileUrl`) y, si también falla, muestra el icono. El lightbox sigue cargando el original, con la miniatura de 640 px como placeholder instantáneo mientras llega.
+
+### Dependencia nativa (sharp)
+`sharp` ^0.34 (igual que storage) trae binarios precompilados por plataforma (`@img/sharp-linuxmusl-x64` en la imagen `node:20-alpine`), así que el Dockerfile no necesita toolchain de compilación. `npm ci` en el builder instala el binario musl correcto; `package-lock.json` los lista todos.
 
 ### Red Docker
 `calendario-net` (externa)
