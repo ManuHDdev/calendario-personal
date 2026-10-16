@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DirEntry } from '../lib/files';
 import { formatSize } from '../lib/files';
-import { downloadUrl, fileUrl } from '../services/api';
+import { downloadUrl, fileUrl, thumbUrl } from '../services/api';
 import './Viewer.css';
 
 interface Props {
@@ -36,6 +36,14 @@ export default function Lightbox({ images, index, onIndexChange, onClose }: Prop
   // Built once per image so the token refresh tick does not reload it.
   const src = useMemo(() => fileUrl(current.path), [current.path]);
   const download = useMemo(() => downloadUrl(current.path), [current.path]);
+  // The grid already loaded this thumbnail, so it is usually cached: show it
+  // instantly while the full-size original downloads.
+  const preview = useMemo(() => thumbUrl(current.path, 640), [current.path]);
+  const [loadedPath, setLoadedPath] = useState<string | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const originalLoaded = loadedPath === current.path;
+
+  useEffect(() => setPreviewFailed(false), [current.path]);
 
   return (
     <div
@@ -69,7 +77,23 @@ export default function Lightbox({ images, index, onIndexChange, onClose }: Prop
         </button>
       </header>
 
-      <img className="viewer-image" src={src} alt={current.name} onClick={(e) => e.stopPropagation()} />
+      {!originalLoaded && !previewFailed && (
+        <img
+          className="viewer-image viewer-image--preview"
+          src={preview}
+          alt=""
+          aria-hidden="true"
+          onError={() => setPreviewFailed(true)}
+        />
+      )}
+      <img
+        className="viewer-image"
+        src={src}
+        alt={current.name}
+        style={originalLoaded || previewFailed ? undefined : { opacity: 0 }}
+        onLoad={() => setLoadedPath(current.path)}
+        onClick={(e) => e.stopPropagation()}
+      />
 
       {index > 0 && (
         <button

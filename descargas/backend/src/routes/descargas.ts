@@ -6,6 +6,7 @@ import { listDirectory } from '../services/listing';
 import { getMimeInfo } from '../services/mime';
 import { PathError, resolveSafePath } from '../services/pathSafety';
 import { parseRange } from '../services/range';
+import { ThumbError, ThumbnailService, isThumbnailable, parseThumbWidth } from '../services/thumbnail';
 
 // Read-only app: both delegated roles may view everything. `familia` and
 // `invitado` are deliberately excluded because these files are private.
@@ -14,6 +15,8 @@ export const ALLOWED_ROLES = ['admin', 'descargas_admin', 'descargas_invitado'];
 export interface DescargasRoutesOptions {
   /** Folder served (mounted read-only). Defaults to DOWNLOADS_ROOT or /data. */
   root?: string;
+  /** Writable folder for generated thumbnails. Defaults to THUMB_CACHE_DIR or a tmp dir. */
+  thumbCacheDir?: string;
 }
 
 interface PathQuery {
@@ -37,6 +40,8 @@ export async function descargasRoutes(
   opts: DescargasRoutesOptions = {},
 ): Promise<void> {
   const root = opts.root ?? process.env.DOWNLOADS_ROOT ?? '/data';
+
+  const thumbs = new ThumbnailService(opts.thumbCacheDir ?? ThumbnailService.defaultCacheDir());
 
   const guard = authMiddleware(ALLOWED_ROLES);
   // <img>/<video>/<a download> cannot send headers, so only the byte-serving
@@ -101,6 +106,41 @@ export async function descargasRoutes(
       return sendPathError(reply, err);
     }
   }
+
+  // Grid thumbnails: WebP, EXIF-rotated, whitelisted widths, cached on disk
+  // (the media root itself is read-only).
+  app.get('/thumb', { preHandler: mediaGuard }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const query = request.query as PathQuery & { w?: unknown };
+      const width = parseThumbWidth(query.w);
+      const resolved = await resolveSafePath(root, query.path);
+      if (!resolved.stat.isFile()) return reply.code(400).send({ error: 'Not a file' });
+      if (!isThumbnailable(resolved.relative)) {
+        return reply.code(415).send({ error: 'Unsupported image format' });
+      }
+
+      const source = { absolute: resolved.absolute, size: resolved.stat.size, mtimeMs: resolved.stat.mtimeMs };
+      // The key already encodes file identity + width, so it doubles as the ETag
+      // and a revalidation never needs to decode (or even read) anything.
+      const etag = `"${thumbs.keyFor(source, width)}"`;
+      // Cache headers are only attached to successes, never to error responses.
+      const cacheHeaders = { ETag: etag, 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff' };
+      if (request.headers['if-none-match'] === etag) return reply.code(304).headers(cacheHeaders).send();
+
+      const data = await thumbs.get(source, width);
+      return reply
+        .code(200)
+        .headers(cacheHeaders)
+        .header('Content-Type', 'image/webp')
+        .header('Content-Length', data.length)
+        .header('Content-Disposition', 'inline')
+        .header('Content-Security-Policy', "sandbox; default-src 'none'")
+        .send(data);
+    } catch (err) {
+      if (err instanceof ThumbError) return reply.code(err.statusCode).send({ error: err.message });
+      return sendPathError(reply, err);
+    }
+  });
 
   app.get('/file', { preHandler: mediaGuard }, (request, reply) => serveFile(request, reply, false));
   app.get('/download', { preHandler: mediaGuard }, (request, reply) => serveFile(request, reply, true));

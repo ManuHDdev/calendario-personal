@@ -18,8 +18,13 @@ services:
       # Keycloak runs on the host in local dev
       KEYCLOAK_CERTS_URL: http://host.docker.internal:8080/realms/calendario/protocol/openid-connect/certs
       CORS_ORIGIN: http://localhost:5190
+      THUMB_CACHE_DIR: /cache
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./sample-data:/data:ro
+      - descargas-thumbs:/cache
     restart: unless-stopped
+
+volumes:
+  descargas-thumbs:

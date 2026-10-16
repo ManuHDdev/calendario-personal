@@ -3,6 +3,9 @@ networks:
     external: true
     name: calendario-net
 
+volumes:
+  descargas-thumbs:
+
 services:
   descargas-backend:
     image: ghcr.io/manuhddev/descargas-backend:latest
@@ -16,11 +19,15 @@ services:
       KEYCLOAK_CERTS_URL: http://calendario-keycloak:8080/keycloak/realms/calendario/protocol/openid-connect/certs
       CORS_ORIGIN: https://elbunkerdelingeniero.duckdns.org
       NODE_ENV: production
+      THUMB_CACHE_DIR: /cache
     volumes:
       # Host folder -> container, READ-ONLY. The app has no write endpoints and
       # the mount makes that a hard guarantee. Host path is overridable via
       # DESCARGAS_HOST_PATH (e.g. in ~/descargas/.env); no .env is required.
       - ${DESCARGAS_HOST_PATH:-/home/manu/rat_downloads}:/data:ro
+      # Generated thumbnails (the only writable path). Disposable: deleting the
+      # volume just makes them regenerate on demand.
+      - descargas-thumbs:/cache
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3016/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
