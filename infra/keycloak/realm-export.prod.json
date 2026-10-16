@@ -94,6 +94,20 @@
         "composite": false,
         "clientRole": false,
         "containerId": "calendario"
+      },
+      {
+        "name": "descargas_admin",
+        "description": "Administrador de Descargas — acceso a la carpeta de descargas del servidor (solo lectura)",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
+      },
+      {
+        "name": "descargas_invitado",
+        "description": "Invitado de Descargas — acceso de solo lectura a la carpeta de descargas",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
       }
     ],
     "client": {
