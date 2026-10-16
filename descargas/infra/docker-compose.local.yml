@@ -1,6 +1,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # descargas — backend in Docker for local development
-# Serves ./sample-data (read-only) at :3016 instead of the VPS host folder.
+# Serves ./sample-data (read-write: deleting from the UI really removes files, so
+# use a throwaway copy) at :3016 instead of the VPS host folder.
 # Alternative without Docker: `cd ../backend && npm run dev` (DOWNLOADS_ROOT
 # defaults to ../infra/sample-data in backend/.env.example).
 # Uso: docker compose -f docker-compose.local.yml up --build
@@ -22,7 +23,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./sample-data:/data:ro
+      - ./sample-data:/data
       - descargas-thumbs:/cache
     restart: unless-stopped
 

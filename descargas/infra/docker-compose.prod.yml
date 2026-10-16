@@ -21,10 +21,12 @@ services:
       NODE_ENV: production
       THUMB_CACHE_DIR: /cache
     volumes:
-      # Host folder -> container, READ-ONLY. The app has no write endpoints and
-      # the mount makes that a hard guarantee. Host path is overridable via
-      # DESCARGAS_HOST_PATH (e.g. in ~/descargas/.env); no .env is required.
-      - ${DESCARGAS_HOST_PATH:-/home/manu/rat_downloads}:/data:ro
+      # Host folder -> container, READ-WRITE: admin/descargas_admin can delete
+      # files through POST /delete (permanent, no trash). The container runs as
+      # root (the image sets no USER), so it can remove files owned by host user
+      # `manu`. Host path is overridable via DESCARGAS_HOST_PATH (e.g. in
+      # ~/descargas/.env); no .env is required.
+      - ${DESCARGAS_HOST_PATH:-/home/manu/rat_downloads}:/data
       # Generated thumbnails (the only writable path). Disposable: deleting the
       # volume just makes them regenerate on demand.
       - descargas-thumbs:/cache

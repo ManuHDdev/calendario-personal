@@ -10,7 +10,7 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY package*.json ./
-# Thumbnail cache (a named volume is mounted here; /data itself is read-only).
+# Thumbnail cache (a named volume is mounted here, separate from the /data media mount).
 RUN mkdir -p /cache && chown node:node /cache
 ENV THUMB_CACHE_DIR=/cache
 EXPOSE 3016

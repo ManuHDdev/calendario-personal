@@ -2,18 +2,21 @@ import { createReadStream } from 'fs';
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import path from 'path';
 import { authMiddleware } from '../middleware/auth';
+import { DeleteRequestError, deletePaths, parseDeleteBody } from '../services/deletion';
 import { listDirectory } from '../services/listing';
 import { getMimeInfo } from '../services/mime';
 import { PathError, resolveSafePath } from '../services/pathSafety';
 import { parseRange } from '../services/range';
 import { ThumbError, ThumbnailService, isThumbnailable, parseThumbWidth } from '../services/thumbnail';
 
-// Read-only app: both delegated roles may view everything. `familia` and
-// `invitado` are deliberately excluded because these files are private.
+// Viewing: both delegated roles may see everything. `familia` and `invitado`
+// are deliberately excluded because these files are private.
 export const ALLOWED_ROLES = ['admin', 'descargas_admin', 'descargas_invitado'];
+// Deleting (irreversible): `descargas_invitado` stays view-only.
+export const DELETE_ROLES = ['admin', 'descargas_admin'];
 
 export interface DescargasRoutesOptions {
-  /** Folder served (mounted read-only). Defaults to DOWNLOADS_ROOT or /data. */
+  /** Folder served (read-write bind mount so files can be deleted). Defaults to DOWNLOADS_ROOT or /data. */
   root?: string;
   /** Writable folder for generated thumbnails. Defaults to THUMB_CACHE_DIR or a tmp dir. */
   thumbCacheDir?: string;
@@ -140,6 +143,29 @@ export async function descargasRoutes(
       if (err instanceof ThumbError) return reply.code(err.statusCode).send({ error: err.message });
       return sendPathError(reply, err);
     }
+  });
+
+  // Permanent deletion (no trash). Header-only auth: the token is never taken
+  // from the query string here, and the guard runs before the body is parsed.
+  const deleteGuard = authMiddleware(DELETE_ROLES);
+  app.post('/delete', { onRequest: deleteGuard }, async (request: FastifyRequest, reply: FastifyReply) => {
+    let paths: string[];
+    try {
+      paths = parseDeleteBody(request.body);
+    } catch (err) {
+      if (err instanceof DeleteRequestError) return reply.code(err.statusCode).send({ error: err.message });
+      throw err;
+    }
+    const who = request.user?.preferred_username ?? request.user?.sub ?? 'unknown';
+    // Thumbnail cache entries are keyed by a hash of (realpath, size, mtime,
+    // width), so they cannot be found without a scan. They are never requested
+    // again for a deleted file and are harmless leftovers (see CLAUDE.md).
+    return deletePaths(
+      root,
+      paths,
+      (rel) => request.log.info({ user: who, path: rel }, 'descargas: deleted'),
+      (rel, error) => request.log.warn({ user: who, path: rel, error }, 'descargas: delete failed'),
+    );
   });
 
   app.get('/file', { preHandler: mediaGuard }, (request, reply) => serveFile(request, reply, false));
