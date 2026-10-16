@@ -1948,11 +1948,54 @@ Frontend `:5188`, backend `:3015`.
 
 ---
 
+## Descargas — Visor de solo lectura de la carpeta de descargas del VPS
+
+### Ubicación
+Calendario/descargas/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que el resto de subapps)
+- Frontend: React + Vite + TypeScript, con interruptor claro/oscuro (`theme.ts` + `ThemeToggle`)
+- Sin base de datos: filesystem directo sobre `DOWNLOADS_ROOT` (en producción `/data`, bind mount **de solo lectura** de `/home/manu/rat_downloads` del host)
+- Autenticación: Keycloak, JWT verificado a mano (mismo patrón que mensajeria/storage). Las rutas que sirven bytes (`/file`, `/download`) aceptan además el token como `?token=` (para `<img>`/`<video>`/`<a>`, igual que storage); `/list` solo acepta `Authorization: Bearer`
+- Validaciones: manuales (sin Zod). Con tests de backend y frontend (vitest), ejecutados en CI
+
+### Roles
+`admin`, `descargas_admin` y `descargas_invitado` → acceso completo **de lectura** (la app no tiene ningún endpoint de escritura, así que los dos roles delegados son equivalentes). `familia` e `invitado` NO tienen acceso: son archivos privados. En el AppLauncher la entrada es `roles: ['admin']` (admin-only por defecto, como Gastos/Pisos); los roles delegados existen para asignarse desde Panel.
+
+### Rutas (`/descargas/api/*`) — todas GET
+- `GET /list?path=` — entradas de una carpeta (`name`, `path`, `type` dir|file, `size`, `mtime`, `mime`, `category` image|video|audio|pdf|text|other). Orden: carpetas primero, luego lo más reciente primero. Oculta dotfiles y symlinks que escapan de la raíz
+- `GET /file?path=` — contenido en streaming con `Range` (206/416) y `Content-Type` correcto, `Content-Disposition: inline`
+- `GET /download?path=` — igual, con `Content-Disposition: attachment` (nombre RFC 5987)
+- `GET /health`
+
+### Seguridad de rutas (IMPORTANTE)
+`services/pathSafety.ts`: validación léxica (sin `..`, sin rutas absolutas ni letras de unidad, sin `\`, sin bytes nulos) **y** `realpath` + comprobación de prefijo con separador (`root-evil` no pasa como `root`). Un symlink que escapa de la raíz responde 404, no 403, para no revelar qué existe fuera. El `%2e%2e` ya lo decodifica Fastify una vez; un `%252e%252e` llega como nombre literal y simplemente no existe.
+
+Los archivos no son de fiar: `X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox; default-src 'none'` (salvo PDF, donde bloquearía el visor de Chrome) y `.html`/`.svg`/`.xml`/`.js` se sirven siempre como `application/octet-stream` + `attachment`, nunca inline. JSON/CSV/MD salen como `text/plain`.
+
+### El token en la URL (trade-off aceptado)
+Las URLs de media llevan el access token de Keycloak en `?token=` (mismo patrón que storage). Para no dejarlo en logs: el logger de Fastify lo enmascara (`services/redact.ts`), el nginx del frontend (`descargas/frontend/nginx.conf`) y el bloque `location /descargas/api/` de `nginx/calendario.conf` llevan `access_log off`. El frontend lo renueva cada 45 s y construye cada URL en el momento de usarla (miniaturas perezosas con IntersectionObserver); el reproductor reintenta una vez con token nuevo si la reproducción larga lo ve caducar.
+
+### Variables de entorno del backend
+`DOWNLOADS_ROOT` (default `/data`), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3016). En el VPS, `DESCARGAS_HOST_PATH` (opcional, default `/home/manu/rat_downloads`) cambia la carpeta del host montada en `/data:ro`; no hace falta ningún `.env`.
+
+### Limitación conocida
+No hay endpoint de miniaturas: la rejilla carga la imagen original (con carga perezosa). Con carpetas de fotos muy pesadas convendría añadir `sharp` como en storage.
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/descargas-backend:latest`, `ghcr.io/manuhddev/descargas-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
-Los doce roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
+Los catorce roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
 `mapacyd_invitado`, `reparto_admin`, `reparto_invitado`, `mensajeria_admin`, `mensajeria_invitado`,
-`tenis_admin`, `tenis_invitado`. Cualquier código que filtre por rol DEBE usar
+`tenis_admin`, `tenis_invitado`, `descargas_admin`, `descargas_invitado`. Cualquier código que filtre por rol DEBE usar
 exactamente estos nombres.
 
 | Rol                 | Acceso                                                       |
@@ -1969,8 +2012,12 @@ exactamente estos nombres.
 | mensajeria_invitado | Consulta del inbox/log de Mensajería (solo lectura)             |
 | tenis_admin         | Rol delegado para Tenis (repo externo `tennis-predictor`) — creado en Keycloak/Panel, aún sin uso porque el AppLauncher mantiene `tenis` en `roles: ['admin']` (admin-only por defecto) |
 | tenis_invitado      | Rol delegado de solo lectura para Tenis — mismo estado que `tenis_admin`, creado pero sin efecto en el AppLauncher hasta que se decida abrir acceso delegado |
+| descargas_admin     | Acceso de lectura a Descargas (carpeta `/home/manu/rat_downloads` del VPS); la app no tiene escritura, así que equivale a `descargas_invitado` |
+| descargas_invitado  | Acceso de lectura a Descargas — mismo alcance que `descargas_admin`; `familia` e `invitado` quedan fuera (archivos privados) |
 
 Locales tampoco añade rol: solo `admin`, como Gastos/Ofertas/Ruta/Pisos.
+
+Descargas añade `descargas_admin` y `descargas_invitado`, ambos de solo lectura. `descargas_admin` se asigna a `propietario` por el script de realm; `descargas_invitado` se crea pero queda sin asignar (delegable desde Panel).
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
@@ -2002,7 +2049,7 @@ fue el segundo y `mensajeria_invitado` el tercero. A diferencia de los roles
 los tres se crean en el realm pero quedan sin asignar, delegables manualmente
 desde Panel cuando haga falta.
 
-El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin`, `reparto_admin`, `mensajeria_admin` y `tenis_admin`.
+El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin`, `reparto_admin`, `mensajeria_admin`, `tenis_admin` y `descargas_admin`.
 
 ## Keycloak — configuración y despliegue
 
@@ -2053,6 +2100,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Finanzas           | :5187    | :3014   |
 | Tenis (repo externo, stack propio) | :5189 | :8000 |
 | Mensajería         | :5188    | :3015   |
+| Descargas          | :5190    | :3016   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -2071,12 +2119,12 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 
 - **Sin tests**: Panel (backend) tiene vitest desde el dashboard de uso de APIs (`subappUsage.ts`, `routes/usage.ts`) pero el resto del backend (`users.ts`, `me.ts`, `keycloakAdmin.ts`) y todo el frontend siguen sin cobertura; mapacyd (backend y frontend) sigue sin ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **16 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 16 Dockerfiles y 16 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 16 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (16 internas + 3 externas), no solo la lista de apps.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **17 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 17 Dockerfiles y 17 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 17 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (17 internas + 3 externas), no solo la lista de apps.
 
 `locales` ya está en las copias del AppLauncher (`roles: ['admin']`), añadido
 junto con su frontend (fase 9). `finanzas` ya está en las copias
 (`roles: ['admin', 'invitado']`). `mensajeria` ya está en las 16 copias
-internas (`roles: ['admin']`). `tenis` también está en las 16 copias internas
+internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `tenis` también está en las 16 copias internas
 (`roles: ['admin']`) — mismo patrón que `futbol`: repo externo
 (`tennis-predictor`), solo registrado aquí para el AppLauncher/Keycloak/nginx
 compartidos. `crypto-trader/frontend`, `football-predictor/frontend` y
