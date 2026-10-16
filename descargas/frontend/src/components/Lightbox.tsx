@@ -3,15 +3,20 @@ import type { DirEntry } from '../lib/files';
 import { formatSize } from '../lib/files';
 import { downloadUrl, fileUrl, thumbUrl } from '../services/api';
 import './Viewer.css';
+import './DeleteUi.css';
 
 interface Props {
   images: DirEntry[];
   index: number;
   onIndexChange: (index: number) => void;
   onClose: () => void;
+  /** When set, an "Eliminar" button is shown (only for users allowed to delete). */
+  onDelete?: (entry: DirEntry) => void;
+  /** Ignore the keyboard (e.g. while the delete confirmation is open). */
+  keysDisabled?: boolean;
 }
 
-export default function Lightbox({ images, index, onIndexChange, onClose }: Props) {
+export default function Lightbox({ images, index, onIndexChange, onClose, onDelete, keysDisabled = false }: Props) {
   const current = images[index];
   const touchStartX = useRef<number | null>(null);
 
@@ -25,13 +30,14 @@ export default function Lightbox({ images, index, onIndexChange, onClose }: Prop
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (keysDisabled) return;
       if (e.key === 'Escape') onClose();
       else if (e.key === 'ArrowLeft') go(-1);
       else if (e.key === 'ArrowRight') go(1);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [go, onClose]);
+  }, [go, onClose, keysDisabled]);
 
   // Built once per image so the token refresh tick does not reload it.
   const src = useMemo(() => fileUrl(current.path), [current.path]);
@@ -72,6 +78,15 @@ export default function Lightbox({ images, index, onIndexChange, onClose }: Prop
         <a className="viewer-btn" href={download} download title="Descargar">
           Descargar
         </a>
+        {onDelete && (
+          <button
+            className="viewer-btn viewer-btn--danger"
+            onClick={() => onDelete(current)}
+            aria-label={`Eliminar ${current.name}`}
+          >
+            Eliminar
+          </button>
+        )}
         <button className="viewer-btn" onClick={onClose} aria-label="Cerrar visor">
           Cerrar
         </button>

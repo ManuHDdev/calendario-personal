@@ -14,7 +14,8 @@ root.render(
 );
 
 // Descargas is private to the owner: admin or descargas_admin / descargas_invitado
-// (the app is read-only, so both delegated roles can view). Same guard as
+// (view only for descargas_invitado; deleting needs admin or descargas_admin).
+// Same guard as
 // mensajeria: login-required + role check before mounting the app.
 keycloak
   .init({ onLoad: 'login-required', checkLoginIframe: false })

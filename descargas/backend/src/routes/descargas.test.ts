@@ -115,7 +115,7 @@ describe('role gating', () => {
     expect(res.statusCode).toBe(403);
   });
 
-  it('exposes no write endpoints', async () => {
+  it('exposes no write endpoints other than POST /delete', async () => {
     for (const method of ['POST', 'PUT', 'PATCH', 'DELETE'] as const) {
       for (const url of ['/descargas/api/list', '/descargas/api/file?path=photo.jpg', '/descargas/api/upload']) {
         const res = await app.inject({ method, url, headers: auth(tokens.admin) });

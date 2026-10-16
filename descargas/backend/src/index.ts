@@ -22,7 +22,7 @@ async function bootstrap() {
 
   await app.register(cors, {
     origin: allowedOrigins,
-    methods: ['GET', 'OPTIONS'],
+    methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Range'],
     exposedHeaders: ['Content-Range', 'Accept-Ranges', 'Content-Length'],
     credentials: true,

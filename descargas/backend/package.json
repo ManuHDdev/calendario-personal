@@ -1,7 +1,7 @@
 {
   "name": "descargas-backend",
   "version": "1.0.0",
-  "description": "Descargas backend — read-only browser/streamer for the files in a mounted host folder (Fastify + Keycloak JWT, no database)",
+  "description": "Descargas backend — browser/streamer (with admin-only deletion) for the files in a mounted host folder (Fastify + Keycloak JWT, no database)",
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
