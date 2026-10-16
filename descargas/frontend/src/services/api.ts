@@ -28,6 +28,41 @@ export async function listDir(path: string, signal?: AbortSignal): Promise<Listi
   return (await res.json()) as Listing;
 }
 
+export interface DeleteResponse {
+  deleted: string[];
+  failed: { path: string; error: string }[];
+}
+
+/** Realm roles of the logged-in user (UI gating only; the backend enforces). */
+export function currentRoles(): string[] {
+  return (keycloak.tokenParsed as { realm_access?: { roles?: string[] } } | undefined)?.realm_access?.roles ?? [];
+}
+
+/**
+ * Permanently deletes files/folders. Token goes in the Authorization header
+ * only (the backend rejects `?token=` on this route). Partial success is a
+ * normal 200 with a non-empty `failed`.
+ */
+export async function deletePaths(paths: string[], signal?: AbortSignal): Promise<DeleteResponse> {
+  await refreshToken(30);
+  const token = keycloak.token;
+  if (!token) throw new Error('Sesión no válida');
+  const res = await fetch(`${BASE}/delete`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paths }),
+    signal,
+  });
+  if (!res.ok) {
+    let msg = `Error ${res.status}`;
+    if (res.status === 401) msg = 'La sesión ha caducado, recarga la página';
+    else if (res.status === 403) msg = 'No tienes permiso para eliminar archivos';
+    else if (res.status === 400) msg = 'Petición no válida';
+    throw new Error(msg);
+  }
+  return (await res.json()) as DeleteResponse;
+}
+
 // <img>/<video>/<a> cannot send an Authorization header, so media URLs carry the
 // Keycloak access token as `?token=` (same pattern as storage). Build them at
 // the moment they are needed so the token is as fresh as possible.

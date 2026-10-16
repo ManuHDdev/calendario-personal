@@ -1,11 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AppLauncher from '../components/AppLauncher';
+import ConfirmDeleteDialog, { type DeleteFailure } from '../components/ConfirmDeleteDialog';
 import FileIcon from '../components/FileIcon';
 import LazyImage from '../components/LazyImage';
 import Lightbox from '../components/Lightbox';
 import MediaPlayer from '../components/MediaPlayer';
 import ThemeToggle from '../components/ThemeToggle';
+import {
+  allSelected,
+  canDelete,
+  nextImageAfterDeletion,
+  selectAll,
+  selectedEntries,
+  toggleSelection,
+  withoutDeleted,
+} from '../lib/deletion';
 import {
   buildBreadcrumbs,
   filterEntries,
@@ -18,10 +28,27 @@ import {
   type SortDir,
   type SortKey,
 } from '../lib/files';
-import { downloadUrl, fileUrl, listDir, refreshToken } from '../services/api';
+import { currentRoles, deletePaths, downloadUrl, fileUrl, listDir, refreshToken } from '../services/api';
+import '../components/DeleteUi.css';
 import './DescargasPage.css';
 
 type View = 'grid' | 'list';
+
+/** Hold time (ms) on a tile that enters selection mode on touch screens. */
+const LONG_PRESS_MS = 500;
+
+interface DeleteState {
+  entries: DirEntry[];
+  pending: boolean;
+  error: string | null;
+  failures: DeleteFailure[] | null;
+}
+
+const TrashIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />
+  </svg>
+);
 
 const SORT_LABELS: Record<SortKey, string> = { date: 'Fecha', name: 'Nombre', size: 'Tamaño' };
 const CATEGORY_LABELS: Record<CategoryFilter, string> = {
@@ -69,6 +96,17 @@ export default function DescargasPage() {
   const [playing, setPlaying] = useState<DirEntry | null>(null);
   const [, setTick] = useState(0);
 
+  // Deleting is irreversible: the UI only exists for admin / descargas_admin
+  // (descargas_invitado is view-only). The backend enforces this independently.
+  const deletable = useMemo(() => canDelete(currentRoles()), []);
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleteState, setDeleteState] = useState<DeleteState | null>(null);
+  const pathRef = useRef(path);
+  pathRef.current = path;
+  const pressTimer = useRef<number | null>(null);
+  const longPressed = useRef(false);
+
   // Keep the access token (used in media URLs) valid; the tick re-renders the
   // plain <a> links so new tabs/downloads always get a fresh URL.
   useEffect(() => {
@@ -85,6 +123,8 @@ export default function DescargasPage() {
     setQuery('');
     setCategory('all');
     setLightboxPath(null);
+    setSelecting(false);
+    setSelected(new Set());
     listDir(path, controller.signal)
       .then((res) => setEntries(res.entries))
       .catch((err: unknown) => {
@@ -104,6 +144,24 @@ export default function DescargasPage() {
   );
   const images = useMemo(() => imagesOf(visible), [visible]);
   const lightboxIndex = lightboxPath ? images.findIndex((i) => i.path === lightboxPath) : -1;
+  // Only what is on screen can be deleted: a filter change must never leave
+  // hidden entries silently selected.
+  const chosen = useMemo(() => selectedEntries(visible, selected), [visible, selected]);
+  const everythingSelected = allSelected(visible, selected);
+
+  const stopSelecting = useCallback(() => {
+    setSelecting(false);
+    setSelected(new Set());
+  }, []);
+
+  useEffect(() => {
+    if (!selecting) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !deleteState && !lightboxPath && !playing) stopSelecting();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selecting, deleteState, lightboxPath, playing, stopSelecting]);
 
   const navigate = useCallback(
     (next: string) => {
@@ -129,6 +187,91 @@ export default function DescargasPage() {
   const crumbs = buildBreadcrumbs(path);
   const fileCount = entries.filter((e) => e.type === 'file').length;
   const dirCount = entries.length - fileCount;
+
+  function requestDelete(targets: DirEntry[]) {
+    if (!deletable || targets.length === 0) return;
+    setDeleteState({ entries: targets, pending: false, error: null, failures: null });
+  }
+
+  async function confirmDelete() {
+    if (!deleteState || deleteState.pending) return;
+    const targets = deleteState.entries;
+    setDeleteState({ ...deleteState, pending: true, error: null });
+    try {
+      const res = await deletePaths(targets.map((t) => t.path));
+      const gone = new Set(res.deleted);
+      setEntries((prev) => withoutDeleted(prev, res.deleted));
+      setSelected((prev) => new Set([...prev].filter((p) => !gone.has(p))));
+      if (lightboxPath && gone.has(lightboxPath)) {
+        setLightboxPath(nextImageAfterDeletion(images, lightboxPath, gone));
+      }
+      if (playing && gone.has(playing.path)) setPlaying(null);
+
+      if (res.failed.length === 0) {
+        setDeleteState(null);
+        stopSelecting();
+      } else {
+        const names = new Map(targets.map((t) => [t.path, t.name]));
+        setDeleteState({
+          entries: targets,
+          pending: false,
+          error: null,
+          failures: res.failed.map((f) => ({ name: names.get(f.path) ?? f.path, error: f.error })),
+        });
+      }
+      // Re-sync with the server in the background (keeps filters/lightbox state).
+      const reloadPath = pathRef.current;
+      listDir(reloadPath)
+        .then((fresh) => {
+          if (pathRef.current === reloadPath) setEntries(fresh.entries);
+        })
+        .catch(() => undefined);
+    } catch (err) {
+      setDeleteState({
+        entries: targets,
+        pending: false,
+        error: err instanceof Error ? err.message : 'No se pudo eliminar',
+        failures: null,
+      });
+    }
+  }
+
+  function closeDeleteDialog() {
+    setDeleteState((state) => (state?.pending ? state : null));
+  }
+
+  function cancelLongPress() {
+    if (pressTimer.current !== null) {
+      window.clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  }
+
+  function startLongPress(entry: DirEntry) {
+    if (!deletable || selecting) return;
+    cancelLongPress();
+    pressTimer.current = window.setTimeout(() => {
+      pressTimer.current = null;
+      longPressed.current = true;
+      setSelecting(true);
+      setSelected(new Set([entry.path]));
+    }, LONG_PRESS_MS);
+  }
+
+  /** Swallows the click that follows a long press and turns clicks into toggles while selecting. */
+  function interceptClick(e: React.MouseEvent, entry: DirEntry): boolean {
+    if (longPressed.current) {
+      longPressed.current = false;
+      e.preventDefault();
+      return true;
+    }
+    if (selecting) {
+      e.preventDefault();
+      setSelected((prev) => toggleSelection(prev, entry.path));
+      return true;
+    }
+    return false;
+  }
 
   function open(entry: DirEntry) {
     if (entry.type === 'dir') navigate(entry.path);
@@ -162,20 +305,83 @@ export default function DescargasPage() {
       </>
     );
 
+    const isSelected = selected.has(entry.path);
+    const pressHandlers = deletable
+      ? {
+          onPointerDown: () => startLongPress(entry),
+          onPointerUp: cancelLongPress,
+          onPointerLeave: cancelLongPress,
+          onPointerCancel: cancelLongPress,
+          // Touch long-press would otherwise open the browser's link/context menu.
+          onContextMenu: (e: React.MouseEvent) => {
+            if (longPressed.current || window.matchMedia?.('(pointer: coarse)').matches) e.preventDefault();
+          },
+        }
+      : {};
+    const classes = [
+      'entry',
+      deletable ? 'entry--deletable entry--checkable' : '',
+      entry.type === 'dir' ? 'entry--folder' : '',
+      isSelected ? 'entry--selected' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     return (
-      <li key={entry.path} className="entry">
+      <li key={entry.path} className={classes}>
+        {deletable && (
+          <input
+            type="checkbox"
+            className="entry-check"
+            checked={isSelected}
+            aria-label={`Seleccionar ${entry.name}`}
+            onChange={() => {
+              setSelecting(true);
+              setSelected((prev) => toggleSelection(prev, entry.path));
+            }}
+          />
+        )}
         {inApp ? (
-          <button className="entry-main" onClick={() => open(entry)}>
+          <button
+            className="entry-main"
+            {...pressHandlers}
+            onClick={(e) => {
+              if (!interceptClick(e, entry)) open(entry);
+            }}
+          >
             {body}
           </button>
         ) : kind === 'pdf' || kind === 'text' ? (
-          <a className="entry-main" href={fileUrl(entry.path)} target="_blank" rel="noopener noreferrer">
+          <a
+            className="entry-main"
+            href={fileUrl(entry.path)}
+            target="_blank"
+            rel="noopener noreferrer"
+            {...pressHandlers}
+            onClick={(e) => void interceptClick(e, entry)}
+          >
             {body}
           </a>
         ) : (
-          <a className="entry-main" href={downloadUrl(entry.path)} download>
+          <a
+            className="entry-main"
+            href={downloadUrl(entry.path)}
+            download
+            {...pressHandlers}
+            onClick={(e) => void interceptClick(e, entry)}
+          >
             {body}
           </a>
+        )}
+        {deletable && !selecting && (
+          <button
+            className={`entry-delete${entry.type === 'file' ? ' entry-delete--after-download' : ''}`}
+            title={`Eliminar ${entry.name}`}
+            aria-label={`Eliminar ${entry.name}`}
+            onClick={() => requestDelete([entry])}
+          >
+            <TrashIcon />
+          </button>
         )}
         {entry.type === 'file' && (
           <a
@@ -204,7 +410,7 @@ export default function DescargasPage() {
         </div>
       </header>
 
-      <main className="descargas-main">
+      <main className={`descargas-main${selecting ? ' descargas-main--selecting' : ''}`}>
         <nav className="descargas-breadcrumb" aria-label="Ruta">
           {crumbs.map((crumb, i) => (
             <span key={crumb.path} className="crumb-item">
@@ -257,6 +463,15 @@ export default function DescargasPage() {
               {sortDir === 'desc' ? '↓' : '↑'}
             </button>
           </div>
+          {deletable && (
+            <button
+              className={`toolbar-btn${selecting ? ' toolbar-btn--active' : ''}`}
+              onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+              aria-pressed={selecting}
+            >
+              Seleccionar
+            </button>
+          )}
           <div className="toolbar-group" role="group" aria-label="Vista">
             <button
               className={`toolbar-btn${view === 'grid' ? ' toolbar-btn--active' : ''}`}
@@ -298,7 +513,7 @@ export default function DescargasPage() {
         )}
 
         {!loading && !error && visible.length > 0 && (
-          <ul className={`entries entries--${view}`}>{visible.map(renderEntry)}</ul>
+          <ul className={`entries entries--${view}${selecting ? ' entries--selecting' : ''}`}>{visible.map(renderEntry)}</ul>
         )}
       </main>
 
@@ -308,6 +523,40 @@ export default function DescargasPage() {
           index={lightboxIndex}
           onIndexChange={(i) => setLightboxPath(images[i].path)}
           onClose={() => setLightboxPath(null)}
+          onDelete={deletable ? (entry) => requestDelete([entry]) : undefined}
+          keysDisabled={deleteState !== null}
+        />
+      )}
+      {selecting && (
+        <div className="selection-bar" role="region" aria-label="Acciones de selección">
+          <span className="selection-count" aria-live="polite">
+            {chosen.length} {chosen.length === 1 ? 'seleccionado' : 'seleccionados'}
+          </span>
+          <button
+            className="toolbar-btn"
+            onClick={() => setSelected(everythingSelected ? new Set() : selectAll(visible))}
+            disabled={visible.length === 0}
+          >
+            {everythingSelected ? 'Quitar selección' : `Seleccionar todo (${visible.length})`}
+          </button>
+          <button
+            className="confirm-btn confirm-btn--danger"
+            onClick={() => requestDelete(chosen)}
+            disabled={chosen.length === 0}
+          >
+            Eliminar ({chosen.length})
+          </button>
+          <button className="toolbar-btn" onClick={stopSelecting}>Cancelar</button>
+        </div>
+      )}
+      {deleteState && (
+        <ConfirmDeleteDialog
+          entries={deleteState.entries}
+          pending={deleteState.pending}
+          error={deleteState.error}
+          failures={deleteState.failures}
+          onConfirm={() => void confirmDelete()}
+          onCancel={closeDeleteDialog}
         />
       )}
       {playing && <MediaPlayer key={playing.path} entry={playing} onClose={() => setPlaying(null)} />}
