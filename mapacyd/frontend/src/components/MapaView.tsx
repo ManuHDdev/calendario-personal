@@ -6,6 +6,7 @@ import { COLOR_ESTADO, COLOR_APARCAMIENTO } from '../types/zona';
 import { useAuth } from '../hooks/useAuth';
 import { useZonas } from '../hooks/useZonas';
 import { usePreferenciaCiudad } from '../hooks/usePreferenciaCiudad';
+import { useUbicacion } from '../hooks/useUbicacion';
 import { AdminPanel } from './AdminPanel';
 import { ZonaModal } from './ZonaModal';
 import { HorarioPanel } from './HorarioPanel';
@@ -170,6 +171,10 @@ export function MapaView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef       = useRef<L.Map | null>(null);
   const markersRef   = useRef<L.CircleMarker[]>([]);
+  const { ubicacion, estado: estadoUbicacion, activar, desactivar } = useUbicacion();
+  const posMarkerRef   = useRef<L.CircleMarker | null>(null);
+  const posPrecisionRef = useRef<L.Circle | null>(null);
+  const centradoRef    = useRef(false);
 
   // Inicializar el mapa una sola vez
   useEffect(() => {
@@ -245,6 +250,41 @@ export function MapaView() {
     });
   }, [zonas, tick, isAdmin]);
 
+  // Punto azul de "mi ubicación" + círculo de precisión; centra solo en el primer fix
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (!ubicacion) {
+      posMarkerRef.current?.remove();
+      posPrecisionRef.current?.remove();
+      posMarkerRef.current = null;
+      posPrecisionRef.current = null;
+      centradoRef.current = false;
+      return;
+    }
+
+    const latlng: L.LatLngExpression = [ubicacion.lat, ubicacion.lng];
+    if (posMarkerRef.current && posPrecisionRef.current) {
+      posMarkerRef.current.setLatLng(latlng);
+      posPrecisionRef.current.setLatLng(latlng).setRadius(ubicacion.precision);
+    } else {
+      posPrecisionRef.current = L.circle(latlng, {
+        radius: ubicacion.precision, color: '#0071e3', weight: 1,
+        fillColor: '#0071e3', fillOpacity: 0.12, interactive: false,
+      }).addTo(map);
+      posMarkerRef.current = L.circleMarker(latlng, {
+        radius: 8, color: '#ffffff', weight: 3,
+        fillColor: '#0071e3', fillOpacity: 1, interactive: false,
+      }).addTo(map);
+    }
+
+    if (!centradoRef.current) {
+      centradoRef.current = true;
+      map.setView(latlng, Math.max(map.getZoom(), 16));
+    }
+  }, [ubicacion]);
+
   // Recalcular colores cada 60 segundos
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 60_000);
@@ -308,6 +348,24 @@ export function MapaView() {
           ))}
         </select>
       </div>
+
+      <button
+        className={`mapa-ubicacion-btn${estadoUbicacion === 'activa' ? ' mapa-ubicacion-btn--activa' : ''}`}
+        onClick={() => (estadoUbicacion === 'inactiva' || estadoUbicacion === 'denegada' || estadoUbicacion === 'error' ? activar() : desactivar())}
+        title={
+          estadoUbicacion === 'denegada'
+            ? 'Permiso denegado: actívalo en los ajustes del navegador para este sitio'
+            : estadoUbicacion === 'error'
+              ? 'No se pudo obtener la ubicación'
+              : 'Mi ubicación en tiempo real'
+        }
+      >
+        {estadoUbicacion === 'buscando' ? 'Buscando…'
+          : estadoUbicacion === 'activa' ? '◉ Mi ubicación'
+          : estadoUbicacion === 'denegada' ? 'Permiso denegado'
+          : estadoUbicacion === 'error' ? 'Ubicación no disponible'
+          : '◎ Mi ubicación'}
+      </button>
 
       {isAdmin && (
         <button className="mapa-admin-btn" onClick={() => setShowAdmin(true)}>

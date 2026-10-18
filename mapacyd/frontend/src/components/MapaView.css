@@ -88,7 +88,29 @@
   color: var(--text-primary);
 }
 
-/* Botón Panel Admin ────────────────────────────────── */
+/* Botón Mi ubicación ───────────────────────────────── */
+.mapa-ubicacion-btn {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 1000;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-family: system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.mapa-ubicacion-btn--activa {
+  color: #0071e3;
+}
+
+
 .mapa-admin-btn {
   position: fixed;
   bottom: 24px;
