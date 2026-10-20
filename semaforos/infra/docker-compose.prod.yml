@@ -1,0 +1,67 @@
+# Las tres variables de base de datos van con `:?` porque no tienen valor por
+# defecto posible: sin contrasena, Postgres se niega a inicializarse y lo unico
+# que se ve es "semaforos-db is unhealthy". Con `:?`, compose aborta al instante
+# nombrando la que falta. El .env lo escribe el workflow "Semaforos · Provisionar
+# VPS" (ver DEPLOY_NOTES.md). KEYCLOAK_CERTS_URL y CORS_ORIGIN traen su valor de
+# produccion aqui mismo con `:-`.
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  semaforos-db:
+    image: postgres:15
+    container_name: semaforos-db
+    environment:
+      POSTGRES_DB:       "${SEMAFOROS_DB_NAME:?falta SEMAFOROS_DB_NAME en /home/manu/semaforos/.env (ver DEPLOY_NOTES.md)}"
+      POSTGRES_USER:     "${SEMAFOROS_DB_USER:?falta SEMAFOROS_DB_USER en /home/manu/semaforos/.env (ver DEPLOY_NOTES.md)}"
+      POSTGRES_PASSWORD: "${SEMAFOROS_DB_PASSWORD:?falta SEMAFOROS_DB_PASSWORD en /home/manu/semaforos/.env (ver DEPLOY_NOTES.md)}"
+    volumes:
+      - semaforos_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SEMAFOROS_DB_USER:?falta SEMAFOROS_DB_USER en /home/manu/semaforos/.env (ver DEPLOY_NOTES.md)} -d ${SEMAFOROS_DB_NAME:?falta SEMAFOROS_DB_NAME en /home/manu/semaforos/.env (ver DEPLOY_NOTES.md)}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calendario-net
+
+  semaforos-backend:
+    image: ghcr.io/manuhddev/semaforos-backend:latest
+    container_name: semaforos-backend
+    environment:
+      PORT:                  3017
+      SEMAFOROS_DB_HOST:     semaforos-db
+      SEMAFOROS_DB_NAME:     "${SEMAFOROS_DB_NAME:?falta SEMAFOROS_DB_NAME en /home/manu/semaforos/.env (ver DEPLOY_NOTES.md)}"
+      SEMAFOROS_DB_USER:     "${SEMAFOROS_DB_USER:?falta SEMAFOROS_DB_USER en /home/manu/semaforos/.env (ver DEPLOY_NOTES.md)}"
+      SEMAFOROS_DB_PASSWORD: "${SEMAFOROS_DB_PASSWORD:?falta SEMAFOROS_DB_PASSWORD en /home/manu/semaforos/.env (ver DEPLOY_NOTES.md)}"
+      KEYCLOAK_CERTS_URL:    ${KEYCLOAK_CERTS_URL:-http://calendario-keycloak:8080/keycloak/realms/calendario/protocol/openid-connect/certs}
+      CORS_ORIGIN:           ${CORS_ORIGIN:-https://elbunkerdelingeniero.duckdns.org}
+      OVERPASS_URL:          ${OVERPASS_URL:-https://overpass-api.de/api/interpreter}
+      NODE_ENV:              production
+    depends_on:
+      semaforos-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3017/semaforos/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - calendario-net
+
+  semaforos-frontend:
+    image: ghcr.io/manuhddev/semaforos-frontend:latest
+    container_name: semaforos-frontend
+    depends_on:
+      - semaforos-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+volumes:
+  semaforos_pgdata:

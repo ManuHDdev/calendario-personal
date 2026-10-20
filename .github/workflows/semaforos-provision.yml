@@ -1,0 +1,123 @@
+name: Semaforos · Provisionar VPS
+
+# Alta (o re-alta) de la subapp `semaforos` en el VPS, y primera importacion de
+# una ciudad. Se lanza a mano (Actions -> este workflow -> Run workflow).
+#
+# Existe porque el despliegue normal (semaforos-ci.yml) necesita un .env con la
+# contrasena de la base de datos y esa contrasena no puede vivir en el
+# repositorio. Hace por Actions lo que de otro modo seria entrar por SSH: es el
+# mismo patron que pisos-provision.yml, sin secretos extra porque semaforos no
+# usa ninguna API de pago ni bot.
+#
+# Requisito previo: haber hecho merge a main y que semaforos-ci.yml haya
+# publicado las imagenes en GHCR (el compose las descarga).
+#
+# Es idempotente: conserva la contrasena de la base de datos que ya hubiera
+# (regenerarla dejaria la base inaccesible) y reimportar una ciudad no pisa
+# nombres ni accesos editados a mano.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ciudad:
+        description: 'Municipio a importar de OpenStreetMap (vacio = no importar)'
+        default: 'Cáceres'
+        required: false
+
+jobs:
+  provision:
+    name: Escribir .env, levantar semaforos e importar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar compose e init.sql al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "semaforos/infra/docker-compose.prod.yml,semaforos/infra/init.sql"
+          target: /home/manu/semaforos
+          strip_components: 2
+
+      - name: Escribir .env, levantar la aplicacion e importar
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          CIUDAD: ${{ inputs.ciudad }}
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: CIUDAD
+          script: |
+            set -euo pipefail
+            cd /home/manu/semaforos
+
+            # La contrasena se genera aqui y solo si no habia una: si la base ya
+            # esta inicializada, cambiarla la dejaria inaccesible.
+            PASS=""
+            if [ -f .env ]; then
+              PASS=$(grep -E '^SEMAFOROS_DB_PASSWORD=' .env | cut -d= -f2- || true)
+            fi
+            if [ -z "$PASS" ]; then
+              PASS=$(openssl rand -hex 24)
+              echo "Contrasena de base de datos generada."
+            else
+              echo "Se conserva la contrasena de base de datos existente."
+            fi
+
+            umask 077
+            cat > .env <<ENV
+            SEMAFOROS_DB_NAME=semaforos
+            SEMAFOROS_DB_USER=semaforos
+            SEMAFOROS_DB_PASSWORD=${PASS}
+            ENV
+            chmod 600 .env
+            echo ".env escrito."
+
+            # Un intento previo sin .env pudo dejar un semaforos-db a medio crear,
+            # con un volumen sin inicializar. Se retira para que init.sql corra
+            # limpio; no hay datos que perder todavia.
+            if docker inspect semaforos-db >/dev/null 2>&1; then
+              if ! docker exec semaforos-db pg_isready -U semaforos -d semaforos >/dev/null 2>&1; then
+                echo "Retirando un semaforos-db previo que nunca llego a inicializarse."
+                docker compose -f docker-compose.prod.yml down -v || true
+              fi
+            fi
+
+            docker compose -f docker-compose.prod.yml pull semaforos-backend semaforos-frontend
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "Esperando a que el backend responda..."
+            for i in $(seq 1 30); do
+              if docker exec semaforos-backend node -e "require('http').get('http://localhost:3017/semaforos/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))" 2>/dev/null; then
+                echo "El backend responde."
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "El backend no respondio en 60 s. Log:"
+                docker logs semaforos-backend --tail 40 || true
+                exit 1
+              fi
+              sleep 2
+            done
+
+            docker compose -f docker-compose.prod.yml ps
+
+            # La importacion NO hace fallar el aprovisionamiento: si Overpass esta
+            # caido o el nombre no coincide, la app ya esta levantada y se puede
+            # reintentar desde la propia interfaz (barra "Importar ciudad").
+            if [ -n "${CIUDAD:-}" ]; then
+              echo ""
+              echo "Importando '${CIUDAD}' desde OpenStreetMap..."
+              docker exec semaforos-backend node dist/scripts/importar.js "${CIUDAD}" \
+                || echo "AVISO: la importacion fallo. Reintentala desde la interfaz o relanza este workflow."
+            fi
+
+            echo ""
+            echo "RECUERDA: falta el bloque 'location /semaforos/' de nginx (se aplica in situ, ver DEPLOY_NOTES.md)."
