@@ -33,6 +33,7 @@ function appUrls(): Record<string, string> {
     finanzas:   local ? 'http://localhost:5187/finanzas/'  : '/finanzas/',
     mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
     descargas:  local ? 'http://localhost:5190/descargas/'  : '/descargas/',
+    semaforos:  local ? 'http://localhost:5191/semaforos/' : '/semaforos/',
   };
 }
 
@@ -79,6 +80,9 @@ export class AppLauncher {
     // descargas: visor de solo lectura de la carpeta del VPS /home/manu/rat_downloads,
     // uso exclusivo del propietario (archivos privados: familia/invitado excluidos).
     { id: 'descargas',  nombre: 'Descargas',  color: '#78909c', roles: ['admin'], url: '' },
+    // semaforos: estado estimado de los semáforos de la ciudad en un mapa; datos
+    // de OpenStreetMap + tiempos anotados a mano. Uso exclusivo del propietario.
+    { id: 'semaforos',  nombre: 'Semáforos',  color: '#f43f5e', roles: ['admin'], url: '' },
   ];
 
   get apps(): App[] {
