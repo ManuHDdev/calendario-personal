@@ -40,6 +40,9 @@ const APPS: AppDef[] = [
   // descargas: visor de solo lectura de la carpeta del VPS /home/manu/rat_downloads,
   // uso exclusivo del propietario (archivos privados: familia/invitado excluidos).
   { id: 'descargas',  nombre: 'Descargas',  color: '#78909c', roles: ['admin'] },
+  // semaforos: estado estimado de los semáforos de la ciudad en un mapa; datos
+  // de OpenStreetMap + tiempos anotados a mano. Uso exclusivo del propietario.
+  { id: 'semaforos',  nombre: 'Semáforos',  color: '#f43f5e', roles: ['admin'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -65,6 +68,7 @@ function getUrls(): Record<string, string> {
     finanzas:   local ? 'http://localhost:5187/finanzas/' : '/finanzas/',
     mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
     descargas:  local ? 'http://localhost:5190/descargas/' : '/descargas/',
+    semaforos:  local ? 'http://localhost:5191/semaforos/' : '/semaforos/',
   };
 }
 
@@ -223,6 +227,15 @@ function AppIcon({ id }: { id: string }) {
           <path d="M12 3v12"/>
           <path d="M7 9l5 5 5-5"/>
           <path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
+        </svg>
+      );
+    case 'semaforos':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <rect x="8" y="2.5" width="8" height="19" rx="3"/>
+          <circle cx="12" cy="7" r="1.6" fill="white" stroke="none"/>
+          <circle cx="12" cy="12" r="1.6" fill="white" stroke="none"/>
+          <circle cx="12" cy="17" r="1.6" fill="white" stroke="none"/>
         </svg>
       );
     default:
