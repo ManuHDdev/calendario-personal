@@ -184,3 +184,74 @@ ajustan en un follow-up, no bloquean el resto.
 - **No levantar `locales-valhalla`.** Perfil `valhalla`, apagado a propósito
   (~1 h de teselas, varios GB). Con ORS funciona desde el minuto uno.
 - **No copiar `nginx/calendario.conf` al servidor.** Solo el bloque, a mano.
+
+---
+
+## `semaforos` — alta de la subapp (nueva, admin-only)
+
+Mapa de semáforos con color estimado y cuenta atrás. Los semáforos salen de
+OpenStreetMap; los tiempos los anota el propietario. **No toca Keycloak** (sin rol
+nuevo) **ni los datos de ninguna otra subapp.** Backend `:3017`, BD propia
+`semaforos-db`, imágenes `ghcr.io/manuhddev/semaforos-{backend,frontend}`.
+
+### 1. Mergear a `main`
+
+`semaforos-ci.yml` construye y publica las imágenes. **El paso de despliegue sale
+en verde con un aviso** ("no hay /home/manu/semaforos/.env") la primera vez: es lo
+esperado, todavía no hay `.env`.
+
+### 2. Provisionar (una sola vez): GitHub → Actions → "Semaforos · Provisionar VPS" → Run workflow
+
+Sin secretos nuevos. Escribe `/home/manu/semaforos/.env` (genera la contraseña de
+la BD solo si no había una), levanta `semaforos-db`, `semaforos-backend` y
+`semaforos-frontend`, espera al health-check e **importa Cáceres** (campo
+`ciudad`, vacío = no importar). Es idempotente.
+
+Comprobación (por SSH, opcional):
+
+```bash
+curl -s localhost:3017/semaforos/api/health   # solo si se publica el puerto; si no, desde el contenedor:
+docker exec semaforos-backend node -e "require('http').get('http://localhost:3017/semaforos/api/health', r => console.log(r.statusCode))"
+docker logs semaforos-backend --tail 40
+docker compose -f /home/manu/semaforos/docker-compose.prod.yml ps
+```
+
+### 3. nginx — aplicar el bloque IN SITU
+
+Igual que `locales`: el fichero del servidor es
+`/home/manu/nginx-shared/conf.d/elbunkerdelingeniero.conf` (ha divergido del repo —
+**no copiar `nginx/calendario.conf` encima**). Añadir, junto a los otros bloques de
+subapp, el bloque `location /semaforos/` que está en `nginx/calendario.conf`
+(proxy a `http://semaforos-frontend:80`, `proxy_read_timeout 180s`). Después:
+
+```bash
+docker exec <contenedor-nginx> nginx -t && docker exec <contenedor-nginx> nginx -s reload
+```
+
+Verifica que `https://elbunkerdelingeniero.duckdns.org/semaforos/` carga y pide login.
+
+### 4. La primera importación NO está verificada contra Overpass real
+
+El parser se probó con un fixture sintético; desde el entorno de desarrollo no hubo
+acceso a Overpass. Tras provisionar, mira el resultado:
+
+```bash
+docker logs semaforos-backend --tail 40
+```
+
+y abre el mapa: deberían verse cruces de Cáceres con 2-4 accesos cada uno. Si la
+importación falló (nombre que no coincide con el municipio en OSM, Overpass caído o
+cambio de formato), la app ya está levantada: reintenta desde la barra "Importar
+ciudad" de la interfaz, o relanza el workflow.
+
+### 5. Copias externas del AppLauncher (pendiente)
+
+`semaforos` está ya en las 18 copias internas. Siguen sin él las 3 externas
+(`crypto-trader`, `football-predictor`, `tennis-predictor`), que además ya iban por
+detrás (les falta también `descargas`). Se actualizan aparte.
+
+### Lo que NO hay que hacer
+
+- No copiar `nginx/calendario.conf` encima del fichero del servidor.
+- No regenerar la contraseña de `semaforos-db` si la base ya existe: el workflow ya
+  la conserva; hacerlo a mano dejaría la BD inaccesible.
