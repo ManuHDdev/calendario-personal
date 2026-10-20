@@ -2378,7 +2378,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 `locales` ya está en las copias del AppLauncher (`roles: ['admin']`), añadido
 junto con su frontend (fase 9). `finanzas` ya está en las copias
 (`roles: ['admin', 'invitado']`). `mensajeria` ya está en las 16 copias
-internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `semaforos` está en las 19 copias internas (`roles: ['admin']`) y tampoco en las 3 externas todavía (las de `football-predictor` y `tennis-predictor` ya iban por detrás: les faltan `descargas` y `semaforos`). `tenis` también está en las 16 copias internas
+internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `semaforos` y `viajes` (color `#ec4899`, icono de maleta) están en las 19 copias internas (`roles: ['admin']`) y tampoco en las 3 externas todavía (las de `football-predictor` y `tennis-predictor` ya iban por detrás: les faltan `descargas` y `semaforos`). `tenis` también está en las 16 copias internas
 (`roles: ['admin']`) — mismo patrón que `futbol`: repo externo
 (`tennis-predictor`), solo registrado aquí para el AppLauncher/Keycloak/nginx
 compartidos. `crypto-trader/frontend`, `football-predictor/frontend` y
