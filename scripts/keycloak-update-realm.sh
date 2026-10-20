@@ -5,11 +5,12 @@
 # Actualiza el realm "calendario" en Keycloak con los roles correctos
 # (admin / familia / invitado / paraisos_admin / mapacyd_admin / mapacyd_invitado /
 # reparto_admin / reparto_invitado / mensajeria_admin / mensajeria_invitado /
-# tenis_admin / tenis_invitado / descargas_admin / descargas_invitado) y asigna
+# tenis_admin / tenis_invitado / descargas_admin / descargas_invitado / viajes_admin /
+# viajes_invitado) y asigna
 # los roles admin, paraisos_admin, mapacyd_admin, reparto_admin,
-# mensajeria_admin, tenis_admin y descargas_admin al usuario
+# mensajeria_admin, tenis_admin, descargas_admin y viajes_admin al usuario
 # "propietario". mapacyd_invitado, reparto_invitado, mensajeria_invitado,
-# tenis_invitado y descargas_invitado se crean pero NO se asignan a nadie automáticamente —
+# tenis_invitado, descargas_invitado y viajes_invitado se crean pero NO se asignan a nadie automáticamente —
 # existen para asignarse desde Panel (convención documentada para roles
 # "_invitado").
 #
@@ -56,7 +57,7 @@ TOKEN=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).access_token)"
 ok "Token de admin obtenido"
 
 # ── 2. Crear roles si no existen ──────────────────────────────────────────────
-for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin mapacyd_invitado reparto_admin reparto_invitado mensajeria_admin mensajeria_invitado tenis_admin tenis_invitado descargas_admin descargas_invitado; do
+for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin mapacyd_invitado reparto_admin reparto_invitado mensajeria_admin mensajeria_invitado tenis_admin tenis_invitado descargas_admin descargas_invitado viajes_admin viajes_invitado; do
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     "$HOST/admin/realms/$REALM/roles" \
     -H "Authorization: Bearer $TOKEN" \
@@ -235,6 +236,24 @@ fi
 # NOTA: 'descargas_invitado' se crea en el bucle de arriba pero NO se asigna a
 # nadie aquí — la app es de solo lectura, delegable desde Panel cuando haga falta.
 
+# ── 4h. Asignar rol "viajes_admin" al usuario ───────────────────────────────
+VIAJES_ADMIN_ROLE_JSON=$(curl -sf   "$HOST/admin/realms/$REALM/roles/viajes_admin"   -H "Authorization: Bearer $TOKEN")
+
+VIAJES_ADMIN_ROLE_ID=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).id)" "$VIAJES_ADMIN_ROLE_JSON")
+
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST   "$HOST/admin/realms/$REALM/users/$USER_ID/role-mappings/realm"   -H "Authorization: Bearer $TOKEN"   -H "Content-Type: application/json"   -d "[{\"id\":\"$VIAJES_ADMIN_ROLE_ID\",\"name\":\"viajes_admin\"}]")
+
+if [ "$HTTP_STATUS" = "204" ]; then
+  ok "Rol 'viajes_admin' asignado a 'propietario'"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  warn "Rol 'viajes_admin' ya estaba asignado (OK)"
+else
+  warn "Respuesta $HTTP_STATUS al asignar rol (puede que ya lo tenga)"
+fi
+
+# NOTA: 'viajes_invitado' se crea en el bucle de arriba pero NO se asigna a
+# nadie aquí — solo lectura, delegable desde Panel cuando haga falta.
+
 # ── 5. Actualizar redirect URIs del cliente calendario-frontend ───────────────
 CLIENTS_JSON=$(curl -sf \
   "$HOST/admin/realms/$REALM/clients?clientId=calendario-frontend" \
@@ -254,8 +273,8 @@ CLIENT_ID=$(node -e "const a=JSON.parse(process.argv[1]); process.stdout.write(a
 # la lista de solo-desarrollo, rompiendo el login de todas las apps. Al no
 # haber distinción de entorno, unificar la lista es la forma segura de
 # evitar esa clase de bug sin depender de cómo se invoque el script.
-REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*","http://localhost:5180/*","http://localhost:5181/*","http://localhost:5182/*","http://localhost:5183/*","http://localhost:5184/*","http://localhost:5185/*","http://localhost:5187/*","http://localhost:5188/*","http://localhost:5190/*","https://elbunkerdelingeniero.duckdns.org/*"]'
-WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179","http://localhost:5180","http://localhost:5181","http://localhost:5182","http://localhost:5183","http://localhost:5184","http://localhost:5185","http://localhost:5187","http://localhost:5188","http://localhost:5190","https://elbunkerdelingeniero.duckdns.org"]'
+REDIRECT_URIS='["http://localhost:4200/*","http://localhost:5173/*","http://localhost:5174/*","http://localhost:5175/*","http://localhost:5176/*","http://localhost:5177/*","http://localhost:5178/*","http://localhost:5179/*","http://localhost:5180/*","http://localhost:5181/*","http://localhost:5182/*","http://localhost:5183/*","http://localhost:5184/*","http://localhost:5185/*","http://localhost:5187/*","http://localhost:5188/*","http://localhost:5190/*","http://localhost:5191/*","https://elbunkerdelingeniero.duckdns.org/*"]'
+WEB_ORIGINS='["http://localhost:4200","http://localhost:5173","http://localhost:5174","http://localhost:5175","http://localhost:5176","http://localhost:5177","http://localhost:5178","http://localhost:5179","http://localhost:5180","http://localhost:5181","http://localhost:5182","http://localhost:5183","http://localhost:5184","http://localhost:5185","http://localhost:5187","http://localhost:5188","http://localhost:5190","http://localhost:5191","https://elbunkerdelingeniero.duckdns.org"]'
 
 # Obtener la configuración actual del cliente y parchearla
 CLIENT_JSON=$(curl -sf \
@@ -286,7 +305,7 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Realm actualizado correctamente ✓${NC}"
 echo -e "${GREEN}════════════════════════════════════════${NC}"
 echo ""
-echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, mapacyd_invitado, reparto_admin, reparto_invitado, mensajeria_admin, mensajeria_invitado, tenis_admin, tenis_invitado, descargas_admin, descargas_invitado"
-echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin, reparto_admin, mensajeria_admin, tenis_admin, descargas_admin"
+echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, mapacyd_invitado, reparto_admin, reparto_invitado, mensajeria_admin, mensajeria_invitado, tenis_admin, tenis_invitado, descargas_admin, descargas_invitado, viajes_admin, viajes_invitado"
+echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin, reparto_admin, mensajeria_admin, tenis_admin, descargas_admin, viajes_admin"
 echo "  Redirect URIs actualizadas para todos los puertos locales"
 echo ""
