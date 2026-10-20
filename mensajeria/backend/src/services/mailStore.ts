@@ -6,6 +6,7 @@ export interface CapturedEmailInput {
   subject: string;
   text: string;
   html?: string | null;
+  source?: 'mock' | 'imap';
 }
 
 export interface CapturedEmailRow {
@@ -15,6 +16,7 @@ export interface CapturedEmailRow {
   subject: string;
   text_body: string;
   html_body: string | null;
+  source: string;
   received_at: string;
 }
 
@@ -27,17 +29,17 @@ export interface CapturedEmailRow {
  */
 export async function captureEmail(input: CapturedEmailInput): Promise<CapturedEmailRow> {
   const result = await pool.query<CapturedEmailRow>(
-    `INSERT INTO mensajeria_captured_emails (from_address, to_address, subject, text_body, html_body)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, from_address, to_address, subject, text_body, html_body, received_at`,
-    [input.from, input.to, input.subject, input.text, input.html ?? null],
+    `INSERT INTO mensajeria_captured_emails (from_address, to_address, subject, text_body, html_body, source)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id, from_address, to_address, subject, text_body, html_body, source, received_at`,
+    [input.from, input.to, input.subject, input.text, input.html ?? null, input.source ?? 'mock'],
   );
   return result.rows[0];
 }
 
 export async function listCapturedEmails(limit: number): Promise<CapturedEmailRow[]> {
   const result = await pool.query<CapturedEmailRow>(
-    `SELECT id, from_address, to_address, subject, text_body, html_body, received_at
+    `SELECT id, from_address, to_address, subject, text_body, html_body, source, received_at
      FROM mensajeria_captured_emails
      ORDER BY received_at DESC
      LIMIT $1`,
@@ -48,7 +50,7 @@ export async function listCapturedEmails(limit: number): Promise<CapturedEmailRo
 
 export async function getCapturedEmail(id: number): Promise<CapturedEmailRow | null> {
   const result = await pool.query<CapturedEmailRow>(
-    `SELECT id, from_address, to_address, subject, text_body, html_body, received_at
+    `SELECT id, from_address, to_address, subject, text_body, html_body, source, received_at
      FROM mensajeria_captured_emails
      WHERE id = $1`,
     [id],
