@@ -1,0 +1,65 @@
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  viajes-db:
+    image: postgres:15
+    container_name: viajes-db
+    environment:
+      POSTGRES_DB:       ${VIAJES_DB_NAME}
+      POSTGRES_USER:     ${VIAJES_DB_USER}
+      POSTGRES_PASSWORD: ${VIAJES_DB_PASSWORD}
+    volumes:
+      - viajes_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${VIAJES_DB_USER} -d ${VIAJES_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calendario-net
+
+  viajes-backend:
+    image: ghcr.io/manuhddev/viajes-backend:latest
+    container_name: viajes-backend
+    environment:
+      PORT:                3017
+      VIAJES_DB_HOST:      viajes-db
+      VIAJES_DB_NAME:      ${VIAJES_DB_NAME}
+      VIAJES_DB_USER:      ${VIAJES_DB_USER}
+      VIAJES_DB_PASSWORD:  ${VIAJES_DB_PASSWORD}
+      KEYCLOAK_CERTS_URL:  ${KEYCLOAK_CERTS_URL}
+      CORS_ORIGIN:         ${CORS_ORIGIN}
+      # Optional: override the routing servers (defaults are the public OSRM
+      # demo server for driving and the FOSSGIS servers for foot/bike).
+      OSRM_URL_DRIVING:    ${OSRM_URL_DRIVING:-}
+      OSRM_URL_FOOT:       ${OSRM_URL_FOOT:-}
+      OSRM_URL_BIKE:       ${OSRM_URL_BIKE:-}
+      NODE_ENV:            production
+    depends_on:
+      viajes-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3017/viajes/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - calendario-net
+
+  viajes-frontend:
+    image: ghcr.io/manuhddev/viajes-frontend:latest
+    container_name: viajes-frontend
+    depends_on:
+      - viajes-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+volumes:
+  viajes_pgdata:
