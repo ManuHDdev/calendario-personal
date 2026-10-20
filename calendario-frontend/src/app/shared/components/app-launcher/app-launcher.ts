@@ -33,6 +33,7 @@ function appUrls(): Record<string, string> {
     finanzas:   local ? 'http://localhost:5187/finanzas/'  : '/finanzas/',
     mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
     descargas:  local ? 'http://localhost:5190/descargas/'  : '/descargas/',
+    camaras:    local ? 'http://localhost:5191/camaras/'    : '/camaras/',
   };
 }
 
@@ -79,6 +80,9 @@ export class AppLauncher {
     // descargas: visor de solo lectura de la carpeta del VPS /home/manu/rat_downloads,
     // uso exclusivo del propietario (archivos privados: familia/invitado excluidos).
     { id: 'descargas',  nombre: 'Descargas',  color: '#78909c', roles: ['admin'], url: '' },
+    // camaras: cámaras públicas (DGT + webcams) de Cáceres, Badajoz, Mérida y Villanueva de la Serena,
+    // uso exclusivo del propietario.
+    { id: 'camaras',    nombre: 'Cámaras',    color: '#3d5a80', roles: ['admin'], url: '' },
   ];
 
   get apps(): App[] {

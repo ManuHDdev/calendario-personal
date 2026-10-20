@@ -40,6 +40,9 @@ const APPS: AppDef[] = [
   // descargas: visor de solo lectura de la carpeta del VPS /home/manu/rat_downloads,
   // uso exclusivo del propietario (archivos privados: familia/invitado excluidos).
   { id: 'descargas',  nombre: 'Descargas',  color: '#78909c', roles: ['admin'] },
+  // camaras: cámaras públicas (DGT + webcams) de Cáceres, Badajoz, Mérida y Villanueva de la Serena,
+  // uso exclusivo del propietario.
+  { id: 'camaras',    nombre: 'Cámaras',    color: '#3d5a80', roles: ['admin'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -65,6 +68,7 @@ function getUrls(): Record<string, string> {
     finanzas:   local ? 'http://localhost:5187/finanzas/' : '/finanzas/',
     mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
     descargas:  local ? 'http://localhost:5190/descargas/' : '/descargas/',
+    camaras:    local ? 'http://localhost:5191/camaras/' : '/camaras/',
   };
 }
 
@@ -223,6 +227,13 @@ function AppIcon({ id }: { id: string }) {
           <path d="M12 3v12"/>
           <path d="M7 9l5 5 5-5"/>
           <path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
+        </svg>
+      );
+    case 'camaras':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="6" width="13" height="12" rx="2"/>
+          <path d="M15 10l7-4v12l-7-4z"/>
         </svg>
       );
     default:

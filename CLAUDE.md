@@ -2021,6 +2021,73 @@ Las URLs de media llevan el access token de Keycloak en `?token=` (mismo patrón
 
 ---
 
+## Cámaras — Cámaras públicas de Cáceres, Badajoz, Mérida y Villanueva de la Serena
+
+### Ubicación
+Calendario/camaras/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que el resto de subapps Node)
+- Frontend: React + Vite + TypeScript, mapa Leaflet vía npm (marcadores + panel de detalle) y vista de rejilla
+- Base de datos: PostgreSQL 15, propia (`camaras`), tablas `camara` e `importacion_estado` (singleton)
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón); la imagen de cada cámara acepta además el token como `?token=` (un `<img>` no puede mandar cabeceras, igual que storage/descargas)
+- Parseo del feed: `fast-xml-parser`
+- Validaciones: Zod en todos los endpoints que reciben body o query
+- Sin ORM — queries directas con el cliente pg
+- Con tests de backend (vitest) y de frontend (vitest, lógica pura en `frontend/src/lib/`), ejecutados en CI
+
+### Roles
+Único rol con acceso: `admin` (el propietario es el único usuario), misma postura que Gastos/Pisos/Locales. `familia` e `invitado` no tienen acceso a Cámaras, ni a la API ni al AppLauncher. **No añade ningún rol nuevo al realm de Keycloak.**
+
+### Qué hace
+Un único sitio con las cámaras públicas de cuatro ciudades extremeñas (lista fija en `backend/src/services/ciudades.ts`, con un radio por ciudad: 25 km, 20 km en Villanueva de la Serena). Dos orígenes de cámara, ambos en la tabla `camara`:
+- **`dgt`**: se importan solas del feed DATEX II de la DGT (publicación de dispositivos, licencia CC-BY, todo el país salvo País Vasco y Cataluña) y se quedan las que caen dentro del radio de alguna ciudad. Son cámaras **de carretera** (A-5, EX-A1, accesos…), no del centro urbano.
+- **`manual`**: las que el propietario añade a mano desde la UI (webcams de turismo, ayuntamiento…). Hay dos formas: con **URL de imagen** (JPEG/PNG que se refresca; pasa por el proxy) o solo con **URL de página** (el directo vive en otra web; la UI enseña «Ver en origen»). No hay ninguna cámara manual sembrada: no se han podido verificar webcams concretas y no se inventan.
+
+Filtros por ciudad, búsqueda sin tildes por nombre/carretera, favoritas, vista mapa/rejilla (recordada en `localStorage`).
+
+### Feed de la DGT — límite conocido (IMPORTANTE)
+El parser (`services/dgtParser.ts`) se escribió **sin poder descargar el feed real** (el entorno de desarrollo no alcanza `nap.dgt.es`). Por eso no se apoya en una ruta exacta del XML: busca registros por su FORMA (un nodo con `latitude` + `longitude` + una URL de imagen), tolerando prefijos de espacio de nombres, el patrón multilingüe de DATEX II v3 y el formato v1. Los tests corren contra **fixtures sintéticos**, no contra el feed. **La primera vez, y tras cada despliegue, ejecutar `npm run smoke -- --imagenes` desde una máquina con salida a internet** (VPS o la del propietario): descarga el feed de verdad y enseña cámaras reconocidas, cobertura por ciudad y por campo, y cuántas imágenes están vivas. Si da 0 cámaras, guardar el XML y ajustar el parser; el importador lo reporta como error en `importacion_estado` (la UI lo enseña en rojo), nunca como éxito vacío. La URL del feed es `CAMARAS_DGT_FEED_URL` (default v3.6; existe v3.7).
+
+### Reglas de diseño que explican casi todo el código
+1. **Una importación fallida no vacía nada.** Descarga, parseo o filtro que dan 0 cámaras lanzan; solo una importación correcta marca como `retirada` las cámaras de la DGT que dejaron de aparecer (se ocultan, no se borran: si vuelven, el upsert las reactiva). `favorita` y `activo` NUNCA los toca el upsert: una cámara que el propietario ocultó no resucita y una favorita sobrevive.
+2. **Una cámara sin señal nunca se parece a una con señal.** Si un refresco falla, el frontend conserva la última captura buena pero la pinta en gris con «Sin señal · imagen anterior»; el backend responde 502 (no 404: la cámara existe, falla el origen). Cada imagen lleva la hora de su captura.
+3. **El navegador nunca habla con el origen.** `GET /camaras/:id/imagen` hace de proxy con caché en memoria (`CAMARAS_CACHE_SEGUNDOS`, 60 s; los fallos se recuerdan 15 s para no martillear un origen caído; peticiones simultáneas comparten una descarga). El DTO **no incluye la URL de origen** (solo `tieneImagen`).
+4. **Anti-SSRF**: el proxy solo sigue http(s) a hosts que resuelven a IP pública (valida en cada redirección, máx. 3; tope de 5 MB y 8 s; solo `image/jpeg|png|gif|webp`, nunca SVG). Límite aceptado: DNS rebinding (la URL solo la escribe el propietario o el feed oficial). La Zod de alta ya rechaza esquemas que no sean http(s).
+5. Una cámara de la DGT solo permite `favorita` por PATCH (el resto lo reescribe la siguiente importación); una manual no puede quedarse sin ninguna URL (también lo impone un `CHECK` en BD).
+6. Las imágenes solo se piden mientras están **en pantalla y con la pestaña visible** (IntersectionObserver + `visibilitychange`); 60 s en la rejilla, 30 s en el detalle.
+
+### Importador programado
+`services/importador.ts`, mismo patrón que el de finanzas: `setTimeout` encadenado (nunca `setInterval`), el siguiente intento se calcula desde `importacion_estado.ultima_ejecucion` (no desde el arranque del proceso), jitter ±10 %. `CAMARAS_INTERVALO_IMPORTACION_HORAS` (default 24). También se puede lanzar a mano desde la UI («Actualizar catálogo»).
+
+### Rutas (`/camaras/api/*`) — todas `admin`
+- `GET /ciudades` — ciudades configuradas con nº de cámaras visibles
+- `GET /camaras` — listado, filtros `ciudad`/`favorita` (la búsqueda por texto, sin tildes, es del frontend); siempre `activo=true` y sin `retirada`. Una `ciudad` desconocida es 400, no una lista vacía
+- `POST /camaras` — alta manual (≥1 de `urlImagen`/`urlPagina`)
+- `PATCH /camaras/:id` — edición parcial (`.strict()`; ver regla 5)
+- `DELETE /camaras/:id` — borrado lógico (`activo=false`, `deleted_at=now()`)
+- `GET /camaras/:id/imagen` — proxy de imagen (acepta `?token=`)
+- `GET /estado` — resultado de la última importación
+- `POST /importacion` — lanza el importador a mano
+- `GET /health` — abierto
+
+### Variables de entorno del backend
+`CAMARAS_DB_HOST`, `CAMARAS_DB_NAME`, `CAMARAS_DB_USER`, `CAMARAS_DB_PASSWORD`, `CAMARAS_DB_PORT`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3017), `CAMARAS_DGT_FEED_URL`, `CAMARAS_INTERVALO_IMPORTACION_HORAS` (default 24), `CAMARAS_CACHE_SEGUNDOS` (default 60)
+
+### Esquema
+Se crea tanto en `infra/init.sql` (solo corre con un volumen nuevo) como, idempotente, en `backend/src/db/ensureSchema.ts` (cada arranque); los dos ficheros se referencian entre sí. `ciudad` es texto (slug), no enum de BD: añadir una ciudad es añadir una entrada en `ciudades.ts` y nada más.
+
+### nginx
+Los bloques `/camaras/api/` (sin `access_log`: la URL de cada imagen lleva el token) y `/camaras/` viven en `nginx/calendario.conf`, y el `frontend/nginx.conf` de la imagen hace el split estáticos/API, igual que el resto.
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/camaras-backend:latest`, `ghcr.io/manuhddev/camaras-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los catorce roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
@@ -2051,7 +2118,7 @@ Descargas añade `descargas_admin` (ver + eliminar, irreversible) y `descargas_i
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
-Ofertas, Ruta, Pisos, Locales, Trader, Fútbol, Tenis y Calendario solo son accesibles para `admin` (uso exclusivo del
+Ofertas, Ruta, Pisos, Locales, Cámaras, Trader, Fútbol, Tenis y Calendario solo son accesibles para `admin` (uso exclusivo del
 propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
 llamar a su API. Juegos y Finanzas son la excepción a ese último punto: Juegos es
 utilizable por los tres roles por igual (ver sección "Juegos" arriba) y Finanzas
@@ -2131,6 +2198,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Tenis (repo externo, stack propio) | :5189 | :8000 |
 | Mensajería         | :5188    | :3015   |
 | Descargas          | :5190    | :3016   |
+| Cámaras            | :5191    | :3017   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -2144,17 +2212,18 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | PostgreSQL (locales)| :5442  | —       |
 | PostgreSQL (finanzas)| :5443 | —       |
 | PostgreSQL (mensajeria)| :5444 | —     |
+| PostgreSQL (camaras)| :5445  | —       |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel (backend) tiene vitest desde el dashboard de uso de APIs (`subappUsage.ts`, `routes/usage.ts`) pero el resto del backend (`users.ts`, `me.ts`, `keycloakAdmin.ts`) y todo el frontend siguen sin cobertura; mapacyd (backend y frontend) sigue sin ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **17 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 17 Dockerfiles y 17 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 17 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (17 internas + 3 externas), no solo la lista de apps.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **18 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx`, `camaras/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 18 Dockerfiles y 18 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 18 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (18 internas + 3 externas), no solo la lista de apps.
 
 `locales` ya está en las copias del AppLauncher (`roles: ['admin']`), añadido
 junto con su frontend (fase 9). `finanzas` ya está en las copias
 (`roles: ['admin', 'invitado']`). `mensajeria` ya está en las 16 copias
-internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `tenis` también está en las 16 copias internas
+internas (`roles: ['admin']`). `descargas` y `camaras` están en las 18 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `tenis` también está en las 16 copias internas
 (`roles: ['admin']`) — mismo patrón que `futbol`: repo externo
 (`tennis-predictor`), solo registrado aquí para el AppLauncher/Keycloak/nginx
 compartidos. `crypto-trader/frontend`, `football-predictor/frontend` y

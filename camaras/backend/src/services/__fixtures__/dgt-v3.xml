@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture SINTÉTICO con la forma esperable de DATEX II v3: espacios de nombres
+     con prefijo, nombre multilingüe y coordenadas anidadas en un nodo hijo. -->
+<d2:payload xmlns:d2="http://datex2.eu/schema/3/d2Payload" xmlns:fse="http://datex2.eu/schema/3/faultAndStatus"
+            xmlns:loc="http://datex2.eu/schema/3/locationReferencing" xmlns:com="http://datex2.eu/schema/3/common">
+  <fse:deviceRecord id="BA-0007">
+    <fse:cameraIdentification>0007</fse:cameraIdentification>
+    <fse:description>
+      <com:values><com:value lang="es">A-5 Badajoz salida oeste</com:value></com:values>
+    </fse:description>
+    <fse:deviceLocation>
+      <loc:roadName>A-5</loc:roadName>
+      <loc:pointCoordinates><loc:latitude>38.8800</loc:latitude><loc:longitude>-6.9400</loc:longitude></loc:pointCoordinates>
+    </fse:deviceLocation>
+    <fse:cctvImage><com:urlLinkAddress>https://ejemplo.dgt.test/camaras/ba0007.jpg</com:urlLinkAddress></fse:cctvImage>
+  </fse:deviceRecord>
+  <fse:deviceRecord id="BA-0007">
+    <!-- duplicado: debe descartarse -->
+    <loc:pointCoordinates><loc:latitude>38.88</loc:latitude><loc:longitude>-6.94</loc:longitude></loc:pointCoordinates>
+    <com:urlLinkAddress>https://ejemplo.dgt.test/camaras/ba0007b.jpg</com:urlLinkAddress>
+  </fse:deviceRecord>
+  <fse:deviceRecord id="MD-9001">
+    <fse:description><com:values><com:value lang="es">Fuera de Extremadura</com:value></com:values></fse:description>
+    <loc:pointCoordinates><loc:latitude>40.4168</loc:latitude><loc:longitude>-3.7038</loc:longitude></loc:pointCoordinates>
+    <com:urlLinkAddress>https://ejemplo.dgt.test/camaras/md9001.jpg</com:urlLinkAddress>
+  </fse:deviceRecord>
+</d2:payload>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<d2LogicalModel xmlns="http://datex2.eu/schema/1_0/1_0" modelBaseVersion="1.0">
+  <payloadPublication xsi:type="CCTVSiteTablePublication" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <cctvCameraList id="lista">
+      <cctvCameraMetadataRecord id="CAM-001">
+        <cctvCameraIdentification>001</cctvCameraIdentification>
+        <cctvCameraSiteLocalDescription>A-5 Mérida acceso este</cctvCameraSiteLocalDescription>
+        <cctvStillImageService>
+          <stillImageUrl><urlLinkAddress>https://ejemplo.dgt.test/camaras/001.jpg</urlLinkAddress></stillImageUrl>
+        </cctvStillImageService>
+        <cctvCameraLocation>
+          <roadNumber>A-5</roadNumber>
+          <pointCoordinates><latitude>38.9180</latitude><longitude>-6.3300</longitude></pointCoordinates>
+        </cctvCameraLocation>
+      </cctvCameraMetadataRecord>
+      <cctvCameraMetadataRecord id="CAM-002">
+        <cctvCameraSiteLocalDescription>A-66 Cáceres norte</cctvCameraSiteLocalDescription>
+        <cctvStillImageService>
+          <stillImageUrl><urlLinkAddress>https://ejemplo.dgt.test/camaras/002.jpg</urlLinkAddress></stillImageUrl>
+        </cctvStillImageService>
+        <cctvCameraLocation>
+          <roadNumber>A-66</roadNumber>
+          <pointCoordinates><latitude>39.5100</latitude><longitude>-6.3800</longitude></pointCoordinates>
+        </cctvCameraLocation>
+      </cctvCameraMetadataRecord>
+      <cctvCameraMetadataRecord id="CAM-SINURL">
+        <cctvCameraSiteLocalDescription>Sin imagen</cctvCameraSiteLocalDescription>
+        <cctvCameraLocation>
+          <pointCoordinates><latitude>38.9</latitude><longitude>-6.3</longitude></pointCoordinates>
+        </cctvCameraLocation>
+      </cctvCameraMetadataRecord>
+    </cctvCameraList>
+  </payloadPublication>
+</d2LogicalModel>

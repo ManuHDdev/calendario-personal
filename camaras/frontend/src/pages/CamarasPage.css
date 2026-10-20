@@ -1,0 +1,197 @@
+/* ── Layout ──────────────────────────────────────────────── */
+.cam-layout { min-height: 100vh; background: var(--bg-secondary); display: flex; flex-direction: column; }
+
+.cam-header {
+  background: var(--bg-primary); border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+}
+.cam-header__izq, .cam-header__der { display: flex; align-items: center; gap: 10px; }
+.cam-header__der { gap: 8px; }
+.cam-header h1 { font-size: 16px; font-weight: 600; }
+.cam-usuario { font-size: 13px; color: var(--text-secondary); margin-right: 4px; }
+.cam-salir {
+  padding: 6px 12px; font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  border-radius: var(--radius-sm); transition: background 150ms ease, color 150ms ease;
+}
+.cam-salir:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+.cam-main {
+  flex: 1; width: 100%; max-width: 1400px; margin: 0 auto; padding: 24px 24px 56px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.cam-error-banner, .cam-error {
+  font-size: 13px; color: var(--danger); background: rgba(255, 59, 48, 0.08);
+  padding: 10px 14px; border-radius: var(--radius-sm);
+}
+
+/* ── Toolbar ─────────────────────────────────────────────── */
+.cam-toolbar { display: flex; flex-direction: column; gap: 12px; }
+.cam-toolbar__fila { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.cam-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cam-chip {
+  padding: 7px 14px; font-size: 13px; font-weight: 500; border-radius: 999px;
+  color: var(--text-secondary); background: var(--bg-primary); border: 1px solid var(--border);
+  transition: all 200ms ease;
+}
+.cam-chip span { margin-left: 6px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.cam-chip:hover { color: var(--text-primary); }
+.cam-chip--activo, .cam-chip--activo:hover { background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary); }
+.cam-chip--activo span { color: inherit; opacity: 0.6; }
+
+.cam-busqueda {
+  flex: 1 1 220px; min-width: 0; padding: 9px 12px; font-size: 14px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--bg-primary); color: var(--text-primary); outline: none;
+  transition: border-color 200ms ease;
+}
+.cam-busqueda:focus { border-color: var(--accent); }
+
+.cam-segmento { display: inline-flex; background: var(--bg-tertiary); border-radius: var(--radius-sm); padding: 2px; }
+.cam-segmento button {
+  padding: 6px 14px; font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  border-radius: 6px; transition: all 200ms ease;
+}
+.cam-segmento button.activo { background: var(--bg-primary); color: var(--text-primary); box-shadow: var(--shadow-sm); }
+
+/* ── Botones ─────────────────────────────────────────────── */
+.btn-primary, .btn-secondary, .btn-danger, .btn-danger-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 14px; font-size: 13px; font-weight: 500; border-radius: var(--radius-sm);
+  transition: background 150ms ease, opacity 150ms ease; text-decoration: none; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+.btn-secondary { background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-secondary:hover:not(:disabled) { background: var(--bg-tertiary); }
+.btn-secondary--activo { border-color: #ffd60a; color: #b38f00; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger-ghost { color: var(--danger); }
+.btn-danger-ghost:hover { background: rgba(255, 59, 48, 0.08); }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Estado del catálogo ─────────────────────────────────── */
+.cam-estado {
+  display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between;
+  font-size: 12.5px; color: var(--text-secondary); padding: 8px 12px; border-radius: var(--radius-sm);
+  background: var(--bg-primary); border: 1px solid var(--border);
+}
+.cam-estado--error { color: var(--danger); border-color: rgba(255, 59, 48, 0.4); background: rgba(255, 59, 48, 0.06); }
+.cam-enlace { font-size: 12.5px; font-weight: 500; color: var(--accent); }
+.cam-enlace:hover:not(:disabled) { text-decoration: underline; }
+
+.cam-vacio { text-align: center; color: var(--text-secondary); font-size: 14px; padding: 48px 16px; }
+
+/* ── Mapa + detalle ──────────────────────────────────────── */
+.cam-mapa-layout { display: flex; gap: 16px; align-items: flex-start; }
+.cam-mapa {
+  flex: 1; min-width: 0; height: calc(100vh - 290px); min-height: 420px;
+  border-radius: var(--radius-md); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.cam-marker { background: none; border: none; }
+.cam-marker:hover > div { transform: scale(1.12); }
+
+.cam-detalle {
+  width: 380px; flex-shrink: 0; background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-sm); padding: 16px;
+  display: flex; flex-direction: column; gap: 14px; animation: cam-entra 200ms ease;
+}
+@keyframes cam-entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.cam-detalle__cabecera { display: flex; justify-content: space-between; gap: 12px; }
+.cam-detalle h2 { font-size: 16px; font-weight: 600; line-height: 1.3; }
+.cam-detalle__sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+.cam-detalle__meta { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+.cam-detalle__meta div { display: flex; justify-content: space-between; gap: 12px; }
+.cam-detalle__meta dt { color: var(--text-secondary); }
+.cam-detalle__meta dd { color: var(--text-primary); text-align: right; font-variant-numeric: tabular-nums; }
+.cam-detalle__acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cam-confirmar { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.cam-nota { font-size: 12px; color: var(--text-tertiary); }
+
+.cam-icono-btn {
+  width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; color: var(--text-tertiary);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 15px; transition: all 150ms ease;
+}
+.cam-icono-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.cam-icono-btn--activo { color: #ffd60a; }
+
+/* ── Imagen de cámara ────────────────────────────────────── */
+.cam-img {
+  position: relative; width: 100%; aspect-ratio: 4 / 3; background: var(--bg-tertiary);
+  border-radius: var(--radius-sm); overflow: hidden; display: flex; align-items: center; justify-content: center;
+}
+.cam-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam-img__obsoleta { filter: grayscale(1) brightness(0.7); }
+.cam-img__estado, .cam-img--vacia span { font-size: 12.5px; color: var(--text-secondary); }
+.cam-img__sinsenal {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; font-size: 12.5px; color: var(--text-primary); background: rgba(0, 0, 0, 0.35); text-align: center; padding: 8px;
+}
+.cam-img__sinsenal span { color: #fff; font-weight: 500; }
+.cam-img__reintentar {
+  padding: 4px 10px; font-size: 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.9); color: #1d1d1f;
+}
+.cam-img__hora {
+  position: absolute; right: 6px; bottom: 6px; padding: 2px 7px; font-size: 11px; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55); color: #fff; font-variant-numeric: tabular-nums;
+}
+
+/* ── Rejilla ─────────────────────────────────────────────── */
+.cam-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.cam-card {
+  background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm); overflow: hidden; transition: box-shadow 200ms ease, transform 200ms ease;
+}
+.cam-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.cam-card__abrir { display: block; width: 100%; padding: 0; cursor: pointer; }
+.cam-card .cam-img { border-radius: 0; }
+.cam-card__pie { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+.cam-card__texto { flex: 1; min-width: 0; }
+.cam-card__texto h3 { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cam-card__texto p { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Modal ───────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center;
+  justify-content: center; z-index: 200; padding: 20px; animation: cam-fade 150ms ease;
+}
+@keyframes cam-fade { from { opacity: 0; } to { opacity: 1; } }
+.modal-content {
+  background: var(--bg-primary); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; animation: cam-modal 200ms ease;
+}
+.modal-content--ancho { max-width: 640px; }
+.modal-content--ancho .cam-detalle { width: 100%; border: none; box-shadow: none; }
+@keyframes cam-modal { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: none; } }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
+.modal-header h2 { font-size: 18px; font-weight: 600; }
+.modal-form { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+.form-group label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.form-fila { display: flex; gap: 12px; }
+.form-group input[type="text"], .form-group input[type="url"], .form-group select {
+  padding: 9px 12px; font-size: 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg-primary); color: var(--text-primary); outline: none; transition: border-color 200ms ease;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+.form-group input::placeholder { color: var(--text-tertiary); }
+.checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: var(--text-primary); }
+.checkbox-label input { width: 16px; height: 16px; accent-color: var(--accent); }
+.form-acciones { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ── Móvil ───────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .cam-main { padding: 16px 16px 48px; }
+  .cam-header { padding: 0 16px; }
+  .cam-mapa-layout { flex-direction: column; }
+  .cam-mapa { width: 100%; flex: none; height: 55vh; min-height: 320px; }
+  .cam-detalle { width: 100%; }
+  .cam-usuario { display: none; }
+  .form-fila { flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

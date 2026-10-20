@@ -1,0 +1,61 @@
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  camaras-db:
+    image: postgres:15
+    container_name: camaras-db
+    environment:
+      POSTGRES_DB:       ${CAMARAS_DB_NAME}
+      POSTGRES_USER:     ${CAMARAS_DB_USER}
+      POSTGRES_PASSWORD: ${CAMARAS_DB_PASSWORD}
+    volumes:
+      - camaras_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CAMARAS_DB_USER} -d ${CAMARAS_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calendario-net
+
+  camaras-backend:
+    image: ghcr.io/manuhddev/camaras-backend:latest
+    container_name: camaras-backend
+    environment:
+      PORT:                   3017
+      CAMARAS_DB_HOST:      camaras-db
+      CAMARAS_DB_NAME:      ${CAMARAS_DB_NAME}
+      CAMARAS_DB_USER:      ${CAMARAS_DB_USER}
+      CAMARAS_DB_PASSWORD:  ${CAMARAS_DB_PASSWORD}
+      KEYCLOAK_CERTS_URL:     ${KEYCLOAK_CERTS_URL}
+      CORS_ORIGIN:            ${CORS_ORIGIN}
+      CAMARAS_DGT_FEED_URL:   ${CAMARAS_DGT_FEED_URL:-https://nap.dgt.es/datex2/v3/dgt/DevicePublication/camaras_datex2_v36.xml}
+      NODE_ENV:               production
+    depends_on:
+      camaras-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3017/camaras/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - calendario-net
+
+  camaras-frontend:
+    image: ghcr.io/manuhddev/camaras-frontend:latest
+    container_name: camaras-frontend
+    depends_on:
+      - camaras-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+volumes:
+  camaras_pgdata:
