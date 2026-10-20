@@ -36,6 +36,9 @@
 #   finanzas backend    →  :3014
 #   finanzas frontend   →  :5187
 #   PostgreSQL          →  :5443   (finanzas)
+#   viajes backend      →  :3030
+#   viajes frontend     →  :5192
+#   PostgreSQL          →  :5446   (viajes)
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -66,6 +69,7 @@ function Cleanup {
   warn "  cd pisos\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd locales\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd finanzas\infra; docker compose -f docker-compose.local.yml down"
+  warn "  cd viajes\infra; docker compose -f docker-compose.local.yml down"
 }
 
 # Registrar cleanup al salir
@@ -148,6 +152,10 @@ docker compose -f docker-compose.local.yml up -d
 
 info "PostgreSQL (finanzas :5443)..."
 Set-Location (Join-Path $SCRIPT_DIR "finanzas\infra")
+docker compose -f docker-compose.local.yml up -d
+
+info "PostgreSQL (viajes :5446)..."
+Set-Location (Join-Path $SCRIPT_DIR "viajes\infra")
 docker compose -f docker-compose.local.yml up -d
 
 Set-Location $SCRIPT_DIR
@@ -284,6 +292,18 @@ do {
   Write-Host -NoNewline "."; Start-Sleep -Seconds 2
 } while ($true)
 Write-Host ""; info "  ✓ PostgreSQL (finanzas) listo."
+
+# ── 5k. Esperar a PostgreSQL (viajes) ───────────────────────────
+info "PostgreSQL viajes..."
+$retries = 30
+do {
+  $r = docker compose -f "$SCRIPT_DIR\viajes\infra\docker-compose.local.yml" exec -T viajes-db pg_isready -U viajes -d viajes 2>$null
+  if ($LASTEXITCODE -eq 0) { break }
+  $retries--
+  if ($retries -le 0) { err "PostgreSQL (viajes) no arrancó." }
+  Write-Host -NoNewline "."; Start-Sleep -Seconds 2
+} while ($true)
+Write-Host ""; info "  ✓ PostgreSQL (viajes) listo."
 
 # ── 6. Esperar a Keycloak ────────────────────────────────────────────────────
 info "Keycloak (puede tardar ~30s la primera vez)..."
@@ -461,6 +481,16 @@ StartBackground "finanzas-backend  :3014" "finanzas-backend.log" `
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ORIGIN="http://localhost:5187" }
 
+# Viajes backend
+EnsureDeps (Join-Path $SCRIPT_DIR "viajes\backend")
+StartBackground "viajes-backend    :3030" "viajes-backend.log" `
+  (Join-Path $SCRIPT_DIR "viajes\backend") `
+  "npm run dev" `
+  @{ PORT="3030"; VIAJES_DB_HOST="localhost"; VIAJES_DB_PORT="5446";
+     VIAJES_DB_NAME="viajes"; VIAJES_DB_USER="viajes"; VIAJES_DB_PASSWORD="viajes123";
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5192" }
+
 # Calendario backend (Spring Boot) — solo si hay Maven; su ausencia no debe
 # tumbar las demás subapps Node.
 if ($HAS_MVN) {
@@ -523,6 +553,10 @@ StartBackground "pisos-frontend     :5184" "pisos-frontend.log" `
 EnsureDeps (Join-Path $SCRIPT_DIR "finanzas\frontend")
 StartBackground "finanzas-frontend  :5187" "finanzas-frontend.log" `
   (Join-Path $SCRIPT_DIR "finanzas\frontend") "npm run dev"
+
+EnsureDeps (Join-Path $SCRIPT_DIR "viajes\frontend")
+StartBackground "viajes-frontend    :5192" "viajes-frontend.log" `
+  (Join-Path $SCRIPT_DIR "viajes\frontend") "npm run dev"
 
 if ($HAS_MVN) {
   EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
@@ -611,6 +645,11 @@ Write-Host "  Finanzas" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5187/finanzas/"
 Write-Host "    Backend health   ->  http://localhost:3014/health"
 Write-Host "    El historico de precio de vivienda se importa al arrancar si la tabla esta vacia (Ministerio de Transportes)" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  Viajes" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5192/viajes/"
+Write-Host "    Backend health   ->  http://localhost:3030/viajes/api/health"
+Write-Host "    Rutas por carretera: OSRM publico (sin clave); si no responde, las distancias salen aproximadas en linea recta" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow

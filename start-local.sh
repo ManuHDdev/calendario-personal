@@ -37,6 +37,9 @@
 #   finanzas backend    →  :3014
 #   finanzas frontend   →  :5187
 #   PostgreSQL          →  :5443   (finanzas)
+#   viajes backend      →  :3030
+#   viajes frontend     →  :5192
+#   PostgreSQL          →  :5446   (viajes)
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -82,6 +85,7 @@ cleanup() {
   warn "  cd pisos/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd locales/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd finanzas/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd viajes/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -170,6 +174,9 @@ info "PostgreSQL (locales :5442)..."
 info "PostgreSQL (finanzas :5443)..."
 (cd "$SCRIPT_DIR/finanzas/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (viajes :5446)..."
+(cd "$SCRIPT_DIR/viajes/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -238,6 +245,12 @@ wait_for_container \
   "PostgreSQL finanzas" \
   "finanzas-db-local" \
   "docker exec finanzas-db-local pg_isready -U finanzas -d finanzas" \
+  30
+
+wait_for_container \
+  "PostgreSQL viajes" \
+  "viajes-db-local" \
+  "docker exec viajes-db-local pg_isready -U viajes -d viajes" \
   30
 
 wait_for_container \
@@ -443,6 +456,18 @@ start_bg "finanzas-backend   :3014" "finanzas-backend.log" "$SCRIPT_DIR/finanzas
       CORS_ORIGIN="http://localhost:5187" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/viajes/backend"
+start_bg "viajes-backend     :3030" "viajes-backend.log" "$SCRIPT_DIR/viajes/backend" \
+  env PORT=3030 \
+      VIAJES_DB_HOST="localhost" \
+      VIAJES_DB_PORT="5446" \
+      VIAJES_DB_NAME="viajes" \
+      VIAJES_DB_USER="viajes" \
+      VIAJES_DB_PASSWORD="viajes123" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5192" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -499,6 +524,10 @@ start_bg "pisos-frontend     :5184" "pisos-frontend.log" "$SCRIPT_DIR/pisos/fron
 
 ensure_deps "$SCRIPT_DIR/finanzas/frontend"
 start_bg "finanzas-frontend  :5187" "finanzas-frontend.log" "$SCRIPT_DIR/finanzas/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/viajes/frontend"
+start_bg "viajes-frontend    :5192" "viajes-frontend.log" "$SCRIPT_DIR/viajes/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -584,6 +613,11 @@ echo -e "  ${CYAN}Finanzas${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5187/finanzas/${NC}"
 echo -e "    Backend health   →  http://localhost:3014/health"
 echo -e "    ${YELLOW}ℹ  El historico de precio de vivienda se importa al arrancar si la tabla esta vacia (Ministerio de Transportes)${NC}"
+echo ""
+echo -e "  ${CYAN}Viajes${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5192/viajes/${NC}"
+echo -e "    Backend health   →  http://localhost:3030/viajes/api/health"
+echo -e "    ${YELLOW}ℹ  Rutas por carretera: OSRM público (sin clave); si no responde, las distancias salen aproximadas en línea recta${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

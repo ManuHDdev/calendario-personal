@@ -1,0 +1,23 @@
+services:
+  viajes-db:
+    image: postgres:15
+    container_name: viajes-db-local
+    ports:
+      - "5446:5432"
+    environment:
+      POSTGRES_DB: viajes
+      POSTGRES_USER: viajes
+      POSTGRES_PASSWORD: viajes123
+    volumes:
+      - viajes_local_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viajes -d viajes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  viajes_local_data:

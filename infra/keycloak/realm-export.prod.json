@@ -108,6 +108,20 @@
         "composite": false,
         "clientRole": false,
         "containerId": "calendario"
+      },
+      {
+        "name": "viajes_admin",
+        "description": "Administrador de Viajes — gestión completa de viajes y lugares (CRUD)",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
+      },
+      {
+        "name": "viajes_invitado",
+        "description": "Invitado de Viajes — solo consulta de viajes, mapa e itinerario",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
       }
     ],
     "client": {
