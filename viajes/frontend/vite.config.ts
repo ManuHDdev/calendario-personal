@@ -5,10 +5,10 @@ export default defineConfig({
   plugins: [react()],
   base: '/viajes/',
   server: {
-    port: 5191,
+    port: 5192,
     proxy: {
       '/viajes/api': {
-        target: 'http://localhost:3017',
+        target: 'http://localhost:3030',
         changeOrigin: true,
       },
       // Keycloak proxy: strips the /keycloak prefix (Keycloak lives at the root locally)

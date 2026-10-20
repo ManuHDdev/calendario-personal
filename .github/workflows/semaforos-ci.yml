@@ -1,0 +1,140 @@
+name: CI/CD Semaforos
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'semaforos/**'
+      - '.github/workflows/semaforos-ci.yml'
+
+jobs:
+  lint-and-build-backend:
+    name: Semaforos · Build backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: semaforos/backend
+        run: npm ci && npm run build
+
+      # El modelo de duraciones y la derivacion de accesos desde OSM son lo que
+      # decide que se muestra: si regresan, el mapa miente en silencio.
+      - name: Test
+        working-directory: semaforos/backend
+        run: npm test
+
+  lint-and-build-frontend:
+    name: Semaforos · Build frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: semaforos/frontend
+        run: npm ci && npm run build
+
+      # La proyeccion del estado actual (cuenta atras) vive aqui, no en el backend.
+      - name: Test
+        working-directory: semaforos/frontend
+        run: npm test
+
+  docker-build-and-push:
+    name: Semaforos · Docker build & push
+    runs-on: ubuntu-latest
+    needs: [lint-and-build-backend, lint-and-build-frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build & push semaforos-backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./semaforos/backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/semaforos-backend:latest
+            ghcr.io/${{ env.OWNER }}/semaforos-backend:${{ github.sha }}
+
+      - name: Build & push semaforos-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./semaforos/frontend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/semaforos-frontend:latest
+            ghcr.io/${{ env.OWNER }}/semaforos-frontend:${{ github.sha }}
+
+  deploy:
+    name: Deploy · Semaforos VPS
+    runs-on: ubuntu-latest
+    needs: docker-build-and-push
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar docker-compose e init.sql al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "semaforos/infra/docker-compose.prod.yml,semaforos/infra/init.sql"
+          target: /home/manu/semaforos
+          strip_components: 2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /home/manu/semaforos
+
+            # La primera vez no hay .env (lo escribe el workflow "Semaforos ·
+            # Provisionar VPS", que ademas genera la contrasena de la BD). Sin
+            # el, compose abortaria con un error de variable faltante: se avisa
+            # y se sale en verde, porque no es un fallo del despliegue.
+            if [ ! -f .env ]; then
+              echo "AVISO: no hay /home/manu/semaforos/.env. Lanza el workflow 'Semaforos · Provisionar VPS' (una sola vez)."
+              exit 0
+            fi
+
+            docker compose -f docker-compose.prod.yml pull semaforos-backend semaforos-frontend
+            docker compose -f docker-compose.prod.yml up -d semaforos-db semaforos-backend semaforos-frontend
+            docker compose -f docker-compose.prod.yml ps
+
+            # El bloque `location /semaforos/` de nginx vive en
+            # nginx/calendario.conf y se aplica in situ (ver DEPLOY_NOTES.md).

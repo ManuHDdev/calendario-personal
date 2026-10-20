@@ -1,6 +1,6 @@
 import Keycloak from 'keycloak-js';
 
-// Locally the Vite dev server (:5191) and Keycloak (:8080) are different origins.
+// Locally the Vite dev server (:5192) and Keycloak (:8080) are different origins.
 // In production Keycloak lives under /keycloak on the same domain.
 const keycloakUrl =
   window.location.hostname === 'localhost'

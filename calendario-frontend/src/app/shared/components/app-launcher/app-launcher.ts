@@ -33,7 +33,8 @@ function appUrls(): Record<string, string> {
     finanzas:   local ? 'http://localhost:5187/finanzas/'  : '/finanzas/',
     mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
     descargas:  local ? 'http://localhost:5190/descargas/'  : '/descargas/',
-    viajes:     local ? 'http://localhost:5191/viajes/'  : '/viajes/',
+    viajes:     local ? 'http://localhost:5192/viajes/'  : '/viajes/',
+    semaforos:  local ? 'http://localhost:5191/semaforos/' : '/semaforos/',
   };
 }
 
@@ -83,6 +84,9 @@ export class AppLauncher {
     // viajes: planificador de viajes con mapa; admin-only por defecto (roles delegados
     // viajes_admin/viajes_invitado se asignan desde Panel, ver CLAUDE.md).
     { id: 'viajes',     nombre: 'Viajes',     color: '#ec4899', roles: ['admin'], url: '' },
+    // semaforos: estado estimado de los semáforos de la ciudad en un mapa; datos
+    // de OpenStreetMap + tiempos anotados a mano. Uso exclusivo del propietario.
+    { id: 'semaforos',  nombre: 'Semáforos',  color: '#f43f5e', roles: ['admin'], url: '' },
   ];
 
   get apps(): App[] {

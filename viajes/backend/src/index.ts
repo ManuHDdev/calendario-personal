@@ -25,7 +25,7 @@ async function bootstrap() {
     },
   );
 
-  const port = Number(process.env.PORT) || 3017;
+  const port = Number(process.env.PORT) || 3030;
   await app.listen({ port, host: '0.0.0.0' });
   app.log.info(`Viajes backend listening on port ${port}`);
 }

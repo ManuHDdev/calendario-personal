@@ -1,0 +1,533 @@
+.sem-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+/* ── Cabecera ────────────────────────────────────────────────────── */
+
+.sem-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sem-header__left,
+.sem-header__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sem-header h1 {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.sem-header__tag {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── Barra de ciudades ───────────────────────────────────────────── */
+
+.sem-ciudades {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.sem-ciudades select,
+.sem-importar input,
+.sem-manual {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: border-color 200ms ease;
+}
+
+.sem-ciudades select:focus,
+.sem-importar input:focus,
+.sem-manual:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.sem-importar {
+  display: flex;
+  gap: 8px;
+}
+
+.sem-importar input {
+  width: 240px;
+}
+
+.sem-nota {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.sem-nota--error {
+  color: var(--danger);
+}
+
+/* ── Disposición ─────────────────────────────────────────────────── */
+
+.sem-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.sem-main {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.sem-map {
+  position: absolute;
+  inset: 0;
+}
+
+.sem-vacio {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 500;
+  max-width: 340px;
+  padding: 20px 22px;
+  text-align: center;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.sem-vacio h2 {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.sem-vacio p {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── Botones ─────────────────────────────────────────────────────── */
+
+.sem-btn {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: opacity 200ms ease, background-color 200ms ease;
+}
+
+.sem-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.sem-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sem-btn--primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.sem-link {
+  font-size: 12.5px;
+  color: var(--accent);
+  padding: 2px 0;
+}
+
+.sem-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sem-link--danger {
+  color: var(--danger);
+}
+
+.sem-icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-secondary);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.sem-icon-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ── Panel de un cruce ───────────────────────────────────────────── */
+
+.sem-panel {
+  width: 380px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: var(--bg-secondary);
+  padding: 18px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sem-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sem-panel h2 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.sem-panel h3 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.sem-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.45;
+}
+
+.sem-row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.sem-foot {
+  padding-top: 4px;
+}
+
+.sem-error {
+  font-size: 13px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+/* ── Accesos (pestañas) ──────────────────────────────────────────── */
+
+.sem-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sem-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  text-align: left;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+
+.sem-chip--on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-primary));
+}
+
+.sem-chip--add {
+  color: var(--accent);
+  border-style: dashed;
+}
+
+/* ── Colores ─────────────────────────────────────────────────────── */
+
+.sem-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--sem-nada);
+  flex-shrink: 0;
+}
+.sem-dot--verde { background: var(--sem-verde); }
+.sem-dot--ambar { background: var(--sem-ambar); }
+.sem-dot--rojo  { background: var(--sem-rojo); }
+
+/* ── Estado actual ───────────────────────────────────────────────── */
+
+.sem-estado {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.sem-semaforo {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--sem-nada);
+  flex-shrink: 0;
+  transition: background-color 300ms ease;
+}
+.sem-semaforo--verde { background: var(--sem-verde); }
+.sem-semaforo--ambar { background: var(--sem-ambar); }
+.sem-semaforo--rojo  { background: var(--sem-rojo); }
+
+.sem-estado__color {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.sem-estado__color--nada {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.sem-estado__cuenta {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.sem-estado__cuenta strong {
+  color: var(--text-primary);
+}
+
+.sem-conf {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.sem-conf--alta { color: var(--success); }
+.sem-conf--media { color: var(--text-secondary); }
+.sem-conf--baja { color: #ff9500; }
+.sem-conf--sin_datos { color: var(--text-tertiary); }
+
+.sem-motivo {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* ── Anotar ──────────────────────────────────────────────────────── */
+
+.sem-botones {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.sem-color-btn {
+  padding: 18px 8px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d1d1f;
+  border: 3px solid transparent;
+  transition: transform 200ms ease, opacity 200ms ease, border-color 200ms ease;
+}
+.sem-color-btn:active:not(:disabled) { transform: scale(0.97); }
+.sem-color-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.sem-color-btn--verde { background: var(--sem-verde); }
+.sem-color-btn--ambar { background: var(--sem-ambar); }
+.sem-color-btn--rojo  { background: var(--sem-rojo); color: #fff; }
+
+/* El color que toca despues del ultimo anotado: es el que casi seguro vas a pulsar. */
+.sem-color-btn--next { border-color: var(--text-primary); }
+
+.sem-retraso {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.sem-seg {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+.sem-seg--on { background: var(--accent); color: #fff; }
+
+/* ── Duraciones ──────────────────────────────────────────────────── */
+
+.sem-tag {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+.sem-tag--ok {
+  background: color-mix(in srgb, var(--success) 18%, transparent);
+  color: var(--success);
+}
+
+.sem-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sem-tabla th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  padding: 0 6px 6px 0;
+}
+
+.sem-tabla td {
+  padding: 5px 6px 5px 0;
+  white-space: nowrap;
+}
+
+.sem-manual {
+  width: 70px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+/* ── Observaciones ───────────────────────────────────────────────── */
+
+.sem-obs {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sem-obs li {
+  display: grid;
+  grid-template-columns: 14px 56px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.sem-obs time {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Marcadores del mapa ─────────────────────────────────────────── */
+
+.sem-marker__dot {
+  transition: background-color 300ms ease;
+}
+
+/* ── Acceso denegado / login ─────────────────────────────────────── */
+
+.sem-gate {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 24px;
+}
+
+.sem-gate h1 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.sem-gate p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* ── Móvil: el panel pasa debajo del mapa ────────────────────────── */
+
+@media (max-width: 900px) {
+  .sem-body {
+    flex-direction: column;
+  }
+
+  .sem-main {
+    min-height: 45vh;
+  }
+
+  .sem-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    max-height: 55vh;
+  }
+
+  .sem-importar input {
+    width: 100%;
+  }
+
+  .sem-importar {
+    flex: 1 1 100%;
+  }
+
+  .sem-header__tag {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sem-semaforo, .sem-marker__dot, .sem-color-btn { transition: none; }
+}

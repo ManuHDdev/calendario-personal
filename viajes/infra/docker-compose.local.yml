@@ -3,7 +3,7 @@ services:
     image: postgres:15
     container_name: viajes-db-local
     ports:
-      - "5445:5432"
+      - "5446:5432"
     environment:
       POSTGRES_DB: viajes
       POSTGRES_USER: viajes

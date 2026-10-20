@@ -36,9 +36,9 @@
 #   finanzas backend    →  :3014
 #   finanzas frontend   →  :5187
 #   PostgreSQL          →  :5443   (finanzas)
-#   viajes backend      →  :3017
-#   viajes frontend     →  :5191
-#   PostgreSQL          →  :5445   (viajes)
+#   viajes backend      →  :3030
+#   viajes frontend     →  :5192
+#   PostgreSQL          →  :5446   (viajes)
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -154,7 +154,7 @@ info "PostgreSQL (finanzas :5443)..."
 Set-Location (Join-Path $SCRIPT_DIR "finanzas\infra")
 docker compose -f docker-compose.local.yml up -d
 
-info "PostgreSQL (viajes :5445)..."
+info "PostgreSQL (viajes :5446)..."
 Set-Location (Join-Path $SCRIPT_DIR "viajes\infra")
 docker compose -f docker-compose.local.yml up -d
 
@@ -483,13 +483,13 @@ StartBackground "finanzas-backend  :3014" "finanzas-backend.log" `
 
 # Viajes backend
 EnsureDeps (Join-Path $SCRIPT_DIR "viajes\backend")
-StartBackground "viajes-backend    :3017" "viajes-backend.log" `
+StartBackground "viajes-backend    :3030" "viajes-backend.log" `
   (Join-Path $SCRIPT_DIR "viajes\backend") `
   "npm run dev" `
-  @{ PORT="3017"; VIAJES_DB_HOST="localhost"; VIAJES_DB_PORT="5445";
+  @{ PORT="3030"; VIAJES_DB_HOST="localhost"; VIAJES_DB_PORT="5446";
      VIAJES_DB_NAME="viajes"; VIAJES_DB_USER="viajes"; VIAJES_DB_PASSWORD="viajes123";
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
-     CORS_ORIGIN="http://localhost:5191" }
+     CORS_ORIGIN="http://localhost:5192" }
 
 # Calendario backend (Spring Boot) — solo si hay Maven; su ausencia no debe
 # tumbar las demás subapps Node.
@@ -555,7 +555,7 @@ StartBackground "finanzas-frontend  :5187" "finanzas-frontend.log" `
   (Join-Path $SCRIPT_DIR "finanzas\frontend") "npm run dev"
 
 EnsureDeps (Join-Path $SCRIPT_DIR "viajes\frontend")
-StartBackground "viajes-frontend    :5191" "viajes-frontend.log" `
+StartBackground "viajes-frontend    :5192" "viajes-frontend.log" `
   (Join-Path $SCRIPT_DIR "viajes\frontend") "npm run dev"
 
 if ($HAS_MVN) {
@@ -647,8 +647,8 @@ Write-Host "    Backend health   ->  http://localhost:3014/health"
 Write-Host "    El historico de precio de vivienda se importa al arrancar si la tabla esta vacia (Ministerio de Transportes)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Viajes" -ForegroundColor Cyan
-Write-Host "    Frontend         ->  http://localhost:5191/viajes/"
-Write-Host "    Backend health   ->  http://localhost:3017/viajes/api/health"
+Write-Host "    Frontend         ->  http://localhost:5192/viajes/"
+Write-Host "    Backend health   ->  http://localhost:3030/viajes/api/health"
 Write-Host "    Rutas por carretera: OSRM publico (sin clave); si no responde, las distancias salen aproximadas en linea recta" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow

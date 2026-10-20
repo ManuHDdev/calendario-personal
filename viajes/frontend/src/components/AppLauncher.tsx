@@ -68,7 +68,7 @@ function getUrls(): Record<string, string> {
     finanzas:   local ? 'http://localhost:5187/finanzas/' : '/finanzas/',
     mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
     descargas:  local ? 'http://localhost:5190/descargas/' : '/descargas/',
-    viajes:     local ? 'http://localhost:5191/viajes/' : '/viajes/',
+    viajes:     local ? 'http://localhost:5192/viajes/' : '/viajes/',
   };
 }
 

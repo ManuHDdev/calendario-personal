@@ -2067,16 +2067,171 @@ Siempre hay distancia en línea recta (haversine, instantánea, en cliente y ser
 `infra/init.sql` solo corre con un volumen nuevo, así que `backend/src/db/ensureSchema.ts` aplica las mismas sentencias idempotentes en cada arranque (mismo patrón que Gastos/Locales). Si se toca el esquema, tocar los dos ficheros. `pg` devuelve `DATE` como string `YYYY-MM-DD` y `NUMERIC` como número (parsers registrados en `db/pool.ts`).
 
 ### Variables de entorno del backend
-`VIAJES_DB_HOST`, `VIAJES_DB_NAME`, `VIAJES_DB_USER`, `VIAJES_DB_PASSWORD`, `VIAJES_DB_PORT`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3017), `OSRM_URL_DRIVING`, `OSRM_URL_FOOT`, `OSRM_URL_BIKE`, `OSRM_TIMEOUT_MS` (default 6000). El `.env` de producción se crea a mano antes del primer despliegue (ver `viajes/README.md`).
+`VIAJES_DB_HOST`, `VIAJES_DB_NAME`, `VIAJES_DB_USER`, `VIAJES_DB_PASSWORD`, `VIAJES_DB_PORT`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3030), `OSRM_URL_DRIVING`, `OSRM_URL_FOOT`, `OSRM_URL_BIKE`, `OSRM_TIMEOUT_MS` (default 6000). El `.env` de producción se crea a mano antes del primer despliegue (ver `viajes/README.md`).
 
 ### Puerto local
-Frontend `:5191`, backend `:3017`, PostgreSQL `:5445`.
+Frontend `:5192`, backend `:3030`, PostgreSQL `:5446`.
 
 ### Red Docker
 `calendario-net` (externa)
 
 ### Imágenes Docker
 `ghcr.io/manuhddev/viajes-backend:latest`, `ghcr.io/manuhddev/viajes-frontend:latest`
+
+---
+
+## Semáforos — estado estimado de los semáforos en un mapa
+
+### Ubicación
+Calendario/semaforos/ dentro del monorepo elbunkerdelingeniero.
+
+### Qué hace (y qué NO)
+Muestra en un mapa los semáforos de una ciudad con su color estimado AHORA y la
+cuenta atrás hasta el cambio. **No hay ninguna fuente de datos de fase en tiempo
+real en España** (ni DGT NAP ni los portales municipales: Madrid publica solo
+semáforos apagados/en destellos y las ubicaciones, no ciclos), así que los
+tiempos los anota el propietario a mano, a pie, pulsando un botón en cada cambio
+de color. Lo que se ve es una **predicción construida con esas anotaciones, no el
+estado real**: la UI lo dice (fiabilidad alta/media/baja y cuánto hace de la
+última anotación). Proyecto recreativo y personal; no debe usarse para decidir si
+cruzar o acelerar en ámbar.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que el resto de subapps Node)
+- Frontend: React + Vite + TypeScript, mapa Leaflet vía npm
+- Base de datos: PostgreSQL 15, propia (`semaforos`, contenedor `semaforos-db`),
+  tablas `cruce`, `acceso`, `observacion`
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano
+- Origen de los semáforos: OpenStreetMap vía Overpass (`highway=traffic_signals`)
+- Validaciones: Zod en todos los endpoints que reciben body o query
+- Sin ORM — queries directas con el cliente pg
+- Con tests: vitest en backend (modelo de duraciones, derivación de accesos) y en
+  frontend (proyección del estado actual), ejecutados en CI
+
+### Roles
+Único rol con acceso: `admin` (el propietario es el único usuario). `familia` e
+`invitado` no tienen acceso, ni a la API ni al AppLauncher. **No añade ningún rol
+nuevo al realm de Keycloak.**
+
+### Modelo de datos: cruce -> acceso -> observación
+Un nodo de OSM es un **cruce**, no un semáforo: cada sentido de llegada tiene el
+suyo y su propia fase. Por eso el estado vive en `acceso` (un sentido de llegada,
+con `rumbo_grados` = rumbo de MARCHA, 0 = norte) y las anotaciones en
+`observacion` ("en este instante pasó a verde/ámbar/rojo"). Las duraciones **no se
+guardan, se derivan** de pares de observaciones consecutivas.
+
+El importador no exige dar de alta los accesos a mano: por cada calle de coche que
+toca el nodo deduce desde dónde se llega (azimut vecino -> nodo), respetando
+`oneway` y rotondas, y agrupa llegadas con rumbo parecido (<25°). El marcador de
+cada acceso se dibuja ~12 m **detrás** del cruce según su rumbo, que es donde lo
+vería un conductor.
+
+### Duraciones y predicción (lo que explica casi todo el diseño)
+- Duración de una fase = diferencia entre dos observaciones consecutivas **y
+  válidas**: la segunda debe ser el color siguiente del ciclo (verde -> ámbar ->
+  rojo -> verde) y no distar más de 300 s. Un par que no cumple (se olvidó pulsar,
+  hueco largo, doble pulsado <1 s) se **descarta**, nunca se cuenta como fase
+  larga: contaminaría la mediana con un número falso.
+- Se usa la **mediana**, no la media: un atípico no la arrastra.
+- Un semáforo es **fijo** si los tres colores están "resueltos": fijados a mano o
+  con ≥3 fases y MAD ≤ 2 s (el error humano al pulsar es ~1 s por pulsación, así
+  que una duración puede errar ~2 s en un semáforo perfectamente fijo). Si es
+  fijo, la cuenta atrás es **exacta** y se proyecta el ciclo entero (módulo del
+  ciclo); si no, solo se da un **rango** `[mín, máx]` y, si la anotación es más
+  vieja que el máximo conocido, **no se inventa el color**.
+- **Franjas**: duraciones por tipo de día (laborable/finde) × bloque (mañana 7-14,
+  tarde 14-21, noche) en hora de Madrid, porque los semáforos cambian de plan. Se
+  usa la franja de "ahora" si ya es estable, y el modelo global si no. No distingue
+  festivos, solo sábado y domingo. `franjaDe` está **duplicada** en
+  `backend/src/services/modelo.ts` y `frontend/src/lib/prediccion.ts` (el servidor
+  rellena las franjas, el navegador pide una): deben coincidir, y los dos tests
+  llevan los mismos casos.
+- **Corrección manual**: `verde_manual_s` / `ambar_manual_s` / `rojo_manual_s` en
+  `acceso`. Si están, mandan sobre la mediana; `null` vuelve al automático. Para el
+  retraso al pulsar, además, la anotación admite `hace_s` (0-120): "esto cambió
+  hace 2 s"; la hora la pone el servidor, no el móvil.
+- La proyección del estado actual (cuenta atrás) vive en el **navegador**
+  (`frontend/src/lib/prediccion.ts`) porque avanza cada segundo sin ir al
+  servidor. El backend solo estima duraciones.
+
+### Rutas (`/semaforos/api/*`, todas admin salvo `/health`)
+- `GET /ciudades` — ciudades con cruces importados
+- `POST /ciudades/importar` — `{ ciudad }`, importa un municipio de OSM (502 si
+  Overpass falla o el nombre no da resultados)
+- `GET /cruces?ciudad=` — cruces con sus accesos y el modelo de cada uno
+- `PATCH /cruces/:id` (nombre) · `DELETE /cruces/:id`
+- `POST /cruces/:id/accesos` · `GET/PATCH/DELETE /accesos/:id`
+- `POST /accesos/:id/observaciones` — `{ color, hace_s? }`
+- `DELETE /observaciones/:id`
+- `GET /health`
+
+Todos los DELETE son borrado lógico (`activo=false`, `deleted_at=now()`) y los
+listados filtran siempre por `activo=true`; los ResponseDTO nunca incluyen
+`deleted_at`.
+
+### Importar es idempotente y nunca pisa trabajo del propietario
+Un cruce que ya existe solo actualiza su posición (no el nombre ni los accesos);
+los accesos solo se crean para un cruce que no tiene NINGUNO (ni siquiera
+borrado), así que reimportar no resucita uno descartado; un cruce que desaparece
+de OSM no se borra. El nombre de la ciudad acaba dentro de una consulta Overpass,
+así que se valida con una lista blanca de caracteres (`NOMBRE_CIUDAD_RE`) y la
+consulta se limita a `admin_level=8` (municipio; sin eso "Cáceres" casaría también
+con la provincia).
+
+### Primera importación: parser NO verificado contra Overpass real
+Los tests de `osm.test.ts` corren contra un fixture sintético con la forma de la
+respuesta de Overpass (`out body geom`); verifican la lógica de derivación pero
+**no pueden verificar que Overpass siga devolviendo esa forma** ni que la consulta
+case con el municipio. La primera importación real de Cáceres hay que comprobarla
+a ojo (`docker logs semaforos-backend`, y mirar el mapa). Si no sale ningún
+semáforo el importador lo dice, no devuelve una ciudad vacía.
+
+### Atribución OSM
+Los datos de OpenStreetMap son ODbL: el pie del mapa lleva la atribución
+("© OpenStreetMap contributors"); no quitarla.
+
+### Despliegue
+- El workflow `semaforos-ci.yml` construye, publica y despliega. Si no existe
+  `/home/manu/semaforos/.env` **sale en verde con un aviso** en vez de fallar.
+- La primera vez hay que lanzar a mano el workflow **"Semaforos · Provisionar
+  VPS"** (`semaforos-provision.yml`, `workflow_dispatch`): escribe el `.env` (genera
+  la contraseña de la BD solo si no había una), levanta los contenedores e importa
+  la ciudad indicada (por defecto Cáceres). Mismo patrón que `pisos-provision.yml`,
+  sin secretos extra. Una importación fallida NO hace fallar el aprovisionamiento.
+- El bloque `location /semaforos/` de nginx está en `nginx/calendario.conf` y se
+  aplica **in situ** en el servidor (ver el aviso sobre nginx en "Trader").
+- El esquema se crea en `infra/init.sql` (solo corre con volumen nuevo) **y** en
+  `backend/src/db/ensureSchema.ts` (cada arranque); los dos ficheros se
+  referencian entre sí: si tocas uno, toca el otro.
+
+### Robustez del backend
+Un fallo interno (BD caída, bug) no filtra su mensaje: el detalle va al log y el
+cliente recibe `{ error: 'Error interno' }` (los 4xx conservan su mensaje). El pool
+de pg tiene listener de `error`: sin él, que Postgres cierre una conexión inactiva
+(reinicio del contenedor de BD) tumbaría el proceso.
+
+### Variables de entorno del backend
+`SEMAFOROS_DB_HOST`, `SEMAFOROS_DB_NAME`, `SEMAFOROS_DB_USER`,
+`SEMAFOROS_DB_PASSWORD`, `SEMAFOROS_DB_PORT`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`,
+`PORT` (default `3017`), `OVERPASS_URL` (default `https://overpass-api.de/api/interpreter`),
+`OVERPASS_USER_AGENT`
+
+### Puerto local
+Frontend `:5191`, backend `:3017`, PostgreSQL `:5445`. Importar sin pasar por la UI:
+`cd semaforos/backend && npm run importar -- "Cáceres"` (en el contenedor:
+`docker exec semaforos-backend node dist/scripts/importar.js "Cáceres"`).
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/semaforos-backend:latest`, `ghcr.io/manuhddev/semaforos-frontend:latest`
+
+### Fuera de alcance (a propósito)
+Navegación tipo Google Maps con el estado de los semáforos por el camino (idea
+futura; el modelo `cruce -> acceso` ya lo permite), festivos en las franjas, y
+avisos/Telegram. `start-local.sh`/`start-local.ps1` no lo arrancan (tampoco lo
+hacen Mensajería ni Descargas): usar `docker-compose.local.yml` + `npm run dev`.
 
 ---
 
@@ -2108,13 +2263,15 @@ exactamente estos nombres.
 
 Locales tampoco añade rol: solo `admin`, como Gastos/Ofertas/Ruta/Pisos.
 
+Semáforos tampoco añade rol: solo `admin` (uso exclusivo del propietario).
+
 Descargas añade `descargas_admin` (ver + eliminar, irreversible) y `descargas_invitado` (solo ver). `descargas_admin` se asigna a `propietario` por el script de realm; `descargas_invitado` se crea pero queda sin asignar (delegable desde Panel).
 
 Viajes añade `viajes_admin` (gestión completa) y `viajes_invitado` (solo lectura). `viajes_admin` se asigna a `propietario` por el script de realm; `viajes_invitado` se crea pero queda sin asignar (delegable desde Panel). `familia` también puede consultar Viajes (como MapaCYD) y `invitado` no. En el AppLauncher la entrada es admin-only por defecto.
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
-Ofertas, Ruta, Pisos, Locales, Trader, Fútbol, Tenis y Calendario solo son accesibles para `admin` (uso exclusivo del
+Ofertas, Ruta, Pisos, Locales, Semáforos, Trader, Fútbol, Tenis y Calendario solo son accesibles para `admin` (uso exclusivo del
 propietario) — `familia` e `invitado` no las ven en el AppLauncher ni pueden
 llamar a su API. Juegos y Finanzas son la excepción a ese último punto: Juegos es
 utilizable por los tres roles por igual (ver sección "Juegos" arriba) y Finanzas
@@ -2194,7 +2351,8 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Tenis (repo externo, stack propio) | :5189 | :8000 |
 | Mensajería         | :5188    | :3015   |
 | Descargas          | :5190    | :3016   |
-| Viajes             | :5191    | :3017   |
+| Viajes             | :5192    | :3030   |
+| Semáforos          | :5191    | :3017   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -2208,18 +2366,19 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | PostgreSQL (locales)| :5442  | —       |
 | PostgreSQL (finanzas)| :5443 | —       |
 | PostgreSQL (mensajeria)| :5444 | —     |
-| PostgreSQL (viajes)| :5445   | —       |
+| PostgreSQL (viajes)| :5446   | —       |
+| PostgreSQL (semaforos)| :5445 | —      |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel (backend) tiene vitest desde el dashboard de uso de APIs (`subappUsage.ts`, `routes/usage.ts`) pero el resto del backend (`users.ts`, `me.ts`, `keycloakAdmin.ts`) y todo el frontend siguen sin cobertura; mapacyd (backend y frontend) sigue sin ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **18 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx`, `viajes/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 18 Dockerfiles y 18 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 18 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (18 internas + 3 externas), no solo la lista de apps.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **19 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx`, `semaforos/frontend/src/components/AppLauncher.tsx`, `viajes/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 19 Dockerfiles y 19 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 19 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (19 internas + 3 externas), no solo la lista de apps.
 
 `locales` ya está en las copias del AppLauncher (`roles: ['admin']`), añadido
 junto con su frontend (fase 9). `finanzas` ya está en las copias
 (`roles: ['admin', 'invitado']`). `mensajeria` ya está en las 16 copias
-internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `viajes` está en las 18 copias internas (`roles: ['admin']`, color `#ec4899`, icono de maleta) y **tampoco** en las 3 externas (`crypto-trader`, `football-predictor`, `tennis-predictor`: pendientes de actualizar a mano en sus repos). `tenis` también está en las 16 copias internas
+internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `semaforos` está en las 19 copias internas (`roles: ['admin']`) y tampoco en las 3 externas todavía (las de `football-predictor` y `tennis-predictor` ya iban por detrás: les faltan `descargas` y `semaforos`). `tenis` también está en las 16 copias internas
 (`roles: ['admin']`) — mismo patrón que `futbol`: repo externo
 (`tennis-predictor`), solo registrado aquí para el AppLauncher/Keycloak/nginx
 compartidos. `crypto-trader/frontend`, `football-predictor/frontend` y

@@ -12,5 +12,5 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY package*.json ./
 
-EXPOSE 3017
+EXPOSE 3030
 CMD ["node", "dist/index.js"]

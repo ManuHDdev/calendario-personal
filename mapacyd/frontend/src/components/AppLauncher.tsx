@@ -43,6 +43,9 @@ const APPS: AppDef[] = [
   // viajes: planificador de viajes con mapa; admin-only por defecto (roles delegados
   // viajes_admin/viajes_invitado se asignan desde Panel, ver CLAUDE.md).
   { id: 'viajes',     nombre: 'Viajes',     color: '#ec4899', roles: ['admin'] },
+  // semaforos: estado estimado de los semáforos de la ciudad en un mapa; datos
+  // de OpenStreetMap + tiempos anotados a mano. Uso exclusivo del propietario.
+  { id: 'semaforos',  nombre: 'Semáforos',  color: '#f43f5e', roles: ['admin'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -68,7 +71,8 @@ function getUrls(): Record<string, string> {
     finanzas:   local ? 'http://localhost:5187/finanzas/' : '/finanzas/',
     mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
     descargas:  local ? 'http://localhost:5190/descargas/' : '/descargas/',
-    viajes:     local ? 'http://localhost:5191/viajes/' : '/viajes/',
+    viajes:     local ? 'http://localhost:5192/viajes/' : '/viajes/',
+    semaforos:  local ? 'http://localhost:5191/semaforos/' : '/semaforos/',
   };
 }
 
@@ -235,6 +239,15 @@ function AppIcon({ id }: { id: string }) {
           <rect x="3" y="7" width="18" height="13" rx="2"/>
           <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
           <line x1="3" y1="13" x2="21" y2="13"/>
+        </svg>
+      );
+    case 'semaforos':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+          <rect x="8" y="2.5" width="8" height="19" rx="3"/>
+          <circle cx="12" cy="7" r="1.6" fill="white" stroke="none"/>
+          <circle cx="12" cy="12" r="1.6" fill="white" stroke="none"/>
+          <circle cx="12" cy="17" r="1.6" fill="white" stroke="none"/>
         </svg>
       );
     default:

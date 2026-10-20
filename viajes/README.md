@@ -6,7 +6,7 @@ GPX / calendar export.
 
 - Frontend: `https://<domain>/viajes/` (React + Vite + Leaflet / OpenStreetMap, no API key)
 - API: `/viajes/api/*` (Fastify + zod + PostgreSQL, Keycloak JWT)
-- Local ports: frontend `:5191`, backend `:3017`, PostgreSQL `:5445`
+- Local ports: frontend `:5192`, backend `:3030`, PostgreSQL `:5446`
 
 ## What it does
 
@@ -115,7 +115,7 @@ statements on every startup. **Keep both files in sync** when changing the schem
 ## Environment (backend)
 
 `VIAJES_DB_HOST`, `VIAJES_DB_PORT`, `VIAJES_DB_NAME`, `VIAJES_DB_USER`,
-`VIAJES_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3017),
+`VIAJES_DB_PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3030),
 optional `OSRM_URL_DRIVING`, `OSRM_URL_FOOT`, `OSRM_URL_BIKE`, `OSRM_TIMEOUT_MS`.
 
 ## Local development
@@ -124,13 +124,13 @@ optional `OSRM_URL_DRIVING`, `OSRM_URL_FOOT`, `OSRM_URL_BIKE`, `OSRM_TIMEOUT_MS`
 bash start-local.sh        # starts everything, including viajes (see the root script)
 # or just this app:
 cd viajes/infra && docker compose -f docker-compose.local.yml up -d
-cd ../backend  && npm ci && VIAJES_DB_PASSWORD=viajes123 VIAJES_DB_PORT=5445 \
+cd ../backend  && npm ci && VIAJES_DB_PASSWORD=viajes123 VIAJES_DB_PORT=5446 \
   KEYCLOAK_CERTS_URL=http://localhost:8080/realms/calendario/protocol/openid-connect/certs npm run dev
-cd ../frontend && npm ci && npm run dev     # http://localhost:5191/viajes/
+cd ../frontend && npm ci && npm run dev     # http://localhost:5192/viajes/
 ```
 
 Run `bash scripts/keycloak-update-realm.sh` once so the new roles and the
-`http://localhost:5191` redirect URI exist in your local Keycloak.
+`http://localhost:5192` redirect URI exist in your local Keycloak.
 
 ## Tests
 

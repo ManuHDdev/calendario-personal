@@ -37,9 +37,9 @@
 #   finanzas backend    →  :3014
 #   finanzas frontend   →  :5187
 #   PostgreSQL          →  :5443   (finanzas)
-#   viajes backend      →  :3017
-#   viajes frontend     →  :5191
-#   PostgreSQL          →  :5445   (viajes)
+#   viajes backend      →  :3030
+#   viajes frontend     →  :5192
+#   PostgreSQL          →  :5446   (viajes)
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -174,7 +174,7 @@ info "PostgreSQL (locales :5442)..."
 info "PostgreSQL (finanzas :5443)..."
 (cd "$SCRIPT_DIR/finanzas/infra" && docker compose -f docker-compose.local.yml up -d)
 
-info "PostgreSQL (viajes :5445)..."
+info "PostgreSQL (viajes :5446)..."
 (cd "$SCRIPT_DIR/viajes/infra" && docker compose -f docker-compose.local.yml up -d)
 
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
@@ -457,15 +457,15 @@ start_bg "finanzas-backend   :3014" "finanzas-backend.log" "$SCRIPT_DIR/finanzas
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/viajes/backend"
-start_bg "viajes-backend     :3017" "viajes-backend.log" "$SCRIPT_DIR/viajes/backend" \
-  env PORT=3017 \
+start_bg "viajes-backend     :3030" "viajes-backend.log" "$SCRIPT_DIR/viajes/backend" \
+  env PORT=3030 \
       VIAJES_DB_HOST="localhost" \
-      VIAJES_DB_PORT="5445" \
+      VIAJES_DB_PORT="5446" \
       VIAJES_DB_NAME="viajes" \
       VIAJES_DB_USER="viajes" \
       VIAJES_DB_PASSWORD="viajes123" \
       KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
-      CORS_ORIGIN="http://localhost:5191" \
+      CORS_ORIGIN="http://localhost:5192" \
   npm run dev
 
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
@@ -527,7 +527,7 @@ start_bg "finanzas-frontend  :5187" "finanzas-frontend.log" "$SCRIPT_DIR/finanza
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/viajes/frontend"
-start_bg "viajes-frontend    :5191" "viajes-frontend.log" "$SCRIPT_DIR/viajes/frontend" \
+start_bg "viajes-frontend    :5192" "viajes-frontend.log" "$SCRIPT_DIR/viajes/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -615,8 +615,8 @@ echo -e "    Backend health   →  http://localhost:3014/health"
 echo -e "    ${YELLOW}ℹ  El historico de precio de vivienda se importa al arrancar si la tabla esta vacia (Ministerio de Transportes)${NC}"
 echo ""
 echo -e "  ${CYAN}Viajes${NC}"
-echo -e "    Frontend         →  ${BOLD}http://localhost:5191/viajes/${NC}"
-echo -e "    Backend health   →  http://localhost:3017/viajes/api/health"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5192/viajes/${NC}"
+echo -e "    Backend health   →  http://localhost:3030/viajes/api/health"
 echo -e "    ${YELLOW}ℹ  Rutas por carretera: OSRM público (sin clave); si no responde, las distancias salen aproximadas en línea recta${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"

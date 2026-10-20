@@ -27,7 +27,7 @@ services:
     image: ghcr.io/manuhddev/viajes-backend:latest
     container_name: viajes-backend
     environment:
-      PORT:                3017
+      PORT:                3030
       VIAJES_DB_HOST:      viajes-db
       VIAJES_DB_NAME:      ${VIAJES_DB_NAME}
       VIAJES_DB_USER:      ${VIAJES_DB_USER}
@@ -45,7 +45,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3017/viajes/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3030/viajes/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 10s
       retries: 3
