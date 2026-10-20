@@ -2021,11 +2021,70 @@ Las URLs de media llevan el access token de Keycloak en `?token=` (mismo patrón
 
 ---
 
+## Viajes — Planificador de viajes con mapa
+
+### Ubicación
+Calendario/viajes/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify + Node.js + TypeScript (igual que el resto de subapps Node)
+- Frontend: React + Vite + TypeScript, con interruptor claro/oscuro (`theme.ts` + `ThemeToggle`)
+- Base de datos: PostgreSQL 15, propia (`viajes`), tablas `trip`, `place`, `route_cache`, `geocode_cache`
+- Mapa: Leaflet vía npm con teselas de OpenStreetMap (sin API key); en modo oscuro se oscurecen con un filtro CSS
+- Rutas por carretera: OSRM (servidor demo público para coche, instancias FOSSGIS para andando/bici), cacheadas en Postgres, con caída elegante a distancia en línea recta (`approx: true`)
+- Geocodificación: Nominatim proxy del backend (1 req/s, User-Agent propio, caché permanente en `geocode_cache`)
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón)
+- Validaciones: Zod en todos los endpoints que reciben body o query
+- Sin ORM — queries directas con el cliente pg; soft delete (`activo` + `deleted_at`) en trip y place
+- Con tests de backend y frontend (vitest), ejecutados en CI
+
+### Qué hace
+Un viaje agrupa lugares de tipo `alojamiento`, `interes`, `comida` u `otro`, añadidos haciendo clic en el mapa o buscando una dirección. Cada lugar admite notas, URL, coste, casilla de visitado y, opcionalmente, fecha/hora/duración de visita; los alojamientos llevan entrada/salida en vez de fecha de visita (puede haber varios por viaje). Sin fecha → lista de "pendientes". Pestañas: Lugares (arrastrar y soltar, también entre días, o botones subir/bajar), Itinerario (por día: tramos, km y tiempo totales y ruta dibujada; cada día sale y vuelve al alojamiento de esa noche), Medir (dos lugares o matriz de hasta 10), Resumen (contadores, exportar GPX y .ics). "Alojamiento más cercano" en el detalle de cada lugar.
+
+### Distancias (IMPORTANTE)
+Siempre hay distancia en línea recta (haversine, instantánea, en cliente y servidor). La de carretera sale de OSRM, cacheada, una única petición por día (todos los waypoints). Si OSRM falla, expira (6 s) o devuelve error, el backend responde con haversine + duración estimada y `approx: true`; la UI antepone "~". Lo aproximado NUNCA se cachea.
+
+**El servidor demo `router.project-osrm.org` ignora el perfil de la URL y siempre calcula en coche** (verificado: "foot" devuelve lo mismo que "driving"). Por eso `foot` y `bike` apuntan por defecto a `routing.openstreetmap.de/routed-foot|routed-bike`; las tres URLs son configurables (`OSRM_URL_DRIVING|FOOT|BIKE`). Son servidores públicos compartidos sin SLA: válidos para uso familiar, no para carga alta.
+
+### Roles
+- `admin` o `viajes_admin` → gestión completa (rutas de escritura)
+- `familia` o `viajes_invitado` → solo consulta
+- `invitado` → sin acceso
+- En el AppLauncher la entrada es `roles: ['admin']` (admin-only por defecto, como Gastos/Pisos); los roles delegados existen para asignarse desde Panel.
+
+### Rutas (`/viajes/api/*`)
+- `GET/POST /trips`, `GET/PATCH/DELETE /trips/:id` — viajes (DELETE = soft delete)
+- `POST /trips/:id/places`, `PATCH/DELETE /trips/:id/places/:placeId` — lugares
+- `POST /trips/:id/reorder` — mueve lugares a un día (o a pendientes) en un orden dado
+- `GET /trips/:id/itinerary` — días con tramos, geometría y totales (`profile`, `withLodging`, `roundTrip`)
+- `GET /trips/:id/summary` — contadores, coste, km en línea recta
+- `GET /trips/:id/distance`, `GET /distance`, `GET /trips/:id/distance-matrix`, `GET /trips/:id/places/:placeId/nearest-lodging`
+- `GET /trips/:id/export.gpx`, `GET /trips/:id/export.ics`
+- `GET /geocode/search`, `GET /geocode/reverse`
+- `GET /health`
+
+### Esquema
+`infra/init.sql` solo corre con un volumen nuevo, así que `backend/src/db/ensureSchema.ts` aplica las mismas sentencias idempotentes en cada arranque (mismo patrón que Gastos/Locales). Si se toca el esquema, tocar los dos ficheros. `pg` devuelve `DATE` como string `YYYY-MM-DD` y `NUMERIC` como número (parsers registrados en `db/pool.ts`).
+
+### Variables de entorno del backend
+`VIAJES_DB_HOST`, `VIAJES_DB_NAME`, `VIAJES_DB_USER`, `VIAJES_DB_PASSWORD`, `VIAJES_DB_PORT`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `PORT` (default 3017), `OSRM_URL_DRIVING`, `OSRM_URL_FOOT`, `OSRM_URL_BIKE`, `OSRM_TIMEOUT_MS` (default 6000). El `.env` de producción se crea a mano antes del primer despliegue (ver `viajes/README.md`).
+
+### Puerto local
+Frontend `:5191`, backend `:3017`, PostgreSQL `:5445`.
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/viajes-backend:latest`, `ghcr.io/manuhddev/viajes-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
-Los catorce roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
+Los dieciséis roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
 `mapacyd_invitado`, `reparto_admin`, `reparto_invitado`, `mensajeria_admin`, `mensajeria_invitado`,
-`tenis_admin`, `tenis_invitado`, `descargas_admin`, `descargas_invitado`. Cualquier código que filtre por rol DEBE usar
+`tenis_admin`, `tenis_invitado`, `descargas_admin`, `descargas_invitado`, `viajes_admin`, `viajes_invitado`. Cualquier código que filtre por rol DEBE usar
 exactamente estos nombres.
 
 | Rol                 | Acceso                                                       |
@@ -2044,10 +2103,14 @@ exactamente estos nombres.
 | tenis_invitado      | Rol delegado de solo lectura para Tenis — mismo estado que `tenis_admin`, creado pero sin efecto en el AppLauncher hasta que se decida abrir acceso delegado |
 | descargas_admin     | Ver, descargar y **eliminar** archivos en Descargas (carpeta `/home/manu/rat_downloads` del VPS) |
 | descargas_invitado  | Solo ver/descargar en Descargas (sin borrar); `familia` e `invitado` quedan fuera (archivos privados) |
+| viajes_admin        | Gestión completa de viajes y lugares en Viajes (CRUD)            |
+| viajes_invitado     | Consulta de viajes, mapa e itinerario en Viajes (solo lectura)   |
 
 Locales tampoco añade rol: solo `admin`, como Gastos/Ofertas/Ruta/Pisos.
 
 Descargas añade `descargas_admin` (ver + eliminar, irreversible) y `descargas_invitado` (solo ver). `descargas_admin` se asigna a `propietario` por el script de realm; `descargas_invitado` se crea pero queda sin asignar (delegable desde Panel).
+
+Viajes añade `viajes_admin` (gestión completa) y `viajes_invitado` (solo lectura). `viajes_admin` se asigna a `propietario` por el script de realm; `viajes_invitado` se crea pero queda sin asignar (delegable desde Panel). `familia` también puede consultar Viajes (como MapaCYD) y `invitado` no. En el AppLauncher la entrada es admin-only por defecto.
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
@@ -2079,7 +2142,7 @@ fue el segundo y `mensajeria_invitado` el tercero. A diferencia de los roles
 los tres se crean en el realm pero quedan sin asignar, delegables manualmente
 desde Panel cuando haga falta.
 
-El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin`, `reparto_admin`, `mensajeria_admin`, `tenis_admin` y `descargas_admin`.
+El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin`, `reparto_admin`, `mensajeria_admin`, `tenis_admin`, `descargas_admin` y `viajes_admin`.
 
 ## Keycloak — configuración y despliegue
 
@@ -2131,6 +2194,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Tenis (repo externo, stack propio) | :5189 | :8000 |
 | Mensajería         | :5188    | :3015   |
 | Descargas          | :5190    | :3016   |
+| Viajes             | :5191    | :3017   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -2144,17 +2208,18 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | PostgreSQL (locales)| :5442  | —       |
 | PostgreSQL (finanzas)| :5443 | —       |
 | PostgreSQL (mensajeria)| :5444 | —     |
+| PostgreSQL (viajes)| :5445   | —       |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel (backend) tiene vitest desde el dashboard de uso de APIs (`subappUsage.ts`, `routes/usage.ts`) pero el resto del backend (`users.ts`, `me.ts`, `keycloakAdmin.ts`) y todo el frontend siguen sin cobertura; mapacyd (backend y frontend) sigue sin ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **17 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 17 Dockerfiles y 17 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 17 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (17 internas + 3 externas), no solo la lista de apps.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **18 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx`, `viajes/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 18 Dockerfiles y 18 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 18 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (18 internas + 3 externas), no solo la lista de apps.
 
 `locales` ya está en las copias del AppLauncher (`roles: ['admin']`), añadido
 junto con su frontend (fase 9). `finanzas` ya está en las copias
 (`roles: ['admin', 'invitado']`). `mensajeria` ya está en las 16 copias
-internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `tenis` también está en las 16 copias internas
+internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `viajes` está en las 18 copias internas (`roles: ['admin']`, color `#ec4899`, icono de maleta) y **tampoco** en las 3 externas (`crypto-trader`, `football-predictor`, `tennis-predictor`: pendientes de actualizar a mano en sus repos). `tenis` también está en las 16 copias internas
 (`roles: ['admin']`) — mismo patrón que `futbol`: repo externo
 (`tennis-predictor`), solo registrado aquí para el AppLauncher/Keycloak/nginx
 compartidos. `crypto-trader/frontend`, `football-predictor/frontend` y
