@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import keycloak from '../services/keycloak';
-import { getUsers, createUser, updateUser, deleteUser } from '../services/api';
+import { getUsers, getPresence, createUser, updateUser, deleteUser } from '../services/api';
+import { presenceLabel, presenceTitle } from '../lib/presence';
 import UserModal from '../components/UserModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AppLauncher from '../components/AppLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import UsageDashboard from '../components/UsageDashboard';
-import type { UserOut, UserFormData } from '../types';
+import type { UserOut, UserFormData, Presence } from '../types';
 import './PanelPage.css';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -49,6 +50,8 @@ const ROLE_COLOR: Record<string, string> = {
 // Con más badges de estos el resto se resume en un chip "+N" para que todas las filas midan lo mismo.
 const MAX_VISIBLE_ROLES = 2;
 
+const PRESENCE_POLL_MS = 30_000;
+
 export default function PanelPage() {
   const [users, setUsers] = useState<UserOut[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +59,8 @@ export default function PanelPage() {
   const [modalUser, setModalUser] = useState<UserOut | null | undefined>(undefined); // undefined=cerrado, null=crear, UserOut=editar
   const [deleteTarget, setDeleteTarget] = useState<UserOut | null>(null);
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
+  const [presence, setPresence] = useState<Record<string, Presence>>({});
+  const [now, setNow] = useState(() => Date.now());
 
   const toggleRoles = (id: string) =>
     setExpandedRoles((prev) => {
@@ -80,6 +85,25 @@ export default function PanelPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Un fallo puntual al sondear no debe mostrar errores ni borrar lo último que se vio.
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const data = await getPresence();
+        if (!cancelled) {
+          setPresence(data);
+          setNow(Date.now());
+        }
+      } catch { /* se reintenta en el siguiente ciclo */ }
+    };
+    poll();
+    const id = setInterval(poll, PRESENCE_POLL_MS);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
+  const onlineCount = users.filter((u) => presence[u.id]?.status === 'online').length;
 
   const handleSave = async (data: UserFormData) => {
     if (modalUser === null) {
@@ -135,7 +159,15 @@ export default function PanelPage() {
 
       <main className="panel-main">
         <div className="panel-section-header">
-          <h2 className="panel-section-title">Usuarios</h2>
+          <div className="panel-section-heading">
+            <h2 className="panel-section-title">Usuarios</h2>
+            {onlineCount > 0 && (
+              <span className="panel-online-count" title="Usuarios con actividad en los últimos 5 minutos">
+                <span className="presence-dot presence-dot--online presence-dot--inline" aria-hidden="true" />
+                {onlineCount} en línea
+              </span>
+            )}
+          </div>
           <button className="btn-new-user" onClick={() => setModalUser(null)}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -177,8 +209,23 @@ export default function PanelPage() {
                     <tr key={u.id}>
                       <td>
                         <div className="user-name-cell">
-                          <div className="user-avatar">{u.username.charAt(0).toUpperCase()}</div>
-                          <span className="user-name" title={u.username}>{u.username}</span>
+                          <div className="user-avatar-wrap">
+                            <div className="user-avatar">{u.username.charAt(0).toUpperCase()}</div>
+                            {presence[u.id] && (
+                              <span className={`presence-dot presence-dot--${presence[u.id].status}`} aria-hidden="true" />
+                            )}
+                          </div>
+                          <div className="user-name-block">
+                            <span className="user-name" title={u.username}>{u.username}</span>
+                            {presence[u.id] && (
+                              <span
+                                className={`user-presence user-presence--${presence[u.id].status}`}
+                                title={presenceTitle(presence[u.id])}
+                              >
+                                {presenceLabel(presence[u.id], now)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="user-email" title={u.email || undefined}>{u.email || <span className="no-data">—</span>}</td>

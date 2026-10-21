@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authAdminMiddleware } from '../middleware/auth';
 import {
   listUsers,
+  listPresence,
   listRoles,
   createUser,
   updateUser,
@@ -15,6 +16,15 @@ export async function usersRoutes(app: FastifyInstance): Promise<void> {
   app.get('/panel/api/users', async (_req, reply) => {
     try {
       return await listUsers();
+    } catch (err) {
+      return reply.code(500).send({ error: err instanceof Error ? err.message : 'Error' });
+    }
+  });
+
+  // GET /panel/api/users/presence → { [userId]: { status, lastActivity } }
+  app.get('/panel/api/users/presence', async (_req, reply) => {
+    try {
+      return await listPresence();
     } catch (err) {
       return reply.code(500).send({ error: err instanceof Error ? err.message : 'Error' });
     }

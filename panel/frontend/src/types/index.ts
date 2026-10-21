@@ -6,6 +6,13 @@ export interface UserOut {
   roles: string[];
 }
 
+export type PresenceStatus = 'online' | 'idle' | 'offline';
+
+export interface Presence {
+  status: PresenceStatus;
+  lastActivity: number | null;
+}
+
 export interface UserFormData {
   username: string;
   email: string;

@@ -205,6 +205,11 @@
   min-width: 0;
 }
 
+.user-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .user-avatar {
   width: 30px;
   height: 30px;
@@ -216,7 +221,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+}
+
+.user-name-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .user-name {
@@ -225,6 +235,58 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ── Presencia (en línea / sesión abierta / sin sesión) ─────── */
+.presence-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-primary);
+  background: var(--text-tertiary);
+}
+.presence-dot--online { background: #34c759; }
+.presence-dot--idle { background: #ff9f0a; }
+.presence-dot--offline { background: var(--text-tertiary); }
+.presence-dot--inline {
+  position: static;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border: none;
+}
+
+.user-presence {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-presence--online { color: #34c759; font-weight: 600; }
+.user-presence--idle { color: var(--text-secondary); }
+
+.panel-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.panel-online-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #34c759;
+  background: rgba(52, 199, 89, 0.12);
+  border-radius: 20px;
 }
 
 .user-email {
@@ -341,7 +403,7 @@
     display: none;
   }
 
-  .user-table th:nth-child(1) { width: 38%; }
+  .user-table th:nth-child(1) { width: 44%; }
   .user-table th:nth-child(5) { width: 84px; }
   .user-table th,
   .user-table td { padding-left: 12px; padding-right: 12px; }
