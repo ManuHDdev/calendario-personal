@@ -1,3 +1,5 @@
+import { derivePresence, type KcSession, type Presence } from './presence';
+
 const KC_BASE =
   process.env.KEYCLOAK_BASE_URL ||
   'http://calendario-keycloak:8080/keycloak';
@@ -159,6 +161,27 @@ export async function listUsers(): Promise<UserOut[]> {
       roles: await getUserRoles(u.id),
     })),
   );
+}
+
+// Un usuario cuyas sesiones no se pueden leer se omite (el frontend no pinta
+// nada para él) en vez de mostrarlo como desconectado, que sería un dato falso.
+export async function listPresence(): Promise<Record<string, Presence>> {
+  const res = await adminFetch('/users?max=200&briefRepresentation=true');
+  if (!res.ok) throw new Error(`Failed to list users: ${res.status}`);
+  const users = (await res.json()) as KcUser[];
+  const now = Date.now();
+  const entries = await Promise.all(
+    users.map(async (u): Promise<[string, Presence] | null> => {
+      try {
+        const r = await adminFetch(`/users/${u.id}/sessions`);
+        if (!r.ok) return null;
+        return [u.id, derivePresence((await r.json()) as KcSession[], now)];
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return Object.fromEntries(entries.filter((e): e is [string, Presence] => e !== null));
 }
 
 export async function createUser(data: CreateUserIn): Promise<UserOut> {
