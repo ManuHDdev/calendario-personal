@@ -265,9 +265,12 @@ textarea { resize: vertical; }
   .viajes-header { padding: 0 12px; }
   .viajes-username { display: none; }
   .viajes-main { padding: 20px 16px 48px; }
-  .trip-layout { height: auto; min-height: 100vh; }
-  .trip-body { flex-direction: column-reverse; }
+  .trip-layout { height: auto; min-height: 100vh; min-height: 100dvh; }
+  /* Map first via order, not column-reverse: reverse stacks from the bottom, so the
+     leftover height of the 100vh layout piled up as an empty band above the map. */
+  .trip-body { flex: none; flex-direction: column; }
+  .trip-map-wrap { order: -1; }
   .trip-sidebar { width: 100%; border-right: none; border-top: 1px solid var(--border); overflow: visible; }
-  .trip-map-wrap { height: 52vh; min-height: 320px; flex: none; position: sticky; top: 56px; z-index: 5; }
+  .trip-map-wrap { height: 52vh; height: 52dvh; min-height: 320px; flex: none; position: sticky; top: 56px; z-index: 5; }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
