@@ -1,5 +1,5 @@
 import keycloak from './keycloak';
-import type { UserOut, UserFormData, ApiUsageEntry } from '../types';
+import type { UserOut, UserFormData, ApiUsageEntry, Presence } from '../types';
 
 const BASE = '/panel/api';
 
@@ -22,6 +22,12 @@ export async function getUsers(): Promise<UserOut[]> {
   const res = await fetch(`${BASE}/users`, { headers: headers() });
   if (!res.ok) await handleError(res);
   return res.json() as Promise<UserOut[]>;
+}
+
+export async function getPresence(): Promise<Record<string, Presence>> {
+  const res = await fetch(`${BASE}/users/presence`, { headers: headers() });
+  if (!res.ok) await handleError(res);
+  return res.json() as Promise<Record<string, Presence>>;
 }
 
 export async function getRoles(): Promise<string[]> {

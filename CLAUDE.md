@@ -156,9 +156,13 @@ Calendario/panel/ dentro del monorepo elbunkerdelingeniero.
 
 ### Rutas (`/panel/api/*`)
 - `GET/POST/PUT/DELETE /users` → CRUD de usuarios vía Keycloak Admin API
+- `GET /users/presence` → `{ [userId]: { status: 'online'|'idle'|'offline', lastActivity } }`, admin-only. Una llamada a `/users/{id}/sessions` de Keycloak por usuario; `status` sale de la sesión más reciente (`services/presence.ts`): `online` si su `lastAccess` es de hace ≤5 min, `idle` si hay sesión abierta pero más vieja, `offline` si no hay ninguna. Un usuario cuyas sesiones no se pueden leer se **omite** del mapa (el frontend no pinta nada) en vez de aparecer como desconectado. El frontend lo sondea cada 30 s sin spinner ni banner de error
 - `GET /roles` → lista fija `['admin','familia','invitado']`
 - `GET /usage` → consumo agregado de las APIs externas rastreadas en el monorepo (ORS vía Paraísos, TMDB/Google Books vía Watchlist, Football-Data.org vía Fútbol), admin-only (`authAdminMiddleware`). Llama al `GET /usage` interno de cada subapp en paralelo (`Promise.allSettled`, timeout 3s); si uno falla, sus entradas se marcan `unavailable: true` en vez de tumbar toda la petición — ver `panel/backend/src/services/subappUsage.ts`. Fútbol es un repo externo al monorepo (ver sección "Fútbol" más abajo), pero expone el mismo contrato interno (`PANEL_INTERNAL_TOKEN`, misma forma de respuesta) que Paraísos/Watchlist
 - `GET /health`
+
+### "En línea" es una estimación (IMPORTANTE)
+Keycloak solo guarda `lastAccess` por sesión, que se actualiza en el login y al refrescar el token, **no** con la actividad real en pantalla; la mayoría de subapps no refrescan el token en segundo plano. Por eso "En línea" significa "actividad reciente en una sesión abierta", y alguien con una pestaña abierta pero quieta pasa a "Hace N min" aunque siga ahí. Es la mejor señal disponible sin añadir telemetría propia a las 19 subapps.
 
 ### Dashboard de uso de APIs externas
 Sección nueva en `PanelPage` (`UsageDashboard.tsx`), tarjetas con llamadas de hoy, restante (cuando la API tiene tope publicado) y hora de reinicio (medianoche UTC). Documentado en `openspec/changes/2026-09-09-add-api-usage-dashboard/`.
