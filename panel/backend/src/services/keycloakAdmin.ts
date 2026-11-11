@@ -119,7 +119,7 @@ async function setUserRoles(userId: string, roleNames: string[]): Promise<void> 
   if (currentRoles.ok) {
     const existing = (await currentRoles.json()) as KcRole[];
     const appRoles = existing.filter((r) =>
-      ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'mapacyd_invitado', 'reparto_admin', 'reparto_invitado', 'mensajeria_admin', 'mensajeria_invitado', 'tenis_admin', 'tenis_invitado', 'descargas_admin', 'descargas_invitado', 'viajes_admin', 'viajes_invitado'].includes(r.name),
+      ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'mapacyd_invitado', 'reparto_admin', 'reparto_invitado', 'mensajeria_admin', 'mensajeria_invitado', 'tenis_admin', 'tenis_invitado', 'descargas_admin', 'descargas_invitado', 'viajes_admin', 'viajes_invitado', 'vine_admin', 'vine_invitado'].includes(r.name),
     );
     if (appRoles.length > 0) {
       await adminFetch(`/users/${userId}/role-mappings/realm`, {
@@ -264,7 +264,7 @@ export async function deleteUser(userId: string): Promise<void> {
 }
 
 export async function listRoles(): Promise<string[]> {
-  return ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'mapacyd_invitado', 'reparto_admin', 'reparto_invitado', 'mensajeria_admin', 'mensajeria_invitado', 'tenis_admin', 'tenis_invitado', 'descargas_admin', 'descargas_invitado', 'viajes_admin', 'viajes_invitado'];
+  return ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'mapacyd_invitado', 'reparto_admin', 'reparto_invitado', 'mensajeria_admin', 'mensajeria_invitado', 'tenis_admin', 'tenis_invitado', 'descargas_admin', 'descargas_invitado', 'viajes_admin', 'viajes_invitado', 'vine_admin', 'vine_invitado'];
 }
 
 export async function changeOwnPassword(userId: string, password: string): Promise<void> {

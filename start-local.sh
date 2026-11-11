@@ -40,6 +40,9 @@
 #   viajes backend      →  :3030
 #   viajes frontend     →  :5192
 #   PostgreSQL          →  :5446   (viajes)
+#   vine-resenas backend  →  :3018
+#   vine-resenas frontend →  :5193
+#   PostgreSQL          →  :5447   (vine-resenas)
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -86,6 +89,7 @@ cleanup() {
   warn "  cd locales/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd finanzas/infra && docker compose -f docker-compose.local.yml down"
   warn "  cd viajes/infra && docker compose -f docker-compose.local.yml down"
+  warn "  cd vine-resenas/infra && docker compose -f docker-compose.local.yml down"
 }
 trap cleanup EXIT INT TERM
 
@@ -177,6 +181,9 @@ info "PostgreSQL (finanzas :5443)..."
 info "PostgreSQL (viajes :5446)..."
 (cd "$SCRIPT_DIR/viajes/infra" && docker compose -f docker-compose.local.yml up -d)
 
+info "PostgreSQL (vine-resenas :5447)..."
+(cd "$SCRIPT_DIR/vine-resenas/infra" && docker compose -f docker-compose.local.yml up -d)
+
 # ── 4. Esperar servicios ──────────────────────────────────────────────────────
 header "Esperando servicios"
 
@@ -251,6 +258,12 @@ wait_for_container \
   "PostgreSQL viajes" \
   "viajes-db-local" \
   "docker exec viajes-db-local pg_isready -U viajes -d viajes" \
+  30
+
+wait_for_container \
+  "PostgreSQL vine-resenas" \
+  "vine-resenas-db-local" \
+  "docker exec vine-resenas-db-local pg_isready -U vine_resenas -d vine_resenas" \
   30
 
 wait_for_container \
@@ -468,6 +481,20 @@ start_bg "viajes-backend     :3030" "viajes-backend.log" "$SCRIPT_DIR/viajes/bac
       CORS_ORIGIN="http://localhost:5192" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/vine-resenas/backend"
+start_bg "vine-resenas-backend :3018" "vine-resenas-backend.log" "$SCRIPT_DIR/vine-resenas/backend" \
+  env PORT=3018 \
+      VINE_RESENAS_DB_HOST="localhost" \
+      VINE_RESENAS_DB_PORT="5447" \
+      VINE_RESENAS_DB_NAME="vine_resenas" \
+      VINE_RESENAS_DB_USER="vine_resenas" \
+      VINE_RESENAS_DB_PASSWORD="vine_resenas123" \
+      VINE_API_TOKEN="local-dev-vine-token" \
+      DATA_DIR="$SCRIPT_DIR/vine-resenas/backend/data" \
+      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs" \
+      CORS_ORIGIN="http://localhost:5193" \
+  npm run dev
+
 start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backend" \
   mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
@@ -528,6 +555,10 @@ start_bg "finanzas-frontend  :5187" "finanzas-frontend.log" "$SCRIPT_DIR/finanza
 
 ensure_deps "$SCRIPT_DIR/viajes/frontend"
 start_bg "viajes-frontend    :5192" "viajes-frontend.log" "$SCRIPT_DIR/viajes/frontend" \
+  npm run dev
+
+ensure_deps "$SCRIPT_DIR/vine-resenas/frontend"
+start_bg "vine-resenas-frontend :5193" "vine-resenas-frontend.log" "$SCRIPT_DIR/vine-resenas/frontend" \
   npm run dev
 
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
@@ -618,6 +649,11 @@ echo -e "  ${CYAN}Viajes${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5192/viajes/${NC}"
 echo -e "    Backend health   →  http://localhost:3030/viajes/api/health"
 echo -e "    ${YELLOW}ℹ  Rutas por carretera: OSRM público (sin clave); si no responde, las distancias salen aproximadas en línea recta${NC}"
+echo ""
+echo -e "  ${CYAN}Vine Reseñas${NC}"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5193/vine-resenas/${NC}"
+echo -e "    Backend health   →  http://localhost:3018/vine-resenas/api/health"
+echo -e "    ${YELLOW}ℹ  API de Claude (/v1) en local: Authorization: Bearer local-dev-vine-token${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

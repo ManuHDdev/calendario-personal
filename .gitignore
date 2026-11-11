@@ -25,6 +25,7 @@ storage/storage-data/
 storage/backend/.test-storage/
 gastos/backend/data/
 paraisos/backend/data/
+vine-resenas/backend/data/
 
 # OS
 .DS_Store

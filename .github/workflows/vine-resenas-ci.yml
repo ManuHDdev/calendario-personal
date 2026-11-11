@@ -1,0 +1,132 @@
+name: CI/CD Vine Reseñas
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'vine-resenas/**'
+      - '.github/workflows/vine-resenas-ci.yml'
+
+jobs:
+  lint-and-build-backend:
+    name: Vine Reseñas · Build backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: vine-resenas/backend
+        run: npm ci && npm run build
+
+      # Cubre la maquina de estados, la validacion de subidas y la auth
+      # (JWT de Keycloak + token bearer de la API de Claude). Los tests no
+      # dependen de la base de datos para que CI los pueda correr.
+      - name: Test
+        working-directory: vine-resenas/backend
+        run: npm test
+
+  lint-and-build-frontend:
+    name: Vine Reseñas · Build frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & build
+        working-directory: vine-resenas/frontend
+        run: npm ci && npm run build
+
+      - name: Test
+        working-directory: vine-resenas/frontend
+        run: npm test --if-present
+
+  docker-build-and-push:
+    name: Vine Reseñas · Docker build & push
+    runs-on: ubuntu-latest
+    needs: [lint-and-build-backend, lint-and-build-frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build & push vine-resenas-backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./vine-resenas/backend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/vine-resenas-backend:latest
+            ghcr.io/${{ env.OWNER }}/vine-resenas-backend:${{ github.sha }}
+
+      - name: Build & push vine-resenas-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./vine-resenas/frontend
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/vine-resenas-frontend:latest
+            ghcr.io/${{ env.OWNER }}/vine-resenas-frontend:${{ github.sha }}
+
+  deploy:
+    name: Deploy · Vine Reseñas VPS
+    runs-on: ubuntu-latest
+    needs: docker-build-and-push
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar docker-compose e init.sql al VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "vine-resenas/infra/docker-compose.prod.yml,vine-resenas/infra/init.sql"
+          target: /home/manu/vine-resenas
+          strip_components: 2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 87.216.88.165
+          port: 2269
+          username: manu
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            cd /home/manu/vine-resenas
+
+            docker compose -f docker-compose.prod.yml pull vine-resenas-backend vine-resenas-frontend
+            docker compose -f docker-compose.prod.yml up -d vine-resenas-db vine-resenas-backend vine-resenas-frontend
+            docker compose -f docker-compose.prod.yml ps
+
+            # El bloque `location /vine-resenas/` de nginx se aplica IN SITU en el
+            # servidor (el fichero del repo ha divergido) — no lo hace este
+            # workflow. Ver DEPLOY_NOTES.md.

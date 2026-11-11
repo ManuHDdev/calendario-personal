@@ -1,0 +1,15 @@
+{
+  "name": "Vine Reseñas",
+  "short_name": "Vine",
+  "description": "Gestión de reseñas de Amazon Vine",
+  "start_url": "/vine-resenas/",
+  "scope": "/vine-resenas/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d946ef",
+  "icons": [
+    { "src": "/vine-resenas/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/vine-resenas/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/vine-resenas/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

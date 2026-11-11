@@ -35,6 +35,7 @@ function appUrls(): Record<string, string> {
     descargas:  local ? 'http://localhost:5190/descargas/'  : '/descargas/',
     viajes:     local ? 'http://localhost:5192/viajes/'  : '/viajes/',
     semaforos:  local ? 'http://localhost:5191/semaforos/' : '/semaforos/',
+    'vine-resenas': local ? 'http://localhost:5193/vine-resenas/' : '/vine-resenas/',
   };
 }
 
@@ -87,6 +88,9 @@ export class AppLauncher {
     // semaforos: estado estimado de los semáforos de la ciudad en un mapa; datos
     // de OpenStreetMap + tiempos anotados a mano. Uso exclusivo del propietario.
     { id: 'semaforos',  nombre: 'Semáforos',  color: '#f43f5e', roles: ['admin'], url: '' },
+    // vine-resenas: gestión de reseñas de Amazon Vine; escritura admin/vine_admin,
+    // solo lectura para vine_invitado.
+    { id: 'vine-resenas', nombre: 'Vine Reseñas', color: '#d946ef', roles: ['admin', 'vine_admin', 'vine_invitado'], url: '' },
   ];
 
   get apps(): App[] {

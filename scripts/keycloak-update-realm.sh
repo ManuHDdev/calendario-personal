@@ -6,11 +6,11 @@
 # (admin / familia / invitado / paraisos_admin / mapacyd_admin / mapacyd_invitado /
 # reparto_admin / reparto_invitado / mensajeria_admin / mensajeria_invitado /
 # tenis_admin / tenis_invitado / descargas_admin / descargas_invitado / viajes_admin /
-# viajes_invitado) y asigna
+# viajes_invitado / vine_admin / vine_invitado) y asigna
 # los roles admin, paraisos_admin, mapacyd_admin, reparto_admin,
-# mensajeria_admin, tenis_admin, descargas_admin y viajes_admin al usuario
+# mensajeria_admin, tenis_admin, descargas_admin, viajes_admin y vine_admin al usuario
 # "propietario". mapacyd_invitado, reparto_invitado, mensajeria_invitado,
-# tenis_invitado, descargas_invitado y viajes_invitado se crean pero NO se asignan a nadie automáticamente —
+# tenis_invitado, descargas_invitado, viajes_invitado y vine_invitado se crean pero NO se asignan a nadie automáticamente —
 # existen para asignarse desde Panel (convención documentada para roles
 # "_invitado").
 #
@@ -57,7 +57,7 @@ TOKEN=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).access_token)"
 ok "Token de admin obtenido"
 
 # ── 2. Crear roles si no existen ──────────────────────────────────────────────
-for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin mapacyd_invitado reparto_admin reparto_invitado mensajeria_admin mensajeria_invitado tenis_admin tenis_invitado descargas_admin descargas_invitado viajes_admin viajes_invitado; do
+for ROLE_NAME in admin familia invitado paraisos_admin mapacyd_admin mapacyd_invitado reparto_admin reparto_invitado mensajeria_admin mensajeria_invitado tenis_admin tenis_invitado descargas_admin descargas_invitado viajes_admin viajes_invitado vine_admin vine_invitado; do
   HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     "$HOST/admin/realms/$REALM/roles" \
     -H "Authorization: Bearer $TOKEN" \
@@ -254,6 +254,24 @@ fi
 # NOTA: 'viajes_invitado' se crea en el bucle de arriba pero NO se asigna a
 # nadie aquí — solo lectura, delegable desde Panel cuando haga falta.
 
+# ── 4i. Asignar rol "vine_admin" al usuario ────────────────────────────────
+VINE_ADMIN_ROLE_JSON=$(curl -sf   "$HOST/admin/realms/$REALM/roles/vine_admin"   -H "Authorization: Bearer $TOKEN")
+
+VINE_ADMIN_ROLE_ID=$(node -e "process.stdout.write(JSON.parse(process.argv[1]).id)" "$VINE_ADMIN_ROLE_JSON")
+
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST   "$HOST/admin/realms/$REALM/users/$USER_ID/role-mappings/realm"   -H "Authorization: Bearer $TOKEN"   -H "Content-Type: application/json"   -d "[{\"id\":\"$VINE_ADMIN_ROLE_ID\",\"name\":\"vine_admin\"}]")
+
+if [ "$HTTP_STATUS" = "204" ]; then
+  ok "Rol 'vine_admin' asignado a 'propietario'"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  warn "Rol 'vine_admin' ya estaba asignado (OK)"
+else
+  warn "Respuesta $HTTP_STATUS al asignar rol (puede que ya lo tenga)"
+fi
+
+# NOTA: 'vine_invitado' se crea en el bucle de arriba pero NO se asigna a
+# nadie aquí — solo lectura, delegable desde Panel cuando haga falta.
+
 # ── 5. Actualizar redirect URIs del cliente calendario-frontend ───────────────
 CLIENTS_JSON=$(curl -sf \
   "$HOST/admin/realms/$REALM/clients?clientId=calendario-frontend" \
@@ -305,7 +323,7 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}  Realm actualizado correctamente ✓${NC}"
 echo -e "${GREEN}════════════════════════════════════════${NC}"
 echo ""
-echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, mapacyd_invitado, reparto_admin, reparto_invitado, mensajeria_admin, mensajeria_invitado, tenis_admin, tenis_invitado, descargas_admin, descargas_invitado, viajes_admin, viajes_invitado"
-echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin, reparto_admin, mensajeria_admin, tenis_admin, descargas_admin, viajes_admin"
+echo "  Roles:   admin, familia, invitado, paraisos_admin, mapacyd_admin, mapacyd_invitado, reparto_admin, reparto_invitado, mensajeria_admin, mensajeria_invitado, tenis_admin, tenis_invitado, descargas_admin, descargas_invitado, viajes_admin, viajes_invitado, vine_admin, vine_invitado"
+echo "  Usuario 'propietario' → roles admin, paraisos_admin, mapacyd_admin, reparto_admin, mensajeria_admin, tenis_admin, descargas_admin, viajes_admin, vine_admin"
 echo "  Redirect URIs actualizadas para todos los puertos locales"
 echo ""
