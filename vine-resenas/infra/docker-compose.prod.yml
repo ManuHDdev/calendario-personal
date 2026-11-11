@@ -1,0 +1,77 @@
+# Las variables sin valor por defecto posible van con `:?` para que un .env
+# incompleto falle con un mensaje claro en vez de un "vine-resenas-db is
+# unhealthy" que no dice nada. VINE_API_TOKEN tambien: sin el, la API de Claude
+# (/vine-resenas/api/v1) rechazaria todo.
+#
+# VINE_BOT_URL / VINE_BOT_TOKEN son opcionales: solo los usa POST /v1/products/sync.
+#
+# Datos: las fotos y videos viven en el volumen con nombre `vine_resenas_data`
+# (montado en /data del backend, ruta <DATA_DIR>/media/<ASIN>/<fichero>). Hay que
+# incluirlo en las copias de seguridad junto con `vine_resenas_pgdata`.
+networks:
+  calendario-net:
+    external: true
+    name: calendario-net
+
+services:
+  vine-resenas-db:
+    image: postgres:15
+    container_name: vine-resenas-db
+    environment:
+      POSTGRES_DB:       "${VINE_RESENAS_DB_NAME:?falta VINE_RESENAS_DB_NAME en /home/manu/vine-resenas/.env (ver DEPLOY_NOTES.md)}"
+      POSTGRES_USER:     "${VINE_RESENAS_DB_USER:?falta VINE_RESENAS_DB_USER en /home/manu/vine-resenas/.env (ver DEPLOY_NOTES.md)}"
+      POSTGRES_PASSWORD: "${VINE_RESENAS_DB_PASSWORD:?falta VINE_RESENAS_DB_PASSWORD en /home/manu/vine-resenas/.env (ver DEPLOY_NOTES.md)}"
+    volumes:
+      - vine_resenas_pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${VINE_RESENAS_DB_USER:?falta VINE_RESENAS_DB_USER} -d ${VINE_RESENAS_DB_NAME:?falta VINE_RESENAS_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - calendario-net
+
+  vine-resenas-backend:
+    image: ghcr.io/manuhddev/vine-resenas-backend:latest
+    container_name: vine-resenas-backend
+    environment:
+      PORT:                     3018
+      VINE_RESENAS_DB_HOST:     vine-resenas-db
+      VINE_RESENAS_DB_NAME:     "${VINE_RESENAS_DB_NAME:?falta VINE_RESENAS_DB_NAME en /home/manu/vine-resenas/.env}"
+      VINE_RESENAS_DB_USER:     "${VINE_RESENAS_DB_USER:?falta VINE_RESENAS_DB_USER en /home/manu/vine-resenas/.env}"
+      VINE_RESENAS_DB_PASSWORD: "${VINE_RESENAS_DB_PASSWORD:?falta VINE_RESENAS_DB_PASSWORD en /home/manu/vine-resenas/.env}"
+      VINE_API_TOKEN:           "${VINE_API_TOKEN:?falta VINE_API_TOKEN en /home/manu/vine-resenas/.env (openssl rand -hex 32)}"
+      KEYCLOAK_CERTS_URL:       ${KEYCLOAK_CERTS_URL:-http://calendario-keycloak:8080/keycloak/realms/calendario/protocol/openid-connect/certs}
+      CORS_ORIGIN:              ${CORS_ORIGIN:-https://elbunkerdelingeniero.duckdns.org}
+      DATA_DIR:                 /data
+      VINE_BOT_URL:             ${VINE_BOT_URL:-http://vine-bot:8092}
+      VINE_BOT_TOKEN:           ${VINE_BOT_TOKEN:-}
+      NODE_ENV:                 production
+    volumes:
+      - vine_resenas_data:/data
+    depends_on:
+      vine-resenas-db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3018/vine-resenas/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - calendario-net
+
+  vine-resenas-frontend:
+    image: ghcr.io/manuhddev/vine-resenas-frontend:latest
+    container_name: vine-resenas-frontend
+    depends_on:
+      - vine-resenas-backend
+    restart: unless-stopped
+    networks:
+      - calendario-net
+
+volumes:
+  vine_resenas_pgdata:
+  vine_resenas_data:

@@ -46,6 +46,9 @@ const APPS: AppDef[] = [
   // semaforos: estado estimado de los semáforos de la ciudad en un mapa; datos
   // de OpenStreetMap + tiempos anotados a mano. Uso exclusivo del propietario.
   { id: 'semaforos',  nombre: 'Semáforos',  color: '#f43f5e', roles: ['admin'] },
+  // vine-resenas: gestión de reseñas de Amazon Vine; escritura admin/vine_admin,
+  // solo lectura para vine_invitado.
+  { id: 'vine-resenas', nombre: 'Vine Reseñas', color: '#d946ef', roles: ['admin', 'vine_admin', 'vine_invitado'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -73,6 +76,7 @@ function getUrls(): Record<string, string> {
     descargas:  local ? 'http://localhost:5190/descargas/' : '/descargas/',
     viajes:     local ? 'http://localhost:5192/viajes/' : '/viajes/',
     semaforos:  local ? 'http://localhost:5191/semaforos/' : '/semaforos/',
+    'vine-resenas': local ? 'http://localhost:5193/vine-resenas/' : '/vine-resenas/',
   };
 }
 
@@ -248,6 +252,12 @@ function AppIcon({ id }: { id: string }) {
           <circle cx="12" cy="7" r="1.6" fill="white" stroke="none"/>
           <circle cx="12" cy="12" r="1.6" fill="white" stroke="none"/>
           <circle cx="12" cy="17" r="1.6" fill="white" stroke="none"/>
+        </svg>
+      );
+    case 'vine-resenas':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinejoin="round">
+          <path d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.4 6.8 19.2l1-5.9L3.5 9.2l5.9-.8z"/>
         </svg>
       );
     default:

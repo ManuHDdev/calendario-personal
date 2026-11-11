@@ -43,6 +43,9 @@ const APPS: AppDef[] = [
   // viajes: planificador de viajes con mapa; admin-only por defecto (roles delegados
   // viajes_admin/viajes_invitado se asignan desde Panel, ver CLAUDE.md).
   { id: 'viajes',     nombre: 'Viajes',     color: '#ec4899', roles: ['admin'] },
+  // vine-resenas: gestión de reseñas de Amazon Vine; escritura admin/vine_admin,
+  // solo lectura para vine_invitado.
+  { id: 'vine-resenas', nombre: 'Vine Reseñas', color: '#d946ef', roles: ['admin', 'vine_admin', 'vine_invitado'] },
 ];
 
 function getUrls(): Record<string, string> {
@@ -69,6 +72,7 @@ function getUrls(): Record<string, string> {
     mensajeria: local ? 'http://localhost:5188/mensajeria/' : '/mensajeria/',
     descargas:  local ? 'http://localhost:5190/descargas/' : '/descargas/',
     viajes:     local ? 'http://localhost:5192/viajes/' : '/viajes/',
+    'vine-resenas': local ? 'http://localhost:5193/vine-resenas/' : '/vine-resenas/',
   };
 }
 
@@ -235,6 +239,12 @@ function AppIcon({ id }: { id: string }) {
           <rect x="3" y="7" width="18" height="13" rx="2"/>
           <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
           <line x1="3" y1="13" x2="21" y2="13"/>
+        </svg>
+      );
+    case 'vine-resenas':
+      return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinejoin="round">
+          <path d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.4 6.8 19.2l1-5.9L3.5 9.2l5.9-.8z"/>
         </svg>
       );
     default:

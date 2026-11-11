@@ -3,7 +3,7 @@ import type { UserOut, UserFormData } from '../types';
 import PasswordInput from './PasswordInput';
 import './UserModal.css';
 
-const ALL_ROLES = ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'mapacyd_invitado', 'reparto_admin', 'reparto_invitado', 'mensajeria_admin', 'mensajeria_invitado', 'tenis_admin', 'tenis_invitado', 'descargas_admin', 'descargas_invitado', 'viajes_admin', 'viajes_invitado'];
+const ALL_ROLES = ['admin', 'familia', 'invitado', 'paraisos_admin', 'mapacyd_admin', 'mapacyd_invitado', 'reparto_admin', 'reparto_invitado', 'mensajeria_admin', 'mensajeria_invitado', 'tenis_admin', 'tenis_invitado', 'descargas_admin', 'descargas_invitado', 'viajes_admin', 'viajes_invitado', 'vine_admin', 'vine_invitado'];
 
 interface Props {
   user: UserOut | null; // null = crear
@@ -68,6 +68,8 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
     descargas_invitado: 'Invitado Descargas',
     viajes_admin: 'Admin Viajes',
     viajes_invitado: 'Invitado Viajes',
+    vine_admin: 'Admin Vine Reseñas',
+    vine_invitado: 'Invitado Vine Reseñas',
   };
   const roleColors: Record<string, string> = {
     admin: '#0071e3',
@@ -86,6 +88,8 @@ export default function UserModal({ user, onSave, onCancel }: Props) {
     descargas_invitado: '#b0bec5',
     viajes_admin: '#ec4899',
     viajes_invitado: '#f4a6cb',
+    vine_admin: '#d946ef',
+    vine_invitado: '#eba3f7',
   };
 
   return (

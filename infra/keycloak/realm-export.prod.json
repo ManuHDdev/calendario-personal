@@ -122,6 +122,20 @@
         "composite": false,
         "clientRole": false,
         "containerId": "calendario"
+      },
+      {
+        "name": "vine_admin",
+        "description": "Administrador de Vine Reseñas — gestión completa de productos, fotos y reseñas",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
+      },
+      {
+        "name": "vine_invitado",
+        "description": "Invitado de Vine Reseñas — solo consulta de productos y reseñas",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "calendario"
       }
     ],
     "client": {

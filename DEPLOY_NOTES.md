@@ -255,3 +255,92 @@ detrás (les falta también `descargas`). Se actualizan aparte.
 - No copiar `nginx/calendario.conf` encima del fichero del servidor.
 - No regenerar la contraseña de `semaforos-db` si la base ya existe: el workflow ya
   la conserva; hacerlo a mano dejaría la BD inaccesible.
+
+## `vine-resenas` — nueva subapp (reseñas de Amazon Vine)
+
+Subapp nueva: backend Fastify + PostgreSQL + frontend estático. Contenedores
+`vine-resenas-db`, `vine-resenas-backend` (puerto 3018) y `vine-resenas-frontend`
+(imágenes `ghcr.io/manuhddev/vine-resenas-backend|frontend`), en la red externa
+`calendario-net`. UI en `/vine-resenas/`, API en `/vine-resenas/api` (rutas `/ui`
+con JWT de Keycloak y rutas `/v1` con token bearer para Claude).
+
+- El AppLauncher ya trae la entrada `vine-resenas` en las copias internas (React +
+  Angular) — se propaga solo al redesplegar cada subapp. Siguen sin ella las copias
+  externas (`crypto-trader`, `football-predictor`, `tennis-predictor`).
+- Roles nuevos de realm: `vine_admin` y `vine_invitado` (solo lectura). Solo
+  `vine_admin` se asigna a `propietario`.
+
+### 1. `/home/manu/vine-resenas/.env` en el VPS
+
+Primer despliegue: el workflow solo copia `docker-compose.prod.yml` + `init.sql`,
+el `.env` hay que crearlo a mano (sin él `docker compose` falla con "falta VINE_...").
+
+```bash
+mkdir -p /home/manu/vine-resenas
+cat > /home/manu/vine-resenas/.env <<EOF2
+VINE_RESENAS_DB_NAME=vine_resenas
+VINE_RESENAS_DB_USER=vine_resenas
+VINE_RESENAS_DB_PASSWORD=$(openssl rand -hex 24)
+
+# Token bearer de la API de Claude (/vine-resenas/api/v1). Sin él, el compose no arranca.
+VINE_API_TOKEN=$(openssl rand -hex 32)
+
+# Opcionales: solo los usa POST /v1/products/sync (bot de Vine). Por defecto
+# VINE_BOT_URL=http://vine-bot:8092 y VINE_BOT_TOKEN vacío.
+# VINE_BOT_URL=
+# VINE_BOT_TOKEN=
+EOF2
+chmod 600 /home/manu/vine-resenas/.env
+```
+
+Guarda el valor de `VINE_API_TOKEN` (`grep VINE_API_TOKEN /home/manu/vine-resenas/.env`)
+para configurarlo en Claude. No lo pegues en chats ni en el repo.
+
+### 2. Roles de Keycloak
+
+Ejecutar `bash scripts/keycloak-update-realm.sh` contra producción: crea
+`vine_admin` / `vine_invitado` y asigna `vine_admin` a `propietario` (ojo con los
+gotchas habituales: CRLF en el script, `node` fuera del PATH de SSH y el puerto de
+Keycloak sin publicar). Hasta entonces el usuario necesita cerrar sesión y volver a
+entrar para que el token incluya el rol.
+
+### 3. Desplegar (lo hace el workflow `vine-resenas-ci.yml` al mergear a `main`)
+
+Construye backend + frontend, sube las imágenes a GHCR, copia
+`docker-compose.prod.yml` + `init.sql` al VPS y levanta `vine-resenas-db` +
+`vine-resenas-backend` + `vine-resenas-frontend`.
+
+```bash
+curl -s localhost:3018/vine-resenas/api/health
+docker compose -f /home/manu/vine-resenas/docker-compose.prod.yml ps
+docker logs vine-resenas-backend --tail 40
+```
+
+### 4. nginx — aplicar el bloque IN SITU
+
+El fichero del servidor es `/home/manu/nginx-shared/conf.d/elbunkerdelingeniero.conf`
+(ha divergido del repo — **no copiar `nginx/calendario.conf` encima**). Añadir,
+junto a los otros bloques de subapp, el bloque `location /vine-resenas/` de
+`nginx/calendario.conf` (proxy a `http://vine-resenas-frontend:80`,
+`client_max_body_size 250m`, `proxy_request_buffering off`, timeouts de 600s).
+El límite de 250m es necesario: se suben vídeos de hasta 200 MB y el `20M` global
+los rechazaría con 413. Después:
+
+```bash
+docker exec <contenedor-nginx> nginx -t && docker exec <contenedor-nginx> nginx -s reload
+```
+
+Verifica que `https://elbunkerdelingeniero.duckdns.org/vine-resenas/` carga y pide login.
+
+### 5. Copias de seguridad
+
+Los datos viven en dos volúmenes con nombre: `vine_resenas_pgdata` (PostgreSQL) y
+`vine_resenas_data` (fotos y vídeos, montado en `/data` del backend como
+`<DATA_DIR>/media/<ASIN>/<fichero>`). Hay que incluir **ambos** en las copias; con
+solo la BD se pierden los ficheros multimedia.
+
+### Lo que NO hay que hacer
+
+- No copiar `nginx/calendario.conf` encima del fichero del servidor.
+- No regenerar `VINE_RESENAS_DB_PASSWORD` si la base ya existe: la BD quedaría
+  inaccesible.

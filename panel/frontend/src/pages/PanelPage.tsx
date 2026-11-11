@@ -27,6 +27,8 @@ const ROLE_LABEL: Record<string, string> = {
   descargas_invitado: 'Invitado Descargas',
   viajes_admin: 'Admin Viajes',
   viajes_invitado: 'Invitado Viajes',
+  vine_admin: 'Admin Vine Reseñas',
+  vine_invitado: 'Invitado Vine Reseñas',
 };
 const ROLE_COLOR: Record<string, string> = {
   admin: '#0071e3',
@@ -45,6 +47,8 @@ const ROLE_COLOR: Record<string, string> = {
   descargas_invitado: '#b0bec5',
   viajes_admin: '#ec4899',
   viajes_invitado: '#f4a6cb',
+  vine_admin: '#d946ef',
+  vine_invitado: '#eba3f7',
 };
 
 // Con más badges de estos el resto se resume en un chip "+N" para que todas las filas midan lo mismo.

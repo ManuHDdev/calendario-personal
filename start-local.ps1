@@ -39,6 +39,9 @@
 #   viajes backend      →  :3030
 #   viajes frontend     →  :5192
 #   PostgreSQL          →  :5446   (viajes)
+#   vine-resenas backend  →  :3018
+#   vine-resenas frontend →  :5193
+#   PostgreSQL          →  :5447   (vine-resenas)
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -70,6 +73,7 @@ function Cleanup {
   warn "  cd locales\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd finanzas\infra; docker compose -f docker-compose.local.yml down"
   warn "  cd viajes\infra; docker compose -f docker-compose.local.yml down"
+  warn "  cd vine-resenas\infra; docker compose -f docker-compose.local.yml down"
 }
 
 # Registrar cleanup al salir
@@ -156,6 +160,10 @@ docker compose -f docker-compose.local.yml up -d
 
 info "PostgreSQL (viajes :5446)..."
 Set-Location (Join-Path $SCRIPT_DIR "viajes\infra")
+docker compose -f docker-compose.local.yml up -d
+
+info "PostgreSQL (vine-resenas :5447)..."
+Set-Location (Join-Path $SCRIPT_DIR "vine-resenas\infra")
 docker compose -f docker-compose.local.yml up -d
 
 Set-Location $SCRIPT_DIR
@@ -304,6 +312,18 @@ do {
   Write-Host -NoNewline "."; Start-Sleep -Seconds 2
 } while ($true)
 Write-Host ""; info "  ✓ PostgreSQL (viajes) listo."
+
+# ── 5l. Esperar a PostgreSQL (vine-resenas) ─────────────────────
+info "PostgreSQL vine-resenas..."
+$retries = 30
+do {
+  $r = docker compose -f "$SCRIPT_DIR\vine-resenas\infra\docker-compose.local.yml" exec -T vine-resenas-db pg_isready -U vine_resenas -d vine_resenas 2>$null
+  if ($LASTEXITCODE -eq 0) { break }
+  $retries--
+  if ($retries -le 0) { err "PostgreSQL (vine-resenas) no arrancó." }
+  Write-Host -NoNewline "."; Start-Sleep -Seconds 2
+} while ($true)
+Write-Host ""; info "  ✓ PostgreSQL (vine-resenas) listo."
 
 # ── 6. Esperar a Keycloak ────────────────────────────────────────────────────
 info "Keycloak (puede tardar ~30s la primera vez)..."
@@ -491,6 +511,18 @@ StartBackground "viajes-backend    :3030" "viajes-backend.log" `
      KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
      CORS_ORIGIN="http://localhost:5192" }
 
+# Vine Reseñas backend
+EnsureDeps (Join-Path $SCRIPT_DIR "vine-resenas\backend")
+StartBackground "vine-resenas-backend    :3018" "vine-resenas-backend.log" `
+  (Join-Path $SCRIPT_DIR "vine-resenas\backend") `
+  "npm run dev" `
+  @{ PORT="3018"; VINE_RESENAS_DB_HOST="localhost"; VINE_RESENAS_DB_PORT="5447";
+     VINE_RESENAS_DB_NAME="vine_resenas"; VINE_RESENAS_DB_USER="vine_resenas"; VINE_RESENAS_DB_PASSWORD="vine_resenas123";
+     VINE_API_TOKEN="local-dev-vine-token";
+     DATA_DIR=(Join-Path $SCRIPT_DIR "vine-resenas\backend\data");
+     KEYCLOAK_CERTS_URL="http://localhost:8080/realms/calendario/protocol/openid-connect/certs";
+     CORS_ORIGIN="http://localhost:5193" }
+
 # Calendario backend (Spring Boot) — solo si hay Maven; su ausencia no debe
 # tumbar las demás subapps Node.
 if ($HAS_MVN) {
@@ -557,6 +589,10 @@ StartBackground "finanzas-frontend  :5187" "finanzas-frontend.log" `
 EnsureDeps (Join-Path $SCRIPT_DIR "viajes\frontend")
 StartBackground "viajes-frontend    :5192" "viajes-frontend.log" `
   (Join-Path $SCRIPT_DIR "viajes\frontend") "npm run dev"
+
+EnsureDeps (Join-Path $SCRIPT_DIR "vine-resenas\frontend")
+StartBackground "vine-resenas-frontend    :5193" "vine-resenas-frontend.log" `
+  (Join-Path $SCRIPT_DIR "vine-resenas\frontend") "npm run dev"
 
 if ($HAS_MVN) {
   EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
@@ -650,6 +686,11 @@ Write-Host "  Viajes" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5192/viajes/"
 Write-Host "    Backend health   ->  http://localhost:3030/viajes/api/health"
 Write-Host "    Rutas por carretera: OSRM publico (sin clave); si no responde, las distancias salen aproximadas en linea recta" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  Vine Resenas" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5193/vine-resenas/"
+Write-Host "    Backend health   ->  http://localhost:3018/vine-resenas/api/health"
+Write-Host "    API de Claude (/v1) en local: Authorization: Bearer local-dev-vine-token" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow

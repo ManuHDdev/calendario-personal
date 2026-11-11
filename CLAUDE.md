@@ -1952,6 +1952,51 @@ Frontend `:5188`, backend `:3015`.
 
 ---
 
+## Vine Reseñas — reseñas de Amazon Vine (fotos, feedback, estrellas y API para Claude)
+
+### Ubicación
+Calendario/vine-resenas/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Backend: Fastify 4 + Node.js + TypeScript (igual que el resto de subapps Node)
+- Frontend: React + Vite + TypeScript (imagen propia con nginx)
+- Base de datos: PostgreSQL 15, propia (`vine_resenas`); sin ORM — queries directas con el cliente pg
+- Ficheros: fotos y vídeo en el volumen con nombre `vine_resenas_data` (montado en `/data`, ruta `<DATA_DIR>/media/<ASIN>/<fichero>`), nombres generados en servidor
+- Autenticación: Keycloak 26.1, realm "calendario", JWT verificado a mano (mismo patrón) para la UI, **más** un token bearer estático para la API de Claude
+
+### Qué hace
+Sustituye el flujo de reseñas de Amazon Vine: por producto (clave `asin`) se guardan fotos/vídeo, feedback, estrellas y un estado `pendiente -> listo -> resena_generada -> publicado`. Claude lee los productos listos por la API, genera la reseña y la devuelve (`resena_generada`); el propietario la publica. Detalle de la máquina de estados y ejemplos `curl` en `vine-resenas/README.md`.
+
+### Roles
+- `admin` o `vine_admin` → escritura (editar, subir/borrar ficheros, marcar listo/publicado)
+- `admin`, `vine_admin` o `vine_invitado` → consulta (solo lectura)
+- En el AppLauncher la entrada es `roles: ['admin', 'vine_admin', 'vine_invitado']`, color `#d946ef`, icono de estrella. `familia` e `invitado` no tienen acceso.
+
+### Rutas (`/vine-resenas/api/*`)
+- `/ui/*` — para el frontend, con JWT de Keycloak (los ficheros aceptan además `?token=` para `<img>`/`<video>`)
+- `/v1/*` — para Claude, con **token bearer estático** `VINE_API_TOKEN` (comparado en tiempo constante, nunca se loguea). NO usa Keycloak: quien tenga el token puede leer y escribir todo, tratarlo como un secreto (vive solo en `/home/manu/vine-resenas/.env` y en la configuración de Claude).
+- `GET /health`
+
+### Límite de subida (OBLIGATORIO mantener alineado)
+Fotos 25 MB, **un vídeo por producto de hasta 200 MB**; el tope de petición es **250m** y está en **tres** sitios que deben coincidir: `PHOTO_MAX_BYTES`/`VIDEO_MAX_BYTES` en `vine-resenas/backend/src/domain/validation.ts` (el multipart de `app.ts` se dimensiona con el de vídeo), `client_max_body_size 250m` en `vine-resenas/frontend/nginx.conf` (el nginx de la imagen del frontend) y `client_max_body_size 250m` del bloque `location /vine-resenas/` en `nginx/calendario.conf` (el `server` tiene un global de 20 M que este bloque sobreescribe a propósito, igual que Storage). Si a un nginx se le olvida la directiva, el vídeo falla con 413 antes de llegar al backend.
+
+### Variables de entorno del backend
+`VINE_RESENAS_DB_HOST`, `VINE_RESENAS_DB_NAME`, `VINE_RESENAS_DB_USER`, `VINE_RESENAS_DB_PASSWORD`, `VINE_RESENAS_DB_PORT`, `VINE_API_TOKEN` (obligatoria en producción; `openssl rand -hex 32`), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `DATA_DIR` (default `/data`), `PORT` (default 3018), `VINE_BOT_URL` (default `http://vine-bot:8092`) y `VINE_BOT_TOKEN` (opcionales, solo para `POST /v1/products/sync`). El `.env` de producción se crea a mano antes del primer despliegue (ver `DEPLOY_NOTES.md`).
+
+### Copias de seguridad
+Dos volúmenes: `vine_resenas_pgdata` (BD) y `vine_resenas_data` (ficheros). Hay que respaldar **ambos**.
+
+### Puerto local
+Frontend `:5193`, backend `:3018`, PostgreSQL `:5447`. `start-local.sh`/`start-local.ps1` lo arrancan (token local `local-dev-vine-token`).
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/vine-resenas-backend:latest`, `ghcr.io/manuhddev/vine-resenas-frontend:latest`
+
+---
+
 ## Descargas — Visor y borrado de la carpeta de descargas del VPS
 
 ### Ubicación
@@ -2241,9 +2286,9 @@ hacen Mensajería ni Descargas): usar `docker-compose.local.yml` + `npm run dev`
 
 ## Sistema de roles (OBLIGATORIO conocer)
 
-Los dieciséis roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
+Los dieciocho roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
 `mapacyd_invitado`, `reparto_admin`, `reparto_invitado`, `mensajeria_admin`, `mensajeria_invitado`,
-`tenis_admin`, `tenis_invitado`, `descargas_admin`, `descargas_invitado`, `viajes_admin`, `viajes_invitado`. Cualquier código que filtre por rol DEBE usar
+`tenis_admin`, `tenis_invitado`, `descargas_admin`, `descargas_invitado`, `viajes_admin`, `viajes_invitado`, `vine_admin`, `vine_invitado`. Cualquier código que filtre por rol DEBE usar
 exactamente estos nombres.
 
 | Rol                 | Acceso                                                       |
@@ -2264,6 +2309,8 @@ exactamente estos nombres.
 | descargas_invitado  | Solo ver/descargar en Descargas (sin borrar); `familia` e `invitado` quedan fuera (archivos privados) |
 | viajes_admin        | Gestión completa de viajes y lugares en Viajes (CRUD)            |
 | viajes_invitado     | Consulta de viajes, mapa e itinerario en Viajes (solo lectura)   |
+| vine_admin          | Gestión completa de productos, ficheros y reseñas en Vine Reseñas (escritura) |
+| vine_invitado       | Consulta de productos y reseñas en Vine Reseñas (solo lectura)   |
 
 Locales tampoco añade rol: solo `admin`, como Gastos/Ofertas/Ruta/Pisos.
 
@@ -2272,6 +2319,8 @@ Semáforos tampoco añade rol: solo `admin` (uso exclusivo del propietario).
 Descargas añade `descargas_admin` (ver + eliminar, irreversible) y `descargas_invitado` (solo ver). `descargas_admin` se asigna a `propietario` por el script de realm; `descargas_invitado` se crea pero queda sin asignar (delegable desde Panel).
 
 Viajes añade `viajes_admin` (gestión completa) y `viajes_invitado` (solo lectura). `viajes_admin` se asigna a `propietario` por el script de realm; `viajes_invitado` se crea pero queda sin asignar (delegable desde Panel). `familia` también puede consultar Viajes (como MapaCYD) y `invitado` no. En el AppLauncher la entrada es admin-only por defecto.
+
+Vine Reseñas añade `vine_admin` (escritura) y `vine_invitado` (solo lectura). `vine_admin` se asigna a `propietario` por el script de realm; `vine_invitado` se crea pero queda sin asignar (delegable desde Panel). `familia` e `invitado` no tienen acceso. En el AppLauncher la entrada es `roles: ['admin', 'vine_admin', 'vine_invitado']`. Su API para Claude (`/vine-resenas/api/v1`) no usa roles de Keycloak sino un token bearer estático (`VINE_API_TOKEN`).
 
 Ytdl y Paraísos no aparecen en esta tabla porque son públicas: no requieren
 ningún rol ni sesión iniciada, a diferencia del resto de subapps. Gastos, Panel,
@@ -2303,7 +2352,7 @@ fue el segundo y `mensajeria_invitado` el tercero. A diferencia de los roles
 los tres se crean en el realm pero quedan sin asignar, delegables manualmente
 desde Panel cuando haga falta.
 
-El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin`, `reparto_admin`, `mensajeria_admin`, `tenis_admin`, `descargas_admin` y `viajes_admin`.
+El usuario por defecto se llama `propietario` y tiene roles `admin`, `paraisos_admin`, `mapacyd_admin`, `reparto_admin`, `mensajeria_admin`, `tenis_admin`, `descargas_admin`, `viajes_admin` y `vine_admin`.
 
 ## Keycloak — configuración y despliegue
 
@@ -2357,6 +2406,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Descargas          | :5190    | :3016   |
 | Viajes             | :5192    | :3030   |
 | Semáforos          | :5191    | :3017   |
+| Vine Reseñas       | :5193    | :3018   |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -2372,17 +2422,18 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | PostgreSQL (mensajeria)| :5444 | —     |
 | PostgreSQL (viajes)| :5446   | —       |
 | PostgreSQL (semaforos)| :5445 | —      |
+| PostgreSQL (vine-resenas)| :5447 | —   |
 
 ## Deuda técnica conocida
 
 - **Sin tests**: Panel (backend) tiene vitest desde el dashboard de uso de APIs (`subappUsage.ts`, `routes/usage.ts`) pero el resto del backend (`users.ts`, `me.ts`, `keycloakAdmin.ts`) y todo el frontend siguen sin cobertura; mapacyd (backend y frontend) sigue sin ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **19 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx`, `semaforos/frontend/src/components/AppLauncher.tsx`, `viajes/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 19 Dockerfiles y 19 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 19 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (19 internas + 3 externas), no solo la lista de apps.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **20 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx`, `semaforos/frontend/src/components/AppLauncher.tsx`, `viajes/frontend/src/components/AppLauncher.tsx`, `vine-resenas/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 20 Dockerfiles y 20 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 20 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (20 internas + 3 externas), no solo la lista de apps.
 
 `locales` ya está en las copias del AppLauncher (`roles: ['admin']`), añadido
 junto con su frontend (fase 9). `finanzas` ya está en las copias
 (`roles: ['admin', 'invitado']`). `mensajeria` ya está en las 16 copias
-internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `semaforos` y `viajes` (color `#ec4899`, icono de maleta) están en las 19 copias internas (`roles: ['admin']`) y tampoco en las 3 externas todavía (las de `football-predictor` y `tennis-predictor` ya iban por detrás: les faltan `descargas` y `semaforos`). `tenis` también está en las 16 copias internas
+internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `semaforos` y `viajes` (color `#ec4899`, icono de maleta) están en las 19 copias internas (`roles: ['admin']`) y tampoco en las 3 externas todavía (las de `football-predictor` y `tennis-predictor` ya iban por detrás: les faltan `descargas` y `semaforos`). `vine-resenas` (color `#d946ef`, icono de estrella, `roles: ['admin', 'vine_admin', 'vine_invitado']`) está en las 20 copias internas y tampoco en las 3 externas. `tenis` también está en las 16 copias internas
 (`roles: ['admin']`) — mismo patrón que `futbol`: repo externo
 (`tennis-predictor`), solo registrado aquí para el AppLauncher/Keycloak/nginx
 compartidos. `crypto-trader/frontend`, `football-predictor/frontend` y
