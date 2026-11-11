@@ -69,6 +69,44 @@ describe('storeUpload', () => {
     });
   });
 
+  it('two concurrent video uploads for the same ASIN end with exactly one video', async () => {
+    const { deps, repo, store, upload } = setup();
+    const results = await Promise.all([
+      storeUpload(deps, ASIN, upload('a.mp4', 'video/mp4', 'aaa')),
+      storeUpload(deps, ASIN, upload('b.mp4', 'video/mp4', 'bbb')),
+      storeUpload(deps, ASIN, upload('c.webm', 'video/webm', 'ccc')),
+    ]);
+    const videos = repo.media.filter((m) => m.type === 'video');
+    expect(videos).toHaveLength(1);
+    expect(store.files.size).toBe(1);
+    expect(store.files.has(`${ASIN}/${videos[0].filename}`)).toBe(true);
+    expect(results.filter((r) => r.replaced.length === 0)).toHaveLength(1);
+  });
+
+  it('answers 409 and removes the saved file when the unique index rejects the video', async () => {
+    const { deps, repo, store, upload } = setup();
+    repo.addMedia = async () => {
+      throw Object.assign(new Error('dup'), { code: '23505' });
+    };
+    await expect(storeUpload(deps, ASIN, upload('a.mp4', 'video/mp4'))).rejects.toMatchObject({ statusCode: 409 });
+    expect(store.files.size).toBe(0);
+  });
+
+  it('keeps the previous video when registering the replacement fails', async () => {
+    const { deps, repo, store, upload } = setup();
+    const first = await storeUpload(deps, ASIN, upload('a.mp4', 'video/mp4'));
+    const real = repo.addMedia.bind(repo);
+    let calls = 0;
+    repo.addMedia = async (m) => {
+      if (calls++ === 0) throw new Error('db down');
+      return real(m);
+    };
+    await expect(storeUpload(deps, ASIN, upload('b.mp4', 'video/mp4'))).rejects.toThrow('db down');
+    expect(repo.media.map((m) => m.filename)).toEqual([first.media.filename]);
+    expect(store.files.size).toBe(1);
+    expect(store.files.has(`${ASIN}/${first.media.filename}`)).toBe(true);
+  });
+
   it('removes the file when registering the row fails', async () => {
     const { deps, repo, store, upload } = setup();
     repo.addMedia = async () => {

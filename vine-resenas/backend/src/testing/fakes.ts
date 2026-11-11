@@ -13,6 +13,9 @@ import type {
 } from '../domain/types';
 import type { ServableStore } from '../routes/deps';
 
+/** Yields to the event loop so concurrent calls can interleave, like with a real DB. */
+const tick = () => new Promise<void>((r) => setImmediate(r));
+
 export class FakeRepo implements ProductRepository {
   products = new Map<string, Product>();
   media: MediaRow[] = [];
@@ -44,6 +47,7 @@ export class FakeRepo implements ProductRepository {
     return [...this.products.values()].map((p) => this.withMedia(p));
   }
   async get(asin: string) {
+    await tick();
     const p = this.products.get(asin);
     return p ? this.withMedia(p) : null;
   }
@@ -71,6 +75,12 @@ export class FakeRepo implements ProductRepository {
     return { ...p };
   }
   async addMedia(m: { asin: string; filename: string; type: MediaType; size: number }) {
+    await tick();
+    if (m.type === 'video' && this.media.some((x) => x.asin === m.asin && x.type === 'video')) {
+      throw Object.assign(new Error('duplicate key value violates unique constraint "vine_media_one_video"'), {
+        code: '23505',
+      });
+    }
     if (this.media.some((x) => x.asin === m.asin && x.filename === m.filename)) throw new Error('duplicate media');
     const row: MediaRow = { id: this.nextId++, created_at: '2026-01-01T00:00:00Z', ...m };
     this.media.push(row);
@@ -80,6 +90,7 @@ export class FakeRepo implements ProductRepository {
     return this.media.find((m) => m.asin === asin && m.filename === filename) ?? null;
   }
   async deleteMedia(asin: string, filename: string) {
+    await tick();
     const before = this.media.length;
     this.media = this.media.filter((m) => !(m.asin === asin && m.filename === filename));
     return this.media.length < before;
@@ -110,6 +121,9 @@ export class FakeStore implements ServableStore {
   }
   async remove(asin: string, filename: string) {
     this.files.delete(this.key(asin, filename));
+  }
+  async sizeOf(asin: string, filename: string) {
+    return this.files.get(this.key(asin, filename))?.length ?? null;
   }
   pathFor(asin: string, filename: string) {
     return `/fake/${asin}/${filename}`;

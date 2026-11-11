@@ -30,3 +30,5 @@ CREATE TABLE IF NOT EXISTS vine_media (
 
 CREATE INDEX IF NOT EXISTS idx_vine_media_asin ON vine_media (asin);
 CREATE INDEX IF NOT EXISTS idx_vine_products_estado ON vine_products (estado);
+
+CREATE UNIQUE INDEX IF NOT EXISTS vine_media_one_video ON vine_media (asin) WHERE type = 'video';

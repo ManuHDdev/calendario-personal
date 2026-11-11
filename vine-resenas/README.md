@@ -6,7 +6,7 @@ and a state, plus an API so Claude can read and write everything.
 - Backend: Fastify 4 + TypeScript + PostgreSQL (`backend/`, port 3018)
 - Frontend: built separately (image `ghcr.io/manuhddev/vine-resenas-frontend`)
 - Routes: `/vine-resenas/api/...`, health at `/vine-resenas/api/health`
-- Local: Postgres on `localhost:5447` (`infra/docker-compose.local.yml`), `npm run dev` in `backend/`
+- Local: Postgres on `localhost:5447` (`infra/docker-compose.local.yml`), `npm run dev` in `backend/` (API on 3018) and in `frontend/` (Vite dev server on 5193)
 
 ## State machine
 
@@ -15,8 +15,10 @@ and a state, plus an API so Claude can read and write everything.
 | Transition | How |
 | --- | --- |
 | `listo` | UI button / `POST /ui/products/:asin/listo` / `PUT /v1/products/:asin {estado:"listo"}`. Requires non-empty feedback and stars. |
-| `resena_generada` | Only via `PUT /v1/products/:asin/resena` (also allowed again from `resena_generada` to rewrite). |
-| `publicado` | `POST .../publicado` (UI or API). A published product can only be reopened to `resena_generada`. |
+| `resena_generada` | Only via `PUT /v1/products/:asin/resena` (also allowed again from `resena_generada` to rewrite). `PUT /v1/products/:asin {estado:"resena_generada"}` is rejected with 409, except to reopen a `publicado` product. |
+| `publicado` | `POST .../publicado` (UI or API), and only from `resena_generada` (409 otherwise). `PUT /v1/products/:asin {estado:"publicado"}` is rejected with 409. A published product can only be reopened to `resena_generada`. |
+
+`PUT /v1/products/:asin` can set `estado` only among `pendiente` and `listo`.
 
 The autosaving `PUT /ui/products/:asin` edits `titulo/descripcion/feedback/estrellas` only and never changes `estado`.
 
@@ -26,8 +28,9 @@ Files live in `<DATA_DIR>/media/<ASIN>/<generated-name>` (`DATA_DIR=/data`, name
 Names are generated server-side (`<timestamp>-<rand>.<ext>`); client names are never used.
 Photos: jpeg/png/webp/heic/heif, max 25 MB. Video: mp4/mov/webm, max 200 MB, **one per product**
 (uploading another replaces the previous one). MIME and extension must agree.
-nginx must allow the body size: `client_max_body_size 200M;` (plus overhead, use `250M`) on the `/vine-resenas/api/` location
-and in the frontend image's nginx.
+nginx must allow the body size (200 MB video plus multipart overhead, so `250m`): in `nginx/calendario.conf` the limit is on
+`location /vine-resenas/` (it also covers `/vine-resenas/api/`), and in the frontend image's `nginx.conf` it is set at server level.
+Both nginx configs keep `access_log off` for the API because media URLs carry the JWT in `?token=`.
 
 ## Claude API (`/vine-resenas/api/v1`)
 
@@ -47,7 +50,7 @@ curl -fsS -H "Authorization: Bearer $VINE_API_TOKEN" "$BASE/products/B0FQBYHJ17"
 # Download a media file (supports Range)
 curl -fsS -H "Authorization: Bearer $VINE_API_TOKEN" -o foto.jpg "$BASE/media/B0FQBYHJ17/1731300000000-a1b2c3d4.jpg"
 
-# Update fields and/or state
+# Update fields and/or state (estado here: only pendiente <-> listo)
 curl -fsS -X PUT -H "Authorization: Bearer $VINE_API_TOKEN" -H 'Content-Type: application/json' \
   -d '{"feedback":"Funciona muy bien","estrellas":5,"estado":"listo"}' "$BASE/products/B0FQBYHJ17"
 
@@ -55,7 +58,7 @@ curl -fsS -X PUT -H "Authorization: Bearer $VINE_API_TOKEN" -H 'Content-Type: ap
 curl -fsS -X PUT -H "Authorization: Bearer $VINE_API_TOKEN" -H 'Content-Type: application/json' \
   -d '{"resena_producto":"...","resena_resumida":"...","resena_extendida":"..."}' "$BASE/products/B0FQBYHJ17/resena"
 
-# Mark as published
+# Mark as published (only from resena_generada, otherwise 409)
 curl -fsS -X POST -H "Authorization: Bearer $VINE_API_TOKEN" "$BASE/products/B0FQBYHJ17/publicado"
 
 # Sync new pending products from vine-bot -> { "created": ["B0..."], "skipped": 3 }
@@ -88,7 +91,7 @@ The upload response is `{ uploaded: [...], replaced: [filenames], rejected: [{fi
 ## Sync with vine-bot
 
 `POST /v1/products/sync` calls `${VINE_BOT_URL}/productos-pendientes` (default `http://vine-bot:8092`) with
-`Authorization: Bearer ${VINE_BOT_TOKEN}` (falls back to `VINE_API_TOKEN`), expects a bare JSON array of
+`Authorization: Bearer ${VINE_BOT_TOKEN}` (required: without it the endpoint answers `503 {"error":"ServiceUnavailable","message":"VINE_BOT_TOKEN not configured"}`; there is no fallback to `VINE_API_TOKEN`), expects a bare JSON array of
 `{asin,titulo,descripcion}` and inserts **only** ASINs that are not present (existing products are never touched).
 
 Weekly cron on the host (token read from a root-only file, never inline):
@@ -135,6 +138,6 @@ docker run --rm -v vine_resenas_data:/data:ro -v "$PWD":/backup alpine tar czf /
 
 ## Environment
 
-`PORT` (3018), `VINE_RESENAS_DB_HOST|PORT|NAME|USER|PASSWORD`, `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN`, `DATA_DIR` (`/data`),
-`VINE_API_TOKEN` (required for the API), `VINE_BOT_URL`, `VINE_BOT_TOKEN`. See `backend/.env.example`.
+`PORT` (3018), `VINE_RESENAS_DB_HOST|PORT|NAME|USER|PASSWORD` (`VINE_RESENAS_DB_PORT` is used for local dev, 5447), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN` (default `https://elbunkerdelingeniero.duckdns.org` and `http://localhost:5193`), `DATA_DIR` (`/data`),
+`VINE_API_TOKEN` (required for the API), `VINE_BOT_URL`, `VINE_BOT_TOKEN` (required for sync). See `backend/.env.example`.
 The schema is created by `backend/src/db/ensureSchema.ts` on every start and by `infra/init.sql` on a fresh volume (keep them identical; a test checks it).

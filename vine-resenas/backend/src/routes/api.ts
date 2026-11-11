@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { assertTransition } from '../domain/state';
+import { assertEstadoViaPut, assertTransition } from '../domain/state';
 import { parseAsin } from '../domain/validation';
 import { changeEstado, editProduct, requireProduct, storeResena } from '../services/productService';
 import { syncProducts } from '../services/syncService';
@@ -38,6 +38,7 @@ export function apiRoutes(deps: AppDeps) {
       const current = await requireProduct(repo, asin);
       // Validate the transition against the state AFTER applying the patch (feedback/stars may complete it).
       if (estado) {
+        assertEstadoViaPut(current.estado, estado);
         assertTransition(
           {
             estado: current.estado,

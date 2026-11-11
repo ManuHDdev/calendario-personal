@@ -20,6 +20,15 @@ describe('syncProducts', () => {
     expect(repo.products.get('BBBBBBBBBB')).toMatchObject({ titulo: 'New', estado: 'pendiente' });
   });
 
+  it('fails with 503 "VINE_BOT_TOKEN not configured" before calling the bot when there is no token', async () => {
+    const fetcher = vi.fn(async () => []);
+    await expect(syncProducts(new FakeRepo(), fetcher, { botUrl: 'http://vine-bot:8092' })).rejects.toMatchObject({
+      statusCode: 503,
+      message: 'VINE_BOT_TOKEN not configured',
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it('calls /productos-pendientes with the bot token', async () => {
     const fetcher = vi.fn(async () => []);
     await syncProducts(new FakeRepo(), fetcher, config);

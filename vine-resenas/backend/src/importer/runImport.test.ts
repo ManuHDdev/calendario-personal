@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { promises as fsp } from 'fs';
 import os from 'os';
 import path from 'path';
@@ -118,6 +119,34 @@ describe('runImport', () => {
     expect(second.mediaImported).toBe(0);
     expect(repo.media).toHaveLength(3);
     expect(store.files.size).toBe(3);
+  });
+
+  it('adopts an orphan imp-<sha> file already on disk (same size) by inserting only the row', async () => {
+    await write('img/B0FQBYHJ17 - Brochetas/foto1.jpg', 'AAA');
+    const repo = new FakeRepo();
+    const store = new FakeStore();
+    const name = `imp-${createHash('sha256').update('AAA').digest('hex').slice(0, 16)}.jpg`;
+    store.files.set(`B0FQBYHJ17/${name}`, Buffer.from('AAA'));
+
+    const res = await runImport({ images: path.join(tmp, 'img') }, { repo, store });
+
+    expect(res.mediaImported).toBe(1);
+    expect(repo.media.map((m) => m.filename)).toEqual([name]);
+    expect(store.files.get(`B0FQBYHJ17/${name}`)!.toString()).toBe('AAA');
+  });
+
+  it('fails with a clear message when the orphan file size differs from the source', async () => {
+    await write('img/B0FQBYHJ17 - Brochetas/foto1.jpg', 'AAA');
+    const repo = new FakeRepo();
+    const store = new FakeStore();
+    const name = `imp-${createHash('sha256').update('AAA').digest('hex').slice(0, 16)}.jpg`;
+    store.files.set(`B0FQBYHJ17/${name}`, Buffer.from('truncated-garbage'));
+
+    await expect(runImport({ images: path.join(tmp, 'img') }, { repo, store })).rejects.toThrow(
+      /already exists on disk with 17 bytes but the source has 3/,
+    );
+    expect(repo.media).toHaveLength(0);
+    expect(store.files.get(`B0FQBYHJ17/${name}`)!.toString()).toBe('truncated-garbage');
   });
 
   it('creates PUBLICADO folders as published products and skips their photos', async () => {

@@ -221,7 +221,18 @@ export async function runImport(opts: ImportOptions, deps: ImportDeps): Promise<
         continue;
       }
       if (!dry) {
-        await store.save(asin, filename, createReadStream(full), maxBytesFor(info.type));
+        // A previous run may have written the file and died before inserting the row: adopt it if it is intact.
+        const onDisk = await store.sizeOf(asin, filename);
+        if (onDisk === null) {
+          await store.save(asin, filename, createReadStream(full), maxBytesFor(info.type));
+        } else if (onDisk !== size) {
+          throw new Error(
+            `${asin}/${filename} already exists on disk with ${onDisk} bytes but the source has ${size}; ` +
+              'remove the stale file and re-run',
+          );
+        } else {
+          log(`adopt ${asin}/${filename} (file already on disk)`);
+        }
         await repo.addMedia({ asin, filename, type: info.type, size });
       }
       known.add(filename);

@@ -89,6 +89,21 @@ describe('Claude API', () => {
     expect(res.json()).toEqual({ created: ['CCCCCCCCCC'], skipped: 1 });
   });
 
+  it('reports a 503 JSON error when VINE_BOT_TOKEN is not configured', async () => {
+    const noToken = await buildApp({
+      repo,
+      store,
+      fetcher,
+      syncConfig: () => ({ botUrl: 'http://bot' }),
+      auth: { read: allow, readMedia: allow, write: allow, api: apiTokenMiddleware(() => TOKEN) },
+    });
+    const res = await noToken.inject({ method: 'POST', url: `${API}/products/sync`, headers: auth });
+    await noToken.close();
+    expect(res.statusCode).toBe(503);
+    expect(res.json()).toEqual({ error: 'ServiceUnavailable', message: 'VINE_BOT_TOKEN not configured' });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it('reports a 502 {error,message} when the bot is down', async () => {
     fetcher.mockRejectedValue(new Error('boom'));
     const res = await app.inject({ method: 'POST', url: `${API}/products/sync`, headers: auth });
@@ -117,6 +132,25 @@ describe('Claude API', () => {
       payload: { estado: 'listo', feedback: 'x', estrellas: 4 },
     });
     expect(ok.json()).toMatchObject({ estado: 'listo' });
+  });
+
+  it('PUT estado cannot reach resena_generada or publicado; publicado needs resena_generada', async () => {
+    for (const estado of ['resena_generada', 'publicado']) {
+      const res = await app.inject({ method: 'PUT', url: `${API}/products/${ASIN}`, headers: auth, payload: { estado } });
+      expect(res.statusCode).toBe(409);
+      expect(res.json()).toMatchObject({ error: 'InvalidTransition' });
+    }
+    const early = await app.inject({ method: 'POST', url: `${API}/products/${ASIN}/publicado`, headers: auth });
+    expect(early.statusCode).toBe(409);
+    expect(early.json().message).toMatch(/resena_generada/);
+    expect(repo.products.get(ASIN)!.estado).toBe('pendiente');
+    expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/publicado` })).statusCode).toBe(409);
+  });
+
+  it('a published product can be reopened to resena_generada via PUT', async () => {
+    repo.products.get(ASIN)!.estado = 'publicado';
+    const res = await app.inject({ method: 'PUT', url: `${API}/products/${ASIN}`, headers: auth, payload: { estado: 'resena_generada' } });
+    expect(res.json()).toMatchObject({ estado: 'resena_generada' });
   });
 
   it('resena stores the texts and sets resena_generada; publicado closes the cycle', async () => {
@@ -170,6 +204,8 @@ describe('UI routes', () => {
     expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/listo` })).statusCode).toBe(409);
     await app.inject({ method: 'PUT', url: `${UI}/products/${ASIN}`, payload: { feedback: 'ok', estrellas: 3 } });
     expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/listo` })).json()).toMatchObject({ estado: 'listo' });
+    expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/publicado` })).statusCode).toBe(409);
+    repo.products.get(ASIN)!.estado = 'resena_generada';
     expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/publicado` })).json()).toMatchObject({ estado: 'publicado' });
   });
 

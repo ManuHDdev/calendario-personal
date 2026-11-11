@@ -11,7 +11,7 @@ const READ_ROLES = ['admin', 'vine_admin', 'vine_invitado'];
 const WRITE_ROLES = ['admin', 'vine_admin'];
 
 async function bootstrap() {
-  const defaultOrigins = ['https://elbunkerdelingeniero.duckdns.org', 'http://localhost:5186'];
+  const defaultOrigins = ['https://elbunkerdelingeniero.duckdns.org', 'http://localhost:5193'];
   const parsed = process.env.CORS_ORIGIN?.split(',').map((o) => o.trim()).filter(Boolean);
   const corsOrigins = parsed && parsed.length > 0 ? parsed : defaultOrigins;
 
@@ -27,7 +27,7 @@ async function bootstrap() {
       fetcher: defaultBotFetcher,
       syncConfig: () => ({
         botUrl: process.env.VINE_BOT_URL || 'http://vine-bot:8092',
-        botToken: process.env.VINE_BOT_TOKEN || process.env.VINE_API_TOKEN || undefined,
+        botToken: process.env.VINE_BOT_TOKEN || undefined,
       }),
       auth: {
         read: authMiddleware(READ_ROLES),
