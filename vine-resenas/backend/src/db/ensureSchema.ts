@@ -4,7 +4,7 @@ import { pool } from './pool';
 // volume is created from scratch and the monorepo has no migrations, so the
 // same statements run here on every start. Keep this identical to
 // infra/init.sql (a test compares them).
-export const SCHEMA_SQL = `
+const TABLES_SQL = `
 CREATE TABLE IF NOT EXISTS vine_products (
   asin             VARCHAR(10) PRIMARY KEY,
   titulo           TEXT NOT NULL DEFAULT '',
@@ -34,6 +34,28 @@ CREATE INDEX IF NOT EXISTS idx_vine_media_asin ON vine_media (asin);
 CREATE INDEX IF NOT EXISTS idx_vine_products_estado ON vine_products (estado);
 `;
 
+// A product holds at most one video. Kept apart so ensureSchema can dedupe
+// legacy rows before creating it.
+const VIDEO_INDEX_SQL = `
+CREATE UNIQUE INDEX IF NOT EXISTS vine_media_one_video ON vine_media (asin) WHERE type = 'video';
+`;
+
+export const SCHEMA_SQL = TABLES_SQL + VIDEO_INDEX_SQL;
+
+// Older versions could end up with several videos for one ASIN (concurrent
+// uploads). Keep the newest (highest id) so the unique index can be created.
+// Only ROWS are deleted: the files stay on disk (orphans, harmless) because
+// removing user media at startup is irreversible; they are logged for cleanup.
+const DEDUPE_VIDEOS_SQL = `
+DELETE FROM vine_media m USING vine_media n
+WHERE m.type = 'video' AND n.type = 'video' AND m.asin = n.asin AND m.id < n.id
+RETURNING m.asin, m.filename`;
+
 export async function ensureSchema(): Promise<void> {
-  await pool.query(SCHEMA_SQL);
+  await pool.query(TABLES_SQL);
+  const { rows } = await pool.query(DEDUPE_VIDEOS_SQL);
+  for (const r of rows as { asin: string; filename: string }[]) {
+    console.warn(`ensureSchema: dropped duplicate video row ${r.asin}/${r.filename} (file left on disk)`);
+  }
+  await pool.query(VIDEO_INDEX_SQL);
 }

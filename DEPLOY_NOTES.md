@@ -259,7 +259,7 @@ detrás (les falta también `descargas`). Se actualizan aparte.
 ## `vine-resenas` — nueva subapp (reseñas de Amazon Vine)
 
 Subapp nueva: backend Fastify + PostgreSQL + frontend estático. Contenedores
-`vine-resenas-db`, `vine-resenas-backend` (puerto 3018) y `vine-resenas-frontend`
+`vine-resenas-db`, `vine-resenas-backend` (puerto 3018 solo dentro de `calendario-net`, sin publicar en el host) y `vine-resenas-frontend`
 (imágenes `ghcr.io/manuhddev/vine-resenas-backend|frontend`), en la red externa
 `calendario-net`. UI en `/vine-resenas/`, API en `/vine-resenas/api` (rutas `/ui`
 con JWT de Keycloak y rutas `/v1` con token bearer para Claude).
@@ -285,8 +285,9 @@ VINE_RESENAS_DB_PASSWORD=$(openssl rand -hex 24)
 # Token bearer de la API de Claude (/vine-resenas/api/v1). Sin él, el compose no arranca.
 VINE_API_TOKEN=$(openssl rand -hex 32)
 
-# Opcionales: solo los usa POST /v1/products/sync (bot de Vine). Por defecto
-# VINE_BOT_URL=http://vine-bot:8092 y VINE_BOT_TOKEN vacío.
+# Solo los usa POST /v1/products/sync (bot de Vine). Por defecto
+# VINE_BOT_URL=http://vine-bot:8092; con VINE_BOT_TOKEN vacío el sync responde 503
+# (no hay fallback a VINE_API_TOKEN).
 # VINE_BOT_URL=
 # VINE_BOT_TOKEN=
 EOF2
@@ -311,7 +312,8 @@ Construye backend + frontend, sube las imágenes a GHCR, copia
 `vine-resenas-backend` + `vine-resenas-frontend`.
 
 ```bash
-curl -s localhost:3018/vine-resenas/api/health
+# el backend no publica puerto en el host: comprobar desde el contenedor
+docker exec vine-resenas-backend node -e "require('http').get('http://localhost:3018/vine-resenas/api/health', r => console.log(r.statusCode))"
 docker compose -f /home/manu/vine-resenas/docker-compose.prod.yml ps
 docker logs vine-resenas-backend --tail 40
 ```

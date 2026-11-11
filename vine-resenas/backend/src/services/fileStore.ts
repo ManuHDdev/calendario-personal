@@ -10,6 +10,8 @@ export interface FileStore {
   /** Streams `source` to `<media>/<asin>/<filename>`; rejects (and cleans up) beyond `maxBytes`. Returns bytes written. */
   save(asin: string, filename: string, source: Readable, maxBytes: number): Promise<number>;
   remove(asin: string, filename: string): Promise<void>;
+  /** Size in bytes of an existing stored file, or null when it does not exist. */
+  sizeOf(asin: string, filename: string): Promise<number | null>;
   /** Absolute path for serving. */
   pathFor(asin: string, filename: string): string;
 }
@@ -39,14 +41,31 @@ export class FsFileStore implements FileStore {
         cb(null, chunk);
       },
     });
+    // 'wx' fails with EEXIST on a pre-existing file: that file is not ours, so it must never be removed.
+    let handle: fsp.FileHandle;
     try {
-      await pipeline(source, limiter, (await fsp.open(target, 'wx')).createWriteStream());
+      handle = await fsp.open(target, 'wx');
+    } catch (err) {
+      source.resume();
+      throw err;
+    }
+    try {
+      await pipeline(source, limiter, handle.createWriteStream());
     } catch (err) {
       await fsp.rm(target, { force: true });
       source.resume();
       throw err;
     }
     return written;
+  }
+
+  async sizeOf(asin: string, filename: string): Promise<number | null> {
+    try {
+      return (await fsp.stat(this.pathFor(asin, filename))).size;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw err;
+    }
   }
 
   async remove(asin: string, filename: string): Promise<void> {

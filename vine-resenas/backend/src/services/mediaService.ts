@@ -24,10 +24,31 @@ export interface MediaDeps {
   rand?: () => string;
 }
 
+const PG_UNIQUE_VIOLATION = '23505';
+
+// Per-ASIN promise chain: serializes the read-then-write video replacement so
+// two concurrent uploads cannot both see "no previous video". Single backend
+// instance only; the partial unique index is the cross-instance safety net.
+const asinLocks = new Map<string, Promise<unknown>>();
+
+async function withAsinLock<T>(asin: string, fn: () => Promise<T>): Promise<T> {
+  const prev = asinLocks.get(asin) ?? Promise.resolve();
+  const run = prev.then(fn, fn);
+  const tail = run.catch(() => undefined);
+  asinLocks.set(asin, tail);
+  try {
+    return await run;
+  } finally {
+    if (asinLocks.get(asin) === tail) asinLocks.delete(asin);
+  }
+}
+
 /**
  * Validates, stores and registers one upload. A product holds at most one
- * video: a new video is committed first, then the previous one (row + file)
- * is removed, so a failure never leaves the product without its video.
+ * video (enforced by a partial unique index): the new file is written first,
+ * then, under a per-ASIN lock, the old video rows are swapped for the new one
+ * and only afterwards are the old files removed. If registering the new row
+ * fails the old rows are put back, so the product never loses its video.
  */
 export async function storeUpload(deps: MediaDeps, asin: string, upload: UploadInput): Promise<StoreResult> {
   const { repo, store } = deps;
@@ -39,25 +60,37 @@ export async function storeUpload(deps: MediaDeps, asin: string, upload: UploadI
     upload.stream.resume();
     throw new HttpError(404, 'NotFound', `Product ${asin} not found`);
   }
-  const previousVideos = info.type === 'video' ? product.media.filter((m) => m.type === 'video') : [];
 
   const size = await store.save(asin, filename, upload.stream, maxBytesFor(info.type));
+  const row = { asin, filename, type: info.type, size };
 
-  let media: MediaRow;
+  const register = async (): Promise<StoreResult> => {
+    // Read inside the lock: the product may have gained a video while the file was streaming.
+    const previous =
+      info.type === 'video' ? ((await repo.get(asin))?.media ?? []).filter((m) => m.type === 'video') : [];
+    for (const old of previous) await repo.deleteMedia(asin, old.filename);
+    let media: MediaRow;
+    try {
+      media = await repo.addMedia(row);
+    } catch (err) {
+      for (const old of previous) {
+        await repo.addMedia({ asin, filename: old.filename, type: old.type, size: old.size }).catch(() => undefined);
+      }
+      throw err;
+    }
+    for (const old of previous) await store.remove(asin, old.filename).catch(() => undefined);
+    return { media, replaced: previous.map((m) => m.filename) };
+  };
+
   try {
-    media = await repo.addMedia({ asin, filename, type: info.type, size });
+    return info.type === 'video' ? await withAsinLock(asin, register) : await register();
   } catch (err) {
     await store.remove(asin, filename).catch(() => undefined);
+    if ((err as { code?: string }).code === PG_UNIQUE_VIOLATION && info.type === 'video') {
+      throw new HttpError(409, 'Conflict', 'The product already has a video (concurrent upload); try again');
+    }
     throw err;
   }
-
-  const replaced: string[] = [];
-  for (const old of previousVideos) {
-    await repo.deleteMedia(asin, old.filename);
-    await store.remove(asin, old.filename).catch(() => undefined);
-    replaced.push(old.filename);
-  }
-  return { media, replaced };
 }
 
 /** Removes the row and then the file. Returns false when the media did not exist. */

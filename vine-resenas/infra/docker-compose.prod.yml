@@ -3,7 +3,8 @@
 # unhealthy" que no dice nada. VINE_API_TOKEN tambien: sin el, la API de Claude
 # (/vine-resenas/api/v1) rechazaria todo.
 #
-# VINE_BOT_URL / VINE_BOT_TOKEN son opcionales: solo los usa POST /v1/products/sync.
+# VINE_BOT_URL / VINE_BOT_TOKEN: solo los usa POST /v1/products/sync, que responde 503
+# ('VINE_BOT_TOKEN not configured') si el token esta vacio. No hay fallback a VINE_API_TOKEN.
 #
 # Datos: las fotos y videos viven en el volumen con nombre `vine_resenas_data`
 # (montado en /data del backend, ruta <DATA_DIR>/media/<ASIN>/<fichero>). Hay que

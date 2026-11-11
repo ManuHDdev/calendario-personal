@@ -41,6 +41,9 @@ export async function syncProducts(
   fetcher: BotFetcher,
   config: SyncConfig,
 ): Promise<SyncResult> {
+  if (!config.botToken) {
+    throw new HttpError(503, 'ServiceUnavailable', 'VINE_BOT_TOKEN not configured');
+  }
   const url = `${config.botUrl.replace(/\/+$/, '')}/productos-pendientes`;
   let body: unknown;
   try {

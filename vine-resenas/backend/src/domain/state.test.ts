@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HttpError } from '../errors';
-import { assertCanStoreReview, assertTransition, canTransition, isReadyForReview } from './state';
+import { assertCanStoreReview, assertEstadoViaPut, assertTransition, canTransition, isReadyForReview } from './state';
 
 const ready = { feedback: 'good', estrellas: 4 };
 const empty = { feedback: '', estrellas: null };
@@ -8,8 +8,22 @@ const empty = { feedback: '', estrellas: null };
 describe('state machine', () => {
   it('allows the forward path', () => {
     expect(canTransition('pendiente', 'listo')).toBe(true);
-    expect(canTransition('listo', 'resena_generada')).toBe(true);
     expect(canTransition('resena_generada', 'publicado')).toBe(true);
+  });
+  it('reaches resena_generada and publicado only from the right states', () => {
+    expect(canTransition('pendiente', 'resena_generada')).toBe(false);
+    expect(canTransition('listo', 'resena_generada')).toBe(false);
+    expect(canTransition('pendiente', 'publicado')).toBe(false);
+    expect(canTransition('listo', 'publicado')).toBe(false);
+    expect(() => assertTransition({ estado: 'listo', ...ready }, 'publicado')).toThrow(/only a product in resena_generada/);
+  });
+  it('limits PUT estado to pendiente/listo (plus reopening a published product)', () => {
+    expect(() => assertEstadoViaPut('pendiente', 'listo')).not.toThrow();
+    expect(() => assertEstadoViaPut('listo', 'pendiente')).not.toThrow();
+    expect(() => assertEstadoViaPut('publicado', 'publicado')).not.toThrow();
+    expect(() => assertEstadoViaPut('publicado', 'resena_generada')).not.toThrow();
+    expect(() => assertEstadoViaPut('pendiente', 'resena_generada')).toThrow(HttpError);
+    expect(() => assertEstadoViaPut('resena_generada', 'publicado')).toThrow(/POST \.\.\.\/publicado/);
   });
   it('treats same-state as allowed', () => {
     expect(canTransition('publicado', 'publicado')).toBe(true);

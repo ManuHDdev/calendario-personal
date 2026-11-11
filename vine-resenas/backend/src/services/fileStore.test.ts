@@ -43,4 +43,20 @@ describe('FsFileStore', () => {
     await store.remove('B0FQBYHJ17', '1-a.jpg');
     await expect(store.remove('B0FQBYHJ17', '1-a.jpg')).resolves.toBeUndefined();
   });
+
+  it('never deletes a pre-existing file when open(wx) fails with EEXIST', async () => {
+    const store = new FsFileStore(dir);
+    await store.save('B0FQBYHJ17', '1-a.jpg', Readable.from([Buffer.from('original')]), 100);
+    await expect(
+      store.save('B0FQBYHJ17', '1-a.jpg', Readable.from([Buffer.from('other')]), 100),
+    ).rejects.toMatchObject({ code: 'EEXIST' });
+    expect(await fsp.readFile(path.join(dir, 'media', 'B0FQBYHJ17', '1-a.jpg'), 'utf8')).toBe('original');
+  });
+
+  it('sizeOf reports the size or null when missing', async () => {
+    const store = new FsFileStore(dir);
+    await store.save('B0FQBYHJ17', '1-a.jpg', Readable.from([Buffer.from('hello')]), 100);
+    expect(await store.sizeOf('B0FQBYHJ17', '1-a.jpg')).toBe(5);
+    expect(await store.sizeOf('B0FQBYHJ17', 'nope.jpg')).toBeNull();
+  });
 });
