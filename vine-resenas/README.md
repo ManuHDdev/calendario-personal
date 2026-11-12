@@ -27,9 +27,9 @@ The autosaving `PUT /ui/products/:asin` edits `titulo/descripcion/feedback/estre
 
 Files live in `<DATA_DIR>/media/<ASIN>/<generated-name>` (`DATA_DIR=/data`, named volume `vine_resenas_data`).
 Names are generated server-side (`<timestamp>-<rand>.<ext>`); client names are never used.
-Photos: jpeg/png/webp/heic/heif, max 25 MB. Video: mp4/mov/webm, max 200 MB, **one per product**
+Photos: jpeg/png/webp/heic/heif, max 25 MB. Video: mp4/mov/webm, max 1 GB, **one per product**
 (uploading another replaces the previous one). MIME and extension must agree.
-nginx must allow the body size (200 MB video plus multipart overhead, so `250m`): in `nginx/calendario.conf` the limit is on
+nginx must allow the body size (1 GB video plus multipart overhead, so `1100m`): in `nginx/calendario.conf` the limit is on
 `location /vine-resenas/` (it also covers `/vine-resenas/api/`), and in the frontend image's `nginx.conf` it is set at server level.
 Both nginx configs keep `access_log off` for the API because media URLs carry the JWT in `?token=`.
 

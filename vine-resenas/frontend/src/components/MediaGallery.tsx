@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { compressImage } from '../lib/compress';
+import { checkFileSize } from '../lib/limits';
 import { deleteMedia, uploadMedia, withToken } from '../services/api';
 import type { Media } from '../types';
 
@@ -40,6 +41,8 @@ export default function MediaGallery({ asin, media, canWrite, onChanged }: Props
     for (const q of queue) {
       try {
         const file = await compressImage(q.file);
+        const tooLarge = checkFileSize(file);
+        if (tooLarge) throw new Error(tooLarge);
         const res = await uploadMedia(asin, file, (f) => patch(q.id, { progress: f }));
         if (res.replaced.length > 0) replaced = true;
         patch(q.id, { progress: 1, done: true });
@@ -122,6 +125,7 @@ export default function MediaGallery({ asin, media, canWrite, onChanged }: Props
           </button>
           <p className="muted small">
             {hasVideo ? 'Subir un vídeo nuevo reemplaza al actual. ' : 'Solo se admite un vídeo por producto. '}
+            Límites: fotos 25 MB, vídeo 1 GB.
           </p>
         </>
       )}

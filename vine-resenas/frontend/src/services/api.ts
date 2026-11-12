@@ -1,4 +1,5 @@
 import keycloak from './keycloak';
+import { tooLargeMessage } from '../lib/limits';
 import type { Counts, CreatedGuestLink, GuestLinkInfo, Product, ProductSummary, UploadResult } from '../types';
 
 const BASE = '/vine-resenas/api/ui';
@@ -81,6 +82,7 @@ export async function uploadMedia(
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${BASE}/products/${encodeURIComponent(asin)}/media`);
     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.timeout = 0; // no client-side deadline: a 1 GB video on a slow uplink takes many minutes
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(e.loaded / e.total);
     };
@@ -94,6 +96,11 @@ export async function uploadMedia(
       }
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve(body as UploadResult);
+        return;
+      }
+      // 413 can come from nginx (HTML body) or the backend; say which limit was hit.
+      if (xhr.status === 413) {
+        reject(new ApiError(413, tooLargeMessage(file)));
         return;
       }
       const b = body as { message?: string; rejected?: { message: string }[] } | null;

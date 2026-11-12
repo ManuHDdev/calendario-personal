@@ -32,6 +32,11 @@ export async function buildApp(deps: AppDeps, options: BuildOptions = {}): Promi
         }
       : false,
     trustProxy: true,
+    // A 1 GB video on a slow mobile uplink takes many minutes. Never cut the socket or the
+    // request on a wall-clock budget (nginx already bounds inactivity with client_body_timeout).
+    connectionTimeout: 0,
+    requestTimeout: 0,
+    keepAliveTimeout: 75_000,
   });
 
   registrarParserJsonToleranteAVacio(app);
@@ -57,7 +62,7 @@ export async function buildApp(deps: AppDeps, options: BuildOptions = {}): Promi
     }
     const code = (err as { code?: string }).code;
     if (code === 'FST_REQ_FILE_TOO_LARGE' || code === 'FST_FILES_LIMIT' || code === 'FST_PARTS_LIMIT') {
-      return reply.code(413).send({ error: 'PayloadTooLarge', message: 'Upload exceeds the allowed limits' });
+      return reply.code(413).send({ error: 'PayloadTooLarge', message: 'Upload exceeds the allowed limits (photos 25 MB, video 1 GB)' });
     }
     const status = (err as { statusCode?: number }).statusCode;
     if (status && status >= 400 && status < 500) {
