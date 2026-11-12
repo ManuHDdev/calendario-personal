@@ -15,6 +15,9 @@ vi.mock('../services/api', () => ({
   getProduct: vi.fn(),
   getProducts: vi.fn(),
   getCounts: vi.fn(),
+  listGuestLinks: vi.fn().mockResolvedValue([]),
+  createGuestLink: vi.fn(),
+  revokeGuestLink: vi.fn(),
 }));
 
 import StarSelector from './StarSelector';

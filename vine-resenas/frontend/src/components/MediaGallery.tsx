@@ -77,6 +77,7 @@ export default function MediaGallery({ asin, media, canWrite, onChanged }: Props
             ) : (
               <video src={withToken(m.url)} controls preload="metadata" playsInline />
             )}
+            {m.uploaded_by_guest && <span className="gallery__guest">Familiar</span>}
             {canWrite && (
               <button
                 type="button"

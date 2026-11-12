@@ -4,6 +4,7 @@ import { Readable } from 'stream';
 import type { ProductRepository } from '../db/repository';
 import type {
   Estado,
+  GuestLink,
   MediaRow,
   MediaType,
   NewProduct,
@@ -19,13 +20,16 @@ const tick = () => new Promise<void>((r) => setImmediate(r));
 export class FakeRepo implements ProductRepository {
   products = new Map<string, Product>();
   media: MediaRow[] = [];
+  links: (GuestLink & { token_hash: string })[] = [];
   private nextId = 1;
+  private nextLinkId = 1;
 
   seed(p: Partial<Product> & { asin: string }): Product {
     const full: Product = {
       titulo: '',
       descripcion: '',
       feedback: '',
+      guest_feedback: '',
       estrellas: null,
       estado: 'pendiente',
       resena_producto: '',
@@ -74,7 +78,7 @@ export class FakeRepo implements ProductRepository {
     Object.assign(p, r, { estado: 'resena_generada' as Estado });
     return { ...p };
   }
-  async addMedia(m: { asin: string; filename: string; type: MediaType; size: number }) {
+  async addMedia(m: { asin: string; filename: string; type: MediaType; size: number; guestLinkId?: number | null }) {
     await tick();
     if (m.type === 'video' && this.media.some((x) => x.asin === m.asin && x.type === 'video')) {
       throw Object.assign(new Error('duplicate key value violates unique constraint "vine_media_one_video"'), {
@@ -82,7 +86,13 @@ export class FakeRepo implements ProductRepository {
       });
     }
     if (this.media.some((x) => x.asin === m.asin && x.filename === m.filename)) throw new Error('duplicate media');
-    const row: MediaRow = { id: this.nextId++, created_at: '2026-01-01T00:00:00Z', ...m };
+    const { guestLinkId, ...rest } = m;
+    const row: MediaRow = {
+      id: this.nextId++,
+      created_at: '2026-01-01T00:00:00Z',
+      uploaded_via_guest_link_id: guestLinkId ?? null,
+      ...rest,
+    };
     this.media.push(row);
     return row;
   }
@@ -94,6 +104,48 @@ export class FakeRepo implements ProductRepository {
     const before = this.media.length;
     this.media = this.media.filter((m) => !(m.asin === asin && m.filename === filename));
     return this.media.length < before;
+  }
+  async createGuestLink(l: { asin: string; tokenHash: string; expiresAt: Date; createdBy: string | null }) {
+    const row = {
+      id: this.nextLinkId++,
+      asin: l.asin,
+      token_hash: l.tokenHash,
+      created_at: new Date().toISOString(),
+      expires_at: l.expiresAt.toISOString(),
+      revoked_at: null,
+      created_by: l.createdBy,
+      last_used_at: null,
+    };
+    this.links.push(row);
+    return this.publicLink(row);
+  }
+  private publicLink(l: GuestLink & { token_hash: string }): GuestLink {
+    const { token_hash: _omit, ...rest } = l;
+    return { ...rest };
+  }
+  async listGuestLinks(asin: string) {
+    return this.links.filter((l) => l.asin === asin).map((l) => this.publicLink(l)).reverse();
+  }
+  async findGuestLinkByHash(tokenHash: string) {
+    const l = this.links.find((x) => x.token_hash === tokenHash);
+    return l ? this.publicLink(l) : null;
+  }
+  async revokeGuestLink(id: number) {
+    const l = this.links.find((x) => x.id === id);
+    if (!l) return null;
+    l.revoked_at ??= new Date().toISOString();
+    return this.publicLink(l);
+  }
+  async touchGuestLink(id: number) {
+    const l = this.links.find((x) => x.id === id);
+    if (l) l.last_used_at = new Date().toISOString();
+  }
+  async countGuestMedia(linkId: number) {
+    return this.media.filter((m) => m.uploaded_via_guest_link_id === linkId).length;
+  }
+  async setGuestFeedback(asin: string, text: string) {
+    const p = this.products.get(asin);
+    if (p) p.guest_feedback = text;
   }
   async counts() {
     const out: Record<Estado, number> = { pendiente: 0, listo: 0, resena_generada: 0, publicado: 0 };

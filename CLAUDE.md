@@ -1975,6 +1975,7 @@ Sustituye el flujo de reseñas de Amazon Vine: por producto (clave `asin`) se gu
 ### Rutas (`/vine-resenas/api/*`)
 - `/ui/*` — para el frontend, con JWT de Keycloak (los ficheros aceptan además `?token=` para `<img>`/`<video>`)
 - `/v1/*` — para Claude, con **token bearer estático** `VINE_API_TOKEN` (comparado en tiempo constante, nunca se loguea). NO usa Keycloak: quien tenga el token puede leer y escribir todo, tratarlo como un secreto (vive solo en `/home/manu/vine-resenas/.env` y en la configuración de Claude).
+- `/guest/:token/*` — **público, sin auth**: enlace de invitado por producto (familiar sin cuenta que deja opinión y sube fotos/vídeo). El secreto es el token del path (256 bits, solo se guarda su SHA-256 en `vine_guest_links`); 404 idéntico para desconocido/caducado/revocado, 410 si el producto está `publicado`; límite de 30 ficheros por enlace y rate limit por IP. La gestión (`POST/GET /ui/products/:asin/guest-links`, `DELETE /ui/guest-links/:id`) es solo escritura. Página SPA en `/vine-resenas/c/:token`. Detalle en `vine-resenas/README.md`.
 - `GET /health`
 
 ### Límite de subida (OBLIGATORIO mantener alineado)

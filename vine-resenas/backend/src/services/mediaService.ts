@@ -9,6 +9,8 @@ export interface UploadInput {
   originalName: string;
   mimetype: string;
   stream: Readable;
+  /** Set when the upload comes through a guest link: it may never replace media it does not own. */
+  guestLinkId?: number;
 }
 
 export interface StoreResult {
@@ -62,19 +64,31 @@ export async function storeUpload(deps: MediaDeps, asin: string, upload: UploadI
   }
 
   const size = await store.save(asin, filename, upload.stream, maxBytesFor(info.type));
-  const row = { asin, filename, type: info.type, size };
+  const row = { asin, filename, type: info.type, size, guestLinkId: upload.guestLinkId ?? null };
 
   const register = async (): Promise<StoreResult> => {
     // Read inside the lock: the product may have gained a video while the file was streaming.
     const previous =
       info.type === 'video' ? ((await repo.get(asin))?.media ?? []).filter((m) => m.type === 'video') : [];
+    // A guest may only replace a video that came from its own link, never the owner's (or another guest's).
+    if (upload.guestLinkId !== undefined && previous.some((m) => m.uploaded_via_guest_link_id !== upload.guestLinkId)) {
+      throw new HttpError(409, 'VideoExists', 'The product already has a video');
+    }
     for (const old of previous) await repo.deleteMedia(asin, old.filename);
     let media: MediaRow;
     try {
       media = await repo.addMedia(row);
     } catch (err) {
       for (const old of previous) {
-        await repo.addMedia({ asin, filename: old.filename, type: old.type, size: old.size }).catch(() => undefined);
+        await repo
+          .addMedia({
+            asin,
+            filename: old.filename,
+            type: old.type,
+            size: old.size,
+            guestLinkId: old.uploaded_via_guest_link_id,
+          })
+          .catch(() => undefined);
       }
       throw err;
     }

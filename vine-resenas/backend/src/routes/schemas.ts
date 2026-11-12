@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ESTADOS } from '../domain/types';
 import { UI_FILTERS } from '../domain/listFilter';
+import { DEFAULT_EXPIRY_DAYS, MAX_EXPIRY_DAYS, MAX_GUEST_FEEDBACK_CHARS } from '../services/guestLinkService';
 
 const estrellas = z.number().int().min(1).max(5).nullable();
 
@@ -31,4 +32,12 @@ export const uiListQuerySchema = z.object({
 
 export const apiListQuerySchema = z.object({
   estado: z.enum(ESTADOS).optional(),
+});
+
+export const createGuestLinkSchema = z.object({
+  expiresInDays: z.number().int().min(1).max(MAX_EXPIRY_DAYS).default(DEFAULT_EXPIRY_DAYS),
+});
+
+export const guestFeedbackSchema = z.object({
+  feedback: z.string().max(MAX_GUEST_FEEDBACK_CHARS),
 });

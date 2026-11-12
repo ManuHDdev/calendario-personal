@@ -88,6 +88,48 @@ curl -fsS -X POST -H "$H" "$UI/products/B0FQBYHJ17/publicado"
 The upload response is `{ uploaded: [...], replaced: [filenames], rejected: [{filename,error,message,status}] }`
 (201 if at least one file was stored, otherwise the status of the first rejection).
 
+## Guest links (family feedback without an account)
+
+The owner can hand a relative a link, one per product (ASIN). The relative opens a mobile page, writes an
+opinion and uploads photos/video for that product only, with no Keycloak account.
+
+Owner endpoints (`/vine-resenas/api/ui`, write roles `admin`/`vine_admin`; `vine_invitado` gets 403):
+
+```bash
+curl -fsS -X POST -H "$H" -H 'Content-Type: application/json' -d '{"expiresInDays":14}' "$UI/products/B0FQBYHJ17/guest-links"
+#  -> 201 { id, url: "/vine-resenas/c/<token>", token, expiresAt }   (default 14 days, 1..60; token shown ONCE)
+curl -fsS -H "$H" "$UI/products/B0FQBYHJ17/guest-links"      # [{ id, createdAt, expiresAt, revokedAt, lastUsedAt, status: active|expired|revoked }]
+curl -fsS -X DELETE -H "$H" "$UI/guest-links/12"             # revoke (204, idempotent)
+```
+
+Public endpoints (no auth, `/vine-resenas/api/guest/:token`; the SPA page is `/vine-resenas/c/:token`):
+
+| Method | Path | What |
+|---|---|---|
+| GET | `/:token` | `{ titulo, thumbnail_url, feedback, media[], limits, expiresAt }` |
+| PUT | `/:token/feedback` | `{ feedback }` (max 5000 chars) -> stored in `guest_feedback` |
+| POST | `/:token/media` | multipart `files`, same MIME/size/name validation and per-ASIN video lock as the owner upload |
+| GET | `/:token/media/:filename` | only this link's uploads and the product's cover photo |
+| DELETE | `/:token/media/:filename` | only files uploaded through this same link |
+
+Security model:
+
+- The token is 32 random bytes (base64url, 43 chars). Only its SHA-256 hex is stored (`vine_guest_links.token_hash`);
+  the raw token is returned once at creation and never stored or logged. Request logs show `/guest/[redacted]`
+  and no query string; nginx has `access_log off` for `/vine-resenas/` (and `/vine-resenas/c/` in the frontend image).
+- Unknown, malformed, expired and revoked tokens all give the same `404 NotFound`. A valid link whose product is
+  already `publicado` gives `410 LinkClosed`; creating a link for a published product is a 409.
+- A guest never sees stars, state, reviews, the owner's feedback, other products, or any owner media except the
+  cover photo (the first owner photo). Guest text goes to `vine_products.guest_feedback`, a separate column: it never
+  overwrites `feedback`. The owner UI shows it read-only with an "Añadir a mi feedback" button; `GET /v1/products` includes
+  `guest_feedback`. Media rows carry `uploaded_via_guest_link_id` (exposed as `uploaded_by_guest` to the owner).
+- A guest cannot replace or delete the owner's video or photos: an upload of a video while one exists that this link did not
+  upload is a 409 `VideoExists`.
+- Limits: 30 files per link in total (409 `UploadLimitReached`); 120 requests/min per IP on `/guest/*` and 20 invalid-token
+  lookups per 10 min per IP (then 429). In-memory limiter, single instance. The IP is `request.ip` (`trustProxy: true`), so it is best-effort
+  behind two nginx hops; the token entropy is what protects the links.
+- Revoking a link cuts access immediately; its uploaded files stay on the product and remain visible to the owner.
+
 ## Sync with vine-bot
 
 `POST /v1/products/sync` calls `${VINE_BOT_URL}/productos-pendientes` (default `http://vine-bot:8092`) with

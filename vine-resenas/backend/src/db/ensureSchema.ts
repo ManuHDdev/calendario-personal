@@ -32,6 +32,22 @@ CREATE TABLE IF NOT EXISTS vine_media (
 
 CREATE INDEX IF NOT EXISTS idx_vine_media_asin ON vine_media (asin);
 CREATE INDEX IF NOT EXISTS idx_vine_products_estado ON vine_products (estado);
+
+CREATE TABLE IF NOT EXISTS vine_guest_links (
+  id           SERIAL PRIMARY KEY,
+  asin         VARCHAR(10) NOT NULL REFERENCES vine_products(asin) ON DELETE CASCADE,
+  token_hash   CHAR(64) NOT NULL UNIQUE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at   TIMESTAMPTZ NOT NULL,
+  revoked_at   TIMESTAMPTZ,
+  created_by   TEXT,
+  last_used_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_vine_guest_links_asin ON vine_guest_links (asin);
+
+ALTER TABLE vine_products ADD COLUMN IF NOT EXISTS guest_feedback TEXT NOT NULL DEFAULT '';
+ALTER TABLE vine_media ADD COLUMN IF NOT EXISTS uploaded_via_guest_link_id INTEGER REFERENCES vine_guest_links(id);
 `;
 
 // A product holds at most one video. Kept apart so ensureSchema can dedupe

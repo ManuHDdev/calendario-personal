@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
 import CopyField from '../components/CopyField';
+import GuestLinks from '../components/GuestLinks';
 import MediaGallery from '../components/MediaGallery';
 import StarSelector from '../components/StarSelector';
 import { useAutosave } from '../hooks/useAutosave';
@@ -87,9 +88,28 @@ export function DetailBody({ product, canWrite, reload }: BodyProps) {
             onBlur={() => void flush()}
             aria-label="Feedback"
           />
+          {product.guest_feedback && (
+            <div className="guest-feedback">
+              <h3 className="section-title">Opinión del familiar</h3>
+              <p className="guest-feedback__text">{product.guest_feedback}</p>
+              {editable && (
+                <button
+                  type="button"
+                  className="btn btn--small"
+                  onClick={() => setFeedback((cur) => (cur.trim() ? `${cur.trimEnd()}
+
+` : '') + product.guest_feedback)}
+                >
+                  Añadir a mi feedback
+                </button>
+              )}
+            </div>
+          )}
           <h2 className="section-title">Valoración</h2>
           <StarSelector value={estrellas} onChange={setEstrellas} disabled={!editable} />
         </section>
+
+        {editable && <GuestLinks asin={product.asin} titulo={product.titulo} />}
 
         {showReview && (
           <section>

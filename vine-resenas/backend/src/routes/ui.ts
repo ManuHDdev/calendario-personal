@@ -1,14 +1,23 @@
-import path from 'path';
 import type { FastifyInstance } from 'fastify';
 import { HttpError } from '../errors';
 import { filterProducts } from '../domain/listFilter';
 import { parseAsin, parseStoredFilename } from '../domain/validation';
-import { removeMedia, storeUpload } from '../services/mediaService';
+import { createGuestLink, linkStatus } from '../services/guestLinkService';
+import { removeMedia } from '../services/mediaService';
 import { changeEstado, editProduct, requireProduct } from '../services/productService';
 import type { AppDeps } from './deps';
-import { UI_BASE, presentBare, presentMedia, presentProduct, presentSummary } from './presenters';
-import { contentPatchSchema, uiListQuerySchema } from './schemas';
+import {
+  GUEST_PAGE_BASE,
+  UI_BASE,
+  presentBare,
+  presentGuestLinkAdmin,
+  presentMedia,
+  presentProduct,
+  presentSummary,
+} from './presenters';
+import { contentPatchSchema, createGuestLinkSchema, uiListQuerySchema } from './schemas';
 import { serveMedia } from './serveMedia';
+import { processUploads } from './uploadParts';
 
 /** Routes for the web UI (Keycloak JWT). Mounted under /vine-resenas/api/ui. */
 export function uiRoutes(deps: AppDeps) {
@@ -55,32 +64,8 @@ export function uiRoutes(deps: AppDeps) {
         throw new HttpError(400, 'BadRequest', 'Expected multipart/form-data');
       }
 
-      const uploaded: ReturnType<typeof presentMedia>[] = [];
-      const replaced: string[] = [];
-      const rejected: { filename: string; error: string; message: string; status: number }[] = [];
-
-      for await (const part of request.parts()) {
-        if (part.type !== 'file') continue;
-        try {
-          const result = await storeUpload(deps, asin, {
-            originalName: part.filename,
-            mimetype: part.mimetype,
-            stream: part.file,
-          });
-          uploaded.push(presentMedia(result.media, UI_BASE));
-          replaced.push(...result.replaced);
-        } catch (err) {
-          part.file.resume();
-          const e = err instanceof HttpError ? err : new HttpError(500, 'InternalError', 'Upload failed');
-          if (!(err instanceof HttpError)) request.log.error({ err }, 'media upload failed');
-          rejected.push({
-            filename: path.basename(part.filename ?? '').slice(0, 120),
-            error: e.code,
-            message: e.message,
-            status: e.statusCode,
-          });
-        }
-      }
+      const { uploaded: rows, replaced, rejected } = await processUploads(deps, request, asin);
+      const uploaded = rows.map((m) => presentMedia(m, UI_BASE));
 
       if (uploaded.length === 0) {
         if (rejected.length === 0) throw new HttpError(400, 'BadRequest', 'No files received');
@@ -97,6 +82,37 @@ export function uiRoutes(deps: AppDeps) {
       const filename = parseStoredFilename(params.filename);
       const existed = await removeMedia(deps, asin, filename);
       if (!existed) throw new HttpError(404, 'NotFound', 'Media not found');
+      return reply.code(204).send();
+    });
+
+    // Guest links: the owner hands a per-product URL to a relative without an account (see routes/guest.ts).
+    app.post('/products/:asin/guest-links', { onRequest: auth.write }, async (request, reply) => {
+      const asin = parseAsin((request.params as { asin: string }).asin);
+      const { expiresInDays } = createGuestLinkSchema.parse(request.body ?? {});
+      const user = request.user;
+      const createdBy = user?.preferred_username ?? user?.sub ?? null;
+      const { link, token } = await createGuestLink(repo, asin, { expiresInDays, createdBy });
+      // The raw token is returned exactly once; only its hash is stored.
+      return reply.code(201).send({
+        id: link.id,
+        url: `${GUEST_PAGE_BASE}/${token}`,
+        token,
+        expiresAt: link.expires_at,
+      });
+    });
+
+    app.get('/products/:asin/guest-links', { onRequest: auth.write }, async (request) => {
+      const asin = parseAsin((request.params as { asin: string }).asin);
+      await requireProduct(repo, asin);
+      const now = new Date();
+      return (await repo.listGuestLinks(asin)).map((l) => presentGuestLinkAdmin(l, linkStatus(l, now)));
+    });
+
+    app.delete('/guest-links/:id', { onRequest: auth.write }, async (request, reply) => {
+      const id = Number((request.params as { id: string }).id);
+      if (!Number.isSafeInteger(id) || id < 1) throw new HttpError(400, 'BadRequest', 'Invalid link id');
+      const revoked = await repo.revokeGuestLink(id);
+      if (!revoked) throw new HttpError(404, 'NotFound', 'Guest link not found');
       return reply.code(204).send();
     });
 
