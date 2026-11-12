@@ -1,5 +1,5 @@
 import keycloak from './keycloak';
-import type { Counts, Product, ProductSummary, UploadResult } from '../types';
+import type { Counts, CreatedGuestLink, GuestLinkInfo, Product, ProductSummary, UploadResult } from '../types';
 
 const BASE = '/vine-resenas/api/ui';
 
@@ -98,3 +98,14 @@ export async function uploadMedia(
     xhr.send(form);
   });
 }
+
+export const createGuestLink = (asin: string, expiresInDays?: number) =>
+  request<CreatedGuestLink>(`/products/${encodeURIComponent(asin)}/guest-links`, {
+    method: 'POST',
+    body: JSON.stringify(expiresInDays ? { expiresInDays } : {}),
+  });
+
+export const listGuestLinks = (asin: string) =>
+  request<GuestLinkInfo[]>(`/products/${encodeURIComponent(asin)}/guest-links`);
+
+export const revokeGuestLink = (id: number) => request<void>(`/guest-links/${id}`, { method: 'DELETE' });

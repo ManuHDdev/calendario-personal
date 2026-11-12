@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import keycloak from './services/keycloak';
 import App from './App';
 import { canRead } from './lib/roles';
+import GuestPage from './pages/GuestPage';
+import { isGuestPath, tokenFromPath } from './services/guestApi';
 import './styles/globals.css';
 import './styles/app.css';
 
@@ -15,51 +17,61 @@ root.render(
   </div>,
 );
 
-keycloak
-  .init({ onLoad: 'login-required', checkLoginIframe: false })
-  .then((authenticated) => {
-    if (!authenticated) {
-      keycloak.login();
-      return;
-    }
+// Public guest page (/vine-resenas/c/<token>): a relative with no account. It must never touch Keycloak,
+// so this branch runs before keycloak.init() and renders on its own.
+if (isGuestPath(window.location.pathname)) {
+  root.render(
+    <StrictMode>
+      <GuestPage token={tokenFromPath(window.location.pathname)} />
+    </StrictMode>,
+  );
+} else {
+  keycloak
+    .init({ onLoad: 'login-required', checkLoginIframe: false })
+    .then((authenticated) => {
+      if (!authenticated) {
+        keycloak.login();
+        return;
+      }
 
-    // Keep the token fresh: media URLs carry it as ?token=.
-    keycloak.onTokenExpired = () => {
-      keycloak.updateToken(30).catch(() => keycloak.login());
-    };
+      // Keep the token fresh: media URLs carry it as ?token=.
+      keycloak.onTokenExpired = () => {
+        keycloak.updateToken(30).catch(() => keycloak.login());
+      };
 
-    const roles: string[] =
-      (keycloak.tokenParsed as { realm_access?: { roles?: string[] } })?.realm_access?.roles ?? [];
+      const roles: string[] =
+        (keycloak.tokenParsed as { realm_access?: { roles?: string[] } })?.realm_access?.roles ?? [];
 
-    if (!canRead(roles)) {
+      if (!canRead(roles)) {
+        root.render(
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            height: '100vh', gap: 16, fontFamily: 'system-ui, sans-serif',
+          }}>
+            <p style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Acceso denegado</p>
+            <p style={{ fontSize: 14, color: '#8e8e93', margin: 0 }}>No tienes permiso para Vine Reseñas.</p>
+            <button
+              onClick={() => keycloak.logout()}
+              style={{ marginTop: 8, padding: '10px 20px', fontSize: 14, background: '#0071e3', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+            >
+              Cerrar sesión
+            </button>
+          </div>,
+        );
+        return;
+      }
+
       root.render(
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          height: '100vh', gap: 16, fontFamily: 'system-ui, sans-serif',
-        }}>
-          <p style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Acceso denegado</p>
-          <p style={{ fontSize: 14, color: '#8e8e93', margin: 0 }}>No tienes permiso para Vine Reseñas.</p>
-          <button
-            onClick={() => keycloak.logout()}
-            style={{ marginTop: 8, padding: '10px 20px', fontSize: 14, background: '#0071e3', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}
-          >
-            Cerrar sesión
-          </button>
+        <StrictMode>
+          <App />
+        </StrictMode>,
+      );
+    })
+    .catch(() => {
+      root.render(
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
+          <p style={{ color: '#ff3b30' }}>Error al conectar con el servidor de autenticación.</p>
         </div>,
       );
-      return;
-    }
-
-    root.render(
-      <StrictMode>
-        <App />
-      </StrictMode>,
-    );
-  })
-  .catch(() => {
-    root.render(
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'system-ui, sans-serif' }}>
-        <p style={{ color: '#ff3b30' }}>Error al conectar con el servidor de autenticación.</p>
-      </div>,
-    );
-  });
+    });
+}

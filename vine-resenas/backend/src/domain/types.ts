@@ -8,6 +8,8 @@ export interface Product {
   titulo: string;
   descripcion: string;
   feedback: string;
+  /** Text written by a relative through a guest link. Separate from `feedback`; the owner copies it over by hand. */
+  guest_feedback: string;
   estrellas: number | null;
   estado: Estado;
   resena_producto: string;
@@ -24,7 +26,21 @@ export interface MediaRow {
   type: MediaType;
   size: number;
   created_at: string;
+  /** Guest link that uploaded this file; null for the owner's own media. */
+  uploaded_via_guest_link_id: number | null;
 }
+
+export interface GuestLink {
+  id: number;
+  asin: string;
+  created_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  created_by: string | null;
+  last_used_at: string | null;
+}
+
+export type GuestLinkStatus = 'active' | 'expired' | 'revoked';
 
 export interface ProductWithMedia extends Product {
   media: MediaRow[];

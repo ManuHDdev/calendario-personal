@@ -1,8 +1,11 @@
-import type { MediaRow, Product, ProductWithMedia } from '../domain/types';
+import type { GuestLink, GuestLinkStatus, MediaRow, Product, ProductWithMedia } from '../domain/types';
 
 export const API_PREFIX = '/vine-resenas/api';
 export const UI_BASE = `${API_PREFIX}/ui`;
 export const V1_BASE = `${API_PREFIX}/v1`;
+export const GUEST_BASE = `${API_PREFIX}/guest`;
+/** SPA page a relative opens (served by the frontend, not the API). */
+export const GUEST_PAGE_BASE = '/vine-resenas/c';
 
 export function mediaUrl(base: string, asin: string, filename: string): string {
   return `${base}/media/${asin}/${filename}`;
@@ -15,7 +18,20 @@ export function presentMedia(m: MediaRow, base: string) {
     type: m.type,
     size: m.size,
     created_at: m.created_at,
+    uploaded_by_guest: m.uploaded_via_guest_link_id != null,
     url: mediaUrl(base, m.asin, m.filename),
+  };
+}
+
+/** Owner-side view of a guest link. Never carries the token (only its hash is stored). */
+export function presentGuestLinkAdmin(l: GuestLink, status: GuestLinkStatus) {
+  return {
+    id: l.id,
+    createdAt: l.created_at,
+    expiresAt: l.expires_at,
+    revokedAt: l.revoked_at,
+    lastUsedAt: l.last_used_at,
+    status,
   };
 }
 

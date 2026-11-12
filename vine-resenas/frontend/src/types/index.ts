@@ -20,6 +20,7 @@ export interface Media {
   type: MediaType;
   size: number;
   created_at: string;
+  uploaded_by_guest?: boolean;
   url: string;
 }
 
@@ -28,6 +29,7 @@ export interface Product {
   titulo: string;
   descripcion: string;
   feedback: string;
+  guest_feedback?: string;
   estrellas: number | null;
   estado: Estado;
   resena_producto: string;
@@ -51,4 +53,33 @@ export interface UploadResult {
   uploaded: Media[];
   replaced: string[];
   rejected: { filename: string; error: string; message: string; status: number }[];
+}
+
+export type GuestLinkStatus = 'active' | 'expired' | 'revoked';
+
+export interface GuestLinkInfo {
+  id: number;
+  createdAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  lastUsedAt: string | null;
+  status: GuestLinkStatus;
+}
+
+export interface CreatedGuestLink {
+  id: number;
+  /** Path of the public page (no origin). Shown once, together with the token. */
+  url: string;
+  token: string;
+  expiresAt: string;
+}
+
+/** What the public guest page may see. */
+export interface GuestView {
+  titulo: string;
+  thumbnail_url: string | null;
+  feedback: string;
+  media: { filename: string; type: MediaType; size: number; url: string }[];
+  limits: { maxFiles: number; used: number };
+  expiresAt: string;
 }

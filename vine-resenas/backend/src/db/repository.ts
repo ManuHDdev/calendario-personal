@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 import type {
   Estado,
+  GuestLink,
   MediaRow,
   MediaType,
   NewProduct,
@@ -22,27 +23,48 @@ export interface ProductRepository {
     asin: string,
     r: { resena_producto: string; resena_resumida: string; resena_extendida: string },
   ): Promise<Product | null>;
-  addMedia(m: { asin: string; filename: string; type: MediaType; size: number }): Promise<MediaRow>;
+  addMedia(m: {
+    asin: string;
+    filename: string;
+    type: MediaType;
+    size: number;
+    guestLinkId?: number | null;
+  }): Promise<MediaRow>;
   getMedia(asin: string, filename: string): Promise<MediaRow | null>;
   deleteMedia(asin: string, filename: string): Promise<boolean>;
   counts(): Promise<Record<Estado, number>>;
+
+  // Guest links (the raw token is never stored: only its SHA-256 hex).
+  createGuestLink(l: { asin: string; tokenHash: string; expiresAt: Date; createdBy: string | null }): Promise<GuestLink>;
+  listGuestLinks(asin: string): Promise<GuestLink[]>;
+  findGuestLinkByHash(tokenHash: string): Promise<GuestLink | null>;
+  /** Sets revoked_at (kept if already revoked). Returns null when the link does not exist. */
+  revokeGuestLink(id: number): Promise<GuestLink | null>;
+  touchGuestLink(id: number): Promise<void>;
+  countGuestMedia(linkId: number): Promise<number>;
+  setGuestFeedback(asin: string, text: string): Promise<void>;
 }
 
-const PRODUCT_COLS = `p.asin, p.titulo, p.descripcion, p.feedback, p.estrellas, p.estado,
+const PRODUCT_COLS = `p.asin, p.titulo, p.descripcion, p.feedback, p.guest_feedback, p.estrellas, p.estado,
   p.resena_producto, p.resena_resumida, p.resena_extendida, p.created_at, p.updated_at`;
 
 const WITH_MEDIA = `
   SELECT ${PRODUCT_COLS},
     COALESCE(
       json_agg(json_build_object('id', m.id, 'asin', m.asin, 'filename', m.filename,
-                                 'type', m.type, 'size', m.size, 'created_at', m.created_at)
+                                 'type', m.type, 'size', m.size, 'created_at', m.created_at,
+                                 'uploaded_via_guest_link_id', m.uploaded_via_guest_link_id)
                ORDER BY m.id) FILTER (WHERE m.id IS NOT NULL),
       '[]'::json) AS media
   FROM vine_products p
   LEFT JOIN vine_media m ON m.asin = p.asin`;
 
-const RETURN_PRODUCT = `RETURNING asin, titulo, descripcion, feedback, estrellas, estado,
+const RETURN_PRODUCT = `RETURNING asin, titulo, descripcion, feedback, guest_feedback, estrellas, estado,
   resena_producto, resena_resumida, resena_extendida, created_at, updated_at`;
+
+const MEDIA_COLS = 'id, asin, filename, type, size::float8 AS size, created_at, uploaded_via_guest_link_id';
+
+const LINK_COLS = 'id, asin, created_at, expires_at, revoked_at, created_by, last_used_at';
 
 const EDITABLE: (keyof ProductPatch)[] = ['titulo', 'descripcion', 'feedback', 'estrellas'];
 
@@ -123,11 +145,17 @@ export class PgProductRepository implements ProductRepository {
     return (rows[0] as Product) ?? null;
   }
 
-  async addMedia(m: { asin: string; filename: string; type: MediaType; size: number }): Promise<MediaRow> {
+  async addMedia(m: {
+    asin: string;
+    filename: string;
+    type: MediaType;
+    size: number;
+    guestLinkId?: number | null;
+  }): Promise<MediaRow> {
     const { rows } = await this.pool.query(
-      `INSERT INTO vine_media (asin, filename, type, size) VALUES ($1, $2, $3, $4)
-       RETURNING id, asin, filename, type, size::float8 AS size, created_at`,
-      [m.asin, m.filename, m.type, m.size],
+      `INSERT INTO vine_media (asin, filename, type, size, uploaded_via_guest_link_id) VALUES ($1, $2, $3, $4, $5)
+       RETURNING ${MEDIA_COLS}`,
+      [m.asin, m.filename, m.type, m.size, m.guestLinkId ?? null],
     );
     await this.pool.query('UPDATE vine_products SET updated_at = NOW() WHERE asin = $1', [m.asin]);
     return rows[0] as MediaRow;
@@ -135,8 +163,7 @@ export class PgProductRepository implements ProductRepository {
 
   async getMedia(asin: string, filename: string): Promise<MediaRow | null> {
     const { rows } = await this.pool.query(
-      `SELECT id, asin, filename, type, size::float8 AS size, created_at
-       FROM vine_media WHERE asin = $1 AND filename = $2`,
+      `SELECT ${MEDIA_COLS} FROM vine_media WHERE asin = $1 AND filename = $2`,
       [asin, filename],
     );
     return (rows[0] as MediaRow) ?? null;
@@ -155,5 +182,61 @@ export class PgProductRepository implements ProductRepository {
     const out: Record<Estado, number> = { pendiente: 0, listo: 0, resena_generada: 0, publicado: 0 };
     for (const r of rows as { estado: Estado; n: number }[]) out[r.estado] = r.n;
     return out;
+  }
+
+  async createGuestLink(l: {
+    asin: string;
+    tokenHash: string;
+    expiresAt: Date;
+    createdBy: string | null;
+  }): Promise<GuestLink> {
+    const { rows } = await this.pool.query(
+      `INSERT INTO vine_guest_links (asin, token_hash, expires_at, created_by) VALUES ($1, $2, $3, $4)
+       RETURNING ${LINK_COLS}`,
+      [l.asin, l.tokenHash, l.expiresAt, l.createdBy],
+    );
+    return rows[0] as GuestLink;
+  }
+
+  async listGuestLinks(asin: string): Promise<GuestLink[]> {
+    const { rows } = await this.pool.query(
+      `SELECT ${LINK_COLS} FROM vine_guest_links WHERE asin = $1 ORDER BY id DESC`,
+      [asin],
+    );
+    return rows as GuestLink[];
+  }
+
+  async findGuestLinkByHash(tokenHash: string): Promise<GuestLink | null> {
+    const { rows } = await this.pool.query(`SELECT ${LINK_COLS} FROM vine_guest_links WHERE token_hash = $1`, [
+      tokenHash,
+    ]);
+    return (rows[0] as GuestLink) ?? null;
+  }
+
+  async revokeGuestLink(id: number): Promise<GuestLink | null> {
+    const { rows } = await this.pool.query(
+      `UPDATE vine_guest_links SET revoked_at = COALESCE(revoked_at, NOW()) WHERE id = $1 RETURNING ${LINK_COLS}`,
+      [id],
+    );
+    return (rows[0] as GuestLink) ?? null;
+  }
+
+  async touchGuestLink(id: number): Promise<void> {
+    await this.pool.query('UPDATE vine_guest_links SET last_used_at = NOW() WHERE id = $1', [id]);
+  }
+
+  async countGuestMedia(linkId: number): Promise<number> {
+    const { rows } = await this.pool.query(
+      'SELECT COUNT(*)::int AS n FROM vine_media WHERE uploaded_via_guest_link_id = $1',
+      [linkId],
+    );
+    return (rows[0] as { n: number }).n;
+  }
+
+  async setGuestFeedback(asin: string, text: string): Promise<void> {
+    await this.pool.query('UPDATE vine_products SET guest_feedback = $2, updated_at = NOW() WHERE asin = $1', [
+      asin,
+      text,
+    ]);
   }
 }

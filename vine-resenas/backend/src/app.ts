@@ -5,25 +5,29 @@ import { ZodError } from 'zod';
 import { VIDEO_MAX_BYTES } from './domain/validation';
 import { HttpError } from './errors';
 import { registrarParserJsonToleranteAVacio } from './jsonBody';
+import { redactUrl } from './logRedaction';
 import { apiRoutes } from './routes/api';
 import type { AppDeps } from './routes/deps';
-import { API_PREFIX } from './routes/presenters';
+import { guestRoutes, type GuestRateLimits } from './routes/guest';
+import { API_PREFIX, GUEST_BASE } from './routes/presenters';
 import { uiRoutes } from './routes/ui';
 
 export interface BuildOptions {
   corsOrigins?: string[];
+  /** Overrides the /guest rate limits (tests). */
+  guestLimits?: GuestRateLimits;
 }
 
 /** Builds the Fastify app. Everything external (DB, disk, bot, auth) comes in through `deps`. */
 export async function buildApp(deps: AppDeps, options: BuildOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({
     // Never log headers; the request serializer drops the query string because
-    // media URLs may carry ?token=<jwt>.
+    // media URLs may carry ?token=<jwt>, and it redacts the guest-link secret in /guest/<token> paths.
     logger: deps.logger
       ? {
           level: 'info',
           serializers: {
-            req: (req: { method: string; url: string }) => ({ method: req.method, url: req.url.split('?')[0] }),
+            req: (req: { method: string; url: string }) => ({ method: req.method, url: redactUrl(req.url) }),
           },
         }
       : false,
@@ -71,6 +75,7 @@ export async function buildApp(deps: AppDeps, options: BuildOptions = {}): Promi
 
   await app.register(uiRoutes(deps), { prefix: `${API_PREFIX}/ui` });
   await app.register(apiRoutes(deps), { prefix: `${API_PREFIX}/v1` });
+  await app.register(guestRoutes(deps, options.guestLimits), { prefix: GUEST_BASE });
 
   return app;
 }
