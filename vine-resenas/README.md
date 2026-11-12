@@ -17,7 +17,6 @@ and a state, plus an API so Claude can read and write everything.
 | `listo` | UI button / `POST /ui/products/:asin/listo` / `PUT /v1/products/:asin {estado:"listo"}`. Requires non-empty feedback and stars. |
 | `resena_generada` | Only via `PUT /v1/products/:asin/resena` (also allowed again from `resena_generada` to rewrite). `PUT /v1/products/:asin {estado:"resena_generada"}` is rejected with 409, except to reopen a `publicado` product. |
 | `publicado` | `POST .../publicado` (UI or API), and only from `resena_generada` (409 otherwise). `PUT /v1/products/:asin {estado:"publicado"}` is rejected with 409. A published product can only be reopened to `resena_generada`. |
-
 | `en_espera` | Stand-by for products that already have feedback/media/stars but are not ready: UI button "Poner en espera" / `POST /ui/products/:asin/espera` / `PUT /v1/products/:asin {estado:"en_espera"}`. Allowed only from `pendiente` and `listo`. Nothing is cleared. Leaving: UI "Sacar de espera" / `POST /ui/products/:asin/reanudar` goes to `listo` when feedback and stars are present, else `pendiente`; via `PUT` it may go to `pendiente` or `listo` (listo keeps the usual 409 `ProductIncomplete` rule). Excluded from every other list view; the Monday sync never touches it (sync only inserts unknown ASINs). |
 
 `PUT /v1/products/:asin` can set `estado` only among `pendiente`, `listo` and `en_espera`.

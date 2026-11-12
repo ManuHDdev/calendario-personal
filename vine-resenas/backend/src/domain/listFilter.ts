@@ -40,8 +40,6 @@ export function filterProducts(products: ProductWithMedia[], query: ListQuery): 
         return p.estado === 'listo';
       case 'resena_generada':
         return p.estado === 'resena_generada';
-      case 'en_espera':
-        return true;
       default:
         return true;
     }
