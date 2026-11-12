@@ -20,6 +20,15 @@ describe('syncProducts', () => {
     expect(repo.products.get('BBBBBBBBBB')).toMatchObject({ titulo: 'New', estado: 'pendiente' });
   });
 
+  it('never resets or duplicates an en_espera product', async () => {
+    const repo = new FakeRepo();
+    repo.seed({ asin: 'AAAAAAAAAA', titulo: 'Parked', feedback: 'fb', estrellas: 4, estado: 'en_espera' });
+    const fetcher = async () => [{ asin: 'AAAAAAAAAA', titulo: 'From bot', descripcion: 'd' }];
+    expect(await syncProducts(repo, fetcher, config)).toEqual({ created: [], skipped: 1 });
+    expect(repo.products.size).toBe(1);
+    expect(repo.products.get('AAAAAAAAAA')).toMatchObject({ titulo: 'Parked', feedback: 'fb', estrellas: 4, estado: 'en_espera' });
+  });
+
   it('fails with 503 "VINE_BOT_TOKEN not configured" before calling the bot when there is no token', async () => {
     const fetcher = vi.fn(async () => []);
     await expect(syncProducts(new FakeRepo(), fetcher, { botUrl: 'http://vine-bot:8092' })).rejects.toMatchObject({

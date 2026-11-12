@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HttpError } from '../errors';
-import { assertCanStoreReview, assertEstadoViaPut, assertTransition, canTransition, isReadyForReview } from './state';
+import { assertCanStoreReview, assertEstadoViaPut, assertTransition, canTransition, isReadyForReview, resumeTarget } from './state';
 
 const ready = { feedback: 'good', estrellas: 4 };
 const empty = { feedback: '', estrellas: null };
@@ -51,6 +51,27 @@ describe('state machine', () => {
       expect(e).toBeInstanceOf(HttpError);
       expect((e as HttpError).statusCode).toBe(409);
     }
+  });
+  it('parks pendiente and listo in en_espera and lets them out to pendiente or listo', () => {
+    expect(canTransition('pendiente', 'en_espera')).toBe(true);
+    expect(canTransition('listo', 'en_espera')).toBe(true);
+    expect(canTransition('en_espera', 'pendiente')).toBe(true);
+    expect(canTransition('en_espera', 'listo')).toBe(true);
+    expect(canTransition('resena_generada', 'en_espera')).toBe(false);
+    expect(canTransition('publicado', 'en_espera')).toBe(false);
+    expect(canTransition('en_espera', 'resena_generada')).toBe(false);
+    expect(canTransition('en_espera', 'publicado')).toBe(false);
+    expect(() => assertTransition({ estado: 'resena_generada', ...ready }, 'en_espera')).toThrow(/Cannot move/);
+    expect(() => assertEstadoViaPut('listo', 'en_espera')).not.toThrow();
+  });
+  it('keeps the listo preconditions when leaving en_espera', () => {
+    expect(() => assertTransition({ estado: 'en_espera', ...empty }, 'listo')).toThrow(/required/);
+    expect(() => assertTransition({ estado: 'en_espera', ...ready }, 'listo')).not.toThrow();
+    expect(() => assertTransition({ estado: 'en_espera', ...empty }, 'pendiente')).not.toThrow();
+  });
+  it('resumes to listo when ready, pendiente otherwise', () => {
+    expect(resumeTarget(ready)).toBe('listo');
+    expect(resumeTarget(empty)).toBe('pendiente');
   });
   it('refuses to store a review on a published product only', () => {
     expect(() => assertCanStoreReview({ estado: 'publicado' })).toThrow(HttpError);

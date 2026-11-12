@@ -26,6 +26,7 @@ const data = [
   p({ asin: 'CCCCCCCCCC', titulo: 'Lampara', estado: 'listo', media: [photo], feedback: 'x', estrellas: 3 }),
   p({ asin: 'DDDDDDDDDD', titulo: 'Reloj', estado: 'resena_generada', media: [photo], feedback: 'x', estrellas: 3 }),
   p({ asin: 'EEEEEEEEEE', titulo: 'Viejo', estado: 'publicado' }),
+  p({ asin: 'FFFFFFFFFF', titulo: 'Parado', estado: 'en_espera', media: [photo], feedback: 'x', estrellas: 2 }),
 ];
 const asins = (r: ProductWithMedia[]) => r.map((x) => x.asin[0]);
 
@@ -35,6 +36,13 @@ describe('filterProducts', () => {
   });
   it('returns only publicado when asked', () => {
     expect(asins(filterProducts(data, { estado: 'publicado' }))).toEqual(['E']);
+  });
+  it('keeps en_espera out of every other view and shows it only under its own filter', () => {
+    expect(asins(filterProducts(data, {}))).not.toContain('F');
+    expect(asins(filterProducts(data, { filter: 'falta_feedback' }))).not.toContain('F');
+    expect(asins(filterProducts(data, { estado: 'publicado' }))).toEqual(['E']);
+    expect(asins(filterProducts(data, { filter: 'en_espera' }))).toEqual(['F']);
+    expect(asins(filterProducts(data, { filter: 'en_espera', q: 'nada' }))).toEqual([]);
   });
   it('searches title and ASIN case-insensitively', () => {
     expect(asins(filterProducts(data, { q: 'usb' }))).toEqual(['A']);

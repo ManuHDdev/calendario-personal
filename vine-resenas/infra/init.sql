@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS vine_products (
   feedback         TEXT NOT NULL DEFAULT '',
   estrellas        SMALLINT CHECK (estrellas BETWEEN 1 AND 5),
   estado           TEXT NOT NULL DEFAULT 'pendiente'
-                   CHECK (estado IN ('pendiente', 'listo', 'resena_generada', 'publicado')),
+                   CHECK (estado IN ('pendiente', 'listo', 'en_espera', 'resena_generada', 'publicado')),
   resena_producto  TEXT NOT NULL DEFAULT '',
   resena_resumida  TEXT NOT NULL DEFAULT '',
   resena_extendida TEXT NOT NULL DEFAULT '',

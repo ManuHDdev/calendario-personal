@@ -6,6 +6,11 @@ import type { Estado, Product } from './types';
  *
  *   pendiente --> listo --> resena_generada --> publicado
  *
+ *   en_espera (stand-by) <-> pendiente and <-> listo. A parked product keeps all
+ *   its feedback/media/stars. Leaving en_espera is allowed to pendiente or listo
+ *   (listo needs feedback + stars like always; the "resume" action picks listo
+ *   when the product is ready and pendiente otherwise).
+ *
  * - `listo` is set only by a user/Claude through an explicit action (listo
  *   endpoint or PUT estado), never as a side effect of autosaving.
  * - `resena_generada` is reached ONLY through the review endpoint
@@ -14,8 +19,9 @@ import type { Estado, Product } from './types';
  *   endpoint; it can be reopened to `resena_generada` if marked by mistake.
  */
 const ALLOWED: Record<Estado, readonly Estado[]> = {
-  pendiente: ['listo'],
-  listo: ['pendiente'],
+  pendiente: ['listo', 'en_espera'],
+  listo: ['pendiente', 'en_espera'],
+  en_espera: ['pendiente', 'listo'],
   resena_generada: ['pendiente', 'listo', 'publicado'],
   publicado: ['resena_generada'],
 };
@@ -48,6 +54,11 @@ export function assertTransition(
   }
 }
 
+/** Where "Sacar de espera" lands: listo when the product meets the listo preconditions, pendiente otherwise. */
+export function resumeTarget(p: Pick<Product, 'feedback' | 'estrellas'>): Estado {
+  return isReadyForReview(p) ? 'listo' : 'pendiente';
+}
+
 /** The review endpoint never touches an already published product. */
 export function assertCanStoreReview(product: Pick<Product, 'estado'>): void {
   if (product.estado === 'publicado') {
@@ -57,12 +68,12 @@ export function assertCanStoreReview(product: Pick<Product, 'estado'>): void {
 
 /**
  * Extra rule for the free-form `estado` of `PUT /v1/products/:asin`: it may only
- * move among pendiente/listo. `resena_generada` and `publicado` have dedicated
+ * move among pendiente/listo/en_espera. `resena_generada` and `publicado` have dedicated
  * endpoints; the one exception is reopening a published product back to
  * `resena_generada`, which has no other route.
  */
 export function assertEstadoViaPut(from: Estado, to: Estado): void {
-  if (from === to || to === 'pendiente' || to === 'listo') return;
+  if (from === to || to === 'pendiente' || to === 'listo' || to === 'en_espera') return;
   if (to === 'resena_generada' && from === 'publicado') return;
   const via = to === 'publicado' ? 'POST .../publicado' : 'PUT .../resena';
   throw new HttpError(409, 'InvalidTransition', `estado ${to} cannot be set via PUT; use ${via}`);

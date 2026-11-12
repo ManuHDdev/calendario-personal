@@ -4,7 +4,7 @@ import { filterProducts } from '../domain/listFilter';
 import { parseAsin, parseStoredFilename } from '../domain/validation';
 import { createGuestLink, linkStatus } from '../services/guestLinkService';
 import { removeMedia } from '../services/mediaService';
-import { changeEstado, editProduct, requireProduct } from '../services/productService';
+import { changeEstado, editProduct, requireProduct, resumeFromEspera } from '../services/productService';
 import type { AppDeps } from './deps';
 import {
   GUEST_PAGE_BASE,
@@ -31,7 +31,7 @@ export function uiRoutes(deps: AppDeps) {
 
     app.get('/counts', { onRequest: auth.read }, async () => {
       const c = await repo.counts();
-      const total = c.pendiente + c.listo + c.resena_generada + c.publicado;
+      const total = c.pendiente + c.listo + c.en_espera + c.resena_generada + c.publicado;
       return { ...c, pendientes: c.pendiente, total };
     });
 
@@ -50,6 +50,16 @@ export function uiRoutes(deps: AppDeps) {
     app.post('/products/:asin/listo', { onRequest: auth.write }, async (request) => {
       const asin = parseAsin((request.params as { asin: string }).asin);
       return presentBare(await changeEstado(repo, asin, 'listo'));
+    });
+
+    app.post('/products/:asin/espera', { onRequest: auth.write }, async (request) => {
+      const asin = parseAsin((request.params as { asin: string }).asin);
+      return presentBare(await changeEstado(repo, asin, 'en_espera'));
+    });
+
+    app.post('/products/:asin/reanudar', { onRequest: auth.write }, async (request) => {
+      const asin = parseAsin((request.params as { asin: string }).asin);
+      return presentBare(await resumeFromEspera(repo, asin));
     });
 
     app.post('/products/:asin/publicado', { onRequest: auth.write }, async (request) => {

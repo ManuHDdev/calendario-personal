@@ -1,4 +1,4 @@
-export const ESTADOS = ['pendiente', 'listo', 'resena_generada', 'publicado'] as const;
+export const ESTADOS = ['pendiente', 'listo', 'en_espera', 'resena_generada', 'publicado'] as const;
 export type Estado = (typeof ESTADOS)[number];
 
 export type MediaType = 'photo' | 'video';
