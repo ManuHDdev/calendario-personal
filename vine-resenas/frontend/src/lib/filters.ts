@@ -6,11 +6,13 @@ export const FILTER_CHIPS: { value: UiFilter; label: string }[] = [
   { value: 'falta_feedback', label: 'Falta feedback' },
   { value: 'listos', label: 'Listos' },
   { value: 'resena_generada', label: 'Reseña generada' },
+  { value: 'en_espera', label: 'En espera' },
 ];
 
 export const ESTADO_LABEL: Record<Estado, string> = {
   pendiente: 'Pendiente',
   listo: 'Listo',
+  en_espera: 'En espera',
   resena_generada: 'Reseña generada',
   publicado: 'Publicado',
 };

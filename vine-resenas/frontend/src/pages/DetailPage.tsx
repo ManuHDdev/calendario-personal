@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import AppHeader from '../components/AppHeader';
+import AsinLink from '../components/AsinLink';
 import CopyField from '../components/CopyField';
 import GuestLinks from '../components/GuestLinks';
 import MediaGallery from '../components/MediaGallery';
 import StarSelector from '../components/StarSelector';
 import { useAutosave } from '../hooks/useAutosave';
 import { ESTADO_LABEL } from '../lib/filters';
-import { getProduct, markListo, markPublicado, saveContent } from '../services/api';
+import { safeFrom } from '../lib/listState';
+import { getProduct, markEspera, markListo, markPublicado, markReanudar, saveContent } from '../services/api';
 import type { Product } from '../types';
 
 interface BodyProps {
@@ -60,7 +62,7 @@ export function DetailBody({ product, canWrite, reload }: BodyProps) {
         <div className="detail-head">
           <h2 className="detail-title">{product.titulo || product.asin}</h2>
           <p className="muted small">
-            {product.asin} · <span className="badge badge--neutral">{ESTADO_LABEL[estado]}</span>
+            <AsinLink asin={product.asin} /> · <span className="badge badge--neutral">{ESTADO_LABEL[estado]}</span>
           </p>
           {product.descripcion && (
             <>
@@ -122,10 +124,22 @@ export function DetailBody({ product, canWrite, reload }: BodyProps) {
         {actionError && <p className="error" role="alert">{actionError}</p>}
       </main>
 
-      {canWrite && estado === 'pendiente' && (
+      {canWrite && (estado === 'pendiente' || estado === 'listo') && (
+        <div className={estado === 'pendiente' ? 'action-bar action-bar--split' : 'action-bar'}>
+          {estado === 'pendiente' && (
+            <button type="button" className="btn btn--primary" disabled={busy} onClick={() => void act(() => markListo(product.asin))}>
+              Marcar como listo
+            </button>
+          )}
+          <button type="button" className="btn" disabled={busy} onClick={() => void act(() => markEspera(product.asin))}>
+            Poner en espera
+          </button>
+        </div>
+      )}
+      {canWrite && estado === 'en_espera' && (
         <div className="action-bar">
-          <button type="button" className="btn btn--primary btn--block" disabled={busy} onClick={() => void act(() => markListo(product.asin))}>
-            Marcar como listo
+          <button type="button" className="btn btn--primary btn--block" disabled={busy} onClick={() => void act(() => markReanudar(product.asin))}>
+            Sacar de espera
           </button>
         </div>
       )}
@@ -142,6 +156,8 @@ export function DetailBody({ product, canWrite, reload }: BodyProps) {
 
 export default function DetailPage({ canWrite }: { canWrite: boolean }) {
   const { asin = '' } = useParams();
+  // The list passes where it was (tab + search) in router state; opening the URL directly falls back to the list.
+  const backTo = safeFrom((useLocation().state as { from?: unknown } | null)?.from) ?? '/';
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,7 +176,7 @@ export default function DetailPage({ canWrite }: { canWrite: boolean }) {
 
   return (
     <div className="page">
-      <AppHeader title="Producto" backTo="/" />
+      <AppHeader title="Producto" backTo={backTo} />
       {error && <p className="error content">{error}</p>}
       {!product && !error && <p className="muted content">Cargando…</p>}
       {product && <DetailBody key={product.asin} product={product} canWrite={canWrite} reload={reload} />}

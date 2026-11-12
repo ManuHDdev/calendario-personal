@@ -1,6 +1,6 @@
-export type Estado = 'pendiente' | 'listo' | 'resena_generada' | 'publicado';
+export type Estado = 'pendiente' | 'listo' | 'en_espera' | 'resena_generada' | 'publicado';
 export type MediaType = 'photo' | 'video';
-export type UiFilter = 'todos' | 'faltan_fotos' | 'falta_feedback' | 'listos' | 'resena_generada';
+export type UiFilter = 'todos' | 'faltan_fotos' | 'falta_feedback' | 'listos' | 'resena_generada' | 'en_espera';
 
 export interface ProductSummary {
   asin: string;
@@ -43,6 +43,7 @@ export interface Product {
 export interface Counts {
   pendiente: number;
   listo: number;
+  en_espera: number;
   resena_generada: number;
   publicado: number;
   pendientes: number;

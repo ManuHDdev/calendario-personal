@@ -9,6 +9,8 @@ vi.mock('../services/api', () => ({
   withToken: (u: string | null) => u ?? '',
   saveContent: vi.fn().mockResolvedValue({}),
   markListo: vi.fn().mockResolvedValue({}),
+  markEspera: vi.fn().mockResolvedValue({}),
+  markReanudar: vi.fn().mockResolvedValue({}),
   markPublicado: vi.fn().mockResolvedValue({}),
   uploadMedia: vi.fn(),
   deleteMedia: vi.fn(),
@@ -113,6 +115,41 @@ describe('DetailBody role gating and states', () => {
     expect(screen.getAllByRole('button', { name: 'Copiar' })).toHaveLength(3);
     await userEvent.click(screen.getByRole('button', { name: 'Marcar como publicado' }));
     await waitFor(() => expect(api.markPublicado).toHaveBeenCalledWith('B0TEST'));
+  });
+
+  it('pendiente and listo can be put on hold; en_espera can be resumed', async () => {
+    const { unmount } = renderBody(product(), true);
+    await userEvent.click(screen.getByRole('button', { name: 'Poner en espera' }));
+    await waitFor(() => expect(api.markEspera).toHaveBeenCalledWith('B0TEST'));
+    unmount();
+    const second = renderBody(product({ estado: 'listo' }), true);
+    expect(screen.getByRole('button', { name: 'Poner en espera' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Marcar como listo' })).toBeNull();
+    second.unmount();
+    renderBody(product({ estado: 'en_espera' }), true);
+    expect(screen.queryByRole('button', { name: 'Poner en espera' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Sacar de espera' }));
+    await waitFor(() => expect(api.markReanudar).toHaveBeenCalledWith('B0TEST'));
+    // content stays editable while parked
+    expect(screen.getByLabelText('Feedback')).not.toHaveAttribute('readonly');
+  });
+
+  it('read-only users get no stand-by controls', () => {
+    renderBody(product({ estado: 'en_espera' }), false);
+    expect(screen.queryByRole('button', { name: 'Sacar de espera' })).toBeNull();
+  });
+
+  it('the detail ASIN links to amazon.es in a new tab', () => {
+    renderBody(product({ asin: 'B0FQBYHJ17' }), true);
+    const link = screen.getByRole('link', { name: 'B0FQBYHJ17' });
+    expect(link).toHaveAttribute('href', 'https://www.amazon.es/dp/B0FQBYHJ17');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('a malformed ASIN is shown as plain text, never as a link', () => {
+    renderBody(product({ asin: 'B0TEST' }), true);
+    expect(screen.queryByRole('link', { name: 'B0TEST' })).toBeNull();
   });
 
   it('publicado is read-only even for writers', () => {
