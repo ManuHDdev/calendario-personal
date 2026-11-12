@@ -28,6 +28,9 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+		<!-- Spring Boot 3.5.0 manages Testcontainers 1.21.0, whose docker-java client speaks API 1.32;
+		     Docker Engine 29 (ubuntu-latest runners) rejects anything below 1.40. 1.21.4 fixes it. -->
+		<testcontainers.version>1.21.4</testcontainers.version>
 	</properties>
 	<dependencies>
 		<dependency>
