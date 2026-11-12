@@ -96,6 +96,20 @@ describe('runImport', () => {
     expect((await runImport({ reviews: rev }, deps)).reviewsApplied).toBe(0);
   });
 
+  it('leaves en_espera products untouched in the reviews step', async () => {
+    const txt = await write('p.txt', TXT);
+    const rev = await write('r.txt', 'Producto: x\nASIN: B0H4P6M1DF\nReseña resumida: corta\nReseña extendida: larga');
+    const repo = new FakeRepo();
+    const deps = { repo, store: new FakeStore() };
+    await runImport({ txt }, deps);
+    repo.products.get('B0H4P6M1DF')!.estado = 'en_espera';
+    const before = { ...repo.products.get('B0H4P6M1DF')! };
+    const res = await runImport({ reviews: rev }, deps);
+    expect(res.reviewsApplied).toBe(0);
+    expect(repo.products.get('B0H4P6M1DF')).toEqual(before);
+    expect((await runImport({ reviews: rev }, deps)).reviewsApplied).toBe(0);
+  });
+
   it('imports media from image folders without duplicating on re-runs and skips junk', async () => {
     await write('img/B0FQBYHJ17 - Brochetas/foto1.jpg', 'AAA');
     await write('img/B0FQBYHJ17 - Brochetas/foto1-copy.jpeg', 'AAA'); // same content

@@ -73,8 +73,10 @@ describe('state machine', () => {
     expect(resumeTarget(ready)).toBe('listo');
     expect(resumeTarget(empty)).toBe('pendiente');
   });
-  it('refuses to store a review on a published product only', () => {
+  it('refuses to store a review on a published or en_espera product', () => {
     expect(() => assertCanStoreReview({ estado: 'publicado' })).toThrow(HttpError);
+    expect(() => assertCanStoreReview({ estado: 'en_espera' })).toThrow(/stand-by/);
+    expect(() => assertCanStoreReview({ estado: 'listo' })).not.toThrow();
     expect(() => assertCanStoreReview({ estado: 'pendiente' })).not.toThrow();
     expect(() => assertCanStoreReview({ estado: 'resena_generada' })).not.toThrow();
   });

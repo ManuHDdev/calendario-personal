@@ -116,6 +116,10 @@ export async function runImport(opts: ImportOptions, deps: ImportDeps): Promise<
         continue;
       }
       if (existing.estado === 'publicado') continue;
+      if (existing.estado === 'en_espera') {
+        log(`review ${r.asin} skipped (en_espera)`);
+        continue;
+      }
       if (existing.resena_resumida || existing.resena_extendida) continue;
       if (!r.resena_resumida && !r.resena_extendida) continue;
       if (!dry) {

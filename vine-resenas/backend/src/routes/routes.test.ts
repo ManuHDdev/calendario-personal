@@ -179,6 +179,21 @@ describe('Claude API', () => {
     expect(again.statusCode).toBe(409);
   });
 
+  it('resena on an en_espera product is 409 and leaves the product untouched', async () => {
+    repo.products.get(ASIN)!.estado = 'en_espera';
+    repo.products.get(ASIN)!.feedback = 'fb';
+    repo.products.get(ASIN)!.estrellas = 4;
+    const before = { ...repo.products.get(ASIN)! };
+    const res = await app.inject({
+      method: 'PUT', url: `${API}/products/${ASIN}/resena`, headers: auth,
+      payload: { resena_producto: 'p', resena_resumida: 'r', resena_extendida: 'e' },
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json()).toMatchObject({ error: 'InvalidTransition' });
+    expect(res.json().message).toMatch(/stand-by/);
+    expect(repo.products.get(ASIN)).toEqual(before);
+  });
+
   it('answers 404 for unknown products and 400 for bad ASINs', async () => {
     expect((await app.inject({ url: `${API}/products/ZZZZZZZZZZ`, headers: auth })).statusCode).toBe(404);
     expect((await app.inject({ url: `${API}/products/bad`, headers: auth })).statusCode).toBe(400);
