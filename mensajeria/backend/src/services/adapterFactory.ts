@@ -1,6 +1,7 @@
 import type { CallSendInput, ChannelAdapter, EmailSendInput, Mode, SmsSendInput } from '../adapters/types';
 import { MockEmailAdapter } from '../adapters/email/mockEmailAdapter';
 import { SendgridEmailAdapter } from '../adapters/email/sendgridEmailAdapter';
+import { VpsSmtpEmailAdapter } from '../adapters/email/vpsSmtpEmailAdapter';
 import { MockSmsAdapter } from '../adapters/sms/mockSmsAdapter';
 import { TwilioSmsAdapter } from '../adapters/sms/twilioSmsAdapter';
 import { MockCallAdapter } from '../adapters/call/mockCallAdapter';
@@ -21,8 +22,13 @@ function getMode(env: NodeJS.ProcessEnv = process.env): Mode {
 }
 
 export function getEmailAdapter(env: NodeJS.ProcessEnv = process.env): ChannelAdapter<EmailSendInput> {
-  if (getMode(env) === 'real' && env.SENDGRID_API_KEY) {
-    return new SendgridEmailAdapter(env.SENDGRID_API_KEY, env.SENDGRID_FROM_EMAIL);
+  if (getMode(env) === 'real') {
+    if (env.SENDGRID_API_KEY) {
+      return new SendgridEmailAdapter(env.SENDGRID_API_KEY, env.SENDGRID_FROM_EMAIL);
+    }
+    const relayHost = env.MENSAJERIA_RELAY_HOST ?? 'host.docker.internal';
+    const relayPort = Number(env.MENSAJERIA_RELAY_PORT) || 2525;
+    return new VpsSmtpEmailAdapter(relayHost, relayPort);
   }
   return new MockEmailAdapter();
 }
