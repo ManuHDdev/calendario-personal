@@ -103,12 +103,18 @@ export function mimeForExtension(ext: string): string | undefined {
   return undefined;
 }
 
+/** 1073741824 -> "1 GB", 26214400 -> "25 MB". */
+export function formatLimit(bytes: number): string {
+  const gb = 1024 * 1024 * 1024;
+  return bytes >= gb ? `${bytes / gb} GB` : `${bytes / (1024 * 1024)} MB`;
+}
+
 export function assertSizeAllowed(type: MediaType, size: number): void {
   if (size > maxBytesFor(type)) {
     throw new HttpError(
       413,
       'PayloadTooLarge',
-      `File too large: ${type} limit is ${maxBytesFor(type) / (1024 * 1024)} MB`,
+      `File too large: ${type} limit is ${formatLimit(maxBytesFor(type))}`,
     );
   }
 }

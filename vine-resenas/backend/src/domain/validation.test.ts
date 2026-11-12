@@ -5,6 +5,7 @@ import {
   PHOTO_MAX_BYTES,
   VIDEO_MAX_BYTES,
   assertSizeAllowed,
+  formatLimit,
   classifyUpload,
   generateFilename,
   isValidStoredFilename,
@@ -69,7 +70,7 @@ describe('size limits', () => {
     expect(maxBytesFor('video')).toBe(1024 * 1024 * 1024);
   });
   it('accepts up to the limit and rejects above with 413', () => {
-    expect.assertions(5);
+    expect.assertions(7);
     expect(() => assertSizeAllowed('photo', PHOTO_MAX_BYTES)).not.toThrow();
     expect(() => assertSizeAllowed('video', VIDEO_MAX_BYTES)).not.toThrow();
     expect(() => assertSizeAllowed('photo', PHOTO_MAX_BYTES + 1)).toThrow(HttpError);
@@ -78,7 +79,14 @@ describe('size limits', () => {
     } catch (e) {
       expect((e as HttpError).statusCode).toBe(413);
       expect((e as HttpError).code).toBe('PayloadTooLarge');
+      expect((e as HttpError).message).toContain('limit is 1 GB');
     }
+    expect(() => assertSizeAllowed('photo', PHOTO_MAX_BYTES + 1)).toThrow(/limit is 25 MB/);
+  });
+
+  it('formats limits for error messages', () => {
+    expect(formatLimit(1024 * 1024 * 1024)).toBe('1 GB');
+    expect(formatLimit(25 * 1024 * 1024)).toBe('25 MB');
   });
 });
 

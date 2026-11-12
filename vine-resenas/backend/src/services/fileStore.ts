@@ -3,13 +3,7 @@ import path from 'path';
 import { Readable, Transform } from 'stream';
 import { pipeline } from 'stream/promises';
 import { HttpError } from '../errors';
-import { resolveMediaPath } from '../domain/validation';
-
-/** 1073741824 -> "1 GB", 26214400 -> "25 MB". */
-export function formatLimit(bytes: number): string {
-  const gb = 1024 * 1024 * 1024;
-  return bytes >= gb ? `${bytes / gb} GB` : `${bytes / (1024 * 1024)} MB`;
-}
+import { formatLimit, resolveMediaPath } from '../domain/validation';
 
 /** Port over the media files on disk. Tests use an in-memory fake. */
 export interface FileStore {
