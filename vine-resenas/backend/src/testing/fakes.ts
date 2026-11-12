@@ -148,7 +148,7 @@ export class FakeRepo implements ProductRepository {
     if (p) p.guest_feedback = text;
   }
   async counts() {
-    const out: Record<Estado, number> = { pendiente: 0, listo: 0, resena_generada: 0, publicado: 0 };
+    const out: Record<Estado, number> = { pendiente: 0, listo: 0, en_espera: 0, resena_generada: 0, publicado: 0 };
     for (const p of this.products.values()) out[p.estado]++;
     return out;
   }

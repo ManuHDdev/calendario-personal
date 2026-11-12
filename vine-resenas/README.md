@@ -10,15 +10,16 @@ and a state, plus an API so Claude can read and write everything.
 
 ## State machine
 
-`pendiente -> listo -> resena_generada -> publicado`
+`pendiente -> listo -> resena_generada -> publicado`, plus the stand-by state `en_espera` (see below)
 
 | Transition | How |
 | --- | --- |
 | `listo` | UI button / `POST /ui/products/:asin/listo` / `PUT /v1/products/:asin {estado:"listo"}`. Requires non-empty feedback and stars. |
 | `resena_generada` | Only via `PUT /v1/products/:asin/resena` (also allowed again from `resena_generada` to rewrite). `PUT /v1/products/:asin {estado:"resena_generada"}` is rejected with 409, except to reopen a `publicado` product. |
 | `publicado` | `POST .../publicado` (UI or API), and only from `resena_generada` (409 otherwise). `PUT /v1/products/:asin {estado:"publicado"}` is rejected with 409. A published product can only be reopened to `resena_generada`. |
+| `en_espera` | Stand-by for products that already have feedback/media/stars but are not ready: UI button "Poner en espera" / `POST /ui/products/:asin/espera` / `PUT /v1/products/:asin {estado:"en_espera"}`. Allowed only from `pendiente` and `listo`. Nothing is cleared. Leaving: UI "Sacar de espera" / `POST /ui/products/:asin/reanudar` goes to `listo` when feedback and stars are present, else `pendiente`; via `PUT` it may go to `pendiente` or `listo` (listo keeps the usual 409 `ProductIncomplete` rule). Excluded from every other list view; the Monday sync never touches it (sync only inserts unknown ASINs). |
 
-`PUT /v1/products/:asin` can set `estado` only among `pendiente` and `listo`.
+`PUT /v1/products/:asin` can set `estado` only among `pendiente`, `listo` and `en_espera`.
 
 The autosaving `PUT /ui/products/:asin` edits `titulo/descripcion/feedback/estrellas` only and never changes `estado`.
 
@@ -41,7 +42,7 @@ Errors are always `{ "error": "...", "message": "..." }`.
 export BASE=https://elbunkerdelingeniero.duckdns.org/vine-resenas/api/v1
 export VINE_API_TOKEN="$(sudo cat /root/.vine-api-token)"   # example: read it from a root-only file
 
-# List (optionally ?estado=pendiente|listo|resena_generada|publicado). Includes media[].url (absolute paths).
+# List (optionally ?estado=pendiente|listo|en_espera|resena_generada|publicado). Includes media[].url (absolute paths).
 curl -fsS -H "Authorization: Bearer $VINE_API_TOKEN" "$BASE/products?estado=listo"
 
 # One product
@@ -50,7 +51,7 @@ curl -fsS -H "Authorization: Bearer $VINE_API_TOKEN" "$BASE/products/B0FQBYHJ17"
 # Download a media file (supports Range)
 curl -fsS -H "Authorization: Bearer $VINE_API_TOKEN" -o foto.jpg "$BASE/media/B0FQBYHJ17/1731300000000-a1b2c3d4.jpg"
 
-# Update fields and/or state (estado here: only pendiente <-> listo)
+# Update fields and/or state (estado here: only pendiente / listo / en_espera)
 curl -fsS -X PUT -H "Authorization: Bearer $VINE_API_TOKEN" -H 'Content-Type: application/json' \
   -d '{"feedback":"Funciona muy bien","estrellas":5,"estado":"listo"}' "$BASE/products/B0FQBYHJ17"
 
@@ -74,8 +75,8 @@ Read: `admin`, `vine_admin`, `vine_invitado`. Write: `admin`, `vine_admin`.
 export UI=https://elbunkerdelingeniero.duckdns.org/vine-resenas/api/ui
 H="Authorization: Bearer $KEYCLOAK_ACCESS_TOKEN"
 
-curl -fsS -H "$H" "$UI/products?filter=faltan_fotos&q=cable"   # filter: todos|faltan_fotos|falta_feedback|listos|resena_generada; estado=publicado shows published
-curl -fsS -H "$H" "$UI/counts"                                  # { pendiente, listo, resena_generada, publicado, pendientes, total }
+curl -fsS -H "$H" "$UI/products?filter=faltan_fotos&q=cable"   # filter: todos|faltan_fotos|falta_feedback|listos|resena_generada|en_espera; estado=publicado shows published
+curl -fsS -H "$H" "$UI/counts"                                  # { pendiente, listo, en_espera, resena_generada, publicado, pendientes, total }
 curl -fsS -H "$H" "$UI/products/B0FQBYHJ17"
 curl -fsS -X PUT -H "$H" -H 'Content-Type: application/json' -d '{"feedback":"...","estrellas":4}' "$UI/products/B0FQBYHJ17"
 curl -fsS -X POST -H "$H" -F files=@a.jpg -F files=@b.png -F files=@clip.mp4 "$UI/products/B0FQBYHJ17/media"
@@ -83,6 +84,8 @@ curl -fsS -X DELETE -H "$H" "$UI/products/B0FQBYHJ17/media/1731300000000-a1b2c3d
 curl -fsS -H "$H" -o x.jpg "$UI/media/B0FQBYHJ17/1731300000000-a1b2c3d4.jpg"   # or ...?token=<jwt> for <img>/<video>
 curl -fsS -X POST -H "$H" "$UI/products/B0FQBYHJ17/listo"
 curl -fsS -X POST -H "$H" "$UI/products/B0FQBYHJ17/publicado"
+curl -fsS -X POST -H "$H" "$UI/products/B0FQBYHJ17/espera"      # stand-by (from pendiente/listo)
+curl -fsS -X POST -H "$H" "$UI/products/B0FQBYHJ17/reanudar"    # out of stand-by -> listo if ready, else pendiente
 ```
 
 The upload response is `{ uploaded: [...], replaced: [filenames], rejected: [{filename,error,message,status}] }`
@@ -183,3 +186,4 @@ docker run --rm -v vine_resenas_data:/data:ro -v "$PWD":/backup alpine tar czf /
 `PORT` (3018), `VINE_RESENAS_DB_HOST|PORT|NAME|USER|PASSWORD` (`VINE_RESENAS_DB_PORT` is used for local dev, 5447), `KEYCLOAK_CERTS_URL`, `CORS_ORIGIN` (default `https://elbunkerdelingeniero.duckdns.org` and `http://localhost:5193`), `DATA_DIR` (`/data`),
 `VINE_API_TOKEN` (required for the API), `VINE_BOT_URL`, `VINE_BOT_TOKEN` (required for sync). See `backend/.env.example`.
 The schema is created by `backend/src/db/ensureSchema.ts` on every start and by `infra/init.sql` on a fresh volume (keep them identical; a test checks it).
+Databases created before `en_espera` still carry the old `CHECK (estado IN (...))`; since `CREATE TABLE IF NOT EXISTS` never alters an existing table, `ensureSchema` also runs `ESTADO_CONSTRAINT_SQL` on every start: one atomic `DO` block that does nothing when the `estado` CHECK already lists `en_espera`, and otherwise drops the old `estado` CHECK and recreates `vine_products_estado_check` with the superset of values (existing rows stay valid, no data moves). Not needed in `init.sql` (a fresh table already has the new CHECK).

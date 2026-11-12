@@ -1,6 +1,6 @@
 import { HttpError } from '../errors';
 import type { ProductRepository } from '../db/repository';
-import { assertCanStoreReview, assertTransition } from '../domain/state';
+import { assertCanStoreReview, assertTransition, resumeTarget } from '../domain/state';
 import type { Estado, Product, ProductPatch, ProductWithMedia } from '../domain/types';
 
 export async function requireProduct(repo: ProductRepository, asin: string): Promise<ProductWithMedia> {
@@ -24,6 +24,15 @@ export async function changeEstado(repo: ProductRepository, asin: string, to: Es
   const updated = await repo.setEstado(asin, to);
   if (!updated) throw new HttpError(404, 'NotFound', `Product ${asin} not found`);
   return updated;
+}
+
+/** "Sacar de espera": en_espera -> listo when feedback+stars are present, else pendiente. */
+export async function resumeFromEspera(repo: ProductRepository, asin: string): Promise<Product> {
+  const current = await requireProduct(repo, asin);
+  if (current.estado !== 'en_espera') {
+    throw new HttpError(409, 'InvalidTransition', `Cannot resume from ${current.estado}; product is not en_espera`);
+  }
+  return changeEstado(repo, asin, resumeTarget(current));
 }
 
 export async function storeResena(

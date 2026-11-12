@@ -179,7 +179,7 @@ export class PgProductRepository implements ProductRepository {
 
   async counts(): Promise<Record<Estado, number>> {
     const { rows } = await this.pool.query('SELECT estado, COUNT(*)::int AS n FROM vine_products GROUP BY estado');
-    const out: Record<Estado, number> = { pendiente: 0, listo: 0, resena_generada: 0, publicado: 0 };
+    const out: Record<Estado, number> = { pendiente: 0, listo: 0, en_espera: 0, resena_generada: 0, publicado: 0 };
     for (const r of rows as { estado: Estado; n: number }[]) out[r.estado] = r.n;
     return out;
   }

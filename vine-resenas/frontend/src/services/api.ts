@@ -58,6 +58,12 @@ export const saveContent = (asin: string, patch: { feedback?: string; estrellas?
 export const markListo = (asin: string) =>
   request<unknown>(`/products/${encodeURIComponent(asin)}/listo`, { method: 'POST' });
 
+export const markEspera = (asin: string) =>
+  request<unknown>(`/products/${encodeURIComponent(asin)}/espera`, { method: 'POST' });
+
+export const markReanudar = (asin: string) =>
+  request<unknown>(`/products/${encodeURIComponent(asin)}/reanudar`, { method: 'POST' });
+
 export const markPublicado = (asin: string) =>
   request<unknown>(`/products/${encodeURIComponent(asin)}/publicado`, { method: 'POST' });
 

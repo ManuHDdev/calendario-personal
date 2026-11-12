@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import path from 'path';
 import { describe, it, expect, vi } from 'vitest';
-import { ensureSchema, SCHEMA_SQL } from './ensureSchema';
+import { ensureSchema, ESTADO_CONSTRAINT_SQL, SCHEMA_SQL } from './ensureSchema';
 import { pool } from './pool';
 
 vi.mock('./pool', () => ({ pool: { query: vi.fn() } }));
@@ -23,6 +23,23 @@ describe('schema', () => {
     for (const stmt of SCHEMA_SQL.split(';').map((s) => s.trim()).filter(Boolean)) {
       expect(stmt).toMatch(/IF NOT EXISTS/);
     }
+  });
+  it('fresh tables accept en_espera', () => {
+    expect(SCHEMA_SQL).toMatch(/CHECK \(estado IN \('pendiente', 'listo', 'en_espera', 'resena_generada', 'publicado'\)\)/);
+  });
+  it('migrates the legacy estado CHECK conditionally, after the tables exist', async () => {
+    expect(ESTADO_CONSTRAINT_SQL).toMatch(/LIKE '%en_espera%'[\s\S]*RETURN/);
+    expect(ESTADO_CONSTRAINT_SQL).toMatch(/DROP CONSTRAINT/);
+    expect(ESTADO_CONSTRAINT_SQL).toMatch(/ADD CONSTRAINT vine_products_estado_check/);
+    const query = vi.mocked(pool.query) as unknown as ReturnType<typeof vi.fn>;
+    query.mockReset();
+    query.mockResolvedValue({ rows: [] });
+    await ensureSchema();
+    const sqls = query.mock.calls.map((c) => String(c[0]));
+    const create = sqls.findIndex((q) => /CREATE TABLE IF NOT EXISTS vine_products/.test(q));
+    const migrate = sqls.findIndex((q) => q === ESTADO_CONSTRAINT_SQL);
+    expect(create).toBeGreaterThan(-1);
+    expect(migrate).toBeGreaterThan(create);
   });
   it('declares the one-video-per-product partial unique index', () => {
     expect(SCHEMA_SQL).toMatch(/UNIQUE INDEX IF NOT EXISTS vine_media_one_video ON vine_media \(asin\) WHERE type = 'video'/);

@@ -123,6 +123,17 @@ describe('Claude API', () => {
     expect(bad.json()).toMatchObject({ error: 'ValidationError' });
   });
 
+  it('PUT estado=en_espera parks a product and the list filters by it; leaving to listo keeps the 409 rule', async () => {
+    const put = await app.inject({ method: 'PUT', url: `${API}/products/${ASIN}`, headers: auth, payload: { estado: 'en_espera' } });
+    expect(put.json()).toMatchObject({ estado: 'en_espera' });
+    const list = await app.inject({ url: `${API}/products?estado=en_espera`, headers: auth });
+    expect(list.json()).toHaveLength(1);
+    const bad = await app.inject({ method: 'PUT', url: `${API}/products/${ASIN}`, headers: auth, payload: { estado: 'listo' } });
+    expect(bad.statusCode).toBe(409);
+    const ok = await app.inject({ method: 'PUT', url: `${API}/products/${ASIN}`, headers: auth, payload: { estado: 'listo', feedback: 'f', estrellas: 5 } });
+    expect(ok.json()).toMatchObject({ estado: 'listo' });
+  });
+
   it('PUT estado=listo needs feedback and stars (counting the same request)', async () => {
     const fail = await app.inject({ method: 'PUT', url: `${API}/products/${ASIN}`, headers: auth, payload: { estado: 'listo' } });
     expect(fail.statusCode).toBe(409);
@@ -207,6 +218,32 @@ describe('UI routes', () => {
     expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/publicado` })).statusCode).toBe(409);
     repo.products.get(ASIN)!.estado = 'resena_generada';
     expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/publicado` })).json()).toMatchObject({ estado: 'publicado' });
+  });
+
+  it('en_espera: park via /espera, hidden from other views, own filter, count, resume', async () => {
+    await app.inject({ method: 'PUT', url: `${UI}/products/${ASIN}`, payload: { feedback: 'ok', estrellas: 3 } });
+    repo.seed({ asin: 'GGGGGGGGGG', titulo: 'Sin nada' });
+    const park = await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/espera` });
+    expect(park.json()).toMatchObject({ estado: 'en_espera', feedback: 'ok', estrellas: 3 });
+    const all = (await app.inject({ url: `${UI}/products` })).json();
+    expect(all.map((p: { asin: string }) => p.asin)).toEqual(['GGGGGGGGGG']);
+    const parked = (await app.inject({ url: `${UI}/products?filter=en_espera` })).json();
+    expect(parked.map((p: { asin: string }) => p.asin)).toEqual([ASIN]);
+    expect((await app.inject({ url: `${UI}/counts` })).json()).toMatchObject({ en_espera: 1, pendiente: 1, total: 2 });
+    // a ready product resumes to listo
+    expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/reanudar` })).json()).toMatchObject({ estado: 'listo', feedback: 'ok' });
+    // an incomplete product resumes to pendiente
+    await app.inject({ method: 'POST', url: `${UI}/products/GGGGGGGGGG/espera` });
+    expect((await app.inject({ method: 'POST', url: `${UI}/products/GGGGGGGGGG/reanudar` })).json()).toMatchObject({ estado: 'pendiente' });
+    // resuming something that is not parked is a 409
+    expect((await app.inject({ method: 'POST', url: `${UI}/products/GGGGGGGGGG/reanudar` })).statusCode).toBe(409);
+  });
+
+  it('en_espera cannot be entered from resena_generada or publicado', async () => {
+    repo.products.get(ASIN)!.estado = 'resena_generada';
+    expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/espera` })).statusCode).toBe(409);
+    repo.products.get(ASIN)!.estado = 'publicado';
+    expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/espera` })).statusCode).toBe(409);
   });
 
   it('lists summaries, hides publicado, and counts', async () => {

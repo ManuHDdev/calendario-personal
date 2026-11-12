@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS vine_products (
   feedback         TEXT NOT NULL DEFAULT '',
   estrellas        SMALLINT CHECK (estrellas BETWEEN 1 AND 5),
   estado           TEXT NOT NULL DEFAULT 'pendiente'
-                   CHECK (estado IN ('pendiente', 'listo', 'resena_generada', 'publicado')),
+                   CHECK (estado IN ('pendiente', 'listo', 'en_espera', 'resena_generada', 'publicado')),
   resena_producto  TEXT NOT NULL DEFAULT '',
   resena_resumida  TEXT NOT NULL DEFAULT '',
   resena_extendida TEXT NOT NULL DEFAULT '',
@@ -67,8 +67,39 @@ DELETE FROM vine_media m USING vine_media n
 WHERE m.type = 'video' AND n.type = 'video' AND m.asin = n.asin AND m.id < n.id
 RETURNING m.asin, m.filename`;
 
+// Databases created before `en_espera` carry the old inline CHECK (auto-named
+// vine_products_estado_check), and CREATE TABLE IF NOT EXISTS never touches an
+// existing table. Replace it only when it lacks en_espera, atomically inside one
+// DO block (a single statement is a single transaction): the new constraint is a
+// superset of the old one, so every existing row stays valid and no data moves.
+// init.sql does not need it: a fresh table already has the new CHECK.
+export const ESTADO_CONSTRAINT_SQL = `
+DO $$
+DECLARE c RECORD;
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'vine_products'::regclass AND contype = 'c'
+      AND pg_get_constraintdef(oid) LIKE '%estado%' AND pg_get_constraintdef(oid) LIKE '%en_espera%'
+  ) THEN
+    RETURN;
+  END IF;
+  FOR c IN
+    SELECT conname FROM pg_constraint
+    WHERE conrelid = 'vine_products'::regclass AND contype = 'c'
+      AND pg_get_constraintdef(oid) LIKE '%estado%' AND pg_get_constraintdef(oid) LIKE '%pendiente%'
+  LOOP
+    EXECUTE format('ALTER TABLE vine_products DROP CONSTRAINT %I', c.conname);
+  END LOOP;
+  ALTER TABLE vine_products ADD CONSTRAINT vine_products_estado_check
+    CHECK (estado IN ('pendiente', 'listo', 'en_espera', 'resena_generada', 'publicado'));
+END
+$$;
+`;
+
 export async function ensureSchema(): Promise<void> {
   await pool.query(TABLES_SQL);
+  await pool.query(ESTADO_CONSTRAINT_SQL);
   const { rows } = await pool.query(DEDUPE_VIDEOS_SQL);
   for (const r of rows as { asin: string; filename: string }[]) {
     console.warn(`ensureSchema: dropped duplicate video row ${r.asin}/${r.filename} (file left on disk)`);

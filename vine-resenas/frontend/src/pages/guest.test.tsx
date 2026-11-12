@@ -22,6 +22,8 @@ vi.mock('../services/api', () => ({
   withToken: (u: string | null) => u ?? '',
   saveContent: vi.fn().mockResolvedValue({}),
   markListo: vi.fn(),
+  markEspera: vi.fn().mockResolvedValue({}),
+  markReanudar: vi.fn().mockResolvedValue({}),
   markPublicado: vi.fn(),
   uploadMedia: vi.fn(),
   deleteMedia: vi.fn(),
