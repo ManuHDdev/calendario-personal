@@ -64,9 +64,9 @@ describe('classifyUpload', () => {
 });
 
 describe('size limits', () => {
-  it('has 25 MB for photos and 200 MB for videos', () => {
+  it('has 25 MB for photos and 1 GB for videos', () => {
     expect(maxBytesFor('photo')).toBe(25 * 1024 * 1024);
-    expect(maxBytesFor('video')).toBe(200 * 1024 * 1024);
+    expect(maxBytesFor('video')).toBe(1024 * 1024 * 1024);
   });
   it('accepts up to the limit and rejects above with 413', () => {
     expect.assertions(5);

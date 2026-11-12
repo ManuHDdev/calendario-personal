@@ -4,7 +4,7 @@ import { HttpError } from '../errors';
 import type { MediaType } from './types';
 
 export const PHOTO_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
-export const VIDEO_MAX_BYTES = 200 * 1024 * 1024; // 200 MB
+export const VIDEO_MAX_BYTES = 1024 * 1024 * 1024; // 1 GB (phone videos); streamed to disk, never buffered
 
 const ASIN_RE = /^[A-Z0-9]{10}$/;
 // Stored names are always generated server-side: letters, digits, '-' and '_',

@@ -3,7 +3,7 @@ import os from 'os';
 import path from 'path';
 import { Readable } from 'stream';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { FsFileStore } from './fileStore';
+import { FsFileStore, formatLimit } from './fileStore';
 
 let dir: string;
 beforeEach(async () => {
@@ -27,6 +27,11 @@ describe('FsFileStore', () => {
       store.save('B0FQBYHJ17', '1-a.jpg', Readable.from([Buffer.alloc(60), Buffer.alloc(60)]), 100),
     ).rejects.toMatchObject({ statusCode: 413 });
     await expect(fsp.stat(path.join(dir, 'media', 'B0FQBYHJ17', '1-a.jpg'))).rejects.toThrow();
+  });
+
+  it('formats limits for error messages', () => {
+    expect(formatLimit(1024 * 1024 * 1024)).toBe('1 GB');
+    expect(formatLimit(25 * 1024 * 1024)).toBe('25 MB');
   });
 
   it('refuses traversal attempts', async () => {
