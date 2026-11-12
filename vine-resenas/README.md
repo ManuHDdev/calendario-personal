@@ -55,7 +55,7 @@ curl -fsS -H "Authorization: Bearer $VINE_API_TOKEN" -o foto.jpg "$BASE/media/B0
 curl -fsS -X PUT -H "Authorization: Bearer $VINE_API_TOKEN" -H 'Content-Type: application/json' \
   -d '{"feedback":"Funciona muy bien","estrellas":5,"estado":"listo"}' "$BASE/products/B0FQBYHJ17"
 
-# Store the generated review (sets estado = resena_generada)
+# Store the generated review (sets estado = resena_generada; 409 on publicado or en_espera)
 curl -fsS -X PUT -H "Authorization: Bearer $VINE_API_TOKEN" -H 'Content-Type: application/json' \
   -d '{"resena_producto":"...","resena_resumida":"...","resena_extendida":"..."}' "$BASE/products/B0FQBYHJ17/resena"
 
@@ -166,7 +166,7 @@ npm run import:legacy -- --txt productos_vine_pendientes.txt \
 - `--txt`: blocks starting with `Título:`; `ASIN:`, `Descripción:`, `Feedback:` (multi-line until the next key), `Estrellas:`.
   Blocks without ASIN are skipped with a warning. A `[RESEÑA GENERADA]` marker sets `resena_generada`.
 - `--reviews`: blocks separated by `---` with `Producto:`, `ASIN:`, `Reseña resumida:`, `Reseña extendida:`
-  (optional `Reseña del producto:`). Applied only to known, non-published products with no review yet.
+  (optional `Reseña del producto:`). Applied only to known products with no review yet; `publicado` and `en_espera` products are skipped.
   TODO: the legacy files have no `resena_producto` text, so that field stays empty after importing.
 - `--images`: folders `<ASIN> - <name>`; media is stored as `imp-<sha256-prefix>.<ext>` (that is what makes reruns idempotent).
   Folders ending in `- PUBLICADO` create/mark the product as `publicado` and their photos are skipped. A second video for a product is skipped.

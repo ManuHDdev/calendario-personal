@@ -59,10 +59,20 @@ export function resumeTarget(p: Pick<Product, 'feedback' | 'estrellas'>): Estado
   return isReadyForReview(p) ? 'listo' : 'pendiente';
 }
 
-/** The review endpoint never touches an already published product. */
+/**
+ * The review endpoint never touches an already published product, nor a parked one:
+ * en_espera -> resena_generada is forbidden, a product only leaves stand-by via "Sacar de espera".
+ */
 export function assertCanStoreReview(product: Pick<Product, 'estado'>): void {
   if (product.estado === 'publicado') {
     throw new HttpError(409, 'InvalidTransition', 'Product is already publicado');
+  }
+  if (product.estado === 'en_espera') {
+    throw new HttpError(
+      409,
+      'InvalidTransition',
+      'Product is en_espera; take it out of stand-by first (Sacar de espera) before storing a review',
+    );
   }
 }
 
