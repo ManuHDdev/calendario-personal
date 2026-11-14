@@ -1,0 +1,172 @@
+.sim-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.sim-page-head h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.sim-page-head p {
+  margin-top: 6px;
+  max-width: 760px;
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+.sim-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .sim-main {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+.sim-stage-col,
+.sim-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.sim-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+
+.sim-panel--flush {
+  padding: 8px;
+}
+
+.sim-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sim-panel-head h2,
+.sim-explain h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sim-panel-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sim-stage {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--canvas-bg);
+}
+
+.sim-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+}
+
+.sim-stage-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sim-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+}
+
+.sim-explain-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 820px;
+}
+
+.sim-explain-body strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.sim-explain-body .formula {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.sim-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.sim-badge--success {
+  background: color-mix(in srgb, var(--success) 16%, transparent);
+  color: var(--success);
+}
+
+.sim-badge--danger {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+
+.sim-badge--neutral {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.sim-note {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 600px) {
+  .sim-page-head h1 {
+    font-size: 23px;
+  }
+  .sim-panel {
+    padding: 14px;
+  }
+}

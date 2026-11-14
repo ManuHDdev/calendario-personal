@@ -1,0 +1,89 @@
+.chart {
+  width: 100%;
+  min-width: 0;
+}
+
+.chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.chart-grid {
+  stroke: var(--sim-grid);
+  stroke-width: 1;
+}
+
+.chart-axis {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.chart-tick {
+  font-size: 10.5px;
+  fill: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-label {
+  font-size: 11px;
+  fill: var(--text-secondary);
+  font-weight: 500;
+}
+
+.chart-ref {
+  stroke-width: 1.25;
+  stroke-dasharray: 3 4;
+}
+
+.chart-ref-label {
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.chart-bar {
+  transition: height 120ms ease, y 120ms ease;
+}
+
+.chart-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 6px 0 0 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-swatch {
+  width: 16px;
+  height: 0;
+  border-top: 2.5px solid currentColor;
+  border-radius: 2px;
+}
+
+.chart-swatch--dashed {
+  border-top-style: dashed;
+}
+
+.chart-swatch--dot {
+  width: 8px;
+  height: 8px;
+  border: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.chart-swatch--bar {
+  width: 10px;
+  height: 10px;
+  border: none;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.85;
+}

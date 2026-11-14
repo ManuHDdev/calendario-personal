@@ -36,6 +36,7 @@ function appUrls(): Record<string, string> {
     viajes:     local ? 'http://localhost:5192/viajes/'  : '/viajes/',
     semaforos:  local ? 'http://localhost:5191/semaforos/' : '/semaforos/',
     'vine-resenas': local ? 'http://localhost:5193/vine-resenas/' : '/vine-resenas/',
+    simuladores: local ? 'http://localhost:5194/simuladores/' : '/simuladores/',
   };
 }
 
@@ -91,6 +92,9 @@ export class AppLauncher {
     // vine-resenas: gestión de reseñas de Amazon Vine; escritura admin/vine_admin,
     // solo lectura para vine_invitado.
     { id: 'vine-resenas', nombre: 'Vine Reseñas', color: '#d946ef', roles: ['admin', 'vine_admin', 'vine_invitado'], url: '' },
+    // simuladores: simuladores visuales de matemáticas y física, sin backend;
+    // uso exclusivo del propietario.
+    { id: 'simuladores', nombre: 'Simuladores', color: '#7c3aed', roles: ['admin'], url: '' },
   ];
 
   get apps(): App[] {

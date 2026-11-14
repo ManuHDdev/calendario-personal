@@ -43,6 +43,7 @@
 #   vine-resenas backend  →  :3018
 #   vine-resenas frontend →  :5193
 #   PostgreSQL          →  :5447   (vine-resenas)
+#   simuladores frontend  →  :5194  (sin backend)
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -561,6 +562,10 @@ ensure_deps "$SCRIPT_DIR/vine-resenas/frontend"
 start_bg "vine-resenas-frontend :5193" "vine-resenas-frontend.log" "$SCRIPT_DIR/vine-resenas/frontend" \
   npm run dev
 
+ensure_deps "$SCRIPT_DIR/simuladores/frontend"
+start_bg "simuladores-frontend :5194" "simuladores-frontend.log" "$SCRIPT_DIR/simuladores/frontend" \
+  npm run dev
+
 ensure_deps "$SCRIPT_DIR/calendario-frontend"
 start_bg "calendario-frontend :4200" "calendario-frontend.log" "$SCRIPT_DIR/calendario-frontend" \
   npm start
@@ -654,6 +659,9 @@ echo -e "  ${CYAN}Vine Reseñas${NC}"
 echo -e "    Frontend         →  ${BOLD}http://localhost:5193/vine-resenas/${NC}"
 echo -e "    Backend health   →  http://localhost:3018/vine-resenas/api/health"
 echo -e "    ${YELLOW}ℹ  API de Claude (/v1) en local: Authorization: Bearer local-dev-vine-token${NC}"
+echo ""
+echo -e "  ${CYAN}Simuladores${NC} (sin backend, simulaciones en el navegador)"
+echo -e "    Frontend         →  ${BOLD}http://localhost:5194/simuladores/${NC}"
 echo ""
 echo -e "  ${YELLOW}ℹ  Spring Boot puede tardar ~60s más en estar listo.${NC}"
 echo -e "  ${YELLOW}ℹ  Logs en:  $LOGS_DIR/${NC}"

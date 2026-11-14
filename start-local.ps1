@@ -42,6 +42,7 @@
 #   vine-resenas backend  →  :3018
 #   vine-resenas frontend →  :5193
 #   PostgreSQL          →  :5447   (vine-resenas)
+#   simuladores frontend  →  :5194  (sin backend)
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -594,6 +595,10 @@ EnsureDeps (Join-Path $SCRIPT_DIR "vine-resenas\frontend")
 StartBackground "vine-resenas-frontend    :5193" "vine-resenas-frontend.log" `
   (Join-Path $SCRIPT_DIR "vine-resenas\frontend") "npm run dev"
 
+EnsureDeps (Join-Path $SCRIPT_DIR "simuladores\frontend")
+StartBackground "simuladores-frontend     :5194" "simuladores-frontend.log" `
+  (Join-Path $SCRIPT_DIR "simuladores\frontend") "npm run dev"
+
 if ($HAS_MVN) {
   EnsureDeps (Join-Path $SCRIPT_DIR "calendario-frontend")
   StartBackground "calendario-frontend :4200" "calendario-frontend.log" `
@@ -691,6 +696,9 @@ Write-Host "  Vine Resenas" -ForegroundColor Cyan
 Write-Host "    Frontend         ->  http://localhost:5193/vine-resenas/"
 Write-Host "    Backend health   ->  http://localhost:3018/vine-resenas/api/health"
 Write-Host "    API de Claude (/v1) en local: Authorization: Bearer local-dev-vine-token" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  Simuladores (sin backend, simulaciones en el navegador)" -ForegroundColor Cyan
+Write-Host "    Frontend         ->  http://localhost:5194/simuladores/"
 Write-Host ""
 Write-Host "  Logs  ->  $LOGS_DIR\" -ForegroundColor Yellow
 Write-Host "  El backend de Spring Boot puede tardar ~30-60s en estar listo." -ForegroundColor Yellow
