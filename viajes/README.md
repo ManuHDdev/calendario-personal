@@ -64,7 +64,7 @@ subapps); delegated roles are assigned from Panel.
 | GET | `/trips/:id/distance-matrix?ids=a,b,c&profile&road=true` | 2-10 places; straight-line always, road via OSRM `/table` |
 | GET | `/trips/:id/places/:placeId/nearest-lodging?road=false&profile` | lodgings ranked by distance |
 | GET | `/trips/:id/export.gpx`, `/trips/:id/export.ics` | file downloads |
-| GET | `/geocode/search?q=`, `/geocode/reverse?lat&lng` | Nominatim proxy |
+| GET | `/geocode/search?q=&viewbox=&countrycodes=`, `/geocode/reverse?lat&lng` | Nominatim proxy; `viewbox` = `west,north,east,south` (map view, ranking bias only) |
 | GET | `/health` | open |
 
 All delete operations are soft deletes (`activo=false`, `deleted_at`).
@@ -103,6 +103,27 @@ family planning tool, not for heavy use. To avoid depending on them, point the
 Nominatim policy is honoured: max 1 request/s (calls are serialised), an
 identifying `User-Agent`, and every distinct query is cached in `geocode_cache`.
 Empty results are not cached.
+
+**Place search (POI-aware).** `/geocode/search` asks Nominatim for up to 8 hits
+with `addressdetails` and `namedetails`. Each hit carries `name` (the place's own
+name, Spanish when available), `locality` ("Versalles, Francia"), the raw OSM
+`category`/`type`, a normalized `kind` (`alojamiento` | `interes` | `comida` |
+`otro`, see `backend/src/lib/placeKind.ts`) and a Spanish `kindLabel` ("Museo").
+Hits older than this (cached with only `lat/lng/displayName`) are still valid and
+are completed on read.
+
+- The optional `viewbox` (current map bounds) is sent with `bounded=0`: results
+  inside the view rank higher but nothing is excluded. It is rounded outwards to
+  0.1 degree and included in the cache key (`s2:<query>|vb:...`), so nearby map
+  positions share a cache entry. `countrycodes` (comma-separated ISO codes) is
+  also accepted.
+- Near-identical hits (same name within ~150 m) are merged, and a relevant POI is
+  ranked above a generic administrative area ("Palacio de Versalles" before the
+  town "Versalles"). Cities are never dropped, so searching a city still works.
+- No search-as-you-type (forbidden by the Nominatim usage policy): the UI searches
+  on explicit submit only. Picking a result fills the place name with the POI name,
+  sets the type from `kind` (unless the user already chose one by hand) and moves
+  the map.
 
 ## Database
 
