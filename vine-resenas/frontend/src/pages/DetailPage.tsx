@@ -54,7 +54,9 @@ export function DetailBody({ product, canWrite, reload }: BodyProps) {
   };
 
   const { estado } = product;
-  const showReview = estado === 'resena_generada' || estado === 'publicado';
+  const hasReview = Boolean(product.resena_producto || product.resena_resumida || product.resena_extendida);
+  // A product published by hand straight from listo has no generated review: do not show empty copy fields.
+  const showReview = estado === 'resena_generada' || (estado === 'publicado' && hasReview);
 
   return (
     <>
@@ -125,10 +127,15 @@ export function DetailBody({ product, canWrite, reload }: BodyProps) {
       </main>
 
       {canWrite && (estado === 'pendiente' || estado === 'listo') && (
-        <div className={estado === 'pendiente' ? 'action-bar action-bar--split' : 'action-bar'}>
+        <div className="action-bar action-bar--split">
           {estado === 'pendiente' && (
             <button type="button" className="btn btn--primary" disabled={busy} onClick={() => void act(() => markListo(product.asin))}>
               Marcar como listo
+            </button>
+          )}
+          {estado === 'listo' && (
+            <button type="button" className="btn btn--primary" disabled={busy} onClick={() => void act(() => markPublicado(product.asin))}>
+              Marcar como publicado
             </button>
           )}
           <button type="button" className="btn" disabled={busy} onClick={() => void act(() => markEspera(product.asin))}>

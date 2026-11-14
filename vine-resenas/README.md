@@ -10,13 +10,13 @@ and a state, plus an API so Claude can read and write everything.
 
 ## State machine
 
-`pendiente -> listo -> resena_generada -> publicado`, plus the stand-by state `en_espera` (see below)
+`pendiente -> listo -> resena_generada -> publicado` (a `listo` product may also go straight to `publicado` when published by hand without a generated review), plus the stand-by state `en_espera` (see below)
 
 | Transition | How |
 | --- | --- |
 | `listo` | UI button / `POST /ui/products/:asin/listo` / `PUT /v1/products/:asin {estado:"listo"}`. Requires non-empty feedback and stars. |
 | `resena_generada` | Only via `PUT /v1/products/:asin/resena` (also allowed again from `resena_generada` to rewrite). `PUT /v1/products/:asin {estado:"resena_generada"}` is rejected with 409, except to reopen a `publicado` product. |
-| `publicado` | `POST .../publicado` (UI or API), and only from `resena_generada` (409 otherwise). `PUT /v1/products/:asin {estado:"publicado"}` is rejected with 409. A published product can only be reopened to `resena_generada`. |
+| `publicado` | `POST .../publicado` (UI or API), and only from `listo` or `resena_generada` (409 from `pendiente`/`en_espera`). `PUT /v1/products/:asin {estado:"publicado"}` is rejected with 409. A published product can only be reopened to `resena_generada` or `listo` (use `listo` when it was published by hand and has no stored review). |
 | `en_espera` | Stand-by for products that already have feedback/media/stars but are not ready: UI button "Poner en espera" / `POST /ui/products/:asin/espera` / `PUT /v1/products/:asin {estado:"en_espera"}`. Allowed only from `pendiente` and `listo`. Nothing is cleared. Leaving: UI "Sacar de espera" / `POST /ui/products/:asin/reanudar` goes to `listo` when feedback and stars are present, else `pendiente`; via `PUT` it may go to `pendiente` or `listo` (listo keeps the usual 409 `ProductIncomplete` rule). Excluded from every other list view; the Monday sync never touches it (sync only inserts unknown ASINs). |
 
 `PUT /v1/products/:asin` can set `estado` only among `pendiente`, `listo` and `en_espera`.
@@ -59,7 +59,7 @@ curl -fsS -X PUT -H "Authorization: Bearer $VINE_API_TOKEN" -H 'Content-Type: ap
 curl -fsS -X PUT -H "Authorization: Bearer $VINE_API_TOKEN" -H 'Content-Type: application/json' \
   -d '{"resena_producto":"...","resena_resumida":"...","resena_extendida":"..."}' "$BASE/products/B0FQBYHJ17/resena"
 
-# Mark as published (only from resena_generada, otherwise 409)
+# Mark as published (only from listo or resena_generada, otherwise 409)
 curl -fsS -X POST -H "Authorization: Bearer $VINE_API_TOKEN" "$BASE/products/B0FQBYHJ17/publicado"
 
 # Sync new pending products from vine-bot -> { "created": ["B0..."], "skipped": 3 }

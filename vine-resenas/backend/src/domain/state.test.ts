@@ -14,8 +14,9 @@ describe('state machine', () => {
     expect(canTransition('pendiente', 'resena_generada')).toBe(false);
     expect(canTransition('listo', 'resena_generada')).toBe(false);
     expect(canTransition('pendiente', 'publicado')).toBe(false);
-    expect(canTransition('listo', 'publicado')).toBe(false);
-    expect(() => assertTransition({ estado: 'listo', ...ready }, 'publicado')).toThrow(/only a product in resena_generada/);
+    expect(canTransition('en_espera', 'publicado')).toBe(false);
+    expect(() => assertTransition({ estado: 'pendiente', ...ready }, 'publicado')).toThrow(/only a product in listo or resena_generada/);
+    expect(() => assertTransition({ estado: 'en_espera', ...ready }, 'publicado')).toThrow(HttpError);
   });
   it('limits PUT estado to pendiente/listo (plus reopening a published product)', () => {
     expect(() => assertEstadoViaPut('pendiente', 'listo')).not.toThrow();
@@ -25,13 +26,18 @@ describe('state machine', () => {
     expect(() => assertEstadoViaPut('pendiente', 'resena_generada')).toThrow(HttpError);
     expect(() => assertEstadoViaPut('resena_generada', 'publicado')).toThrow(/POST \.\.\.\/publicado/);
   });
+  it('allows publishing by hand straight from listo', () => {
+    expect(canTransition('listo', 'publicado')).toBe(true);
+    expect(() => assertTransition({ estado: 'listo', ...ready }, 'publicado')).not.toThrow();
+  });
   it('treats same-state as allowed', () => {
     expect(canTransition('publicado', 'publicado')).toBe(true);
   });
-  it('only allows reopening a published product to resena_generada', () => {
+  it('only allows reopening a published product to resena_generada or listo', () => {
     expect(canTransition('publicado', 'resena_generada')).toBe(true);
+    expect(canTransition('publicado', 'listo')).toBe(true);
     expect(canTransition('publicado', 'pendiente')).toBe(false);
-    expect(canTransition('publicado', 'listo')).toBe(false);
+    expect(canTransition('publicado', 'en_espera')).toBe(false);
   });
   it('requires feedback and stars to mark listo', () => {
     expect(isReadyForReview(ready)).toBe(true);
