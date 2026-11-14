@@ -117,6 +117,26 @@ describe('DetailBody role gating and states', () => {
     await waitFor(() => expect(api.markPublicado).toHaveBeenCalledWith('B0TEST'));
   });
 
+  it('offers Marcar como publicado for listo (next to Poner en espera) but not pendiente/en_espera/publicado/readers', async () => {
+    const { unmount } = renderBody(product({ estado: 'listo' }), true);
+    expect(screen.getByRole('button', { name: 'Poner en espera' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Marcar como publicado' }));
+    await waitFor(() => expect(api.markPublicado).toHaveBeenCalledWith('B0TEST'));
+    unmount();
+    for (const estado of ['pendiente', 'en_espera', 'publicado'] as const) {
+      const r = renderBody(product({ estado }), true);
+      expect(screen.queryByRole('button', { name: 'Marcar como publicado' })).toBeNull();
+      r.unmount();
+    }
+    renderBody(product({ estado: 'listo' }), false);
+    expect(screen.queryByRole('button', { name: 'Marcar como publicado' })).toBeNull();
+  });
+
+  it('a product published by hand (no review text) shows no empty review section', () => {
+    renderBody(product({ estado: 'publicado', resena_producto: '', resena_resumida: '', resena_extendida: '' }), true);
+    expect(screen.queryByText('Reseña generada')).toBeNull();
+  });
+
   it('pendiente and listo can be put on hold; en_espera can be resumed', async () => {
     const { unmount } = renderBody(product(), true);
     await userEvent.click(screen.getByRole('button', { name: 'Poner en espera' }));

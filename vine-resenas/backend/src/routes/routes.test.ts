@@ -230,9 +230,27 @@ describe('UI routes', () => {
     expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/listo` })).statusCode).toBe(409);
     await app.inject({ method: 'PUT', url: `${UI}/products/${ASIN}`, payload: { feedback: 'ok', estrellas: 3 } });
     expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/listo` })).json()).toMatchObject({ estado: 'listo' });
-    expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/publicado` })).statusCode).toBe(409);
+    // listo -> publicado is allowed (published by hand, no generated review)
+    expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/publicado` })).json()).toMatchObject({ estado: 'publicado' });
     repo.products.get(ASIN)!.estado = 'resena_generada';
     expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/publicado` })).json()).toMatchObject({ estado: 'publicado' });
+  });
+
+  it('publicado from listo works via the API; pendiente/en_espera give 409; undo returns to listo', async () => {
+    const e = repo.products.get(ASIN)!;
+    e.feedback = 'ok';
+    e.estrellas = 4;
+    for (const estado of ['pendiente', 'en_espera'] as const) {
+      e.estado = estado;
+      expect((await app.inject({ method: 'POST', url: `${UI}/products/${ASIN}/publicado` })).statusCode).toBe(409);
+      expect((await app.inject({ method: 'POST', url: `${API}/products/${ASIN}/publicado`, headers: auth })).statusCode).toBe(409);
+      expect(e.estado).toBe(estado);
+    }
+    e.estado = 'listo';
+    const pub = await app.inject({ method: 'POST', url: `${API}/products/${ASIN}/publicado`, headers: auth });
+    expect(pub.json()).toMatchObject({ estado: 'publicado' });
+    const undo = await app.inject({ method: 'PUT', url: `${API}/products/${ASIN}`, headers: auth, payload: { estado: 'listo' } });
+    expect(undo.json()).toMatchObject({ estado: 'listo' });
   });
 
   it('en_espera: park via /espera, hidden from other views, own filter, count, resume', async () => {

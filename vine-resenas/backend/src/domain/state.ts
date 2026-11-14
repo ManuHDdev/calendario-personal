@@ -5,6 +5,7 @@ import type { Estado, Product } from './types';
  * Allowed state transitions (same-state is always a no-op and allowed).
  *
  *   pendiente --> listo --> resena_generada --> publicado
+ *   (listo --> publicado is also allowed: published by hand, no generated review)
  *
  *   en_espera (stand-by) <-> pendiente and <-> listo. A parked product keeps all
  *   its feedback/media/stars. Leaving en_espera is allowed to pendiente or listo
@@ -15,15 +16,16 @@ import type { Estado, Product } from './types';
  *   endpoint or PUT estado), never as a side effect of autosaving.
  * - `resena_generada` is reached ONLY through the review endpoint
  *   (`repo.setResena`), which does not go through this table.
- * - `publicado` is reached ONLY from `resena_generada` via the publicado
- *   endpoint; it can be reopened to `resena_generada` if marked by mistake.
+ * - `publicado` is reached ONLY from `listo` or `resena_generada` via the publicado
+ *   endpoint. It can be reopened if marked by mistake: to `resena_generada` (a review
+ *   exists) or to `listo` (published by hand, no review was ever stored).
  */
 const ALLOWED: Record<Estado, readonly Estado[]> = {
   pendiente: ['listo', 'en_espera'],
-  listo: ['pendiente', 'en_espera'],
+  listo: ['pendiente', 'en_espera', 'publicado'],
   en_espera: ['pendiente', 'listo'],
   resena_generada: ['pendiente', 'listo', 'publicado'],
-  publicado: ['resena_generada'],
+  publicado: ['resena_generada', 'listo'],
 };
 
 export function canTransition(from: Estado, to: Estado): boolean {
@@ -43,7 +45,7 @@ export function assertTransition(
   if (!canTransition(product.estado, to)) {
     const hint =
       to === 'publicado'
-        ? ' (only a product in resena_generada can be marked as publicado)'
+        ? ' (only a product in listo or resena_generada can be marked as publicado)'
         : to === 'resena_generada'
           ? ' (resena_generada is only reached by storing a review via PUT .../resena)'
           : '';
@@ -80,7 +82,7 @@ export function assertCanStoreReview(product: Pick<Product, 'estado'>): void {
  * Extra rule for the free-form `estado` of `PUT /v1/products/:asin`: it may only
  * move among pendiente/listo/en_espera. `resena_generada` and `publicado` have dedicated
  * endpoints; the one exception is reopening a published product back to
- * `resena_generada`, which has no other route.
+ * `resena_generada` (reopening to `listo` is covered by the generic branch), which has no other route.
  */
 export function assertEstadoViaPut(from: Estado, to: Estado): void {
   if (from === to || to === 'pendiente' || to === 'listo' || to === 'en_espera') return;
