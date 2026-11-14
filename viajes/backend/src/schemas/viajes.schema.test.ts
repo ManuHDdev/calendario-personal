@@ -3,6 +3,7 @@ import {
   createPlaceSchema,
   createTripSchema,
   distanceQuerySchema,
+  geocodeSearchSchema,
   itineraryQuerySchema,
   matrixQuerySchema,
   reorderSchema,
@@ -119,5 +120,30 @@ describe('query schemas', () => {
     expect(matrixQuerySchema.safeParse({ ids: `${uuid(1)},oops` }).success).toBe(false);
     const eleven = Array.from({ length: 11 }, (_, i) => uuid(i + 1)).join(',');
     expect(matrixQuerySchema.safeParse({ ids: eleven }).success).toBe(false);
+  });
+});
+
+describe('geocodeSearchSchema', () => {
+  it('accepts a plain query and parses viewbox/countrycodes', () => {
+    const r = geocodeSearchSchema.parse({ q: 'Louvre', viewbox: '2.2,48.9,2.5,48.8', countrycodes: 'FR,es' });
+    expect(r.viewbox).toEqual({ west: 2.2, north: 48.9, east: 2.5, south: 48.8 });
+    expect(r.countrycodes).toEqual(['fr', 'es']);
+    expect(geocodeSearchSchema.parse({ q: 'Louvre' }).viewbox).toBeUndefined();
+  });
+
+  it.each([
+    ['too few parts', '1,2,3'],
+    ['not numbers', 'a,b,c,d'],
+    ['latitude out of range', '2,91,3,10'],
+    ['longitude out of range', '-181,50,3,10'],
+    ['west >= east', '5,50,3,10'],
+    ['north <= south', '2,10,3,50'],
+  ])('rejects a bad viewbox: %s', (_label, viewbox) => {
+    expect(geocodeSearchSchema.safeParse({ q: 'Louvre', viewbox }).success).toBe(false);
+  });
+
+  it('rejects malformed country codes and short queries', () => {
+    expect(geocodeSearchSchema.safeParse({ q: 'Louvre', countrycodes: 'fra' }).success).toBe(false);
+    expect(geocodeSearchSchema.safeParse({ q: 'a' }).success).toBe(false);
   });
 });
