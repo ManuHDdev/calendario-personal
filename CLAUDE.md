@@ -2285,6 +2285,76 @@ hacen Mensajería ni Descargas): usar `docker-compose.local.yml` + `npm run dev`
 
 ---
 
+## Simuladores — simuladores visuales de matemáticas y física
+
+### Ubicación
+Calendario/simuladores/ dentro del monorepo elbunkerdelingeniero.
+
+### Stack
+- Frontend: React 18 + Vite 6 + TypeScript, react-router (`basename /simuladores`,
+  una ruta por simulador, cargadas con `React.lazy`), con interruptor
+  claro/oscuro (`theme.ts` + `ThemeToggle`)
+- **Sin backend, sin base de datos**: todo corre en el navegador (mismo
+  criterio que Finanzas en su origen). Animaciones en `<canvas>` con
+  `requestAnimationFrame`; gráficas en SVG propias (`components/charts/`),
+  sin librería de gráficas
+- Lógica pura y testeada (vitest) en `frontend/src/lib/`: permutaciones y
+  ciclos, prisioneros, secretaria, Monty Hall, Galton/binomial, π (Montecarlo
+  y Buffon), series de Fourier, péndulo doble (RK4 + energía), cardioide,
+  escalas de gráficas. PRNG con semilla (`mulberry32`) para tests deterministas.
+  Los componentes de `src/simulators/<nombre>/` solo dibujan y orquestan
+- Hooks compartidos: `useAnimationFrame` (se para al desmontar y con la
+  pestaña oculta), `useCanvas` (devicePixelRatio + resize), `useThemeColors`
+  (los canvas leen las variables CSS y se repintan al cambiar de tema),
+  `useBatchRunner` (Montecarlo repartido entre frames)
+- Con `prefers-reduced-motion` los simuladores arrancan en pausa
+
+### Acceso
+Solo `admin` (comprobación de rol en `main.tsx` tras `login-required`, mismo
+patrón que Gastos/Finanzas; el resto ve "Sin acceso"). **No crea ningún rol
+nuevo en Keycloak** (sin backend no hay nada que delegar). En el AppLauncher:
+`roles: ['admin']`, color `#7c3aed`, icono de onda senoidal.
+
+### Simuladores (rutas bajo `/simuladores/`)
+1. `/prisioneros` — dilema de los 100 prisioneros: recorrido animado del
+   bucle, permutación como anillos de ciclos, Montecarlo bucle vs. azar
+   (teoría 1 − Σ_{k>n/2} 1/k ≈ 31,18 %) e histograma del ciclo más largo
+2. `/cardioide` — tabla de multiplicar en un círculo (k continuo, envolvente
+   teórica) y círculo rodante (epicicloide, paradoja de la moneda)
+3. `/parada-optima` — problema de la secretaria: rondas animadas y curva
+   P(r) simulada frente a la teórica, óptimo en 1/e
+4. `/monty-hall` — juego manual con puertas animadas y simulación masiva,
+   n puertas
+5. `/galton` — tablero de Galton con binomial y normal superpuestas
+6. `/pi` — Montecarlo en el cuadrado y aguja de Buffon, convergencia con
+   banda ±2σ
+7. `/fourier` — epiciclos, ondas cuadrada/sierra/triangular, Gibbs
+8. `/pendulo-doble` — RK4, estela, dos péndulos casi idénticos y su
+   divergencia en escala logarítmica, energía
+
+### Previsualizar sin Keycloak (solo desarrollo)
+`npm run dev:noauth` (= `vite --mode noauth`, lee `.env.noauth` con
+`VITE_SKIP_AUTH=true`) monta la app sin login. `main.tsx` exige además
+`import.meta.env.DEV`, que `vite build` sustituye por `false`, así que el
+atajo no puede llegar a una imagen de producción.
+
+### nginx
+Un único `location /simuladores/` en `nginx/calendario.conf` hasta
+`simuladores-frontend:80` (patrón `set $svc_…` resuelto en tiempo de
+petición). La imagen solo sirve estáticos con fallback SPA
+(`frontend/nginx.conf`).
+
+### Puerto local
+Frontend `:5194` (sin backend).
+
+### Red Docker
+`calendario-net` (externa)
+
+### Imágenes Docker
+`ghcr.io/manuhddev/simuladores-frontend:latest`
+
+---
+
 ## Sistema de roles (OBLIGATORIO conocer)
 
 Los dieciocho roles de realm en Keycloak son `admin`, `familia`, `invitado`, `paraisos_admin`, `mapacyd_admin`,
@@ -2408,6 +2478,7 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 | Viajes             | :5192    | :3030   |
 | Semáforos          | :5191    | :3017   |
 | Vine Reseñas       | :5193    | :3018   |
+| Simuladores        | :5194    | —       |
 | Keycloak           | :8080    | —       |
 | PostgreSQL (cal)   | :5433    | —       |
 | PostgreSQL (mapacyd)| :5434   | —       |
@@ -2429,12 +2500,12 @@ su contenido tras aplicar las instrucciones (dejar el archivo vacío).
 
 - **Sin tests**: Panel (backend) tiene vitest desde el dashboard de uso de APIs (`subappUsage.ts`, `routes/usage.ts`) pero el resto del backend (`users.ts`, `me.ts`, `keycloakAdmin.ts`) y todo el frontend siguen sin cobertura; mapacyd (backend y frontend) sigue sin ningún test, pese a tener pipelines de CI. Storage sí los tiene desde el fix del 413 (vitest en backend: permisos, tipos MIME, subidas troceadas y alineación del tope de subida con los dos nginx; y en frontend: paginación de la rejilla y el cliente de subida reanudable). Calendario sí los tiene (JUnit/Mockito/TestContainers en backend, specs de Angular en frontend). Ytdl backend sí tiene tests (vitest: allowlist de URL, validación de formato, guard de rol) — se añadieron desde el principio al ser una feature nueva; su frontend, igual que el resto, no tiene. Se acepta como deuda existente — cualquier cambio grande o feature nueva en Panel/Storage/mapacyd/Ytdl SÍ debería incluir tests a partir de ahora.
 - **JWT middleware duplicado**: `verifyJwt`/`authMiddleware` está copiado casi idéntico en `panel/backend`, `storage/backend`, `mapacyd/backend`, `ytdl/backend` y `watchlist/backend` — no hay paquete compartido. No se toca en esta auditoría, solo se deja constancia.
-- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **20 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx`, `semaforos/frontend/src/components/AppLauncher.tsx`, `viajes/frontend/src/components/AppLauncher.tsx`, `vine-resenas/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 20 Dockerfiles y 20 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 20 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (20 internas + 3 externas), no solo la lista de apps.
+- **AppLauncher (panel de 9 puntitos) duplicado**: cada frontend tiene su propia copia hardcodeada de la lista de apps. **21 copias internas** (dentro del historial tracked de este monorepo) — `panel/frontend/src/components/AppLauncher.tsx`, `storage/frontend/src/components/AppLauncher.tsx`, `mapacyd/frontend/src/components/AppLauncher.tsx`, `ytdl/frontend/src/components/AppLauncher.tsx`, `gastos/frontend/src/components/AppLauncher.tsx`, `ofertas/frontend/src/components/AppLauncher.tsx`, `paraisos/frontend/src/components/AppLauncher.tsx`, `juegos/frontend/src/components/AppLauncher.tsx`, `watchlist/frontend/src/components/AppLauncher.tsx`, `reparto/frontend/src/components/AppLauncher.tsx`, `ruta/frontend/src/components/AppLauncher.tsx`, `pisos/frontend/src/components/AppLauncher.tsx`, `locales/frontend/src/components/AppLauncher.tsx`, `finanzas/frontend/src/components/AppLauncher.tsx`, `mensajeria/frontend/src/components/AppLauncher.tsx`, `descargas/frontend/src/components/AppLauncher.tsx`, `semaforos/frontend/src/components/AppLauncher.tsx`, `viajes/frontend/src/components/AppLauncher.tsx`, `vine-resenas/frontend/src/components/AppLauncher.tsx`, `simuladores/frontend/src/components/AppLauncher.tsx` y `calendario-frontend/src/app/shared/components/app-launcher/app-launcher.ts`. **+ 3 copias externas** (repos separados fuera del historial de este monorepo, cada uno con su propio Dockerfile/CI, pero que igualmente hay que mantener sincronizadas a mano): `crypto-trader/frontend/src/components/AppLauncher.tsx` (ver Trader abajo), `football-predictor/frontend/src/components/AppLauncher.tsx` y `tennis-predictor/frontend/src/components/AppLauncher.tsx` (ver Tenis abajo). No hay paquete compartido porque cada subapp es una imagen Docker independiente con su propio contexto de build (`COPY . .` solo dentro de `<subapp>/frontend`) — extraerlo a un paquete común implicaría tocar 21 Dockerfiles y 21 pipelines de CI (los internos; los 3 externos tienen su propio pipeline aparte). **Regla obligatoria: cada vez que se añada o quite una subapp, actualizar las 21 copias internas + 3 externas de arriba en el mismo cambio** (id, nombre, color, roles, URL local/prod e icono SVG), para que quede visible para `admin` en todas partes. El CSS del panel (altura máxima con scroll interno + 4 columnas desde 600px, añadido 2026-10-15 porque en tablet las apps de abajo quedaban fuera de pantalla) también está duplicado en cada copia y hay que cambiarlo en todas a la vez (21 internas + 3 externas), no solo la lista de apps.
 
 `locales` ya está en las copias del AppLauncher (`roles: ['admin']`), añadido
 junto con su frontend (fase 9). `finanzas` ya está en las copias
 (`roles: ['admin', 'invitado']`). `mensajeria` ya está en las 16 copias
-internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `semaforos` y `viajes` (color `#ec4899`, icono de maleta) están en las 19 copias internas (`roles: ['admin']`) y tampoco en las 3 externas todavía (las de `football-predictor` y `tennis-predictor` ya iban por detrás: les faltan `descargas` y `semaforos`). `vine-resenas` (color `#d946ef`, icono de estrella, `roles: ['admin', 'vine_admin', 'vine_invitado']`) está en las 20 copias internas y tampoco en las 3 externas. `tenis` también está en las 16 copias internas
+internas (`roles: ['admin']`). `descargas` está en las 17 copias internas (`roles: ['admin']`) pero **aún no** en las 3 externas. `semaforos` y `viajes` (color `#ec4899`, icono de maleta) están en las 19 copias internas (`roles: ['admin']`) y tampoco en las 3 externas todavía (las de `football-predictor` y `tennis-predictor` ya iban por detrás: les faltan `descargas` y `semaforos`). `vine-resenas` (color `#d946ef`, icono de estrella, `roles: ['admin', 'vine_admin', 'vine_invitado']`) está en las 20 copias internas y tampoco en las 3 externas. `simuladores` (color `#7c3aed`, icono de onda senoidal, `roles: ['admin']`) está en las 21 copias internas y tampoco en las 3 externas. `tenis` también está en las 16 copias internas
 (`roles: ['admin']`) — mismo patrón que `futbol`: repo externo
 (`tennis-predictor`), solo registrado aquí para el AppLauncher/Keycloak/nginx
 compartidos. `crypto-trader/frontend`, `football-predictor/frontend` y

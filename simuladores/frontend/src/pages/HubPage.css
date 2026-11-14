@@ -1,0 +1,153 @@
+.hub {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.hub-head h1 {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.hub-head p {
+  margin-top: 8px;
+  max-width: 680px;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.hub-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 16px;
+}
+
+.hub-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform 250ms ease, box-shadow 250ms ease;
+}
+
+.hub-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.hub-thumb {
+  aspect-ratio: 16 / 10;
+  background: var(--canvas-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.hub-thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hub-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px 16px;
+}
+
+.hub-cat {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hub-card h2 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.hub-card p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+
+/* Thumbnail micro-animations: only while hovered, and never with reduced motion. */
+.thumb-spin,
+.thumb-pulse,
+.thumb-fall,
+.thumb-draw {
+  animation-play-state: paused;
+}
+
+.hub-card:hover .thumb-spin,
+.hub-card:hover .thumb-pulse,
+.hub-card:hover .thumb-fall,
+.hub-card:hover .thumb-draw,
+.hub-card:focus-visible .thumb-spin,
+.hub-card:focus-visible .thumb-pulse,
+.hub-card:focus-visible .thumb-fall,
+.hub-card:focus-visible .thumb-draw {
+  animation-play-state: running;
+}
+
+.thumb-spin {
+  animation: thumb-spin 12s linear infinite;
+}
+
+.thumb-pulse {
+  animation: thumb-pulse 1.6s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.thumb-fall {
+  animation: thumb-fall 1.8s ease-in infinite;
+}
+
+.thumb-draw {
+  stroke-dasharray: 400;
+  animation: thumb-draw 3s ease-in-out infinite alternate;
+}
+
+@keyframes thumb-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes thumb-pulse {
+  50% { opacity: 0.6; }
+}
+
+@keyframes thumb-fall {
+  0% { transform: translateY(0); opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(56px); opacity: 0; }
+}
+
+@keyframes thumb-draw {
+  from { stroke-dashoffset: 400; }
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thumb-spin,
+  .thumb-pulse,
+  .thumb-fall,
+  .thumb-draw {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .hub-head h1 {
+    font-size: 27px;
+  }
+}
