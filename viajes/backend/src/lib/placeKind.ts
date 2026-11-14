@@ -77,6 +77,21 @@ const MAN_MADE: Record<string, string> = {
   windmill: 'Molino',
 };
 
+/** Notable buildings Nominatim returns with class "building" (e.g. the Palace of Versailles). */
+const BUILDING: Record<string, string> = {
+  palace: 'Palacio',
+  castle: 'Castillo',
+  cathedral: 'Catedral',
+  church: 'Iglesia',
+  chapel: 'Capilla',
+  monastery: 'Monasterio',
+  temple: 'Templo',
+  mosque: 'Mezquita',
+  synagogue: 'Sinagoga',
+  museum: 'Museo',
+  stadium: 'Estadio',
+};
+
 const AMENITY: Record<string, Entry> = {
   place_of_worship: sight('Lugar de culto'),
   theatre: sight('Teatro'),
@@ -148,6 +163,7 @@ export function classifyPlace(category?: string, type?: string, addresstype?: st
   }
 
   if (c === 'highway') return poi('otro', 'Calle');
+  if (c === 'building' && BUILDING[t]) return poi('interes', BUILDING[t]);
   if (c === 'building') return poi('otro', 'Edificio');
   if (c === 'amenity' || c === 'shop' || c === 'office') return poi('otro', t ? cap(t) : 'Lugar');
   return poi('otro', 'Lugar');

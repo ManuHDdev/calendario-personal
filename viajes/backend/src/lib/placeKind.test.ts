@@ -29,6 +29,8 @@ describe('classifyPlace', () => {
     ['amenity', 'fast_food', 'comida', 'Comida rápida'],
     ['highway', 'residential', 'otro', 'Calle'],
     ['building', 'yes', 'otro', 'Edificio'],
+    ['building', 'palace', 'interes', 'Palacio'],
+    ['building', 'cathedral', 'interes', 'Catedral'],
     ['shop', 'bakery', 'otro', 'Bakery'],
     [undefined, undefined, 'otro', 'Lugar'],
   ])('%s/%s -> %s (%s)', (category, type, kind, label) => {
