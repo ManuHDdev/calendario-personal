@@ -2110,8 +2110,11 @@ Siempre hay distancia en línea recta (haversine, instantánea, en cliente y ser
 - `GET /trips/:id/summary` — contadores, coste, km en línea recta
 - `GET /trips/:id/distance`, `GET /distance`, `GET /trips/:id/distance-matrix`, `GET /trips/:id/places/:placeId/nearest-lodging`
 - `GET /trips/:id/export.gpx`, `GET /trips/:id/export.ics`
-- `GET /geocode/search`, `GET /geocode/reverse`
+- `GET /geocode/search?q=&viewbox=&countrycodes=`, `GET /geocode/reverse`
 - `GET /health`
+
+### Búsqueda de lugares (POI)
+`/geocode/search` devuelve hasta 8 resultados con `name`, `locality`, `category`/`type` (OSM), `kind` (`alojamiento|interes|comida|otro`, `backend/src/lib/placeKind.ts`) y `kindLabel` en español. El `viewbox` (límites actuales del mapa, `west,north,east,south`) solo sube en el ranking lo cercano (`bounded=0`), se redondea a 0,1° y entra en la clave de caché (`s2:...`); los hits antiguos de la caché (solo lat/lng/displayName) se completan al leer. Se fusionan duplicados (mismo nombre a <150 m) y un POI relevante va por delante del área administrativa genérica, pero las ciudades nunca se descartan. Sin autocompletado mientras se escribe (lo prohíbe la política de Nominatim): solo al enviar. Al elegir un resultado, el nombre del lugar se rellena con el del POI y el tipo con `kind` (salvo que el usuario ya lo haya cambiado a mano).
 
 ### Esquema
 `infra/init.sql` solo corre con un volumen nuevo, así que `backend/src/db/ensureSchema.ts` aplica las mismas sentencias idempotentes en cada arranque (mismo patrón que Gastos/Locales). Si se toca el esquema, tocar los dos ficheros. `pg` devuelve `DATE` como string `YYYY-MM-DD` y `NUMERIC` como número (parsers registrados en `db/pool.ts`).

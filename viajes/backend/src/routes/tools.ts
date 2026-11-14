@@ -97,7 +97,7 @@ export async function toolsRoutes(app: FastifyInstance, deps: AppDeps): Promise<
     const q = parseOr400(geocodeSearchSchema, request.query, reply);
     if (!q) return;
     try {
-      return { results: await deps.geocoder.search(q.q) };
+      return { results: await deps.geocoder.search(q.q, { viewbox: q.viewbox, countrycodes: q.countrycodes }) };
     } catch (err) {
       if (err instanceof GeocodingError) return reply.code(err.statusCode).send({ error: err.message, statusCode: err.statusCode });
       throw err;

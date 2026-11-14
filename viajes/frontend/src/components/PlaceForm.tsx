@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import AddressSearch from './AddressSearch';
 import { reverseGeocode } from '../services/api';
 import { PLACE_TYPES, PLACE_TYPE_META } from '../lib/format';
+import { hitKind, hitName, type MapBounds } from '../lib/addressSearch';
 import type { GeocodeHit, Place, PlaceInput, PlaceType } from '../types';
 
 interface Props {
@@ -18,6 +19,8 @@ interface Props {
   tripRange: { start: string | null; end: string | null };
   onSubmit: (input: PlaceInput) => Promise<void>;
   onCancel: () => void;
+  /** Visible map area, used to bias place search towards where the user is looking. */
+  getMapBounds?: () => MapBounds | null;
 }
 
 const blank = (v: string): string | null => (v.trim() === '' ? null : v.trim());
@@ -33,6 +36,7 @@ export default function PlaceForm({
   tripRange,
   onSubmit,
   onCancel,
+  getMapBounds,
 }: Props) {
   const [type, setType] = useState<PlaceType>(place?.type ?? 'interes');
   const [name, setName] = useState(place?.name ?? '');
@@ -46,6 +50,8 @@ export default function PlaceForm({
   const [checkIn, setCheckIn] = useState(place?.checkIn ?? tripRange.start ?? '');
   const [checkOut, setCheckOut] = useState(place?.checkOut ?? tripRange.end ?? '');
   const [visited, setVisited] = useState(place?.visited ?? false);
+  // Once the user picks a type by hand, a search result no longer overrides it.
+  const [typeTouched, setTypeTouched] = useState(place != null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -72,7 +78,8 @@ export default function PlaceForm({
   const applyHit = (hit: GeocodeHit) => {
     onLocationChange({ lat: hit.lat, lng: hit.lng }, true);
     setAddress(hit.displayName);
-    setName((prev) => prev || hit.displayName.split(',')[0].trim());
+    setName(hitName(hit));
+    if (!typeTouched && !hit.admin) setType(hitKind(hit));
   };
 
   const submit = async (e: FormEvent) => {
@@ -125,7 +132,10 @@ export default function PlaceForm({
             aria-checked={type === t}
             className={`type-chip${type === t ? ' type-chip--active' : ''}`}
             style={{ ['--chip-color' as string]: PLACE_TYPE_META[t].color }}
-            onClick={() => setType(t)}
+            onClick={() => {
+              setType(t);
+              setTypeTouched(true);
+            }}
           >
             {PLACE_TYPE_META[t].label}
           </button>
@@ -134,7 +144,7 @@ export default function PlaceForm({
 
       <fieldset className="form-block">
         <legend>Ubicación</legend>
-        <AddressSearch onPick={applyHit} />
+        <AddressSearch onPick={applyHit} getBounds={getMapBounds} />
         <div className="location-row">
           <button
             type="button"

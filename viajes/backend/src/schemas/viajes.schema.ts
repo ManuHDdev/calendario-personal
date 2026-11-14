@@ -149,6 +149,26 @@ export const nearestQuerySchema = z.object({
   road: z.enum(['true', 'false']).default('false'),
 });
 
-export const geocodeSearchSchema = z.object({ q: z.string().trim().min(2).max(200) });
+/** "west,north,east,south" (Nominatim's left,top,right,bottom). Antimeridian-crossing boxes are rejected. */
+const viewboxString = z
+  .string()
+  .transform((s) => s.split(',').map((p) => Number(p.trim())))
+  .refine((p) => p.length === 4 && p.every(Number.isFinite), 'viewbox must be west,north,east,south')
+  .transform(([west, north, east, south]) => ({ west, north, east, south }))
+  .refine(
+    (v) => v.west >= -180 && v.east <= 180 && v.south >= -90 && v.north <= 90 && v.west < v.east && v.south < v.north,
+    'viewbox out of range',
+  );
+
+export const geocodeSearchSchema = z.object({
+  q: z.string().trim().min(2).max(200),
+  viewbox: viewboxString.optional(),
+  countrycodes: z
+    .string()
+    .toLowerCase()
+    .regex(/^[a-z]{2}(,[a-z]{2}){0,9}$/, 'countrycodes must be comma-separated ISO 3166-1 alpha-2 codes')
+    .transform((s) => s.split(','))
+    .optional(),
+});
 
 export const geocodeReverseSchema = z.object({ lat: coord(-90, 90), lng: coord(-180, 180) });

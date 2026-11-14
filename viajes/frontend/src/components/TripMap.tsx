@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type MutableRefObject } from 'react';
 import L from 'leaflet';
 import type { Place, PlaceType } from '../types';
 import { PLACE_TYPE_META } from '../lib/format';
+import type { MapBounds } from '../lib/addressSearch';
 
 export interface MapRoute {
   key: string;
@@ -26,6 +27,8 @@ interface Props {
   fitSignal: number;
   /** Fly to this point (e.g. an address search result). */
   focus: { lat: number; lng: number; key: number } | null;
+  /** Filled with a function that returns the current visible bounds (used to bias place search). */
+  boundsRef?: MutableRefObject<(() => MapBounds | null) | null>;
 }
 
 const GLYPHS: Record<PlaceType, string> = {
@@ -69,6 +72,7 @@ export default function TripMap({
   routes,
   fitSignal,
   focus,
+  boundsRef,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -97,9 +101,16 @@ export default function TripMap({
     });
 
     mapRef.current = map;
+    if (boundsRef) {
+      boundsRef.current = () => {
+        const b = map.getBounds();
+        return { west: b.getWest(), north: b.getNorth(), east: b.getEast(), south: b.getSouth() };
+      };
+    }
     // The container can be laid out after mount (flex), so re-measure.
     setTimeout(() => map.invalidateSize(), 0);
     return () => {
+      if (boundsRef) boundsRef.current = null;
       map.remove();
       mapRef.current = null;
     };

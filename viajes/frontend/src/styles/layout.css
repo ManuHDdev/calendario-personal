@@ -218,10 +218,18 @@ textarea { resize: vertical; }
 .location-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .location-readout { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .address-search-form { display: flex; gap: 6px; }
-.address-results { border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 180px; overflow-y: auto; margin-top: 6px; }
-.address-results button { width: 100%; text-align: left; padding: 8px 10px; font-size: 12px; color: var(--text-primary); border-bottom: 1px solid var(--border); }
-.address-results li:last-child button { border-bottom: none; }
-.address-results button:hover { background: var(--bg-secondary); }
+.address-search-form input { flex: 1; min-width: 0; }
+.address-results { border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 260px; overflow-y: auto; margin-top: 6px; }
+.address-results[hidden] { display: none; }
+.address-result { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; cursor: pointer; border-bottom: 1px solid var(--border); color: var(--text-primary); }
+.address-result:last-child { border-bottom: none; }
+.address-result .place-dot { margin-top: 5px; }
+.address-result--active, .address-result:hover { background: var(--bg-secondary); }
+.address-result-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.address-result-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.address-result-name { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.address-result-type { font-size: 11px; color: var(--text-secondary); }
+.address-result-sub { font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
 
 /* Itinerary */
 .itinerary, .measure, .summary { display: flex; flex-direction: column; gap: 10px; }

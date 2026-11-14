@@ -64,6 +64,14 @@ export interface GeocodeHit {
   lat: number;
   lng: number;
   displayName: string;
+  /** Fields below are absent on hits cached before the POI search existed. */
+  name?: string;
+  locality?: string;
+  category?: string;
+  type?: string;
+  kind?: PlaceType;
+  kindLabel?: string;
+  admin?: boolean;
 }
 
 export interface ItineraryLeg {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import keycloak, { canWrite } from '../services/keycloak';
 import {
@@ -22,6 +22,7 @@ import MeasurePanel from '../components/MeasurePanel';
 import SummaryPanel from '../components/SummaryPanel';
 import { groupPlaces, type ReorderRequest } from '../lib/grouping';
 import { formatDate } from '../lib/format';
+import type { MapBounds } from '../lib/addressSearch';
 import type { Place, PlaceInput, Trip } from '../types';
 
 type Tab = 'places' | 'itinerary' | 'measure' | 'summary';
@@ -58,6 +59,7 @@ export default function TripPage() {
   const [focus, setFocus] = useState<{ lat: number; lng: number; key: number } | null>(null);
 
   const [fitSignal, setFitSignal] = useState(0);
+  const mapBoundsRef = useRef<(() => MapBounds | null) | null>(null);
   const [itineraryRoutes, setItineraryRoutes] = useState<MapRoute[]>([]);
   const [measureRoutes, setMeasureRoutes] = useState<MapRoute[]>([]);
   const [measureFrom, setMeasureFrom] = useState('');
@@ -277,6 +279,7 @@ export default function TripPage() {
               tripRange={{ start: trip.startDate, end: trip.endDate }}
               onSubmit={submitPlace}
               onCancel={closeForm}
+              getMapBounds={() => mapBoundsRef.current?.() ?? null}
             />
           ) : (
             <>
@@ -356,6 +359,7 @@ export default function TripPage() {
             routes={routes}
             fitSignal={fitSignal}
             focus={focus}
+            boundsRef={mapBoundsRef}
           />
           {picking && <div className="map-banner">Pulsa en el mapa para elegir la ubicación</div>}
           <button className="map-fit-btn" onClick={() => setFitSignal((n) => n + 1)} title="Ver todos los lugares">Ver todo</button>

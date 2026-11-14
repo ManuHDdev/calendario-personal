@@ -90,8 +90,9 @@ export const getNearestLodging = (tripId: string, placeId: string, profile: Prof
   );
 
 // ── Geocoding ────────────────────────────────────────────────────────────────
-export const searchAddress = (q: string) =>
-  request<{ results: GeocodeHit[] }>(`/geocode/search?${qs({ q })}`).then((r) => r.results);
+/** `viewbox` is "west,north,east,south" (the current map view) and only biases the ranking. */
+export const searchAddress = (q: string, bias?: { viewbox?: string; countrycodes?: string }) =>
+  request<{ results: GeocodeHit[] }>(`/geocode/search?${qs({ q, ...bias })}`).then((r) => r.results);
 export const reverseGeocode = (lat: number, lng: number) =>
   request<{ result: GeocodeHit | null }>(`/geocode/reverse?${qs({ lat, lng })}`).then((r) => r.result);
 
