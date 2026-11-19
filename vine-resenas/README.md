@@ -64,6 +64,14 @@ curl -fsS -X POST -H "Authorization: Bearer $VINE_API_TOKEN" "$BASE/products/B0F
 
 # Sync new pending products from vine-bot -> { "created": ["B0..."], "skipped": 3 }
 curl -fsS -X POST -H "Authorization: Bearer $VINE_API_TOKEN" "$BASE/products/sync"
+
+# Create products (single object or {"products":[...]}, max 100). Idempotent upsert:
+# unknown ASIN -> created as `pendiente`; existing ASIN -> estado/feedback/estrellas/media never touched,
+# only an EMPTY titulo/descripcion is filled in. -> { "created": [...], "updated": [...], "skipped": [...] }
+# (updated = titulo/descripcion filled, skipped = already existed, nothing to fill).
+# The whole request is validated first: any invalid item (bad ASIN, empty titulo, unknown key, >100) -> 400, nothing created.
+curl -fsS -X POST -H "Authorization: Bearer $VINE_API_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"products":[{"asin":"B0FQBYHJ17","titulo":"Brochetas","descripcion":"..."},{"asin":"B0AAAAAAAA","titulo":"Otro"}]}' "$BASE/products"
 ```
 
 ## UI API (`/vine-resenas/api/ui`, Keycloak JWT)

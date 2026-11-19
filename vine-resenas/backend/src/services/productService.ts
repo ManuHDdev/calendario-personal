@@ -35,6 +35,43 @@ export async function resumeFromEspera(repo: ProductRepository, asin: string): P
   return changeEstado(repo, asin, resumeTarget(current));
 }
 
+export interface ProductSeed {
+  asin: string;
+  titulo: string;
+  descripcion?: string;
+}
+
+export interface UpsertResult {
+  created: string[];
+  updated: string[];
+  skipped: string[];
+}
+
+/**
+ * Idempotent upsert behind `POST /v1/products`. Unknown ASINs go through the
+ * same `repo.create` path as the sync (estado `pendiente`, empty feedback, no
+ * stars/media). Existing products are never reset: only an EMPTY `titulo` /
+ * `descripcion` is filled in, whatever the estado. `updated` = something was
+ * filled in, `skipped` = already existed and nothing to fill.
+ */
+export async function upsertProducts(repo: ProductRepository, items: ProductSeed[]): Promise<UpsertResult> {
+  const result: UpsertResult = { created: [], updated: [], skipped: [] };
+  for (const item of items) {
+    const descripcion = item.descripcion ?? '';
+    if (await repo.create({ asin: item.asin, titulo: item.titulo, descripcion })) {
+      result.created.push(item.asin);
+      continue;
+    }
+    const current = await repo.get(item.asin);
+    const patch: ProductPatch = {};
+    if (current && current.titulo.trim() === '' && item.titulo) patch.titulo = item.titulo;
+    if (current && current.descripcion.trim() === '' && descripcion) patch.descripcion = descripcion;
+    if (Object.keys(patch).length > 0 && (await repo.update(item.asin, patch))) result.updated.push(item.asin);
+    else result.skipped.push(item.asin);
+  }
+  return result;
+}
+
 export async function storeResena(
   repo: ProductRepository,
   asin: string,
