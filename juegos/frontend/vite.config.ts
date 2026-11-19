@@ -6,6 +6,11 @@ export default defineConfig({
   base: '/juegos/',
   server: {
     proxy: {
+      // Shared app launcher (served by nginx in production): launcher/ dev server.
+      '/launcher': {
+        target: 'http://localhost:5195',
+        changeOrigin: true,
+      },
       '/juegos/api': {
         target: 'http://localhost:3008',
         changeOrigin: true,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import keycloak, { isManager } from '../services/keycloak';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import { listGroups, createGroup, ApiError } from '../services/api';
 import type { GroupSummary } from '../types';
@@ -61,7 +61,7 @@ export default function GroupsListPage() {
         </div>
         <div className="reparto-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
           {username && <span className="reparto-username">{username}</span>}
           <button className="reparto-logout-btn" onClick={() => keycloak.logout()}>Salir</button>
         </div>

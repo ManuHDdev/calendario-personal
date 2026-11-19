@@ -8,6 +8,11 @@ export default defineConfig({
   server: {
     port: 5193,
     proxy: {
+      // Shared app launcher (served by nginx in production): launcher/ dev server.
+      '/launcher': {
+        target: 'http://localhost:5195',
+        changeOrigin: true,
+      },
       '/vine-resenas/api': {
         target: 'http://localhost:3018',
         changeOrigin: true,

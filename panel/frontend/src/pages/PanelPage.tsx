@@ -4,7 +4,7 @@ import { getUsers, getPresence, createUser, updateUser, deleteUser } from '../se
 import { presenceLabel, presenceTitle } from '../lib/presence';
 import UserModal from '../components/UserModal';
 import ConfirmDialog from '../components/ConfirmDialog';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import UsageDashboard from '../components/UsageDashboard';
 import type { UserOut, UserFormData, Presence } from '../types';
@@ -142,7 +142,7 @@ export default function PanelPage() {
         </div>
         <div className="panel-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
           <span className="panel-username">{username}</span>
           <a href="/storage/" className="panel-link-btn" title="Ir a Storage">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

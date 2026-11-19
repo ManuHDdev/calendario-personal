@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import keycloak from '../services/keycloak';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import SemaforosMap from '../components/SemaforosMap';
 import AccesoPanel from '../components/AccesoPanel';
@@ -169,7 +169,7 @@ export default function SemaforosPage() {
     <div className="sem-page">
       <header className="sem-header">
         <div className="sem-header__left">
-          <AppLauncher />
+          <BunkerLauncher />
           <h1>Semáforos</h1>
           <span className="sem-header__tag">Estado estimado en el mapa</span>
         </div>

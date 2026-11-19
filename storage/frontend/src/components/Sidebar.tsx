@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createFolder, deleteFolder, renameFolder } from '../services/api';
 import keycloak from '../services/keycloak';
-import AppLauncher from './AppLauncher';
+import BunkerLauncher from './BunkerLauncher';
 import ThemeToggle from './ThemeToggle';
 import './Sidebar.css';
 import type { FolderEntry } from '../types';
@@ -381,7 +381,7 @@ export default function Sidebar({
           </div>
           <div className="sidebar-user-actions">
             <ThemeToggle />
-            <AppLauncher upward />
+            <BunkerLauncher placement="up" />
             {isAdmin && (
               <a href="/panel/" className="sidebar-admin-btn" title="Panel de administración">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

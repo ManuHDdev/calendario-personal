@@ -6,6 +6,11 @@ export default defineConfig({
   base: '/ytdl/',
   server: {
     proxy: {
+      // Shared app launcher (served by nginx in production): launcher/ dev server.
+      '/launcher': {
+        target: 'http://localhost:5195',
+        changeOrigin: true,
+      },
       '/ytdl/api': {
         target: 'http://localhost:3004',
         changeOrigin: true,

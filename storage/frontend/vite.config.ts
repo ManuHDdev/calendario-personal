@@ -7,6 +7,11 @@ export default defineConfig({
   base: '/storage/',
   server: {
     proxy: {
+      // Shared app launcher (served by nginx in production): launcher/ dev server.
+      '/launcher': {
+        target: 'http://localhost:5195',
+        changeOrigin: true,
+      },
       '/storage/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,

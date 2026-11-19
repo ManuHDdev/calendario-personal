@@ -172,3 +172,12 @@
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
+
+/* Shared <bunker-launcher>, floating over the map in the top-left corner
+   (its look comes from the launcher itself, variant="floating"). */
+.mapa-launcher {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+}

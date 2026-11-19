@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import keycloak from '../services/keycloak';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import RouteMap from '../components/RouteMap';
 import ResultsPanel from '../components/ResultsPanel';
@@ -148,7 +148,7 @@ export default function RutaPage() {
     <div className="ruta-page">
       <header className="ruta-header">
         <div className="ruta-header__left">
-          <AppLauncher />
+          <BunkerLauncher />
           <h1>Ruta</h1>
           <span className="ruta-header__tag">Wallapop por el camino</span>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import keycloak from '../services/keycloak';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import BusquedaForm from '../components/BusquedaForm';
 import BusquedaList from '../components/BusquedaList';
@@ -170,7 +170,7 @@ export default function PisosPage() {
         </div>
         <div className="pisos-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
           <span className="pisos-username">{username}</span>
           <button className="pisos-logout-btn" onClick={() => keycloak.logout()}>Salir</button>
         </div>

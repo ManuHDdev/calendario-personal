@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import './HubPage.css';
 
@@ -33,7 +33,7 @@ export default function HubPage() {
         <h1>🎉 Juegos</h1>
         <div className="juegos-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
         </div>
       </div>
 
