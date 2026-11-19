@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { assertEstadoViaPut, assertTransition } from '../domain/state';
 import { parseAsin } from '../domain/validation';
-import { changeEstado, editProduct, requireProduct, storeResena } from '../services/productService';
+import { changeEstado, editProduct, requireProduct, storeResena, upsertProducts } from '../services/productService';
 import { syncProducts } from '../services/syncService';
 import type { AppDeps } from './deps';
 import { V1_BASE, presentBare, presentProduct } from './presenters';
-import { apiListQuerySchema, apiPatchSchema, resenaSchema } from './schemas';
+import { apiListQuerySchema, apiPatchSchema, createProductsSchema, resenaSchema } from './schemas';
 import { serveMedia } from './serveMedia';
 
 /**
@@ -19,6 +19,11 @@ export function apiRoutes(deps: AppDeps) {
   return async function (app: FastifyInstance): Promise<void> {
     app.post('/products/sync', { onRequest }, async () => {
       return syncProducts(repo, deps.fetcher, deps.syncConfig());
+    });
+
+    // Idempotent create: never touches estado/feedback/stars/media of existing products.
+    app.post('/products', { onRequest }, async (request) => {
+      return upsertProducts(repo, createProductsSchema.parse(request.body));
     });
 
     app.get('/products', { onRequest }, async (request) => {

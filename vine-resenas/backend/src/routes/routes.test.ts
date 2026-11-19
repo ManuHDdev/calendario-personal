@@ -55,6 +55,7 @@ describe('Claude API auth', () => {
       ['PUT', `/products/${ASIN}`],
       ['PUT', `/products/${ASIN}/resena`],
       ['POST', '/products/sync'],
+      ['POST', '/products'],
       ['POST', `/products/${ASIN}/publicado`],
       ['GET', `/media/${ASIN}/1-a.jpg`],
     ] as const) {
@@ -212,6 +213,90 @@ describe('Claude API', () => {
     const bad = await app.inject({ url: `${API}/media/${ASIN}/1-v.mp4`, headers: { ...auth, range: 'bytes=50-' } });
     expect(bad.statusCode).toBe(416);
     expect((await app.inject({ url: `${API}/media/${ASIN}/..%2f..%2fx.jpg`, headers: auth })).statusCode).toBe(400);
+  });
+});
+
+describe('POST /v1/products (create)', () => {
+  const post = (payload: unknown, headers: Record<string, string> = auth) =>
+    app.inject({ method: 'POST', url: `${API}/products`, headers, payload: payload as object });
+
+  it('creates a single product as pendiente with empty defaults', async () => {
+    const res = await post({ asin: 'b0aaaaaaaa', titulo: 'Nuevo', descripcion: 'desc' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ created: ['B0AAAAAAAA'], updated: [], skipped: [] });
+    expect(repo.products.get('B0AAAAAAAA')).toMatchObject({
+      titulo: 'Nuevo',
+      descripcion: 'desc',
+      estado: 'pendiente',
+      feedback: '',
+      estrellas: null,
+    });
+    expect(repo.media.filter((m) => m.asin === 'B0AAAAAAAA')).toHaveLength(0);
+  });
+
+  it('creates in bulk and is idempotent on re-run', async () => {
+    const body = { products: [{ asin: 'B0AAAAAAAA', titulo: 'A' }, { asin: 'B0BBBBBBBB', titulo: 'B' }] };
+    expect((await post(body)).json()).toEqual({ created: ['B0AAAAAAAA', 'B0BBBBBBBB'], updated: [], skipped: [] });
+    expect((await post(body)).json()).toEqual({ created: [], updated: [], skipped: ['B0AAAAAAAA', 'B0BBBBBBBB'] });
+    expect(repo.products.size).toBe(3);
+  });
+
+  it('leaves existing products untouched in any estado', async () => {
+    repo.seed({ asin: 'B0PUBLISHD', titulo: 'Pub', feedback: 'fb', estrellas: 5, estado: 'publicado' });
+    repo.seed({ asin: 'B0ESPERAAA', titulo: 'Esp', feedback: 'fb2', estrellas: 3, estado: 'en_espera' });
+    const res = await post({
+      products: [
+        { asin: 'B0PUBLISHD', titulo: 'Other', descripcion: 'x' },
+        { asin: 'B0ESPERAAA', titulo: 'Other' },
+      ],
+    });
+    // Existing titulo is kept; only the empty descripcion of B0PUBLISHD is filled.
+    expect(res.json()).toEqual({ created: [], updated: ['B0PUBLISHD'], skipped: ['B0ESPERAAA'] });
+    expect(repo.products.get('B0PUBLISHD')).toMatchObject({
+      titulo: 'Pub',
+      descripcion: 'x',
+      feedback: 'fb',
+      estrellas: 5,
+      estado: 'publicado',
+    });
+    expect(repo.products.get('B0ESPERAAA')).toMatchObject({ titulo: 'Esp', feedback: 'fb2', estrellas: 3, estado: 'en_espera' });
+  });
+
+  it('fills an empty titulo without touching feedback or estado', async () => {
+    repo.seed({ asin: 'B0EMPTYTIT', titulo: '', feedback: 'mine', estrellas: 4, estado: 'listo' });
+    const res = await post({ asin: 'B0EMPTYTIT', titulo: 'Filled' });
+    expect(res.json()).toEqual({ created: [], updated: ['B0EMPTYTIT'], skipped: [] });
+    expect(repo.products.get('B0EMPTYTIT')).toMatchObject({ titulo: 'Filled', feedback: 'mine', estrellas: 4, estado: 'listo' });
+  });
+
+  it('rejects invalid input with 400 and creates nothing (whole request validated first)', async () => {
+    const bad: unknown[] = [
+      { asin: 'short', titulo: 'x' },
+      { asin: 'B0AAAAAAAA', titulo: '' },
+      { asin: 'B0AAAAAAAA' },
+      { asin: 'B0AAAAAAAA', titulo: 'x', estado: 'publicado' },
+      { products: [] },
+      { products: [{ asin: 'B0AAAAAAAA', titulo: 'ok' }, { asin: 'bad', titulo: 'x' }] },
+      { products: Array.from({ length: 101 }, (_, i) => ({ asin: `B0${String(i).padStart(8, '0')}`, titulo: 't' })) },
+      { foo: 1 },
+    ];
+    for (const payload of bad) expect((await post(payload)).statusCode).toBe(400);
+    expect(repo.products.size).toBe(1);
+  });
+
+  it('requires the bearer token', async () => {
+    const body = { asin: 'B0AAAAAAAA', titulo: 'x' };
+    expect((await post(body, {})).statusCode).toBe(401);
+    expect((await post(body, { authorization: 'Bearer nope' })).statusCode).toBe(401);
+    expect(repo.products.size).toBe(1);
+  });
+
+  it('is not exposed under /ui or /guest', async () => {
+    const ui = await app.inject({ method: 'POST', url: `${UI}/products`, payload: { asin: 'B0AAAAAAAA', titulo: 'x' } });
+    expect(ui.statusCode).toBe(404);
+    const guest = await app.inject({ method: 'POST', url: '/vine-resenas/api/guest/sometoken/products', payload: {} });
+    expect(guest.statusCode).toBe(404);
+    expect(repo.products.size).toBe(1);
   });
 });
 
