@@ -8,6 +8,11 @@ export default defineConfig({
     port: 5194,
     strictPort: true,
     proxy: {
+      // Shared app launcher (served by nginx in production): launcher/ dev server.
+      '/launcher': {
+        target: 'http://localhost:5195',
+        changeOrigin: true,
+      },
       // Proxy para Keycloak: strips /keycloak prefix (Keycloak en local está en raíz)
       '/keycloak': {
         target: 'http://localhost:8080',

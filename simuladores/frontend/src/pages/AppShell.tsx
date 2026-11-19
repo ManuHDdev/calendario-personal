@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import { SIMULATORS } from '../simulators/registry';
 import './AppShell.css';
@@ -31,7 +31,7 @@ export default function AppShell() {
         </div>
         <div className="shell-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
         </div>
       </header>
       <main className="shell-main">

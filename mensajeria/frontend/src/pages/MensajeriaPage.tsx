@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import SendMessageForm from '../components/SendMessageForm';
 import InboxLog from '../components/InboxLog';
@@ -18,7 +18,7 @@ export default function MensajeriaPage() {
         </div>
         <div className="mensajeria-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
         </div>
       </header>
 

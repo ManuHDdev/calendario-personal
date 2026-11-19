@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import keycloak, { canWrite } from '../services/keycloak';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import { ApiError, createTrip, listTrips } from '../services/api';
 import { formatDate } from '../lib/format';
@@ -67,7 +67,7 @@ export default function TripsPage() {
         </div>
         <div className="viajes-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
           {username && <span className="viajes-username">{username}</span>}
           <button className="viajes-logout-btn" onClick={() => keycloak.logout()}>Salir</button>
         </div>

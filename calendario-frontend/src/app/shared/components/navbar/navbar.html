@@ -9,7 +9,7 @@
 
     <app-theme-toggle />
 
-    <app-app-launcher />
+    <bunker-launcher [attr.roles]="launcherRoles"></bunker-launcher>
 
     @if (authService.isAdmin()) {
       <a class="navbar__username navbar__username--admin" [href]="panelUrl" title="Ir al Panel de administración">

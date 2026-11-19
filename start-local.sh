@@ -44,6 +44,7 @@
 #   vine-resenas frontend →  :5193
 #   PostgreSQL          →  :5447   (vine-resenas)
 #   simuladores frontend  →  :5194  (sin backend)
+#   launcher (menú apps)  →  :5195  (/launcher/, proxeado por cada frontend)
 # ─────────────────────────────────────────────────────────────────────────────
 set -eo pipefail
 
@@ -501,6 +502,10 @@ start_bg "calendario-backend :8081" "calendario-backend.log" "$SCRIPT_DIR/backen
 
 # ── 6. Arrancar frontends ─────────────────────────────────────────────────────
 header "Arrancando frontends"
+
+# Shared app launcher (<bunker-launcher> + apps.json). Every frontend's dev
+# server proxies /launcher to it, as nginx does in production. No dependencies.
+start_bg "launcher           :5195" "launcher.log" "$SCRIPT_DIR/launcher"   node scripts/dev-server.mjs
 
 ensure_deps "$SCRIPT_DIR/panel/frontend"
 start_bg "panel-frontend     :5174" "panel-frontend.log" "$SCRIPT_DIR/panel/frontend" \

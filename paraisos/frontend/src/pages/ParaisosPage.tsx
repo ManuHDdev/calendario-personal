@@ -4,7 +4,7 @@ import { getSpots, getStats, getSpotDetail } from '../services/api';
 import SpotMap from '../components/SpotMap';
 import SpotPanel from '../components/SpotPanel';
 import SpotFormModal from '../components/SpotFormModal';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import type { Spot, SpotStats, SpotDetail } from '../types';
 import './ParaisosPage.css';
@@ -176,7 +176,7 @@ export default function ParaisosPage() {
             </button>
           )}
           {keycloak.authenticated ? (
-            <AppLauncher />
+            <BunkerLauncher />
           ) : (
             <button
               type="button"

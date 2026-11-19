@@ -7,6 +7,11 @@ export default defineConfig({
   server: {
     port: 5187,
     proxy: {
+      // Shared app launcher (served by nginx in production): launcher/ dev server.
+      '/launcher': {
+        target: 'http://localhost:5195',
+        changeOrigin: true,
+      },
       '/finanzas/api': {
         target: 'http://localhost:3014',
         changeOrigin: true,

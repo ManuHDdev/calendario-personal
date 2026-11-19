@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import InteresCompuestoCalculator from '../components/calculators/InteresCompuestoCalculator';
 import PrestamoMaximoCalculator from '../components/calculators/PrestamoMaximoCalculator';
@@ -65,7 +65,7 @@ export default function FinanzasPage() {
         </div>
         <div className="finanzas-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
         </div>
       </header>
 

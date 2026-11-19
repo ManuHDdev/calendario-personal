@@ -11,7 +11,7 @@ import {
   updatePlace,
   updateTrip,
 } from '../services/api';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import TripMap, { type MapRoute } from '../components/TripMap';
 import PlaceList from '../components/PlaceList';
@@ -245,7 +245,7 @@ export default function TripPage() {
         </div>
         <div className="viajes-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
           {username && <span className="viajes-username">{username}</span>}
           <button className="viajes-logout-btn" onClick={() => keycloak.logout()}>Salir</button>
         </div>

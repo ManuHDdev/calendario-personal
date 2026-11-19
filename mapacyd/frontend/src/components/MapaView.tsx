@@ -11,7 +11,7 @@ import { AdminPanel } from './AdminPanel';
 import { ZonaModal } from './ZonaModal';
 import { HorarioPanel } from './HorarioPanel';
 import { PreferenciaCiudad } from './PreferenciaCiudad';
-import AppLauncher from './AppLauncher';
+import BunkerLauncher from './BunkerLauncher';
 import ThemeToggle from './ThemeToggle';
 import './MapaView.css';
 
@@ -328,7 +328,9 @@ export function MapaView() {
 
       <div ref={containerRef} className="mapa-container" />
 
-      <AppLauncher />
+      <div className="mapa-launcher">
+        <BunkerLauncher variant="floating" align="start" />
+      </div>
 
       <ThemeToggle />
 

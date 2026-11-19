@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ConfirmDeleteDialog, { type DeleteFailure } from '../components/ConfirmDeleteDialog';
 import FileIcon from '../components/FileIcon';
 import LazyImage from '../components/LazyImage';
@@ -406,7 +406,7 @@ export default function DescargasPage() {
         <h1 className="descargas-title">Descargas</h1>
         <div className="descargas-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
         </div>
       </header>
 

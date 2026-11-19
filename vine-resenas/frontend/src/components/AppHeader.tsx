@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import AppLauncher from './AppLauncher';
+import BunkerLauncher from './BunkerLauncher';
 import ThemeToggle from './ThemeToggle';
 
 interface Props {
@@ -19,7 +19,7 @@ export default function AppHeader({ title, backTo }: Props) {
       )}
       <h1 className="app-header__title">{title}</h1>
       <ThemeToggle />
-      <AppLauncher />
+      <BunkerLauncher />
     </header>
   );
 }

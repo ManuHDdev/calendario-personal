@@ -19,7 +19,7 @@ vi.mock('../services/api', () => ({
   downloadUrl: (p: string) => `/d/${p}`,
   thumbUrl: (p: string) => `/t/${p}`,
 }));
-vi.mock('../components/AppLauncher', () => ({ default: () => null }));
+vi.mock('../components/BunkerLauncher', () => ({ default: () => null }));
 vi.mock('../components/ThemeToggle', () => ({ default: () => null }));
 
 import DescargasPage from './DescargasPage';

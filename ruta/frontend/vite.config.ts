@@ -7,6 +7,11 @@ export default defineConfig({
   server: {
     port: 5183,
     proxy: {
+      // Shared app launcher (served by nginx in production): launcher/ dev server.
+      '/launcher': {
+        target: 'http://localhost:5195',
+        changeOrigin: true,
+      },
       '/ruta/api': {
         target: 'http://localhost:3011',
         changeOrigin: true,

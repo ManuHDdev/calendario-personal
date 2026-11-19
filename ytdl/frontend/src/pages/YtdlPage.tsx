@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { buildDownloadUrl, isAllowedYoutubeUrl, type DownloadFormat } from '../services/api';
 import keycloak from '../services/keycloak';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import './YtdlPage.css';
 
@@ -98,7 +98,7 @@ export default function YtdlPage() {
       </div>
       {keycloak.authenticated ? (
         <div className="ytdl-launcher">
-          <AppLauncher upward={false} />
+          <BunkerLauncher />
         </div>
       ) : (
         <button

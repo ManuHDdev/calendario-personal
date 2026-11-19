@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import keycloak from '../services/keycloak';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import PeriodBar from '../components/PeriodBar';
 import SummaryCards from '../components/SummaryCards';
@@ -270,7 +270,7 @@ export default function GastosPage() {
         </div>
         <div className="gastos-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
           <span className="gastos-username">{username}</span>
           <button type="button" className="gastos-logout-btn" onClick={() => keycloak.logout()}>Salir</button>
         </div>

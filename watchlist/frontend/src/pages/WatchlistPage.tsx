@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import keycloak from '../services/keycloak';
-import AppLauncher from '../components/AppLauncher';
+import BunkerLauncher from '../components/BunkerLauncher';
 import ThemeToggle from '../components/ThemeToggle';
 import ItemBoard from '../components/ItemBoard';
 import ItemFormModal from '../components/ItemFormModal';
@@ -85,7 +85,7 @@ export default function WatchlistPage() {
         </div>
         <div className="watchlist-header-right">
           <ThemeToggle />
-          <AppLauncher />
+          <BunkerLauncher />
           <span className="watchlist-username">{username}</span>
           <button className="watchlist-logout-btn" onClick={() => keycloak.logout()}>Salir</button>
         </div>

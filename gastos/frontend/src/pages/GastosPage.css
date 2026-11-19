@@ -27,7 +27,7 @@
 
 /* Header controls get the same 44px touch target as everything else on the page. */
 .gastos-header .theme-toggle-btn,
-.gastos-header .launcher-btn { width: 44px; height: 44px; border-radius: 50%; }
+.gastos-header bunker-launcher::part(button) { width: 44px; height: 44px; border-radius: 50%; }
 
 .gastos-logout-btn {
   display: inline-flex;
