@@ -346,3 +346,49 @@ solo la BD se pierden los ficheros multimedia.
 - No copiar `nginx/calendario.conf` encima del fichero del servidor.
 - No regenerar `VINE_RESENAS_DB_PASSWORD` si la base ya existe: la BD quedaría
   inaccesible.
+
+## Launcher compartido (`/launcher/`) — menú de apps único
+
+Sustituye las copias de `AppLauncher` de todas las subapps por `<bunker-launcher>`
+servido en `/launcher/`. **Orden importante: el launcher y el bloque nginx deben
+estar en pie ANTES de que llegue a producción la primera subapp migrada**; si no,
+esa subapp se queda sin botón de apps (no se rompe nada más) hasta que lo estén.
+
+### 1. Desplegar el contenedor (lo hace `launcher-ci.yml` al mergear a `main`)
+
+Construye `ghcr.io/manuhddev/launcher`, copia `launcher/infra/docker-compose.prod.yml`
+a `/home/manu/launcher` y levanta el contenedor `launcher` en `calendario-net`.
+Primera vez: el paquete GHCR nuevo puede nacer privado; si el `pull` falla con
+`denied`, darle acceso igual que al resto de imágenes. Comprobación:
+
+```bash
+docker exec <contenedor-nginx> wget -qO- http://launcher/launcher/apps.json | head -c 200
+```
+
+### 2. nginx — lo aplica `ci.yml` (Calendario) al mergear
+
+El bloque `location /launcher/` está en `nginx/calendario.conf`. El job
+`Deploy · VPS` de `ci.yml` copia ese fichero sobre
+`/home/manu/nginx-shared/conf.d/elbunkerdelingeniero.conf` y recarga nginx en
+cada push a `main` (comprobado en la ejecución 44621522149 del 2026-11-19: copia,
+`nginx -t` OK y reload). Ojo: eso contradice el aviso "aplicar in situ" de otras
+secciones — hoy el fichero del repo es el que manda en el servidor. El bloque usa
+`proxy_pass` con variable + `resolver`, así que `nginx -t` pasa aunque el
+contenedor `launcher` aún no exista (daría 502 hasta que lo esté). Comprobación:
+
+```bash
+curl -sI https://elbunkerdelingeniero.duckdns.org/launcher/launcher.js   # 200, Cache-Control: no-cache
+curl -s  https://elbunkerdelingeniero.duckdns.org/launcher/apps.json | head -c 200
+```
+
+### 3. Subapps
+
+Cada subapp coge el launcher nuevo al redesplegarse (sus workflows se disparan
+solos al mergear, porque el cambio toca `<subapp>/**`). Calendario (Angular) va por
+`ci.yml`. `crypto-trader` va en su propio repo/rama (`feature/unified-launcher`) y
+se despliega a mano con `./scripts/deploy.sh`.
+
+### 4. Verificar
+
+Abrir 2-3 subapps (p. ej. `/panel/`, `/storage/`, `/trader/`) en claro y oscuro: el
+panel debe verse igual en todas, opaco, con la app actual resaltada.
