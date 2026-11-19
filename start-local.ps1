@@ -43,6 +43,7 @@
 #   vine-resenas frontend →  :5193
 #   PostgreSQL          →  :5447   (vine-resenas)
 #   simuladores frontend  →  :5194  (sin backend)
+#   launcher (menú apps)  →  :5195  (/launcher/, proxeado por cada frontend)
 # ─────────────────────────────────────────────────────────────────────────────
 $ErrorActionPreference = "Stop"
 
@@ -534,6 +535,11 @@ if ($HAS_MVN) {
 
 # ── 8. Arrancar frontends ─────────────────────────────────────────────────────
 header "Arrancando frontends"
+
+# Shared app launcher (<bunker-launcher> + apps.json). Every frontend's dev
+# server proxies /launcher to it, as nginx does in production. No dependencies.
+StartBackground "launcher           :5195" "launcher.log" `
+  (Join-Path $SCRIPT_DIR "launcher") "node scripts/dev-server.mjs"
 
 EnsureDeps (Join-Path $SCRIPT_DIR "panel\frontend")
 StartBackground "panel-frontend     :5174" "panel-frontend.log" `
