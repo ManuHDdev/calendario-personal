@@ -11,7 +11,10 @@ describe('Navbar', () => {
 
   const keycloakMock = jasmine.createSpyObj('Keycloak', ['logout'], {
     authenticated: true,
-    tokenParsed: { preferred_username: 'propietario' }
+    tokenParsed: {
+      preferred_username: 'propietario',
+      realm_access: { roles: ['admin', 'familia'] }
+    }
   });
 
   beforeEach(async () => {
@@ -32,5 +35,15 @@ describe('Navbar', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('renders the shared <bunker-launcher> with the user realm roles', () => {
+    const launcher: HTMLElement | null = fixture.nativeElement.querySelector('bunker-launcher');
+    expect(launcher).not.toBeNull();
+    expect(launcher!.getAttribute('roles')).toBe('admin familia');
+  });
+
+  it('no longer renders the old Angular app launcher', () => {
+    expect(fixture.nativeElement.querySelector('app-app-launcher')).toBeNull();
   });
 });

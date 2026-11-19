@@ -17,6 +17,9 @@
       document.documentElement.setAttribute('data-theme', theme);
     })();
   </script>
+  <!-- Shared app launcher (<bunker-launcher>), served by the platform at /launcher/.
+       Locally `ng serve` proxies /launcher to the launcher dev server (proxy.conf.json). -->
+  <script src="/launcher/launcher.js" async></script>
 </head>
 <body>
   <app-root></app-root>

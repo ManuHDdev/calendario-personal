@@ -1,0 +1,7 @@
+{
+  "/launcher": {
+    "target": "http://localhost:5195",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
