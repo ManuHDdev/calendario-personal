@@ -1,0 +1,15 @@
+{
+  "name": "bunker-launcher",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Shared <bunker-launcher> web component and app registry for every ElBunkerDelIngeniero sub-app",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1",
+    "vitest": "^2.1.9"
+  }
+}
