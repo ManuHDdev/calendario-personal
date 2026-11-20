@@ -26,22 +26,31 @@ services:
   mensajeria-backend:
     image: ghcr.io/manuhddev/mensajeria-backend:latest
     container_name: mensajeria-backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      PORT:                     3015
-      MENSAJERIA_DB_HOST:       mensajeria-db
-      MENSAJERIA_DB_NAME:       ${MENSAJERIA_DB_NAME}
-      MENSAJERIA_DB_USER:       ${MENSAJERIA_DB_USER}
-      MENSAJERIA_DB_PASSWORD:   ${MENSAJERIA_DB_PASSWORD}
-      KEYCLOAK_CERTS_URL:       ${KEYCLOAK_CERTS_URL}
-      CORS_ORIGIN:              ${CORS_ORIGIN}
-      MENSAJERIA_MODE:          ${MENSAJERIA_MODE:-mock}
-      MENSAJERIA_SMTP_PORT:     ${MENSAJERIA_SMTP_PORT:-2525}
-      TWILIO_ACCOUNT_SID:       ${TWILIO_ACCOUNT_SID:-}
-      TWILIO_AUTH_TOKEN:        ${TWILIO_AUTH_TOKEN:-}
-      TWILIO_FROM_NUMBER:       ${TWILIO_FROM_NUMBER:-}
-      SENDGRID_API_KEY:         ${SENDGRID_API_KEY:-}
-      SENDGRID_FROM_EMAIL:      ${SENDGRID_FROM_EMAIL:-}
-      NODE_ENV:                 production
+      PORT:                          3015
+      MENSAJERIA_DB_HOST:            mensajeria-db
+      MENSAJERIA_DB_NAME:            ${MENSAJERIA_DB_NAME}
+      MENSAJERIA_DB_USER:            ${MENSAJERIA_DB_USER}
+      MENSAJERIA_DB_PASSWORD:        ${MENSAJERIA_DB_PASSWORD}
+      KEYCLOAK_CERTS_URL:            ${KEYCLOAK_CERTS_URL}
+      CORS_ORIGIN:                   ${CORS_ORIGIN}
+      MENSAJERIA_MODE:               ${MENSAJERIA_MODE:-mock}
+      MENSAJERIA_SMTP_PORT:          ${MENSAJERIA_SMTP_PORT:-2525}
+      MENSAJERIA_RELAY_HOST:         ${MENSAJERIA_RELAY_HOST:-host.docker.internal}
+      MENSAJERIA_RELAY_PORT:         ${MENSAJERIA_RELAY_PORT:-2525}
+      TWILIO_ACCOUNT_SID:            ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN:             ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER:            ${TWILIO_FROM_NUMBER:-}
+      SENDGRID_API_KEY:              ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL:           ${SENDGRID_FROM_EMAIL:-}
+      MENSAJERIA_IMAP_HOST:          ${MENSAJERIA_IMAP_HOST:-imap.gmail.com}
+      MENSAJERIA_IMAP_PORT:          ${MENSAJERIA_IMAP_PORT:-993}
+      MENSAJERIA_IMAP_USER:          ${MENSAJERIA_IMAP_USER:-}
+      MENSAJERIA_IMAP_PASSWORD:      ${MENSAJERIA_IMAP_PASSWORD:-}
+      MENSAJERIA_IMAP_POLL_SECONDS:  ${MENSAJERIA_IMAP_POLL_SECONDS:-30}
+      NODE_ENV:                      production
     depends_on:
       mensajeria-db:
         condition: service_healthy

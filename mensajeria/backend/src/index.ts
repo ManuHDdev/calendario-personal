@@ -2,9 +2,17 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { mensajeriaRoutes } from './routes/mensajeria';
 import { startFakeSmtpServer } from './services/fakeSmtpServer';
+import { startImapPoller } from './services/imapPoller';
+import { pool } from './db/pool';
 
 const isProd = process.env.NODE_ENV === 'production';
 const app = Fastify({ logger: isProd });
+
+async function ensureSchema(): Promise<void> {
+  await pool.query(
+    `ALTER TABLE mensajeria_captured_emails ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'mock'`,
+  );
+}
 
 async function bootstrap() {
   const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5188'];
@@ -28,11 +36,15 @@ async function bootstrap() {
   await app.listen({ port, host: '0.0.0.0' });
   app.log.info(`Mensajería backend listening on port ${port}`);
 
-  // El SMTP falso siempre está arriba (es infraestructura mock, no algo que
-  // se apague en modo real): en real, el email de verdad sale por SendGrid,
-  // pero este socket sigue disponible por si algún canal se queda en mock.
+  await ensureSchema();
+
   const smtpPort = Number(process.env.MENSAJERIA_SMTP_PORT) || 2525;
   startFakeSmtpServer(smtpPort, {
+    info: (msg) => app.log.info(msg),
+    error: (msg) => app.log.error(msg),
+  });
+
+  startImapPoller({
     info: (msg) => app.log.info(msg),
     error: (msg) => app.log.error(msg),
   });

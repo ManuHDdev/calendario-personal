@@ -13,8 +13,10 @@
     "@fastify/cors": "^9.0.1",
     "@sendgrid/mail": "^8.1.3",
     "fastify": "^4.28.1",
+    "imapflow": "^1.0.171",
     "jwks-rsa": "^3.1.0",
     "mailparser": "^3.7.1",
+    "nodemailer": "^6.9.14",
     "pg": "^8.11.5",
     "smtp-server": "^3.13.5",
     "twilio": "^5.3.0",
@@ -23,6 +25,7 @@
   "devDependencies": {
     "@types/mailparser": "^3.4.4",
     "@types/node": "^20.14.0",
+    "@types/nodemailer": "^6.4.15",
     "@types/pg": "^8.11.6",
     "@types/smtp-server": "^3.5.10",
     "ts-node": "^10.9.2",
